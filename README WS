@@ -1,0 +1,19 @@
+cd /home/qordoux/Documents/ft_transcendence/frontend && npx tsc 
+---> compile les fichiers TypeScript (.ts) du frontend en JavaScript.
+
+cd /home/qordoux/Documents/ft_transcendence/backend && node server.js
+---> lance le serveur Node.js en exécutant le fichier server.js. Cela démarre le backend de l’application
+
+Telecharger l'extension live server, ouvrir le fichier index.html ---> clic droit ---> open with live server
+
+Pour tester le websocket, ouvrir la console du navigateur via inspecter l'element -->envoyer la cmd  sendPing() et il y aura une reponse du serveur
+
+
+Schéma du fonctionnement WebSocket :
+
+[ Navigateur (frontend) ]
+          ⇄  (WebSocket)
+[ Serveur Node.js (backend) ]
+
+Explication :
+Le WebSocket permet une communication bidirectionnelle : le navigateur peut envoyer des messages au serveur, et le serveur peut répondre ou envoyer des messages à tout moment au navigateur, sans avoir besoin de recharger la page.

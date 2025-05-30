@@ -1,0 +1,45 @@
+
+body {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+button {
+    margin: 0px;
+    padding: 10px 30px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+button:active {
+    background-color: #2e7031; /* couleur au clic */
+    transform: scale(0.95);    /* effet de "pression" */
+}
+
+#map{
+    margin: 20px auto;
+    background-color: black;
+
+}
+
+#score{
+    font-size: 30px;
+    font-weight: bold;
+   /* margin: 20px;*/
+    color: #f0f0f0;
+}
+
+#winnerDisplay{
+    font-size: 20px;
+    font-weight: bold;
+   /* margin: 20px;*/
+    color: #1bf114;
+}
