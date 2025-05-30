@@ -1,0 +1,9 @@
+backend/
+├── server.js              → point d’entrée
+└── src/
+    ├── routes/
+    │   └── ping.js        → une première route
+    └── plugins/
+        └── db.js          → plus tard, pour la base de données
+
+
