@@ -81,3 +81,18 @@ sendMessage('score', { left: 1, right: 2 });
 
 - Pas de reponse WebSocket
   -> Verifie que le backend est bien lance et que le frontend est ouvert avec Live Server.
+
+
+[Frontend]
+    |
+    |  socket.send(JSON.stringify({ type, data }))
+    v
+[Backend]
+    |
+    |  socket.emit('message', objet)   ou   socket.send(JSON.stringify(objet))
+    v
+[Frontend]
+
+Tu envoies TOUJOURS du JSON (texte) sur le réseau.
+JSON.stringify pour envoyer
+JSON.parse pour recevoir (si besoin)
