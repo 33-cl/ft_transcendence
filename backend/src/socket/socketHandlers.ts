@@ -2,8 +2,9 @@
 
 import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
-import { findOrCreateRoom, removePlayerFromRoom } from './roomManager';
+import { getPlayerRoom, findOrCreateRoom, removePlayerFromRoom } from './roomManager';
 import { handleMessage } from './messageHandlers';
+
 
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
@@ -14,6 +15,13 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 		// Handler pour rejoindre une room dynamiquement
 		socket.on('joinRoom', (data: any) =>
 		{
+			// Avant de rejoindre une nouvelle room, retirer le joueur de l'ancienne
+			const previousRoom = getPlayerRoom(socket.id);
+    		if (previousRoom)
+			{
+				removePlayerFromRoom(socket.id, fastify.log.info.bind(fastify.log));
+				socket.leave(previousRoom);
+    		}
 			// 4 ou 2 players dans la room
 			const maxPlayers = data && data.maxPlayers ? data.maxPlayers : 2;
 			// itere sur les rooms existantes et cherche une room avec la capacitee demandee (2 ou 4)

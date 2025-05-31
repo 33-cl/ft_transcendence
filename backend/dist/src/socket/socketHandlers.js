@@ -9,6 +9,12 @@ function registerSocketHandlers(io, fastify) {
         fastify.log.info(`Client connecté : ${socket.id}`);
         // Handler pour rejoindre une room dynamiquement
         socket.on('joinRoom', (data) => {
+            // Avant de rejoindre une nouvelle room, retirer le joueur de l'ancienne
+            const previousRoom = (0, roomManager_1.getPlayerRoom)(socket.id);
+            if (previousRoom) {
+                (0, roomManager_1.removePlayerFromRoom)(socket.id, fastify.log.info.bind(fastify.log));
+                socket.leave(previousRoom);
+            }
             // 4 ou 2 players dans la room
             const maxPlayers = data && data.maxPlayers ? data.maxPlayers : 2;
             // itere sur les rooms existantes et cherche une room avec la capacitee demandee (2 ou 4)
