@@ -17,10 +17,14 @@ cd /home/qordoux/Documents/ft_transcendence/backend && node server.js
 Telecharger l'extension live server, ouvrir le fichier index.html ---> clic droit ---> open with live server
 
 Pour tester le websocket, ouvrir la console du navigateur via inspecter l'element 
+
+--> socket.emit('joinRoom', { maxPlayers: 4 }); 
+ou 2 pour tester les room
 --> envoyer la cmd  sendPing() et il y aura une reponse du serveur
 --> sendMessage('move', { y: 120 });
---> sendMessage('move', { y: "abc" });
+--> sendMessage('move', { y: "abc" }); -->erroneus one, ne doit pas s'envoyer aux autres car je verifie le type du score
 --> sendMessage('score', { left: 1, right: 2});
+
 
 Possible d'ouvrir 2 clients, ils seront par default dans la meme room
 et tu pourras voir que le client recois les infos des autres

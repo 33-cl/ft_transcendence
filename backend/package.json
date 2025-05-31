@@ -16,6 +16,9 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
-    "@types/socket.io-client": "^1.4.36"
+    "@types/node": "^22.15.29",
+    "@types/socket.io": "^3.0.1",
+    "@types/socket.io-client": "^1.4.36",
+    "typescript": "^5.8.3"
   }
 }
