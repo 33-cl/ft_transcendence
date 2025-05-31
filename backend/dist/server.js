@@ -23,7 +23,7 @@ const server = http_1.default.createServer(app.server);
 // Configuration de socket.io avec CORS
 const io = new socket_io_1.Server(server, {
     cors: {
-        origin: "http://127.0.0.1:5500",
+        origin: "http://127.0.0.1:5500", //5500 car c'est ce qui est utilise par live server
         methods: ["GET", "POST"]
     }
 });
