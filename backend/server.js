@@ -35,7 +35,7 @@ io.on('connection', (socket) =>{
 		fastify.log.warn(`Message non JSON reçu: ${msg}`);
 		return;
 	}
-	// Validation basique
+	// Validation basique, add des verif genre y >0 y < hauteur du terrain etc etc
 	if (message.type === 'move')
 	{
 		if (typeof message.data !== 'object' || typeof message.data.y !== 'number')

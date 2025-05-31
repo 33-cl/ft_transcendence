@@ -6,7 +6,10 @@ cd /home/qordoux/Documents/ft_transcendence/backend && node server.js
 
 Telecharger l'extension live server, ouvrir le fichier index.html ---> clic droit ---> open with live server
 
-Pour tester le websocket, ouvrir la console du navigateur via inspecter l'element -->envoyer la cmd  sendPing() et il y aura une reponse du serveur
+Pour tester le websocket, ouvrir la console du navigateur via inspecter l'element 
+--> envoyer la cmd  sendPing() et il y aura une reponse du serveur
+--> sendMessage('move', { y: 120 });
+--> sendMessage('move', { y: "abc" });
 
 
 Schéma du fonctionnement WebSocket :

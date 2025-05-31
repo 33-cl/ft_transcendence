@@ -20,3 +20,34 @@ socket.on("pong", (data) => {
 // Rend la fonction sendPing accessible depuis la console du navigateur
 // Tu peux taper sendPing() dans la console pour tester l'envoi d'un message
 window.sendPing = sendPing;
+function sendMessage(type, data) {
+    const msg = JSON.stringify({ type, data }); // Convertit l'objet en chaîne JSON
+    socket.send(msg);
+}
+// Fonction centrale de gestion des messages reçus, est appelée à chaque fois qu'un socket.send(abc) est fait
+//event contient les données envoyées par le serveur
+socket.onmessage = function (event) {
+    let message; //let ca declare une variable 
+    try {
+        message = JSON.parse(event.data); //.parse decode le json en vrai objet JS
+    }
+    catch (e) {
+        console.error('Message non JSON:', event.data);
+        return;
+    }
+    handleWebSocketMessage(message);
+};
+function handleWebSocketMessage(message) {
+    switch (message.type) {
+        case 'move':
+            // Traiter le mouvement reçu
+            // Exemple: updatePaddlePosition(message.data)
+            break;
+        case 'score':
+            // Traiter la mise à jour du score
+            break;
+        // Ajouter d'autres types de messages ici
+        default:
+            console.warn('Type de message inconnu:', message.type);
+    }
+}
