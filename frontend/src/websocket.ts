@@ -13,13 +13,15 @@ socket.on("connect", () => {
 
 
 // Fonction pour envoyer un message "ping" au serveur
-function sendPing() {
+function sendPing()
+{
 	// Envoie un message nommé "ping" avec un objet au serveur
     socket.emit("ping", { message: "Hello serveur!" });
 }
 
 // Écoute les messages nommés "pong" envoyés par le serveur
-socket.on("pong", (data: any) => {
+socket.on("pong", (data: any) =>
+{
 	// Affiche le contenu du message reçu dans la console
 	console.log("Message reçu du serveur:", data);
 });
@@ -27,3 +29,54 @@ socket.on("pong", (data: any) => {
 // Rend la fonction sendPing accessible depuis la console du navigateur
 // Tu peux taper sendPing() dans la console pour tester l'envoi d'un message
 (window as any).sendPing = sendPing;
+
+
+
+// Fonction pour envoyer un message structuré
+// a terme, ne plus avoir string, afin d'avoid les merdes si on reçoit un message innatendu
+type MessageType = 'move' | 'score' | string;
+
+// Cette interface permet de créer un objet avec autant de propriétés que l'on souhaite.
+// Chaque propriété (clé) doit être une chaîne de caractères, et sa valeur peut être de n'importe quel type.
+// Exemple d'utilisation : { y: 120, player: "left" }
+interface MessageData
+{
+    [key: string]: any;
+}
+
+function sendMessage(type: MessageType, data: MessageData)
+{
+    const msg = JSON.stringify({ type, data });// Convertit l'objet en chaîne JSON
+    socket.send(msg);
+}
+
+// Fonction centrale de gestion des messages reçus, est appelée à chaque fois qu'un socket.send(abc) est fait
+//event contient les données envoyées par le serveur
+socket.onmessage = function(event: MessageEvent)
+{
+    let message;//let ca declare une variable 
+    try {
+        message = JSON.parse(event.data);//.parse decode le json en vrai objet JS
+    } catch (e) {
+        console.error('Message non JSON:', event.data);
+        return;
+    }
+    handleWebSocketMessage(message);
+};
+
+function handleWebSocketMessage(message: { type: MessageType, data: MessageData })
+{
+    switch (message.type)
+	{
+        case 'move':
+            // Traiter le mouvement reçu
+            // Exemple: updatePaddlePosition(message.data)
+            break;
+        case 'score':
+            // Traiter la mise à jour du score
+            break;
+        // Ajouter d'autres types de messages ici
+        default:
+            console.warn('Type de message inconnu:', message.type);
+    }
+}

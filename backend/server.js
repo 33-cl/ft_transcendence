@@ -19,13 +19,53 @@ const io = new Server(server, {
 });
 
 // Gestion des connexions WebSocket
-io.on('connection', (socket) => {
-  fastify.log.info(`Client connecté : ${socket.id}`);
-  socket.on('ping', (data) => {
-    fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);
-    socket.emit('pong', { message: 'Hello client!' });
-  });
+io.on('connection', (socket) =>{
+	fastify.log.info(`Client connecté : ${socket.id}`);
+	socket.on('ping', (data) => {
+	fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);
+	socket.emit('pong', { message: 'Hello client!' });
+	});
+
+	// Handler pour les messages (envoyés avec socket.send)
+	socket.on('message', (msg) =>{
+	let message;
+	try {
+		message = JSON.parse(msg);
+	} catch (e) {
+		fastify.log.warn(`Message non JSON reçu: ${msg}`);
+		return;
+	}
+	// Validation basique
+	if (message.type === 'move')
+	{
+		if (typeof message.data !== 'object' || typeof message.data.y !== 'number')
+		{
+		fastify.log.warn(`Move invalide: ${JSON.stringify(message)}`);
+		return;
+		}
+		fastify.log.info(`Move reçu: y=${message.data.y}`);
+		// Ici tu peux relayer le mouvement aux autres joueurs, etc.
+	}
+	else if (message.type === 'score')
+	{
+		// Exemple de validation pour le score
+		if (typeof message.data !== 'object' || typeof message.data.left !== 'number' || typeof message.data.right !== 'number')
+		{
+		fastify.log.warn(`Score invalide: ${JSON.stringify(message)}`);
+		return;
+		}
+		fastify.log.info(`Score reçu: left=${message.data.left}, right=${message.data.right}`);
+		// Ici tu peux relayer le score, etc.
+	}
+	else
+	{
+		fastify.log.warn(`Type de message inconnu: ${message.type}`);
+	}
+	});
 });
+
+
+
 
 // 2. Une route GET très simple
 fastify.get('/', async (request, reply) => {
