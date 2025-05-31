@@ -18,30 +18,51 @@ const io = new Server(server, {
   }
 });
 
-// Gestion des rooms (salles de jeu)
+// Nouvelle structure pour les rooms avec capacité dynamique
 const rooms = {};
+let roomCounter = 1;// ++ quand on rajoute une room pour avoir un id propre a chaque room
 
 io.on('connection', (socket) => {
-	fastify.log.info(`Client connecté : ${socket.id}`);
+  fastify.log.info(`Client connecté : ${socket.id}`);
 
-	// Pour l'instant, chaque joueur rejoint une room par défaut
-	const defaultRoom = 'room1';
-	socket.join(defaultRoom);//permet par la suite de send msg a tous les joueurs de cette room
-	// Si la room n'existe pas, on la cree
-	if (!rooms[defaultRoom])
+	// Handler pour rejoindre une room dynamiquement
+	socket.on('joinRoom', (data) => {
+	//4 ou 2 players dans la room
+	const maxPlayers = data && data.maxPlayers ? data.maxPlayers : 2;
+	let assignedRoom = null;
+	//itere sur les rooms existantes
+	for (const roomName in rooms)
 	{
-		rooms[defaultRoom] = { players: [] };
+		//cherche une room avec la capacitee demandeee (2 ou 4)
+		if (rooms[roomName].maxPlayers === maxPlayers && rooms[roomName].players.length < maxPlayers)
+		{
+			//il reste de la place dans cette room
+			fastify.log.info(`Room trouvée : ${roomName} (max ${maxPlayers})`);
+			//on rejoint la room
+			assignedRoom = roomName;
+			break;
+		}
 	}
-	rooms[defaultRoom].players.push(socket.id);
-	fastify.log.info(`Joueur ${socket.id} rejoint la room ${defaultRoom}`);
-
-	socket.on('ping', (data) =>
+	//aucune room existante ne repond a la demande, on en cree une nouvelle
+	if (!assignedRoom)
 	{
-		fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);
-		socket.emit('pong', { message: 'Hello client!' });
+		//donne un nom unique a la nouvelle room
+		assignedRoom = `room${roomCounter++}`;
+		rooms[assignedRoom] = { players: [], maxPlayers };
+	}
+	socket.join(assignedRoom);
+	rooms[assignedRoom].players.push(socket.id);
+	fastify.log.info(`Joueur ${socket.id} rejoint la room ${assignedRoom} (max ${maxPlayers})`);
+	// On informe le client de la room rejointe
+	socket.emit('roomJoined', { room: assignedRoom, maxPlayers });
 	});
 
-	// Handler pour les messages (envoyés avec socket.send)
+	socket.on('ping', (data) => {
+	fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);
+	socket.emit('pong', { message: 'Hello client!' });
+	});
+
+	// Handler pour les messages (envoyes avec socket.send)
 	socket.on('message', (msg) => {
 	let message;
 	try {
@@ -50,7 +71,22 @@ io.on('connection', (socket) => {
 		fastify.log.warn(`Message non JSON reçu: ${msg}`);
 		return;
 	}
-	// Validation basique, add des verif genre y >0 y < hauteur du terrain etc etc
+	// Trouver la room du joueur pour pouvoir ensuite utilisr playerRoom pour l'eenvoi de messages
+	let playerRoom = null;
+	for (const roomName in rooms)
+	{
+		if (rooms[roomName].players.includes(socket.id))
+		{
+			playerRoom = roomName;
+			break;
+		}
+	}
+	if (!playerRoom)
+	{
+		fastify.log.warn(`Aucune room trouvée pour le joueur ${socket.id}`);
+		return;
+	}
+	// Validation basique
 	if (message.type === 'move')
 	{
 		if (typeof message.data !== 'object' || typeof message.data.y !== 'number')
@@ -59,8 +95,7 @@ io.on('connection', (socket) => {
 			return;
 		}
 		fastify.log.info(`Move reçu: y=${message.data.y}`);
-		// Relayer le mouvement aux autres joueurs de la même room
-		socket.to(defaultRoom).emit('message', msg);
+		socket.to(playerRoom).emit('message', msg);
 	}
 	else if (message.type === 'score')
 	{
@@ -70,8 +105,7 @@ io.on('connection', (socket) => {
 			return;
 		}
 		fastify.log.info(`Score reçu: left=${message.data.left}, right=${message.data.right}`);
-		// Relayer le score aux autres joueurs de la même room
-		socket.to(defaultRoom).emit('message', msg);
+		socket.to(playerRoom).emit('message', msg);
 	}
 	else
 	{
@@ -79,17 +113,24 @@ io.on('connection', (socket) => {
 	}
 	});
 
-	socket.on('disconnect', () =>
+	socket.on('disconnect', () => {
+	// Retirer le joueur de sa room
+	let playerRoom = null;
+	for (const roomName in rooms)
 	{
-	// Retirer le joueur de la room
-	if (rooms[defaultRoom])
-	{
-		rooms[defaultRoom].players = rooms[defaultRoom].players.filter(id => id !== socket.id);
-		fastify.log.info(`Joueur ${socket.id} quitte la room ${defaultRoom}`);
-		// Si la room est vide, on peut la supprimer
-		if (rooms[defaultRoom].players.length === 0)
+		if (rooms[roomName].players.includes(socket.id))
 		{
-			delete rooms[defaultRoom];
+			playerRoom = roomName;
+			break;
+		}
+	}
+	if (playerRoom)
+	{
+		rooms[playerRoom].players = rooms[playerRoom].players.filter(id => id !== socket.id);
+		fastify.log.info(`Joueur ${socket.id} quitte la room ${playerRoom}`);
+		if (rooms[playerRoom].players.length === 0)
+		{
+			delete rooms[playerRoom];
 		}
 	}
 	});

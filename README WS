@@ -1,3 +1,13 @@
+Schéma du fonctionnement WebSocket :
+
+[ Navigateur (frontend) ]
+          ⇄  (WebSocket)
+[ Serveur Node.js (backend) ]
+
+Explication :
+Le WebSocket permet une communication bidirectionnelle : le navigateur peut envoyer des messages au serveur, et le serveur peut répondre ou envoyer des messages à tout moment au navigateur, sans avoir besoin de recharger la page.
+
+
 cd /home/qordoux/Documents/ft_transcendence/frontend && npx tsc 
 ---> compile les fichiers TypeScript (.ts) du frontend en JavaScript.
 
@@ -10,13 +20,13 @@ Pour tester le websocket, ouvrir la console du navigateur via inspecter l'elemen
 --> envoyer la cmd  sendPing() et il y aura une reponse du serveur
 --> sendMessage('move', { y: 120 });
 --> sendMessage('move', { y: "abc" });
+--> sendMessage('score', { left: 1, right: 2});
+
+Possible d'ouvrir 2 clients, ils seront par default dans la meme room
+et tu pourras voir que le client recois les infos des autres
+
+Actu quand on se connecte on rejoint une room et tous les users dans la meme
+room recoivent les udpate faite par les autres players
 
 
-Schéma du fonctionnement WebSocket :
 
-[ Navigateur (frontend) ]
-          ⇄  (WebSocket)
-[ Serveur Node.js (backend) ]
-
-Explication :
-Le WebSocket permet une communication bidirectionnelle : le navigateur peut envoyer des messages au serveur, et le serveur peut répondre ou envoyer des messages à tout moment au navigateur, sans avoir besoin de recharger la page.
