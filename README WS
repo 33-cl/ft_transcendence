@@ -96,3 +96,23 @@ sendMessage('score', { left: 1, right: 2 });
 Tu envoies TOUJOURS du JSON (texte) sur le réseau.
 JSON.stringify pour envoyer
 JSON.parse pour recevoir (si besoin)
+
+---
+
+## 9. Fonctionnement détaillé des sockets et rooms
+
+- Chaque client qui se connecte au backend via WebSocket reçoit un **socket** unique (identifiant `socket.id`).
+- Les **rooms** sont des groupes logiques : elles n'ont pas de socket propre, ce sont juste des noms auxquels on peut associer plusieurs sockets (clients).
+- Un client peut demander à rejoindre une room (événement `joinRoom`).
+    - Avant de rejoindre une nouvelle room, le serveur retire le client de son ancienne room (s'il en avait une).
+    - Le serveur cherche une room existante avec la capacité demandée, ou en crée une nouvelle.
+    - Le client rejoint la room trouvée/créée.
+    - Le serveur informe le client de la room rejointe (`roomJoined`).
+- À tout moment, tu peux envoyer un message à tous les membres d'une room avec :
+
+```ts
+io.to('roomName').emit('event', data);
+```
+
+- Quand un client se déconnecte, il est retiré de sa room.
+- Résumé : **le socket appartient au client, la room est juste un regroupement logique de sockets côté serveur.**

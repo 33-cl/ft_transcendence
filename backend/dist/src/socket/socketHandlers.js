@@ -1,5 +1,15 @@
 "use strict";
-// src/socket/socketHandlers.ts
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   socketHandlers.ts                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
+/*   Updated: 2025/05/31 16:49:08 by qordoux          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = registerSocketHandlers;
 const roomManager_1 = require("./roomManager");
