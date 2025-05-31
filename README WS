@@ -1,36 +1,77 @@
-Schéma du fonctionnement WebSocket :
+# Guide rapide – ft_transcendence WebSocket
 
+## 1. Structure du projet
+
+- Dist -> contient les fichiers .js generes a partir des fichiers TypeScript (.ts)
+
+## 2. Schema du fonctionnement WebSocket
+
+```
 [ Navigateur (frontend) ]
-          ⇄  (WebSocket)
+          <->  (WebSocket)
 [ Serveur Node.js (backend) ]
+```
 
-Explication :
-Le WebSocket permet une communication bidirectionnelle : le navigateur peut envoyer des messages au serveur, et le serveur peut répondre ou envoyer des messages à tout moment au navigateur, sans avoir besoin de recharger la page.
+Le WebSocket permet une communication bidirectionnelle :  
+Le navigateur peut envoyer des messages au serveur, et le serveur peut repondre ou envoyer des messages a tout moment au navigateur, sans recharger la page.
 
+---
 
-cd /home/qordoux/Documents/ft_transcendence/frontend && npx tsc 
----> compile les fichiers TypeScript (.ts) du frontend en JavaScript.
+## 3. Installation & Compilation
 
-cd /home/qordoux/Documents/ft_transcendence/backend && node server.js
----> lance le serveur Node.js en exécutant le fichier server.js. Cela démarre le backend de l’application
+```sh
+cd /home/qordoux/Documents/ft_transcendence/frontend && npx tsc
+# Compile les fichiers TypeScript (.ts) du frontend en JavaScript.
 
-Telecharger l'extension live server, ouvrir le fichier index.html ---> clic droit ---> open with live server
+cd /home/qordoux/Documents/ft_transcendence/backend && npx tsc && node dist/server.js
+# Compile puis lance le serveur Node.js (backend).
+```
 
-Pour tester le websocket, ouvrir la console du navigateur via inspecter l'element 
+---
 
---> socket.emit('joinRoom', { maxPlayers: 4 }); 
-ou 2 pour tester les room
---> envoyer la cmd  sendPing() et il y aura une reponse du serveur
---> sendMessage('move', { y: 120 });
---> sendMessage('move', { y: "abc" }); -->erroneus one, ne doit pas s'envoyer aux autres car je verifie le type du score
---> sendMessage('score', { left: 1, right: 2});
+## 4. Lancer le frontend
 
+- Installer l'extension Live Server sur VS Code.
+- Ouvrir le fichier index.html -> clic droit -> Open with Live Server.
 
-Possible d'ouvrir 2 clients, ils seront par default dans la meme room
-et tu pourras voir que le client recois les infos des autres
+---
 
-Actu quand on se connecte on rejoint une room et tous les users dans la meme
-room recoivent les udpate faite par les autres players
+## 5. Tester le WebSocket
 
+Dans la console du navigateur (F12) :
 
+```js
+sendPing(); // Reponse du serveur attendue
+sendMessage('move', { y: 120 }); // Message valide
+sendMessage('move', { y: "abc" }); // Message invalide, ignore cote serveur
+```
 
+---
+
+## 6. Tester les rooms
+
+- Possible d'ouvrir 2 clients : ils seront par defaut dans la meme room et recevront les infos des autres.
+- Pour tester la creation de rooms :
+
+```js
+socket.emit('joinRoom', { maxPlayers: 4 }); // Ou 2 pour tester les rooms a 2 joueurs
+sendMessage('score', { left: 1, right: 2 });
+```
+
+---
+
+## 7. Fonctionnement des rooms
+
+- Quand on se connecte, on rejoint une room automatiquement.
+- Tous les users dans la meme room recoivent les updates des autres joueurs.
+- Si un client refait plusieurs fois joinRoom, il quitte l'ancienne room avant de rejoindre la nouvelle (un seul room a la fois).
+
+---
+
+## 8. Problemes frequents
+
+- Erreur "Cannot find module dist/server.js"
+  -> Compile d'abord avec npx tsc dans le backend.
+
+- Pas de reponse WebSocket
+  -> Verifie que le backend est bien lance et que le frontend est ouvert avec Live Server.
