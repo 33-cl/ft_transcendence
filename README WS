@@ -51,7 +51,7 @@ sendMessage('move', { y: "abc" }); // Message invalide, ignore cote serveur
 ## 6. Tester les rooms
 
 - Possible d'ouvrir 2 clients : ils seront par defaut dans la meme room et recevront les infos des autres.
-- Pour tester la creation de rooms :
+- Pour tester la creation de rooms : (dans la console du nav, ouvrir 2 nav ou + pour tester la com entre clients d'une room)
 
 ```js
 socket.emit('joinRoom', { maxPlayers: 4 }); // Ou 2 pour tester les rooms a 2 joueurs
