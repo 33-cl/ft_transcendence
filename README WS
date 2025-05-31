@@ -1,5 +1,10 @@
 # Guide rapide – ft_transcendence WebSocket
 
+# 0. Installer les dépendances
+
+cd frontend && npm install
+cd ../backend && npm install
+
 ## 1. Structure du projet
 
 - Dist -> contient les fichiers .js generes a partir des fichiers TypeScript (.ts)
@@ -19,6 +24,7 @@ Le navigateur peut envoyer des messages au serveur, et le serveur peut repondre 
 
 ## 3. Installation & Compilation
 
+!!!! change le chemin mdr
 ```sh
 cd /home/qordoux/Documents/ft_transcendence/frontend && npx tsc
 # Compile les fichiers TypeScript (.ts) du frontend en JavaScript.
