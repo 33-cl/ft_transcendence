@@ -18,16 +18,31 @@ const io = new Server(server, {
   }
 });
 
-// Gestion des connexions WebSocket
-io.on('connection', (socket) =>{
+// Gestion des rooms (salles de jeu)
+const rooms = {};
+
+io.on('connection', (socket) => {
 	fastify.log.info(`Client connecté : ${socket.id}`);
-	socket.on('ping', (data) => {
-	fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);
-	socket.emit('pong', { message: 'Hello client!' });
+
+	// Pour l'instant, chaque joueur rejoint une room par défaut
+	const defaultRoom = 'room1';
+	socket.join(defaultRoom);//permet par la suite de send msg a tous les joueurs de cette room
+	// Si la room n'existe pas, on la cree
+	if (!rooms[defaultRoom])
+	{
+		rooms[defaultRoom] = { players: [] };
+	}
+	rooms[defaultRoom].players.push(socket.id);
+	fastify.log.info(`Joueur ${socket.id} rejoint la room ${defaultRoom}`);
+
+	socket.on('ping', (data) =>
+	{
+		fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);
+		socket.emit('pong', { message: 'Hello client!' });
 	});
 
 	// Handler pour les messages (envoyés avec socket.send)
-	socket.on('message', (msg) =>{
+	socket.on('message', (msg) => {
 	let message;
 	try {
 		message = JSON.parse(msg);
@@ -40,26 +55,42 @@ io.on('connection', (socket) =>{
 	{
 		if (typeof message.data !== 'object' || typeof message.data.y !== 'number')
 		{
-		fastify.log.warn(`Move invalide: ${JSON.stringify(message)}`);
-		return;
+			fastify.log.warn(`Move invalide: ${JSON.stringify(message)}`);
+			return;
 		}
 		fastify.log.info(`Move reçu: y=${message.data.y}`);
-		// Ici tu peux relayer le mouvement aux autres joueurs, etc.
+		// Relayer le mouvement aux autres joueurs de la même room
+		socket.to(defaultRoom).emit('message', msg);
 	}
 	else if (message.type === 'score')
 	{
-		// Exemple de validation pour le score
 		if (typeof message.data !== 'object' || typeof message.data.left !== 'number' || typeof message.data.right !== 'number')
 		{
-		fastify.log.warn(`Score invalide: ${JSON.stringify(message)}`);
-		return;
+			fastify.log.warn(`Score invalide: ${JSON.stringify(message)}`);
+			return;
 		}
 		fastify.log.info(`Score reçu: left=${message.data.left}, right=${message.data.right}`);
-		// Ici tu peux relayer le score, etc.
+		// Relayer le score aux autres joueurs de la même room
+		socket.to(defaultRoom).emit('message', msg);
 	}
 	else
 	{
 		fastify.log.warn(`Type de message inconnu: ${message.type}`);
+	}
+	});
+
+	socket.on('disconnect', () =>
+	{
+	// Retirer le joueur de la room
+	if (rooms[defaultRoom])
+	{
+		rooms[defaultRoom].players = rooms[defaultRoom].players.filter(id => id !== socket.id);
+		fastify.log.info(`Joueur ${socket.id} quitte la room ${defaultRoom}`);
+		// Si la room est vide, on peut la supprimer
+		if (rooms[defaultRoom].players.length === 0)
+		{
+			delete rooms[defaultRoom];
+		}
 	}
 	});
 });

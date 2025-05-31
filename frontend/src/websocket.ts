@@ -50,22 +50,21 @@ function sendMessage(type: MessageType, data: MessageData)
     socket.send(msg);
 }
 
-// Fonction centrale de gestion des messages reçus, est appelée à chaque fois qu'un socket.send(abc) est fait
-//event contient les données envoyées par le serveur
-socket.onmessage = function(event: MessageEvent)
-{
-    let message;//let ca declare une variable 
+// Handler pour les messages relayés par le serveur (socket.io)
+socket.on('message', (data: any) => {
+    let message;
     try {
-        message = JSON.parse(event.data);//.parse decode le json en vrai objet JS
+        message = typeof data === "string" ? JSON.parse(data) : data;
     } catch (e) {
-        console.error('Message non JSON:', event.data);
+        console.error('Message non JSON:', data);
         return;
     }
     handleWebSocketMessage(message);
-};
+});
 
 function handleWebSocketMessage(message: { type: MessageType, data: MessageData })
 {
+	console.log("Message reçu du serveur:", message);
     switch (message.type)
 	{
         case 'move':
