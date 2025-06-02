@@ -27,13 +27,11 @@ button:active {
 #map{
     margin: 20px auto;
     background-color: black;
-
 }
 
 #score{
     font-size: 30px;
     font-weight: bold;
-   /* margin: 20px;*/
     color: #f0f0f0;
 }
 
