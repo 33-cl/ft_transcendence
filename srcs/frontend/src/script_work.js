@@ -16,8 +16,8 @@ let ballPaused = false; // Indique si la balle est en pause
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
 let ballRadius = 20;
-let ballSpeedX = 8;
-let ballSpeedY = 8;
+let ballSpeedX = 2;
+let ballSpeedY = 2;
 
 //Score
 let leftScore;

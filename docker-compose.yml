@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: srcs/docker/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./srcs/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: srcs/docker/backend/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./srcs/backend:/app
+      - /app/node_modules
+    restart: unless-stopped 
