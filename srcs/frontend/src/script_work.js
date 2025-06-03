@@ -2,6 +2,7 @@
 const canvas = document.getElementById("map");
 const button = document.getElementById("startBtn");
 const ctx = canvas.getContext("2d");
+const scoreElement = document.getElementById("score");
 
 //Raquette
 const paddleMargin = 10;
@@ -36,6 +37,7 @@ button.addEventListener("click", function(){
     rightScore =  0;
     updateScore();
     canvas.style.display = "block";
+    scoreElement.style.display = "block"; // Affiche le score
     button.style.display = "none";
     winnerDisplay.textContent = ""; // Efface le message de victoire
     document.body.style.backgroundColor = "black";
@@ -91,6 +93,9 @@ function endGame() {
     button.style.position = "absolute"; // Position absolue pour pouvoir le déplacer
     button.style.left = "47%"; // Exemple : centré horizontalement
     button.style.display = "block";
+    
+    // Cache le score à la fin du jeu
+    scoreElement.style.display = "none";
 }
 
 function updateBall() 
