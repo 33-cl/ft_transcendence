@@ -1,19 +1,19 @@
 all: build up
 
 up:
-	docker-compose up -d
+	docker compose up -d
 
 down:
-	docker-compose down
+	docker compose down
 
 build:
-	docker-compose build
+	docker compose build
 
 rebuild:
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 clean: down
 	docker system prune -af
