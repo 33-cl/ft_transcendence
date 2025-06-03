@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleMessage = handleMessage;
-const roomManager_1 = require("./roomManager");
-function handleMessage(socket, fastify, msg) {
+import { getPlayerRoom } from './roomManager.js';
+export function handleMessage(socket, fastify, msg) {
     let message;
     try {
         message = JSON.parse(msg);
@@ -12,7 +9,7 @@ function handleMessage(socket, fastify, msg) {
         return;
     }
     // Trouver la room du joueur pour pouvoir ensuite utilisr playerRoom pour l'envoi de messages
-    const playerRoom = (0, roomManager_1.getPlayerRoom)(socket.id);
+    const playerRoom = getPlayerRoom(socket.id);
     if (!playerRoom) {
         fastify.log.warn(`Aucune room trouvée pour le joueur ${socket.id}`);
         return;

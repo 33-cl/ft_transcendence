@@ -1,7 +1,7 @@
 // src/socket/messageHandlers.ts
 import { Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
-import { getPlayerRoom } from './roomManager';
+import { getPlayerRoom } from './roomManager.js';
 
 export function handleMessage(socket: Socket, fastify: FastifyInstance, msg: string)
 {

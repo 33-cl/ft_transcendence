@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/05/31 16:49:08 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/03 16:40:03 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,8 @@
 
 import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
-import { getPlayerRoom, findOrCreateRoom, removePlayerFromRoom } from './roomManager';
-import { handleMessage } from './messageHandlers';
+import { getPlayerRoom, findOrCreateRoom, removePlayerFromRoom } from './roomManager.js';
+import { handleMessage } from './messageHandlers.js';
 
 
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)

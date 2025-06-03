@@ -23,4 +23,4 @@ services:
     volumes:
       - ./srcs/backend:/app
       - /app/node_modules
-    restart: unless-stopped 
+    restart: unless-stopped

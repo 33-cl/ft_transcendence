@@ -3,7 +3,7 @@
 
 declare var io: any;
 
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:8080"); // Port backend (socket.io) selon docker-compose.yml et exigences 42
 
 // Quand la connexion avec le serveur est établie, ce code s'exécute
 socket.on("connect", () => {

@@ -1,45 +1,44 @@
-"use strict";
 // server.ts
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const fastify_1 = __importDefault(require("fastify"));
-const socket_io_1 = require("socket.io");
-const http_1 = __importDefault(require("http"));
+import fastify from 'fastify';
+import { Server } from 'socket.io';
+import http from 'http';
+import fastifyCors from '@fastify/cors';
 // 1. On importe Fastify
-const app = (0, fastify_1.default)({ logger: true });
+const app = fastify({ logger: true });
+// Enregistre le plugin CORS pour Fastify
+await app.register(fastifyCors, {
+    origin: [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
+    credentials: true
+});
 // Création du serveur HTTP à partir de Fastify
-const server = http_1.default.createServer(app.server);
+const server = http.createServer(app.server);
 // Configuration de socket.io avec CORS
-const io = new socket_io_1.Server(server, {
+const io = new Server(server, {
     cors: {
-        origin: "http://127.0.0.1:5500", //5500 car c'est ce qui est utilise par live server
-        methods: ["GET", "POST"]
+        origin: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+        ],
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 // Import des handlers socket.io + les executes 
-const socketHandlers_1 = __importDefault(require("./src/socket/socketHandlers"));
-(0, socketHandlers_1.default)(io, app);
+import registerSocketHandlers from './src/socket/socketHandlers.js';
+registerSocketHandlers(io, app);
 // 2. Une route GET très simple
-app.get('/', (request, reply) => __awaiter(void 0, void 0, void 0, function* () {
+app.get('/', async (request, reply) => {
     return { message: 'Bienvenue sur ft_transcendence backend' };
-}));
+});
 //Enregistre la route depuis un fichier externe
-const ping_1 = __importDefault(require("./src/routes/ping"));
-const users_1 = __importDefault(require("./src/routes/users"));
-app.register(ping_1.default);
-app.register(users_1.default);
+import pingRoutes from './src/routes/ping.js';
+import usersRoutes from './src/routes/users.js';
+app.register(pingRoutes);
+app.register(usersRoutes);
 // Lancement du serveur HTTP (Fastify + socket.io)
-server.listen(3000, () => {
-    app.log.info(`✅ Serveur lancé sur http://localhost:3000`);
+server.listen(8080, () => {
+    app.log.info(`✅ Serveur lancé sur http://localhost:8080`);
 });

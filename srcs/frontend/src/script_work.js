@@ -10,15 +10,15 @@ const paddleWidth = 10;
 const paddleCollisionSurface = paddleMargin + paddleWidth;
 const paddleHeight = 110;
 let leftPaddleY = rightPaddleY = canvas.height / 2 - paddleHeight / 2; //position du padd
-let paddleSpeed = 10
+let paddleSpeed = 11;
 
 //Balle
 let ballPaused = false; // Indique si la balle est en pause
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
-let ballRadius = 20;
-let ballSpeedX = 2;
-let ballSpeedY = 2;
+let ballRadius = 17;
+let ballSpeedX = 7;
+let ballSpeedY = 7;
 
 //Score
 let leftScore;
