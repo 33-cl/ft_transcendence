@@ -1,16 +1,10 @@
-"use strict";
 // src/socket/roomManager.ts
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.findOrCreateRoom = findOrCreateRoom;
-exports.removePlayerFromRoom = removePlayerFromRoom;
-exports.getPlayerRoom = getPlayerRoom;
-exports.getRoomMaxPlayers = getRoomMaxPlayers;
 // record c un type typescript qui permet de creer un objet avec des cles dynamiques
 // on utilise un objet pour stocker les rooms, ou la cle est le nom de la room et la valeur est un objet room
 const rooms = {};
 // Compteur pour generer des noms de room qui leur sont propre
 let roomCounter = 1;
-function findOrCreateRoom(maxPlayers, socketId, log) {
+export function findOrCreateRoom(maxPlayers, socketId, log) {
     //ne peut contenir qu'une str ou null, par default est a undefined et trigger !assignedRoom
     let assignedRoom = null;
     //itere sur les rooms existantes
@@ -34,7 +28,7 @@ function findOrCreateRoom(maxPlayers, socketId, log) {
     return assignedRoom;
 }
 // Retirer le joueur de sa room
-function removePlayerFromRoom(socketId, log) {
+export function removePlayerFromRoom(socketId, log) {
     let playerRoom = null;
     for (const roomName in rooms) {
         if (rooms[roomName].players.includes(socketId)) {
@@ -52,7 +46,7 @@ function removePlayerFromRoom(socketId, log) {
 }
 //export rend la fonction accessible par d'autres fichiers
 //:string | null est le retour de la fct, une str ou null
-function getPlayerRoom(socketId) {
+export function getPlayerRoom(socketId) {
     for (const roomName in rooms) {
         if (rooms[roomName].players.includes(socketId)) {
             return roomName;
@@ -60,9 +54,8 @@ function getPlayerRoom(socketId) {
     }
     return null;
 }
-function getRoomMaxPlayers(roomName) {
-    var _a, _b;
+export function getRoomMaxPlayers(roomName) {
     // retourne le nombre maximum de joueurs pour une room donnee
     // si la room n existe pas, retourne null
-    return (_b = (_a = rooms[roomName]) === null || _a === void 0 ? void 0 : _a.maxPlayers) !== null && _b !== void 0 ? _b : null;
+    return rooms[roomName]?.maxPlayers ?? null;
 }

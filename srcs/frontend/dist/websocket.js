@@ -1,7 +1,7 @@
 "use strict";
 // websocket.ts
 //'io' est déjà disponible dans la page via le CDN socket.io-clients
-const socket = io("http://localhost:3000");
+const socket = io("http://localhost:8080"); // Port backend (socket.io) selon docker-compose.yml et exigences 42
 // Quand la connexion avec le serveur est établie, ce code s'exécute
 socket.on("connect", () => {
     // Affiche l'identifiant unique de la connexion dans la console

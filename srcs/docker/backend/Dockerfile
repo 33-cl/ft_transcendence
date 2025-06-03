@@ -4,12 +4,12 @@ WORKDIR /app
 
 COPY ./srcs/backend/package*.json ./
 
-RUN npm install -g typescript ts-node
-
 RUN npm install
 
 COPY ./srcs/backend/ ./
 
+RUN npx tsc
+
 EXPOSE 8080
 
-CMD ["ts-node", "server.ts"] 
+CMD ["node", "dist/server.js"]
