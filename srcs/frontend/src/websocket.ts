@@ -51,7 +51,8 @@ function sendMessage(type: MessageType, data: MessageData)
 }
 
 // Handler pour les messages relayés par le serveur (socket.io)
-socket.on('message', (data: any) => {
+socket.on('message', (data: any) =>
+{
     let message;
     try {
         message = typeof data === "string" ? JSON.parse(data) : data;
