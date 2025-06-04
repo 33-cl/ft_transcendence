@@ -9,9 +9,10 @@ export function handleMessage(socket: Socket, fastify: FastifyInstance, msg: str
 	try {
 	message = JSON.parse(msg);
 	} catch (e) {
-	fastify.log.warn(`Message non JSON reçu: ${msg}`);
-	return;
+		fastify.log.warn(`Message non JSON reçu: ${msg}`);
+		return;
 	}
+
 	// Trouver la room du joueur pour pouvoir ensuite utilisr playerRoom pour l'envoi de messages
 	const playerRoom = getPlayerRoom(socket.id);
 	if (!playerRoom)
