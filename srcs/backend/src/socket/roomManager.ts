@@ -20,7 +20,9 @@ export function roomExists(roomName: string): boolean
 // Helper: ajouter un joueur à une room existante
 export function addPlayerToRoom(roomName: string, socketId: string, log: (msg: string) => void): boolean
 {
-	if (rooms[roomName] && !rooms[roomName].players.includes(socketId))
+	if (rooms[roomName]
+		&& !rooms[roomName].players.includes(socketId)
+		&& rooms[roomName].players.length < rooms[roomName].maxPlayers)
 	{
 		rooms[roomName].players.push(socketId);
 		log(`Joueur ${socketId} ajouté à la room ${roomName}`);

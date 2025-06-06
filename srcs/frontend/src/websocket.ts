@@ -80,3 +80,33 @@ function handleWebSocketMessage(message: { type: MessageType, data: MessageData 
             console.warn('Type de message inconnu:', message.type);
     }
 }
+
+// Fonction pour rejoindre ou créer automatiquement une room 1v1
+async function joinOrCreate1v1Room() {
+    // 1. Récupère la liste des rooms
+    const res = await fetch('http://localhost:8080/rooms');
+    const data = await res.json();
+    let roomName = null;
+    // 2. Cherche une room 1v1 non pleine
+    for (const [name, room] of Object.entries(data.rooms)) {
+        const r: any = room;
+        if (r.maxPlayers === 2 && r.players.length < 2) {
+            roomName = name;
+            break;
+        }
+    }
+    // 3. Si aucune room dispo, en crée une
+    if (!roomName) {
+        const res2 = await fetch('http://localhost:8080/rooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maxPlayers: 2 })
+        });
+        const data2 = await res2.json();
+        roomName = data2.roomName;
+    }
+    // 4. Rejoint la room trouvée ou créée
+    socket.emit('joinRoom', { roomName });
+}
+// Expose la fonction pour test dans la console navigateur
+(window as any).joinOrCreate1v1Room = joinOrCreate1v1Room;
