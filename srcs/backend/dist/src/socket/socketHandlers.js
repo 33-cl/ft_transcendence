@@ -6,31 +6,34 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/03 16:40:03 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/06 17:35:33 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-import { getPlayerRoom, findOrCreateRoom, removePlayerFromRoom } from './roomManager.js';
+import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom } from './roomManager.js';
 import { handleMessage } from './messageHandlers.js';
 export default function registerSocketHandlers(io, fastify) {
     io.on('connection', (socket) => {
         fastify.log.info(`Client connecté : ${socket.id}`);
-        // Handler pour rejoindre une room dynamiquement
+        // Handler pour rejoindre une room existante (créée via REST)
         socket.on('joinRoom', (data) => {
-            // Avant de rejoindre une nouvelle room, retirer le joueur de l'ancienne
+            const { roomName } = data || {};
+            if (!roomName || typeof roomName !== 'string') {
+                socket.emit('error', { error: 'roomName requis' });
+                return;
+            }
+            if (!roomExists(roomName)) {
+                socket.emit('error', { error: 'Room does not exist' });
+                return;
+            }
             const previousRoom = getPlayerRoom(socket.id);
             if (previousRoom) {
                 removePlayerFromRoom(socket.id, fastify.log.info.bind(fastify.log));
                 socket.leave(previousRoom);
             }
-            // 4 ou 2 players dans la room
-            const maxPlayers = data && data.maxPlayers ? data.maxPlayers : 2;
-            // itere sur les rooms existantes et cherche une room avec la capacitee demandee (2 ou 4)
-            // le dernier parametre permet d'ecrire dans les logs avec le bon this
-            const assignedRoom = findOrCreateRoom(maxPlayers, socket.id, fastify.log.info.bind(fastify.log));
-            socket.join(assignedRoom);
-            fastify.log.info(`Joueur ${socket.id} rejoint la room ${assignedRoom} (max ${maxPlayers})`);
-            // On informe le client de la room rejointe
-            socket.emit('roomJoined', { room: assignedRoom, maxPlayers });
+            addPlayerToRoom(roomName, socket.id, fastify.log.info.bind(fastify.log));
+            socket.join(roomName);
+            fastify.log.info(`Joueur ${socket.id} rejoint la room ${roomName}`);
+            socket.emit('roomJoined', { room: roomName });
         });
         socket.on('ping', (data) => {
             fastify.log.info(`Ping reçu : ${JSON.stringify(data)}`);

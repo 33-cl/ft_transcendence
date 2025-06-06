@@ -8,79 +8,67 @@ export interface Room
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
 // on utilise un objet pour stocker les rooms, ou la cle est le nom de la room et la valeur est un objet room
-const rooms: Record<string, Room> = {};
+export const rooms: Record<string, Room> = {};
+export let roomCounter = 1;
 
-// Compteur pour generer des noms de room qui leur sont propre
-let roomCounter = 1;
-
-export function findOrCreateRoom(maxPlayers: number, socketId: string, log: (msg: string) => void): string
+// Helper: vérifier si une room existe
+export function roomExists(roomName: string): boolean
 {
-	//ne peut contenir qu'une str ou null, par default est a undefined et trigger !assignedRoom
-	let assignedRoom: string | null = null;
-	//itere sur les rooms existantes
+  return !!rooms[roomName];
+}
+
+// Helper: ajouter un joueur à une room existante
+export function addPlayerToRoom(roomName: string, socketId: string, log: (msg: string) => void): boolean
+{
+	if (rooms[roomName] && !rooms[roomName].players.includes(socketId))
+	{
+		rooms[roomName].players.push(socketId);
+		log(`Joueur ${socketId} ajouté à la room ${roomName}`);
+		return true;
+	}
+	return false;
+}
+
+// Retirer le joueur de sa room
+export function removePlayerFromRoom(socketId: string, log: (msg: string) => void)
+{
+	let playerRoom: string | null = null;
 	for (const roomName in rooms)
 	{
-		//cherche une room avec la capacitee demandee (2 ou 4)
-		if (rooms[roomName].maxPlayers === maxPlayers && rooms[roomName].players.length < maxPlayers)
+		if (rooms[roomName].players.includes(socketId))
 		{
-			log(`Room trouvée : ${roomName} (max ${maxPlayers})`);
-			assignedRoom = roomName;
+			playerRoom = roomName;
 			break;
 		}
 	}
-	//aucune room existante ne repond a la demande, on en cree une nouvelle
-	if (!assignedRoom)
+	if (playerRoom)
 	{
-		//donne un nom unique a la nouvelle room
-		assignedRoom = `room${roomCounter++}`;
-		// on ajoute la nouvelle room a l'objet rooms
-		rooms[assignedRoom] = { players: [], maxPlayers };
-	}
-	// ajoute le joueur a la room
-	rooms[assignedRoom].players.push(socketId);
-	return assignedRoom;
-	}
-
-	// Retirer le joueur de sa room
-	export function removePlayerFromRoom(socketId: string, log: (msg: string) => void)
-	{
-		let playerRoom: string | null = null;
-		for (const roomName in rooms)
+		rooms[playerRoom].players = rooms[playerRoom].players.filter(id => id !== socketId);
+		log(`Joueur ${socketId} quitte la room ${playerRoom}`);
+		if (rooms[playerRoom].players.length === 0)
 		{
-			if (rooms[roomName].players.includes(socketId))
-			{
-				playerRoom = roomName;
-				break;
-			}
-		}
-		if (playerRoom)
-		{
-			rooms[playerRoom].players = rooms[playerRoom].players.filter(id => id !== socketId);
-			log(`Joueur ${socketId} quitte la room ${playerRoom}`);
-			if (rooms[playerRoom].players.length === 0)
-			{
-				delete rooms[playerRoom];
-			}
+			delete rooms[playerRoom];
 		}
 	}
+}
 
-	//export rend la fonction accessible par d'autres fichiers
-	//:string | null est le retour de la fct, une str ou null
-	export function getPlayerRoom(socketId: string): string | null
+// Helper: récupérer la room d'un joueur
+export function getPlayerRoom(socketId: string): string | null
+{
+	for (const roomName in rooms)
 	{
-		for (const roomName in rooms)
+		if (rooms[roomName].players.includes(socketId))
 		{
-			if (rooms[roomName].players.includes(socketId))
-			{
-				return roomName;
-			}
+			return roomName;
 		}
-		return null;
 	}
+	return null;
+}
 
-	export function getRoomMaxPlayers(roomName: string): number | null
-	{
-		// retourne le nombre maximum de joueurs pour une room donnee
-		// si la room n existe pas, retourne null
-		return rooms[roomName]?.maxPlayers ?? null;
-	}
+// Helper: récupérer la capacité max d'une room
+export function getRoomMaxPlayers(roomName: string): number | null
+{
+	// retourne le nombre maximum de joueurs pour une room donnee
+	// si la room n existe pas, retourne null
+	return rooms[roomName]?.maxPlayers ?? null;
+}
