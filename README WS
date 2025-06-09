@@ -1,118 +1,74 @@
-# Guide rapide – ft_transcendence WebSocket
+# ft_transcendence – WebSocket & API Rooms
 
-## 0. Installer les dépendances
+## 1. Principe général
 
-```sh
-cd frontend && npm install
-cd ../backend && npm install
-```
-
-## 1. Structure du projet
-
-- `dist/` → fichiers .js générés à partir des fichiers TypeScript (.ts)
-
-## 2. Schéma du fonctionnement WebSocket
-
-```
-[ Navigateur (frontend) ]
-      <->  (WebSocket)
-[ Serveur Node.js (backend) ]
-```
-
-Le WebSocket permet une communication bidirectionnelle : le navigateur peut envoyer des messages au serveur, et le serveur peut répondre ou envoyer des messages à tout moment, sans recharger la page.
+- Le backend expose une **API REST** pour créer/lister/supprimer des rooms (voir `/rooms`).
+- Les rooms sont des groupes logiques : chaque room a un nom, une capacité (`maxPlayers`), et une liste de sockets (joueurs).
+- Le frontend utilise cette API pour créer ou rejoindre dynamiquement des rooms de n'importe quelle taille (1v1, 2v2, etc.).
+- La logique anti-zap empêche de zapper entre rooms non pleines du même type (voir plus bas).
 
 ---
 
-## 3. Compilation & Lancement
+## 2. API REST – Gestion des rooms
 
-**En local (hors Docker)**
-```sh
-cd frontend && npx tsc
-cd ../backend && npx tsc && node dist/server.js
-```
-
-**Avec Docker (recommandé)**
-```sh
-make re
-```
-- Le backend recompile automatiquement le TypeScript à chaque démarrage du conteneur.
-- Accès : http://localhost:3000 (frontend), http://localhost:8080 (backend)
-
----
-
-## 4. Lancer le frontend
-
-- Installer l'extension Live Server sur VS Code.
-- Ouvrir `index.html` → clic droit → Open with Live Server.
+- **Créer une room**
+    ```http
+    POST /rooms
+    Body: { "maxPlayers": 2 } // ou 4, etc.
+    → Retour: { roomName, maxPlayers }
+    ```
+- **Lister toutes les rooms**
+    ```http
+    GET /rooms
+    → Retour: { rooms: { [roomName]: { players, maxPlayers } } }
+    ```
+- **Supprimer une room**
+    ```http
+    DELETE /rooms/:roomName
+    → Retour: { success: true }
+    ```
 
 ---
 
-## 5. Tester le WebSocket
+## 3. Fonctionnement du join côté frontend
 
-Dans la console du navigateur (F12) :
-```js
-sendPing(); // Réponse du serveur attendue
-sendMessage('move', { y: 120 }); // Message valide
-sendMessage('move', { y: "abc" }); // Message invalide, ignoré côté serveur
-```
-
----
-
-## 6. Tester les rooms (multijoueur)
-
-- Ouvre plusieurs navigateurs ou onglets pour simuler plusieurs clients.
-- Pour rejoindre/créer une room de la taille souhaitée :
-
-```js
-joinOrCreateRoom(2); // Room 1v1
-joinOrCreateRoom(4); // Room 2v2
-```
-- La fonction `joinOrCreateRoom(maxPlayers)` est générique et gère tout (création, join, anti-zap).
-- La room rejointe/créée s'affiche dans la console.
+- Utilise la fonction générique :
+    ```js
+    joinOrCreateRoom(maxPlayers); // 2 pour 1v1, 4 pour 2v2, etc.
+    ```
+- Cette fonction :
+    1. Cherche une room existante non pleine du bon type via l'API.
+    2. Si aucune, crée une room via l'API REST.
+    3. Demande au backend WebSocket de rejoindre la room trouvée/créée.
+    4. Affiche la room rejointe dans la console.
+- **Anti-zap** : tu ne peux pas zapper entre rooms non pleines du même type (ex : 1v1 → 1v1), mais tu peux zapper entre types différents (1v1 ↔ 2v2).
 
 ---
 
-## 7. Fonctionnement des rooms & sécurité anti-zap
+## 4. Tester le fonctionnement des rooms
 
-- À la connexion, chaque client rejoint automatiquement une room adaptée.
-- Tous les users d'une même room reçoivent les updates des autres.
-- **Anti-zap** : si tu es déjà dans une room non pleine d'un certain type (ex : 1v1), tu ne peux PAS zapper vers une autre room du même type tant qu'elle n'est pas pleine. Tu peux cependant zapper vers une room d'un autre type (ex : 2v2 ↔ 1v1).
+- Ouvre plusieurs navigateurs ou onglets.
+- Dans la console navigateur :
+    ```js
+    joinOrCreateRoom(2); // pour tester le 1v1
+    joinOrCreateRoom(4); // pour tester le 2v2
+    ```
+- Vérifie dans la console que la room rejointe correspond à la taille demandée.
+- Utilise l'API REST (`GET /rooms`) pour voir l'état des rooms en temps réel (ex : via Postman, curl, ou navigateur).
+- Pour tester l'échange de messages dans une room :
+    ```js
+    sendMessage('move', { y: 120 });
+    sendMessage('score', { left: 1, right: 2 });
+    ```
+
+---
+
+## 5. Résumé technique
+
+- Les rooms sont créées et gérées côté backend via l'API REST.
+- Le frontend ne fait que demander à rejoindre/créer une room de la taille voulue.
+- La sécurité anti-zap est gérée côté backend.
 - Un seul room à la fois par client.
-- Quand un client se déconnecte, il est retiré de sa room.
-
----
-
-## 8. Problèmes fréquents
-
-- Erreur "Cannot find module dist/server.js" → Compile d'abord avec npx tsc dans le backend ou relance le conteneur.
-- Pas de réponse WebSocket → Vérifie que le backend est bien lancé et que le frontend est ouvert avec Live Server.
-
----
-
-## 9. API et exemples utiles
-
-- **Rejoindre/créer une room** :
-```js
-joinOrCreateRoom(maxPlayers); // maxPlayers = 2 (1v1), 4 (2v2), etc.
-```
-- **Envoyer un message à tous les membres d'une room (backend)** :
-```ts
-io.to('roomName').emit('event', data);
-```
-- **Envoyer un message structuré (frontend)** :
-```js
-sendMessage('move', { y: 120 });
-sendMessage('score', { left: 1, right: 2 });
-```
-
----
-
-## 10. Résumé technique
-
-- Chaque client connecté reçoit un `socket.id` unique.
-- Les rooms sont des groupes logiques : un nom, une capacité (`maxPlayers`), une liste de sockets.
-- La logique anti-zap est gérée côté backend : impossible de zapper entre rooms non pleines du même type, mais possible entre types différents.
-- La fonction frontend `joinOrCreateRoom(maxPlayers)` est la seule à utiliser pour tester toutes les tailles de rooms.
 
 ---
 
