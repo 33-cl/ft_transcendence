@@ -1,118 +1,119 @@
 # Guide rapide – ft_transcendence WebSocket
 
-# 0. Installer les dépendances
+## 0. Installer les dépendances
 
+```sh
 cd frontend && npm install
 cd ../backend && npm install
+```
 
 ## 1. Structure du projet
 
-- Dist -> contient les fichiers .js generes a partir des fichiers TypeScript (.ts)
+- `dist/` → fichiers .js générés à partir des fichiers TypeScript (.ts)
 
-## 2. Schema du fonctionnement WebSocket
+## 2. Schéma du fonctionnement WebSocket
 
 ```
 [ Navigateur (frontend) ]
-          <->  (WebSocket)
+      <->  (WebSocket)
 [ Serveur Node.js (backend) ]
 ```
 
-Le WebSocket permet une communication bidirectionnelle :  
-Le navigateur peut envoyer des messages au serveur, et le serveur peut repondre ou envoyer des messages a tout moment au navigateur, sans recharger la page.
+Le WebSocket permet une communication bidirectionnelle : le navigateur peut envoyer des messages au serveur, et le serveur peut répondre ou envoyer des messages à tout moment, sans recharger la page.
 
 ---
 
-## 3. Installation & Compilation
+## 3. Compilation & Lancement
 
-!!!! change le chemin mdr
+**En local (hors Docker)**
 ```sh
-cd /home/qordoux/Documents/ft_transcendence/frontend && npx tsc
-# Compile les fichiers TypeScript (.ts) du frontend en JavaScript.
-
-cd /home/qordoux/Documents/ft_transcendence/backend && npx tsc && node dist/server.js
-# Compile puis lance le serveur Node.js (backend).
+cd frontend && npx tsc
+cd ../backend && npx tsc && node dist/server.js
 ```
+
+**Avec Docker (recommandé)**
+```sh
+make re
+```
+- Le backend recompile automatiquement le TypeScript à chaque démarrage du conteneur.
+- Accès : http://localhost:3000 (frontend), http://localhost:8080 (backend)
 
 ---
 
 ## 4. Lancer le frontend
 
 - Installer l'extension Live Server sur VS Code.
-- Ouvrir le fichier index.html -> clic droit -> Open with Live Server.
+- Ouvrir `index.html` → clic droit → Open with Live Server.
 
 ---
 
 ## 5. Tester le WebSocket
 
-Dans la console du navigateur (F12) :
-
+Dans la console du navigateur (F12) :
 ```js
-sendPing(); // Reponse du serveur attendue
+sendPing(); // Réponse du serveur attendue
 sendMessage('move', { y: 120 }); // Message valide
-sendMessage('move', { y: "abc" }); // Message invalide, ignore cote serveur
+sendMessage('move', { y: "abc" }); // Message invalide, ignoré côté serveur
 ```
 
 ---
 
-## 6. Tester les rooms
+## 6. Tester les rooms (multijoueur)
 
-- Possible d'ouvrir 2 clients : ils seront par defaut dans la meme room et recevront les infos des autres.
-- Pour tester la creation de rooms : (dans la console du nav, ouvrir 2 nav ou + pour tester la com entre clients d'une room)
+- Ouvre plusieurs navigateurs ou onglets pour simuler plusieurs clients.
+- Pour rejoindre/créer une room de la taille souhaitée :
 
 ```js
-socket.emit('joinRoom', { maxPlayers: 4 }); // Ou 2 pour tester les rooms a 2 joueurs
+joinOrCreateRoom(2); // Room 1v1
+joinOrCreateRoom(4); // Room 2v2
+```
+- La fonction `joinOrCreateRoom(maxPlayers)` est générique et gère tout (création, join, anti-zap).
+- La room rejointe/créée s'affiche dans la console.
+
+---
+
+## 7. Fonctionnement des rooms & sécurité anti-zap
+
+- À la connexion, chaque client rejoint automatiquement une room adaptée.
+- Tous les users d'une même room reçoivent les updates des autres.
+- **Anti-zap** : si tu es déjà dans une room non pleine d'un certain type (ex : 1v1), tu ne peux PAS zapper vers une autre room du même type tant qu'elle n'est pas pleine. Tu peux cependant zapper vers une room d'un autre type (ex : 2v2 ↔ 1v1).
+- Un seul room à la fois par client.
+- Quand un client se déconnecte, il est retiré de sa room.
+
+---
+
+## 8. Problèmes fréquents
+
+- Erreur "Cannot find module dist/server.js" → Compile d'abord avec npx tsc dans le backend ou relance le conteneur.
+- Pas de réponse WebSocket → Vérifie que le backend est bien lancé et que le frontend est ouvert avec Live Server.
+
+---
+
+## 9. API et exemples utiles
+
+- **Rejoindre/créer une room** :
+```js
+joinOrCreateRoom(maxPlayers); // maxPlayers = 2 (1v1), 4 (2v2), etc.
+```
+- **Envoyer un message à tous les membres d'une room (backend)** :
+```ts
+io.to('roomName').emit('event', data);
+```
+- **Envoyer un message structuré (frontend)** :
+```js
+sendMessage('move', { y: 120 });
 sendMessage('score', { left: 1, right: 2 });
 ```
 
 ---
 
-## 7. Fonctionnement des rooms
+## 10. Résumé technique
 
-- Quand on se connecte, on rejoint une room automatiquement.
-- Tous les users dans la meme room recoivent les updates des autres joueurs.
-- Si un client refait plusieurs fois joinRoom, il quitte l'ancienne room avant de rejoindre la nouvelle (un seul room a la fois).
-
----
-
-## 8. Problemes frequents
-
-- Erreur "Cannot find module dist/server.js"
-  -> Compile d'abord avec npx tsc dans le backend.
-
-- Pas de reponse WebSocket
-  -> Verifie que le backend est bien lance et que le frontend est ouvert avec Live Server.
-
-
-[Frontend]
-    |
-    |  socket.send(JSON.stringify({ type, data }))
-    v
-[Backend]
-    |
-    |  socket.emit('message', objet)   ou   socket.send(JSON.stringify(objet))
-    v
-[Frontend]
-
-Tu envoies TOUJOURS du JSON (texte) sur le réseau.
-JSON.stringify pour envoyer
-JSON.parse pour recevoir (si besoin)
+- Chaque client connecté reçoit un `socket.id` unique.
+- Les rooms sont des groupes logiques : un nom, une capacité (`maxPlayers`), une liste de sockets.
+- La logique anti-zap est gérée côté backend : impossible de zapper entre rooms non pleines du même type, mais possible entre types différents.
+- La fonction frontend `joinOrCreateRoom(maxPlayers)` est la seule à utiliser pour tester toutes les tailles de rooms.
 
 ---
 
-## 9. Fonctionnement détaillé des sockets et rooms
-
-- Chaque client qui se connecte au backend via WebSocket reçoit un **socket** unique (identifiant `socket.id`).
-- Les **rooms** sont des groupes logiques : elles n'ont pas de socket propre, ce sont juste des noms auxquels on peut associer plusieurs sockets (clients).
-- Un client peut demander à rejoindre une room (événement `joinRoom`).
-    - Avant de rejoindre une nouvelle room, le serveur retire le client de son ancienne room (s'il en avait une).
-    - Le serveur cherche une room existante avec la capacité demandée, ou en crée une nouvelle.
-    - Le client rejoint la room trouvée/créée.
-    - Le serveur informe le client de la room rejointe (`roomJoined`).
-- À tout moment, tu peux envoyer un message à tous les membres d'une room avec :
-
-```ts
-io.to('roomName').emit('event', data);
-```
-
-- Quand un client se déconnecte, il est retiré de sa room.
-- Résumé : **le socket appartient au client, la room est juste un regroupement logique de sockets côté serveur.**
+**Pour toute question ou bug, ping qordoux.**

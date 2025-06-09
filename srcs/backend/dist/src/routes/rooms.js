@@ -11,17 +11,12 @@ export default async function roomsRoutes(fastify) {
             return reply.status(400).send({ error: 'maxPlayers requis' });
         // Génère un nom unique pour la room
         let roomName;
-        let tries = 0;
         do {
             roomName = `room${localRoomCounter++}`;
-            tries++;
-            if (tries > 1000) {
-                return reply.status(500).send({ error: 'Deadlock room name' });
-            }
         } while (roomExists(roomName));
         // Crée la room vide
         rooms[roomName] = { players: [], maxPlayers };
-        return { room: roomName, maxPlayers };
+        return { roomName, maxPlayers };
     });
     // Route GET /rooms : lister toutes les rooms existantes
     fastify.get('/rooms', async (request, reply) => {

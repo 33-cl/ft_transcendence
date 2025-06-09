@@ -1,4 +1,4 @@
-all: build up
+all: backend-build frontend-build build up
 
 up:
 	docker compose up -d
@@ -9,7 +9,7 @@ down:
 build:
 	docker compose build
 
-rebuild:
+rebuild: backend-build frontend-build
 	docker compose build --no-cache
 
 logs:
@@ -23,4 +23,10 @@ fclean: clean
 
 re: fclean build up
 
-.PHONY: all up down build rebuild logs clean fclean re 
+backend-build:
+	cd srcs/backend && npx tsc --build --force
+
+frontend-build:
+	cd srcs/frontend && npx tsc --build --force
+
+.PHONY: all up down build rebuild logs clean fclean re
