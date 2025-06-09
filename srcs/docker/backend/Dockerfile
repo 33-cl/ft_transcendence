@@ -12,4 +12,5 @@ RUN npx tsc
 
 EXPOSE 8080
 
-CMD ["node", "dist/server.js"]
+# Compile TypeScript à chaque démarrage du conteneur
+CMD npx tsc --build --force && node dist/server.js

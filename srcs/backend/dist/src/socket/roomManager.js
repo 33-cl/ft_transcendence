@@ -8,16 +8,17 @@ export function roomExists(roomName) {
     return !!rooms[roomName];
 }
 // Helper: ajouter un joueur à une room existante
-export function addPlayerToRoom(roomName, socketId, log) {
-    if (rooms[roomName] && !rooms[roomName].players.includes(socketId)) {
+export function addPlayerToRoom(roomName, socketId) {
+    if (rooms[roomName]
+        && !rooms[roomName].players.includes(socketId)
+        && rooms[roomName].players.length < rooms[roomName].maxPlayers) {
         rooms[roomName].players.push(socketId);
-        log(`Joueur ${socketId} ajouté à la room ${roomName}`);
         return true;
     }
     return false;
 }
 // Retirer le joueur de sa room
-export function removePlayerFromRoom(socketId, log) {
+export function removePlayerFromRoom(socketId) {
     let playerRoom = null;
     for (const roomName in rooms) {
         if (rooms[roomName].players.includes(socketId)) {
@@ -27,7 +28,6 @@ export function removePlayerFromRoom(socketId, log) {
     }
     if (playerRoom) {
         rooms[playerRoom].players = rooms[playerRoom].players.filter(id => id !== socketId);
-        log(`Joueur ${socketId} quitte la room ${playerRoom}`);
         if (rooms[playerRoom].players.length === 0) {
             delete rooms[playerRoom];
         }
