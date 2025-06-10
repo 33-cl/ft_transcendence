@@ -7,16 +7,14 @@
 <body>
   <h1>FT_TRANSCENDENCE</h1>
 
-  <button id="startBtn">Play</button>
 
-  <canvas id="map" width="850px" height="650px" style="display: none;"></canvas>
+  <div id="landing"></div>
   
-  <div id="score" style="display: none;">
-    <span id="leftScore">0</span> -  <span id="rightScore">0</span>
-  </div>
-  <p id="winnerDisplay"></p>
+  <div id="game"></div>
+
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="src/script_work.js"></script> <!-- À migrer dans dist/ si TypeScripté -->
+  <script src="dist/components.js"></script>
+  <script src="src/script_work.js"></script>
   <script src="dist/websocket.js"></script>
 </body>
 </html>

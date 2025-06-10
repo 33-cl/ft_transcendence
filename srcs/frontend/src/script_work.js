@@ -1,21 +1,18 @@
 /********************VARIABLE******************************************************* */
-const canvas = document.getElementById("map");
-const button = document.getElementById("startBtn");
-const ctx = canvas.getContext("2d");
-const scoreElement = document.getElementById("score");
+// Déclarer les variables mais ne pas les initialiser tout de suite
+let canvas, button, ctx, scoreElement, winnerDisplay;
 
 //Raquette
 const paddleMargin = 10;
 const paddleWidth = 10;
 const paddleCollisionSurface = paddleMargin + paddleWidth;
 const paddleHeight = 110;
-let leftPaddleY = rightPaddleY = canvas.height / 2 - paddleHeight / 2; //position du padd
+let leftPaddleY, rightPaddleY;
 let paddleSpeed = 11;
 
 //Balle
 let ballPaused = false; // Indique si la balle est en pause
-let ballX = canvas.width / 2;
-let ballY = canvas.height / 2;
+let ballX, ballY;
 let ballRadius = 17;
 let ballSpeedX = 7;
 let ballSpeedY = 7;
@@ -25,23 +22,41 @@ let leftScore;
 let rightScore;
 let win = 3;
 let gameRunning;
-const winnerDisplay = document.getElementById("winnerDisplay");
 
 // Touches pressées
 let keysPressed = {};
 
 /*********************************************************************************** */
-button.addEventListener("click", function(){
-    gameRunning = true;
-    leftScore = 0;
-    rightScore =  0;
-    updateScore();
-    canvas.style.display = "block";
-    scoreElement.style.display = "block"; // Affiche le score
-    button.style.display = "none";
-    winnerDisplay.textContent = ""; // Efface le message de victoire
-    document.body.style.backgroundColor = "black";
-    requestAnimationFrame(gameLoop);
+
+document.addEventListener("componentsReady", function() 
+{
+    // Maintenant initialiser tous les éléments DOM
+    canvas = document.getElementById("map");
+    button = document.getElementById("startBtn");
+    ctx = canvas.getContext("2d");
+    scoreElement = document.getElementById("score");
+    winnerDisplay = document.getElementById("winnerDisplay");
+    
+    // Initialiser les positions qui dépendent du canvas
+    leftPaddleY = rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+
+    if (button) {
+        button.addEventListener("click", function()
+        {
+            gameRunning = true;
+            leftScore = 0;
+            rightScore = 0;
+            updateScore();
+            canvas.style.display = "block";
+            scoreElement.style.display = "block"; // Affiche le score
+            button.style.display = "none";
+            winnerDisplay.textContent = ""; // Efface le message de victoire
+            document.body.style.backgroundColor = "black";
+            requestAnimationFrame(gameLoop);
+        });
+    }
 });
 
 function updateScore(){
