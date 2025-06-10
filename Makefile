@@ -16,6 +16,7 @@ logs:
 	docker compose logs -f
 
 clean: down
+	rm -rf srcs/frontend/dist/*
 	docker system prune -af
 
 fclean: clean

@@ -30,33 +30,41 @@ let keysPressed = {};
 
 document.addEventListener("componentsReady", function() 
 {
+    gameRunning = false; // Stoppe toute ancienne boucle de jeu
+
     // Maintenant initialiser tous les éléments DOM
     canvas = document.getElementById("map");
-    button = document.getElementById("startBtn");
+    console.log("canvas:", canvas);
+    if (!canvas) {
+        console.error("Canvas introuvable dans le DOM !");
+        return;
+    }
     ctx = canvas.getContext("2d");
+    console.log("ctx:", ctx);
+    if (!ctx) {
+        console.error("Impossible d'obtenir le contexte 2D du canvas !");
+        return;
+    }
     scoreElement = document.getElementById("score");
     winnerDisplay = document.getElementById("winnerDisplay");
+
+    // Nettoie le canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Initialiser les positions qui dépendent du canvas
     leftPaddleY = rightPaddleY = canvas.height / 2 - paddleHeight / 2;
     ballX = canvas.width / 2;
     ballY = canvas.height / 2;
 
-    if (button) {
-        button.addEventListener("click", function()
-        {
-            gameRunning = true;
-            leftScore = 0;
-            rightScore = 0;
-            updateScore();
-            canvas.style.display = "block";
-            scoreElement.style.display = "block"; // Affiche le score
-            button.style.display = "none";
-            winnerDisplay.textContent = ""; // Efface le message de victoire
-            document.body.style.backgroundColor = "black";
-            requestAnimationFrame(gameLoop);
-        });
-    }
+    // Démarrage automatique du jeu
+    gameRunning = true;
+    leftScore = 0;
+    rightScore = 0;
+    updateScore();
+    canvas.style.display = "block";
+    winnerDisplay.textContent = "";
+    document.body.style.backgroundColor = "black";
+    requestAnimationFrame(gameLoop);
 });
 
 function updateScore(){
@@ -74,6 +82,7 @@ function gameLoop() {
 
 //Dessine les elements
 function draw() {
+    console.log("draw called");
     ctx.fillStyle = "white";
 
     ctx.fillRect(paddleMargin, leftPaddleY, paddleWidth, paddleHeight);
