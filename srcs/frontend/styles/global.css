@@ -10,6 +10,7 @@
 html, body {
     height: 100%;
     width: 100%;
+    overflow: hidden; /* Empêche le défilement */
 }
 
 body {
@@ -32,6 +33,21 @@ h1 {
     padding-top: 20px;
 }
 
+#landing-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh; /* Utilise min-height au lieu de height et réduit à 80vh */
+    gap: 24px;
+}
+
+#landing-buttons button {
+    position: static;
+    transform: none;
+    margin: 0;
+}
+
 button {
     margin: auto;
     padding: 20px 60px;
@@ -40,10 +56,10 @@ button {
     color: white;
     border: 4px solid #fff;
     border-radius: 16px;
-    position: absolute;
+    /* position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%); */
 }
 
 button:hover {

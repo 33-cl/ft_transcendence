@@ -1,6 +1,19 @@
 // Landing page
 const landingHTML = `
-    <button id="startBtn">Play</button>
+    <div id="landing-buttons">
+        <button id="loginBtn">Sign in</button>
+        <button id="startBtn">Continue as guest</button>
+    </div>
+`;
+
+// Login page
+const loginHTML = `
+    <h2>Sign in</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="login">SIGN IN</button>
+
+    <p>Don't have an account? <a href="#">Sign up</a></p>
 `;
 
 // Game
@@ -32,18 +45,21 @@ const loremIpsum = `
 `;
 
 // Init components
-function showPage(pageName: 'landing' | 'game' | 'lorem') {
+function showPage(pageName: 'landing' | 'game' | 'lorem' | 'login') {
     const landingDiv = document.getElementById('landing');
     const gameDiv = document.getElementById('game');
     const loremDiv = document.getElementById('lorem-ipsum');
+    const loginDiv = document.getElementById('login');
 
     if (landingDiv) landingDiv.innerHTML = '';
     if (gameDiv) gameDiv.innerHTML = '';
     if (loremDiv) loremDiv.innerHTML = '';
+    if (loginDiv) loginDiv.innerHTML = '';
 
     if (pageName === 'landing' && landingDiv) landingDiv.innerHTML = landingHTML;
     if (pageName === 'game' && gameDiv) gameDiv.innerHTML = gameHTML;
     if (pageName === 'lorem' && loremDiv) loremDiv.innerHTML = loremIpsum;
+    if (pageName === 'login' && loginDiv) loginDiv.innerHTML = loginHTML;
 
     // Notifies each element is ready
     setTimeout(() => {
@@ -52,15 +68,17 @@ function showPage(pageName: 'landing' | 'game' | 'lorem') {
     }, 0);
 }
 
-function hidePage(pageName: 'landing' | 'game' | 'lorem') 
+function hidePage(pageName: 'landing' | 'game' | 'lorem' | 'login') 
 {
     const landingDiv = document.getElementById('landing');
     const gameDiv = document.getElementById('game');
     const loremDiv = document.getElementById('lorem-ipsum');
+    const loginDiv = document.getElementById('login');
 
     if (pageName === 'landing' && landingDiv) landingDiv.innerHTML = '';
     if (pageName === 'game' && gameDiv) gameDiv.innerHTML = '';
     if (pageName === 'lorem' && loremDiv) loremDiv.innerHTML = '';
+    if (pageName === 'login' && loginDiv) loginDiv.innerHTML = '';
 }
 
 function hideAllPages(): void
@@ -68,6 +86,7 @@ function hideAllPages(): void
     hidePage('landing');
     hidePage('game');
     hidePage('lorem');
+    hidePage('login');
 }
 
 function initializeComponents(): void 
@@ -80,6 +99,10 @@ function initializeComponents(): void
         const target = e.target as HTMLElement;
         if (target && target.id === 'startBtn') {
             showPage('game');
+            hidePage('landing');
+        }
+        if (target && target.id === 'loginBtn') {
+            showPage('login');
             hidePage('landing');
         }
         if (target && target.id === 'title') {

@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/09 19:58:44 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/11 15:14:11 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
@@ -26,7 +26,7 @@ export default function registerSocketHandlers(io, fastify) {
             try {
                 const { roomName } = data || {};
                 if (!roomName || typeof roomName !== 'string') {
-                    socket.emit('error', { error: 'roomName requis' });
+                    socket.emit('error', { error: 'roomName requested' });
                     return;
                 }
                 if (!roomExists(roomName)) {
