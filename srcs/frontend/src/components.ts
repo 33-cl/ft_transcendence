@@ -1,19 +1,52 @@
 // Landing page
 const landingHTML = `
     <div id="landing-buttons">
-        <button id="loginBtn">Sign in</button>
-        <button id="startBtn">Continue as guest</button>
+        <button id="signInBtn">Sign in</button>
+        <button id="guestBtn">Continue as guest</button>
     </div>
 `;
 
-// Login page
-const loginHTML = `
+// signIn page
+const signInHTML = `
     <h2>Sign in</h2>
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
-    <button id="login">SIGN IN</button>
+    <button id="signIn">SIGN IN</button>
 
-    <p>Don't have an account? <a href="#">Sign up</a></p>
+    <p>Don't have an account? <a id="signUpBtn" class="link">Sign up</a></p>
+`;
+
+// signUp page
+const signUpHTML = `
+    <h2>Sign up</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="text" id="age" placeholder="Age">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <input type="password" id="confirmPassword" placeholder="Confirm password">
+    <button id="signUp">SIGN UP</button>
+
+    <p>Already have an account? <a id="signInBtn" class="link">Sign in</a></p>
+`;
+
+// Main menu
+const mainMenuHTML = `
+    <div class="menu-container">
+        <div class="menu-section">
+            <h2>Play</h2>
+            <div class="button-group">
+                <button>1v1 Ranked</button>
+                <button id="localGameBtn">Local</button>
+            </div>
+        </div>
+        <div class="menu-section">
+            <h2>Custom</h2>
+            <div class="button-group">
+                <button>Create</button>
+                <button>Join</button>
+            </div>
+        </div>
+    </div>
 `;
 
 // Game
@@ -44,22 +77,48 @@ const loremIpsum = `
     </p>
 `;
 
+// Define all components
+const components = {
+    landing: {
+        id: 'landing',
+        html: landingHTML
+    },
+    mainMenu: {
+        id: 'mainMenu',
+        html: mainMenuHTML
+    },
+    game: {
+        id: 'game',
+        html: gameHTML
+    },
+    lorem: {
+        id: 'lorem-ipsum',
+        html: loremIpsum
+    },
+    signIn: {
+        id: 'signIn',
+        html: signInHTML
+    },
+    signUp: {
+        id: 'signUp',
+        html: signUpHTML
+    }
+};
+
 // Init components
-function showPage(pageName: 'landing' | 'game' | 'lorem' | 'login') {
-    const landingDiv = document.getElementById('landing');
-    const gameDiv = document.getElementById('game');
-    const loremDiv = document.getElementById('lorem-ipsum');
-    const loginDiv = document.getElementById('login');
+function show(pageName: keyof typeof components) {
+    // Clear all components first
+    Object.values(components).forEach(component => {
+        const element = document.getElementById(component.id);
+        if (element) element.innerHTML = '';
+    });
 
-    if (landingDiv) landingDiv.innerHTML = '';
-    if (gameDiv) gameDiv.innerHTML = '';
-    if (loremDiv) loremDiv.innerHTML = '';
-    if (loginDiv) loginDiv.innerHTML = '';
-
-    if (pageName === 'landing' && landingDiv) landingDiv.innerHTML = landingHTML;
-    if (pageName === 'game' && gameDiv) gameDiv.innerHTML = gameHTML;
-    if (pageName === 'lorem' && loremDiv) loremDiv.innerHTML = loremIpsum;
-    if (pageName === 'login' && loginDiv) loginDiv.innerHTML = loginHTML;
+    // Show the requested component
+    const component = components[pageName];
+    const element = document.getElementById(component.id);
+    if (element) {
+        element.innerHTML = component.html;
+    }
 
     // Notifies each element is ready
     setTimeout(() => {
@@ -68,58 +127,49 @@ function showPage(pageName: 'landing' | 'game' | 'lorem' | 'login') {
     }, 0);
 }
 
-function hidePage(pageName: 'landing' | 'game' | 'lorem' | 'login') 
-{
-    const landingDiv = document.getElementById('landing');
-    const gameDiv = document.getElementById('game');
-    const loremDiv = document.getElementById('lorem-ipsum');
-    const loginDiv = document.getElementById('login');
-
-    if (pageName === 'landing' && landingDiv) landingDiv.innerHTML = '';
-    if (pageName === 'game' && gameDiv) gameDiv.innerHTML = '';
-    if (pageName === 'lorem' && loremDiv) loremDiv.innerHTML = '';
-    if (pageName === 'login' && loginDiv) loginDiv.innerHTML = '';
+function hide(pageName: keyof typeof components) {
+    const component = components[pageName];
+    const element = document.getElementById(component.id);
+    if (element) element.innerHTML = '';
 }
 
-function hideAllPages(): void
-{
-    hidePage('landing');
-    hidePage('game');
-    hidePage('lorem');
-    hidePage('login');
+function hideAllPages(): void {
+    Object.keys(components).forEach(key => hide(key as keyof typeof components));
 }
 
-function initializeComponents(): void 
-{
+function initializeComponents(): void {
     // Affiche la page d'accueil au chargement
-    showPage('landing');
+    show('landing');
 
     // Ajoute la navigation SPA
     document.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
-        if (target && target.id === 'startBtn') {
-            showPage('game');
-            hidePage('landing');
+        if (target && target.id === 'guestBtn') {
+            hideAllPages();
+            show('mainMenu');
         }
-        if (target && target.id === 'loginBtn') {
-            showPage('login');
-            hidePage('landing');
+        if (target && target.id === 'localGameBtn') {
+            hideAllPages();
+            show('game');
+        }
+        if (target && target.id === 'signInBtn') {
+            hideAllPages();
+            show('signIn');
+        }
+        if (target && target.id === 'signUpBtn') {
+            hideAllPages();
+            show('signUp');
         }
         if (target && target.id === 'title') {
             hideAllPages();
-            showPage('landing');
+            show('landing');
         }
     });
-
-    
 }
 
 // Init as soon as possible
-if (document.readyState === 'loading') 
-{
+if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeComponents);
-} 
-else 
-{
+} else {
     initializeComponents();
 }
