@@ -33,6 +33,10 @@ h1 {
     padding-top: 20px;
 }
 
+h2 {
+    font-size: 30px;
+}
+
 #landing-buttons {
     display: flex;
     flex-direction: column;

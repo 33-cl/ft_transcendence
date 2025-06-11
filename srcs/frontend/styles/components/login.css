@@ -1,4 +1,12 @@
-#login {
+.link {
+    color: #192fcf;
+}
+
+.link:hover {
+    color: #aa3cff;
+}
+
+#signIn, #signUp {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -9,12 +17,12 @@
     gap: 30px;
 }
 
-#login h2 {
+#signIn h2, #signUp h2 {
     margin: 0;
     padding: 0;
 }
 
-#login input {
+#signIn input, #signUp input {
     padding: 15px;
     width: 300px;
     font-size: 16px;
@@ -24,7 +32,7 @@
     border-radius: 8px;
 }
 
-#login button {
+#signIn button, #signUp button {
     /* Réinitialise les styles pour éviter les conflits avec le style général des boutons */
     position: static;
     transform: none;
