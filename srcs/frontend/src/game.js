@@ -34,17 +34,7 @@ document.addEventListener("componentsReady", function()
 
     // Maintenant initialiser tous les éléments DOM
     canvas = document.getElementById("map");
-    console.log("canvas:", canvas);
-    if (!canvas) {
-        console.error("Canvas introuvable dans le DOM !");
-        return;
-    }
     ctx = canvas.getContext("2d");
-    console.log("ctx:", ctx);
-    if (!ctx) {
-        console.error("Impossible d'obtenir le contexte 2D du canvas !");
-        return;
-    }
     scoreElement = document.getElementById("score");
     winnerDisplay = document.getElementById("winnerDisplay");
 

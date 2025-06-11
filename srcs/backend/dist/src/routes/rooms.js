@@ -8,7 +8,7 @@ export default async function roomsRoutes(fastify) {
     fastify.post('/rooms', async (request, reply) => {
         const { maxPlayers } = request.body;
         if (!maxPlayers || typeof maxPlayers !== 'number')
-            return reply.status(400).send({ error: 'maxPlayers requis' });
+            return reply.status(400).send({ error: 'maxPlayers needed' });
         // Génère un nom unique pour la room
         let roomName;
         do {
