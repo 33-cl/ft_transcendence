@@ -32,7 +32,7 @@
 }
 
 /* Reset button styles */
-.button-group button {
+.menu-section button {
     position: absolute;
     transform: none;
     margin: 0;
@@ -43,14 +43,22 @@
     min-width: 250px;
 }
 
-.button-group button:first-child {
+.menu-section .button-group:first-of-type button:first-child {
     left: 200px;
 }
 
-.button-group button:last-child {
+.menu-section .button-group:first-of-type button:last-child {
     right: 200px;
 }
 
-.button-group button:hover {
+.menu-section .button-group:last-of-type button:first-child {
+    left: 200px;
+}
+
+.menu-section .button-group:last-of-type button:last-child {
+    right: 200px;
+}
+
+.menu-section button:hover {
     transform: none;
 }
