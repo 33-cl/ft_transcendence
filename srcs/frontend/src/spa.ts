@@ -61,28 +61,40 @@ function initializeComponents(): void {
     show('landing');
 
     // Ajoute la navigation SPA
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
-        if (target && target.id === 'guestBtn') {
+        if (!target) return;
+        if (target.id === 'guestBtn') {
             hideAllPages();
             show('mainMenu');
         }
-        if (target && target.id === 'localGameBtn') {
+        if (target.id === 'localGameBtn') {
             hideAllPages();
             show('game');
         }
-        if (target && target.id === 'signInBtn') {
+        if (target.id === 'signInBtn') {
             hideAllPages();
             show('signIn');
         }
-        if (target && target.id === 'signUpBtn') {
+        if (target.id === 'signUpBtn') {
             hideAllPages();
             show('signUp');
         }
-        if (target && target.id === 'title') {
+        if (target.id === 'title') {
             hideAllPages();
             show('landing');
         }
+        // --- ROOM LOGIC ---
+        if (target.id === 'ranked1v1Btn') {
+            await window.joinOrCreateRoom(2); // 1v1
+        }
+        if (target.id === 'customCreateBtn') {
+            await window.joinOrCreateRoom(4); // 2v2 (exemple)
+        }
+        if (target.id === 'customJoinBtn') {
+            await window.joinOrCreateRoom(4); // 2v2 (exemple)
+        }
+        // Ajoute ici la logique pour les tournois si besoin
     });
 }
 
