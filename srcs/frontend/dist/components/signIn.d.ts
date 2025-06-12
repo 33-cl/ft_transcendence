@@ -1,2 +1,0 @@
-export declare const signInHTML = "\n    <h2>Sign in</h2>\n    <input type=\"text\" id=\"username\" placeholder=\"Username\">\n    <input type=\"password\" id=\"password\" placeholder=\"Password\">\n    <button id=\"signIn\">SIGN IN</button>\n\n    <p>Don't have an account? <a id=\"signUpBtn\" class=\"link\">Sign up</a></p>\n";
-//# sourceMappingURL=signIn.d.ts.map

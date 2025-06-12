@@ -1,2 +1,0 @@
-export declare const landingHTML = "\n    <div id=\"landing-buttons\">\n        <button id=\"signInBtn\">Sign in</button>\n        <button id=\"guestBtn\">Continue as guest</button>\n    </div>\n";
-//# sourceMappingURL=landing.d.ts.map
