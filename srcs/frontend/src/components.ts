@@ -46,6 +46,13 @@ const mainMenuHTML = `
                 <button>Join</button>
             </div>
         </div>
+        <div class="menu-section">
+            <h2>Tournaments</h2>
+            <div class="button-group">
+                <button>Create</button>
+                <button>Join</button>
+            </div>
+        </div>
     </div>
 `;
 
