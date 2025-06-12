@@ -8,9 +8,9 @@ RUN npm install && npm install -g http-server typescript
 
 COPY ./srcs/frontend/ ./
 
-# Compile le TypeScript avant de servir
-RUN npx tsc
+# Compile le TypeScript et Tailwind
+RUN npx tsc && npm run build
 
 EXPOSE 3000
 
-CMD ["http-server", "-p", "3000", "-c-1", "--cors"]
+CMD ["npm", "run", "start"]

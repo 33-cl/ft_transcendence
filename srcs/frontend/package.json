@@ -1,20 +1,19 @@
 {
-  "dependencies": {
-    "socket.io-client": "^4.8.1",
-    "tailwindcss": "^4.1.8"
-  },
   "name": "frontend",
   "version": "1.0.0",
-  "main": "game.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tailwindcss -i ./styles/input.css -o ./styles/global.css --watch",
+    "start": "http-server -p 3000 -c-1 --cors"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  },
   "devDependencies": {
-    "@types/socket.io-client": "^1.4.36",
-    "typescript": "^5.8.3"
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "postcss-cli": "^11.0.0"
   }
 }
