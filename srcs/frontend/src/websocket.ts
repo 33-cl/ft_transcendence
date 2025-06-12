@@ -28,7 +28,7 @@ socket.on("pong", (data: any) =>
 
 // Rend la fonction sendPing accessible depuis la console du navigateur
 // Tu peux taper sendPing() dans la console pour tester l'envoi d'un message
-(window as any).sendPing = sendPing;
+window.sendPing = sendPing;
 
 
 
@@ -44,11 +44,15 @@ interface MessageData
     [key: string]: any;
 }
 
+// Fonction pour envoyer un message structuré (exposée pour usage externe)
 function sendMessage(type: MessageType, data: MessageData)
 {
     const msg = JSON.stringify({ type, data });// Convertit l'objet en chaîne JSON
     socket.send(msg);
 }
+
+// Expose la fonction pour test dans la console navigateur
+window.sendMessage = sendMessage;
 
 // Handler pour les messages relayés par le serveur (socket.io)
 socket.on('message', (data: any) =>
@@ -220,4 +224,5 @@ async function joinOrCreateRoom(maxPlayers: number) {
     await lastJoinPromise;
 }
 // Expose la fonction pour test dans la console navigateur
-(window as any).joinOrCreateRoom = joinOrCreateRoom;
+window.joinOrCreateRoom = joinOrCreateRoom;
+

@@ -35,15 +35,15 @@ const mainMenuHTML = `
         <div class="menu-section">
             <h2>Play</h2>
             <div class="button-group">
-                <button>1v1 Ranked</button>
+                <button id="ranked1v1Btn">1v1 Ranked</button>
                 <button id="localGameBtn">Local</button>
             </div>
         </div>
         <div class="menu-section">
             <h2>Custom</h2>
             <div class="button-group">
-                <button>Create</button>
-                <button>Join</button>
+                <button id="customCreateBtn">Create</button>
+                <button id="customJoinBtn">Join</button>
             </div>
         </div>
     </div>
@@ -124,6 +124,7 @@ function show(pageName: keyof typeof components) {
     setTimeout(() => {
         const event = new CustomEvent('componentsReady');
         document.dispatchEvent(event);
+        // SUPPRESSION : plus d'ajout de listeners multijoueur ici
     }, 0);
 }
 
@@ -141,7 +142,7 @@ function initializeComponents(): void {
     // Affiche la page d'accueil au chargement
     show('landing');
 
-    // Ajoute la navigation SPA
+    // Ajoute la navigation SPA + logique multijoueur dans le même listener
     document.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
         if (target && target.id === 'guestBtn') {
@@ -163,6 +164,19 @@ function initializeComponents(): void {
         if (target && target.id === 'title') {
             hideAllPages();
             show('landing');
+        }
+        // --- SPA room join logic, mais seulement si mainMenu est visible ---
+        const mainMenuVisible = document.getElementById('mainMenu')?.innerHTML.includes('1v1 Ranked');
+        if (mainMenuVisible) {
+            if (target && target.id === 'ranked1v1Btn') {
+                (window as any).joinOrCreateRoom(2);
+            }
+            if (target && target.id === 'customCreateBtn') {
+                (window as any).joinOrCreateRoom(4);
+            }
+            if (target && target.id === 'customJoinBtn') {
+                (window as any).joinOrCreateRoom(4);
+            }
         }
     });
 }
