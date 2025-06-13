@@ -2,7 +2,7 @@ name: Docker Build
 
 on:
   push:
-    branches: [main, iban]
+    branches: [main, iban, quentin, mael, rayane]
 
 jobs:
   docker:
@@ -19,4 +19,4 @@ jobs:
         run: docker build -t my-app:latest -f ./srcs/docker/frontend/Dockerfile .
 
       - name: Build Docker image for Backend
-        run: docker build -t my-app:latest -f ./srcs/docker/backend/Dockerfile .
+        run: docker build -t my-app:latest -f ./srcs/docker/backend/Dockerfile  .
