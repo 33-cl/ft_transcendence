@@ -5,7 +5,8 @@ WORKDIR /app
 COPY ./srcs/frontend/package*.json ./
 RUN npm install
 COPY ./srcs/frontend/ ./
-RUN npx tsc --build --force
+RUN npx tsc --build --force && \
+    npx tailwindcss -i ./styles/input.css -o ./styles/output.css
 
 # Stage 2: Nginx static server
 FROM nginx:alpine
