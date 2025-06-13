@@ -1,0 +1,22 @@
+name: Makefile Build
+
+on:
+  push:
+    branches: [ "main", "iban", "quentin", "rayane", "mael" ]
+  pull_request:
+    branches: [ "main", "iban", "quentin", "rayane", "mael" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build
+      run: make
+
+    - name: Cleans the build
+      run: make fclean
