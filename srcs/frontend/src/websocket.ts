@@ -3,7 +3,8 @@
 
 declare var io: any;
 
-const socket = io("https://localhost:8080", { transports: ["websocket"], secure: true, rejectUnauthorized: false }); // Port backend (socket.io) selon docker-compose.yml et exigences 42
+// Connexion socket.io sur le même domaine
+const socket = io('', { transports: ["websocket"], secure: true }); // Connexion sur le même domaine
 
 // Quand la connexion avec le serveur est établie, ce code s'exécute
 socket.on("connect", () => {
@@ -110,7 +111,7 @@ async function joinOrCreateRoom(maxPlayers: number) {
     lastJoinPromise = (async () => {
         try {
             // Synchronise la room réelle côté backend en cherchant le socket.id dans toutes les rooms
-            const resRooms = await fetch('https://localhost:8080/rooms');
+            const resRooms = await fetch('/rooms');
             const dataRooms = await resRooms.json();
             const mySocketId = socket.id;
             let myRoom: string | null = null;
@@ -143,7 +144,7 @@ async function joinOrCreateRoom(maxPlayers: number) {
             }
             // 2. Si aucune room dispo, en crée une
             if (!roomName) {
-                const res2 = await fetch('https://localhost:8080/rooms', {
+                const res2 = await fetch('/rooms', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ maxPlayers })
@@ -155,7 +156,7 @@ async function joinOrCreateRoom(maxPlayers: number) {
                 // Vérification active que la room existe bien côté backend avant de join
                 let found = false;
                 for (let i = 0; i < 5; i++) { // 5 tentatives max
-                    const check = await fetch('https://localhost:8080/rooms');
+                    const check = await fetch('/rooms');
                     const checkData = await check.json();
                     if (checkData.rooms[roomName]) {
                         found = true;
