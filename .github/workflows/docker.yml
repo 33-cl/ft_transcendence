@@ -3,6 +3,8 @@ name: Docker Build
 on:
   push:
     branches: [main, iban, quentin, mael, rayane]
+  workflow_dispatch:
+
 
 jobs:
   docker:
