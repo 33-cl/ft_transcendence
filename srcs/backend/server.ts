@@ -29,7 +29,9 @@ const app = fastify({
     origin: (origin, cb) => {
       const allowed = [
         "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://127.0.0.1:3000",
+        "https://localhost:3000",
+        "https://127.0.0.1:3000"
       ];
       if (!origin || allowed.includes(origin)) {
         cb(null, true);
@@ -39,6 +41,8 @@ const app = fastify({
     },
     credentials: true
   });
+  
+  // On n'utilise que du JSON côté frontend, donc pas besoin de fastifyFormbody
 
   // Route GET très simple
   app.get('/', async (request, reply) => {
@@ -55,6 +59,14 @@ const app = fastify({
   app.register(usersRoutes);
   app.register(roomsRoutes);
 
+  // DEBUG : log le body reçu pour POST /rooms
+  app.addHook('preHandler', (req, _reply, done) => {
+    if (req.url.startsWith('/rooms') && req.method === 'POST') {
+      app.log.info('POST /rooms body:', req.body);
+    }
+    done();
+  });
+
   // Lancement du serveur HTTPS (Fastify)
   const address = await app.listen({ port: 8080, host: '0.0.0.0' });
   app.log.info(`✅ Serveur lancé sur ${address}`);
@@ -68,7 +80,9 @@ const app = fastify({
       origin: (origin, cb) => {
         const allowed = [
           "http://localhost:3000",
-          "http://127.0.0.1:3000"
+          "http://127.0.0.1:3000",
+          "https://localhost:3000",
+          "https://127.0.0.1:3000"
         ];
         if (!origin || allowed.includes(origin)) {
           cb(null, true);
