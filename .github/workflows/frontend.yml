@@ -2,6 +2,7 @@ name: Frontend CI
 
 on:
   push:
+    branches: [main, iban, quentin, mael, rayane]
     paths:
       - 'frontend/**'
   pull_request:
