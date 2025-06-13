@@ -1,16 +1,27 @@
-FROM node:18-alpine
+# Stage 1: Build frontend assets
+FROM node:alpine AS builder
 
 WORKDIR /app
-
 COPY ./srcs/frontend/package*.json ./
-
-RUN npm install && npm install -g http-server typescript
-
+RUN npm install
 COPY ./srcs/frontend/ ./
+RUN npx tsc --build --force
 
-# Compile le TypeScript avant de servir
-RUN npx tsc
+# Stage 2: Nginx static server
+FROM nginx:alpine
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/index.html /app/index.html
+COPY --from=builder /app/styles /app/styles
+COPY --from=builder /app/src /app/src
+
+COPY ./srcs/docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./srcs/docker/frontend/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["http-server", "-p", "3000", "-c-1", "--cors"]
+ENTRYPOINT ["/entrypoint.sh"]

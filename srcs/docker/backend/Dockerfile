@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -10,7 +10,11 @@ COPY ./srcs/backend/ ./
 
 RUN npx tsc
 
+COPY ./srcs/docker/backend/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 EXPOSE 8080
 
-# Compile TypeScript à chaque démarrage du conteneur
-CMD npx tsc --build --force && node dist/server.js
+ENTRYPOINT []
+
+CMD ["/app/entrypoint.sh"]
