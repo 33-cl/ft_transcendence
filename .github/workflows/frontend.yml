@@ -1,4 +1,4 @@
-name: Frontend CI
+name: Frontend Build
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - 'frontend/**'
   pull_request:
+    branches: [main, iban, quentin, mael, rayane]
     paths:
       - 'frontend/**'
   workflow_dispatch:

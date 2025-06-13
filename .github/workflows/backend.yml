@@ -1,4 +1,4 @@
-name: Backend CI
+name: Backend Build
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/**'
   pull_request:
+    branches: [main, iban, quentin, mael, rayane]
     paths:
       - 'backend/**'
   workflow_dispatch:

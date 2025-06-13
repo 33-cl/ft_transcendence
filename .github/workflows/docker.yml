@@ -1,6 +1,8 @@
 name: Docker Build
 
 on:
+  pull_request:
+   branches: [main, iban, quentin, mael, rayane]
   push:
     branches: [main, iban, quentin, mael, rayane]
   workflow_dispatch:
