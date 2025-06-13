@@ -1,13 +1,23 @@
 // server.ts
 import fastify from 'fastify';
-import { Server } from 'socket.io';
+import fs from 'fs'; // Pour lire les fichiers SSL
+import { Server as SocketIOServer } from 'socket.io';
 import fastifyCors from '@fastify/cors';
 import pingRoutes from './src/routes/ping.js';
 import usersRoutes from './src/routes/users.js';
 import roomsRoutes from './src/routes/rooms.js';
 import registerSocketHandlers from './src/socket/socketHandlers.js';
-// Création de Fastify
-const app = fastify({ logger: true });
+// Charger le certificat auto-signé généré dans le conteneur Docker
+const key = fs.readFileSync('key.pem'); // Clé privée SSL
+const cert = fs.readFileSync('cert.pem'); // Certificat SSL
+// Création de Fastify en mode HTTPS
+const app = fastify({
+    logger: true,
+    https: {
+        key,
+        cert
+    }
+});
 // Fonction main asynchrone pour tout lancer
 (async () => {
     // Enregistre le plugin CORS pour Fastify
@@ -38,13 +48,14 @@ const app = fastify({ logger: true });
     app.register(pingRoutes);
     app.register(usersRoutes);
     app.register(roomsRoutes);
-    // Lancement du serveur HTTP (Fastify + socket.io)
+    // Lancement du serveur HTTPS (Fastify)
     const address = await app.listen({ port: 8080, host: '0.0.0.0' });
     app.log.info(`✅ Serveur lancé sur ${address}`);
-    // Récupère le serveur HTTP natif de Fastify
-    const server = app.server;
-    // Configuration de socket.io avec CORS
-    const io = new Server(server, {
+    // Récupère le serveur HTTP(S) natif de Fastify pour Socket.IO
+    // @ts-ignore
+    const nativeServer = app.server;
+    // Configuration de socket.io avec WSS
+    const io = new SocketIOServer(nativeServer, {
         cors: {
             origin: (origin, cb) => {
                 const allowed = [
@@ -64,3 +75,4 @@ const app = fastify({ logger: true });
     });
     registerSocketHandlers(io, app);
 })();
+// Plus besoin de https.createServer ni de server.listen
