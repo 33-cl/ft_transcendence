@@ -3,7 +3,8 @@ FROM node:alpine AS builder
 
 WORKDIR /app
 COPY ./srcs/frontend/package*.json ./
-RUN npm install
+RUN npm install && \
+    npm install -D tailwindcss postcss autoprefixer
 COPY ./srcs/frontend/ ./
 RUN npx tsc --build --force && \
     npx tailwindcss -i ./styles/input.css -o ./styles/output.css
