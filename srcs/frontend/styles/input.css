@@ -6,13 +6,22 @@
 
 
 @layer components {
-    
+
     h2 {
-        @apply text-2xl;
+        @apply text-2xl my-[2vh];
     }
 
+    a {
+        @apply text-blue-700;
+    }
+
+    a:hover {
+        @apply text-purple-800;
+    }
+
+
     button {
-        @apply border-2 border-white rounded-lg px-4 py-2;
+        @apply p-4 border-2 border-white rounded-lg px-4 py-2 text-2xl cursor-pointer;
     }
 
     button:hover {
@@ -23,15 +32,21 @@
         @apply bg-green-700 scale-95;
     }
 
-    .authentication {
-        @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4;
-    }
-
-    .authentication input {
-        @apply w-[300px] text-base border-2 border-white rounded text-white;
-    }
-
     .page {
-        @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+        @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
     }
+
+    /* empty pages should not block clicks */
+    .page:empty {
+        pointer-events: none;
+    }
+
+    .page input {
+        @apply p-2 w-[300px] text-base border-2 border-white rounded-md bg-black text-white;
+    }
+
+    .menu-section {
+        @apply my-[10vh];
+    }
+
 }
