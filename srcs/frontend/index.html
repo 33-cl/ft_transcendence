@@ -7,17 +7,154 @@
   <!-- <link rel="stylesheet" href="styles/global.css"> -->
   <!-- <link rel="stylesheet" href="styles/components/login.css"> -->
   <!-- <link rel="stylesheet" href="styles/components/mainMenu.css"> -->
+  
+  <!-- Load 3D libraries first -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <!-- Fix for OrbitControls - load as a module that attaches to THREE namespace -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Create script element for OrbitControls
+      const orbitScript = document.createElement('script');
+      orbitScript.src = "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js";
+      orbitScript.onload = function() {
+        console.log("OrbitControls loaded successfully");
+        // Dispatch an event when loaded
+        document.dispatchEvent(new Event('orbitControlsLoaded'));
+      };
+      document.head.appendChild(orbitScript);
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+  
+  <style>
+    #scene-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      background-color: #111; /* Visible background to check if container exists */
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    /* When in first-person mode, scene container should be in front */
+    body.first-person-mode #scene-container {
+      z-index: 100 !important;
+    }
+    
+    #content-container {
+      position: absolute;
+      z-index: -100;
+      pointer-events: none;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+      visibility: hidden;
+      opacity: 0;
+      left: -9999px;
+    }
+    
+    #content-container * {
+      pointer-events: none;
+    }
+    
+    /* Make content semi-transparent for better 3D effect */
+    .page, h1 {
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* First-person mode toggle button */
+    #view-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000; /* Ensure it's always on top */
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: 2px solid white;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    
+    #view-toggle:hover {
+      background-color: rgba(50, 50, 50, 0.9);
+      transform: scale(1.05);
+    }
+
+    /* Debug info */
+    #debug-info {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 1000;
+      transition: all 0.3s ease;
+      max-width: 300px;
+      max-height: 200px;
+      overflow: auto;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    /* Make sure the toggle button is always visible */
+    #view-toggle {
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+
+    /* Hidden content for texture capture */
+    #hidden-content {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+      width: 100%;
+      height: 100vh;
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 </head>
-<body class="font-press-start bg-black text-white text-center flex flex-col items-center min-h-screen">
-  <h1 id="title" class="text-left border-b-[3px] border-white pb-[15px] pt-[20px] ml-[20px] self-stretch w-full text-3xl">FT_TRANSCENDENCE</h1>
+<body class="font-press-start bg-transparent text-white text-center flex flex-col items-center min-h-screen">
+  <div id="scene-container"></div>
+  <div id="debug-info">Loading 3D environment...</div>
+  
+  <div id="content-container">
+    <h1 id="title" class="text-left border-b-[3px] border-white pb-[15px] pt-[20px] ml-[20px] self-stretch w-full text-3xl">FT_TRANSCENDENCE</h1>
 
-  <div id="landing" class="page"></div>
-  <div id="mainMenu" class="page"></div>
-  <div id="signIn" class="page authentication"></div>
-  <div id="signUp" class="page authentication"></div>
-  <div id="game" class="page"></div>
-  <div id="lorem-ipsum" class="page"></div>
+    <div id="landing" class="page"></div>
+    <div id="mainMenu" class="page"></div>
+    <div id="signIn" class="page authentication"></div>
+    <div id="signUp" class="page authentication"></div>
+    <div id="game" class="page"></div>
+    <div id="lorem-ipsum" class="page"></div>
+  </div>
+  
+  <button id="view-toggle">Toggle First-Person View</button>
 
+  <!-- Load application scripts after 3D environment -->
+  <script src="src/3d-environment.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="dist/websocket.js"></script>
   <script type="module" src="dist/spa.js"></script>
