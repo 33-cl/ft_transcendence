@@ -1,3 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer components {
+    
+    h2 {
+        @apply text-2xl;
+    }
+
+    button {
+        @apply border-2 border-white rounded-lg px-4 py-2;
+    }
+
+    button:hover {
+        @apply bg-green-500;
+    }
+
+    button:active {
+        @apply bg-green-700 scale-95;
+    }
+
+    .authentication {
+        @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4;
+    }
+
+    .authentication input {
+        @apply w-[300px] text-base border-2 border-white rounded text-white;
+    }
+
+    .page {
+        @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+    }
+}
