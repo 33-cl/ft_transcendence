@@ -100,129 +100,26 @@ socket.on('roomJoined', (data: any) => {
 });
 
 // Fonction pour rejoindre ou créer automatiquement une room de n joueurs
+// Version simplifiée : le frontend demande juste au backend, qui gère tout
 async function joinOrCreateRoom(maxPlayers: number) {
-    if (joinInProgress) {
-        if (lastJoinPromise) await lastJoinPromise;
-        else return;
-    }
-    joinInProgress = true;
-    let joinRoomName: string | null = null;
-    let joinRoomResult: string | null = null;
-    lastJoinPromise = (async () => {
-        try {
-            // Synchronise la room réelle côté backend en cherchant le socket.id dans toutes les rooms
-            const resRooms = await fetch('/rooms');
-            const dataRooms = await resRooms.json();
-            const mySocketId = socket.id;
-            let myRoom: string | null = null;
-            for (const [name, room] of Object.entries(dataRooms.rooms)) {
-                const r: any = room;
-                if (r.players.includes(mySocketId)) {
-                    myRoom = name;
-                    break;
-                }
+    return new Promise<void>((resolve) => {
+        // On écoute la réponse du backend (room rejointe ou erreur)
+        const handler = (data: any) => {
+            if (data && data.room) {
+                currentRoom = data.room;
+                console.log('Room rejointe:', currentRoom);
+            } else if (data && data.error) {
+                console.error('Erreur lors du join:', data.error);
             }
-            // Si déjà dans une room non pleine du bon type, ne rien faire (FRONTEND GUARD)
-            if (myRoom) {
-                const room = dataRooms.rooms[myRoom];
-                if (room.maxPlayers === maxPlayers && room.players.length < maxPlayers) {
-                    currentRoom = myRoom;
-                    console.log(`[FRONTEND GUARD] Déjà dans une room ${maxPlayers} joueurs non pleine (backend):`, myRoom);
-                    joinInProgress = false;
-                    lastJoinPromise = null;
-                    return;
-                }
-            }
-            // 1. Cherche une room non pleine du bon type
-            let roomName = null;
-            for (const [name, room] of Object.entries(dataRooms.rooms)) {
-                const r: any = room;
-                if (r.maxPlayers === maxPlayers && r.players.length < maxPlayers) {
-                    roomName = name;
-                    break;
-                }
-            }
-            // 2. Si aucune room dispo, en crée une
-            if (!roomName) {
-                const res2 = await fetch('/rooms', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ maxPlayers })
-                });
-                const data2 = await res2.json();
-                roomName = data2.roomName;
-                // Ajout du print pour debug : taille de la room créée
-                console.log(`[DEBUG] Room créée côté backend : ${roomName}, maxPlayers = ${data2.maxPlayers}`);
-                // Vérification active que la room existe bien côté backend avant de join
-                let found = false;
-                for (let i = 0; i < 5; i++) { // 5 tentatives max
-                    const check = await fetch('/rooms');
-                    const checkData = await check.json();
-                    if (checkData.rooms[roomName]) {
-                        found = true;
-                        break;
-                    }
-                    await new Promise(r => setTimeout(r, 30)); // attend 30ms
-                }
-                if (!found) {
-                    console.error("Room nouvellement créée introuvable côté backend, abandon du joinRoom.");
-                    return;
-                }
-            }
-            joinRoomName = roomName;
-            // 3. Rejoint la room trouvée ou créée, avec retry si besoin
-            let joined = false;
-            let backendRoomReturned: string | null = null;
-            for (let i = 0; i < 5; i++) {
-                await new Promise(r => setTimeout(r, 30)); // attend 30ms
-                const joinPromise = new Promise<void>((resolve) => {
-                    const handler = (data: any) => {
-                        // Toujours synchroniser currentRoom avec la room retournée par le backend
-                        if (data && data.room) {
-                            currentRoom = data.room;
-                            joinRoomResult = data.room;
-                            backendRoomReturned = data.room;
-                            joined = (data.room === joinRoomName);
-                            if (!joined) {
-                                console.warn('[FRONTEND GUARD] Le backend a renvoyé une autre room que demandée. Arrêt des tentatives. Room backend:', data.room, 'Room demandée:', joinRoomName);
-                            }
-                            socket.off('roomJoined', handler);
-                            socket.off('error', handler);
-                            resolve();
-                        } else if (data && data.error === 'Room does not exist') {
-                            socket.off('roomJoined', handler);
-                            socket.off('error', handler);
-                            resolve();
-                        }
-                    };
-                    socket.once('roomJoined', handler);
-                    socket.once('error', handler);
-                });
-                socket.emit('joinRoom', { roomName });
-                await joinPromise;
-                if (joined || backendRoomReturned) break;
-            }
-            // Si le backend a renvoyé une autre room, on arrête tout
-            if (backendRoomReturned && backendRoomReturned !== joinRoomName) {
-                currentRoom = backendRoomReturned;
-                joinInProgress = false;
-                lastJoinPromise = null;
-                return;
-            }
-            if (!joined) {
-                if (joinRoomResult) {
-                    currentRoom = joinRoomResult;
-                    console.log('Room réelle côté backend après join:', currentRoom);
-                } else {
-                    console.error('Impossible de rejoindre la room après plusieurs tentatives.');
-                }
-            }
-        } finally {
-            joinInProgress = false;
-            lastJoinPromise = null;
-        }
-    })();
-    await lastJoinPromise;
+            socket.off('roomJoined', handler);
+            socket.off('error', handler);
+            resolve();
+        };
+        socket.once('roomJoined', handler);
+        socket.once('error', handler);
+        // On demande au backend de nous placer dans une room du bon type
+        socket.emit('joinRoom', { maxPlayers });
+    });
 }
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
