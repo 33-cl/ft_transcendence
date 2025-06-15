@@ -1,0 +1,2 @@
+# Ignore les node_modules du backend pour éviter de les copier dans l'image Docker
+srcs/backend/node_modules

@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  },
+  "name": "frontend",
+  "version": "1.0.0",
+  "main": "game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./styles/input.css -o ./styles/output.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/socket.io-client": "^1.4.36",
+    "typescript": "^5.8.3",
+    "tailwindcss": "^3.4.1"
+  }
+}
