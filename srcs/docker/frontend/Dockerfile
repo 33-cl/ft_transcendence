@@ -19,6 +19,7 @@ COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/index.html /app/index.html
 COPY --from=builder /app/styles /app/styles
 COPY --from=builder /app/src /app/src
+COPY --from=builder /app/img /app/img
 
 COPY ./srcs/docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY ./srcs/docker/frontend/entrypoint.sh /entrypoint.sh

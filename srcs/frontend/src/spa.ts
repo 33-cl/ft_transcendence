@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, mainMenuHTML, gameHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, friendListHTML, mainMenuHTML, gameHTML } from './components/index.js';
 
 // Define all components
 const components = {
@@ -9,6 +9,10 @@ const components = {
     mainMenu: {
         id: 'mainMenu',
         html: mainMenuHTML
+    },
+    friendList: {
+        id: 'friendList',
+        html: friendListHTML
     },
     game: {
         id: 'game',
@@ -26,11 +30,6 @@ const components = {
 
 // Init components
 function show(pageName: keyof typeof components) {
-    // Clear all components first
-    Object.values(components).forEach(component => {
-        const element = document.getElementById(component.id);
-        if (element) element.innerHTML = '';
-    });
 
     // Show the requested component
     const component = components[pageName];
@@ -67,6 +66,7 @@ function initializeComponents(): void {
         if (target.id === 'guestBtn') {
             hideAllPages();
             show('mainMenu');
+            show('friendList');
         }
         if (target.id === 'localGameBtn') {
             hideAllPages();

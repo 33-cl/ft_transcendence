@@ -45,8 +45,22 @@
         @apply p-2 w-[300px] text-base border-2 border-white rounded-md bg-black text-white;
     }
 
+    .friendList {
+        @apply bg-gray-500 w-[15%] h-[65%] absolute right-[2%] top-[22%];
+    }
+
+    .friendList img {
+        @apply w-20 h-20 rounded-md object-cover;
+    }
+
+    .friend {
+        @apply flex items-center gap-4 p-2;
+    }
+
     .menu-section {
-        @apply my-[10vh];
+        /* @apply my-[10vh] mr-[20%] pr-[100%] pl-[100%] bg-blue-500; */
+        @apply text-2xl my-[10vh];
+        
     }
 
 }
