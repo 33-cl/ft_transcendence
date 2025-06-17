@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/17 14:39:45 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/17 16:10:34 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
@@ -103,8 +103,18 @@ export default function registerSocketHandlers(io, fastify) {
             }
             joinRoomLocks.add(socket.id);
             try {
-                let roomName = data?.roomName;
                 const maxPlayers = data?.maxPlayers;
+                const previousRoom = getPlayerRoom(socket.id);
+                if (typeof maxPlayers === 'number' && previousRoom) {
+                    const prevRoomObj = rooms[previousRoom];
+                    if (prevRoomObj && prevRoomObj.maxPlayers === maxPlayers) {
+                        // Anti-zap strict : déjà dans une room du bon type (pleine ou non), on ne bouge pas
+                        socket.emit('roomJoined', { room: previousRoom });
+                        fastify.log.warn(`ANTI-ZAP-STRICT: ${socket.id} déjà dans la room ${previousRoom} (type ${maxPlayers})`);
+                        return;
+                    }
+                }
+                let roomName = data?.roomName;
                 if (!roomName && typeof maxPlayers === 'number') {
                     roomName = null;
                     for (const [name, room] of Object.entries(rooms)) {
@@ -115,6 +125,9 @@ export default function registerSocketHandlers(io, fastify) {
                     }
                     if (!roomName) {
                         // Création de la room via l'API REST (POST /rooms)
+                        // NOTE : Le backend s'auto-appelle ici en HTTPS pour garantir que toute création de room
+                        // passe par l'API REST officielle, même en interne (conformité au sujet, audit, sécurité).
+                        // L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés en dev.
                         const postData = JSON.stringify({ maxPlayers });
                         const options = {
                             hostname: 'localhost',
@@ -147,16 +160,19 @@ export default function registerSocketHandlers(io, fastify) {
                         });
                     }
                 }
-                if (!canJoinRoom(socket, roomName))
+                if (!canJoinRoom(socket, roomName)) {
                     return;
+                }
                 const room = rooms[roomName];
-                const previousRoom = getPlayerRoom(socket.id);
-                if (hardBlockAntiZap(socket, previousRoom, room, fastify))
+                if (hardBlockAntiZap(socket, previousRoom, room, fastify)) {
                     return; // Stoppe ici si anti-zap
-                if (handleRoomSwitch(socket, previousRoom, roomName, fastify))
+                }
+                if (handleRoomSwitch(socket, previousRoom, roomName, fastify)) {
                     return; // Stoppe ici si déjà dans la room
-                if (handleRoomFull(socket, room, fastify))
+                }
+                if (handleRoomFull(socket, room, fastify)) {
                     return;
+                }
                 if (previousRoom) {
                     removePlayerFromRoom(socket.id);
                     socket.leave(previousRoom);

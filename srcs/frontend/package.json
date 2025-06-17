@@ -7,6 +7,7 @@
   "main": "game.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && cp src/game.js dist/ && cp -r ../frontend/img dist/ || true",
     "build:css": "tailwindcss -i ./styles/input.css -o ./styles/output.css --watch"
   },
   "keywords": [],
