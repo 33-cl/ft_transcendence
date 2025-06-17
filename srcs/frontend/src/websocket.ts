@@ -87,39 +87,34 @@ function handleWebSocketMessage(message: { type: MessageType, data: MessageData 
 }
 
 let currentRoom: string | null = null;
+
+// Handler global supprimé définitivement pour éviter tout effet de bord
+
 let joinInProgress = false;
-let lastJoinPromise: Promise<void> | null = null;
 
-// Met à jour la room courante quand on reçoit la confirmation du backend
-socket.on('roomJoined', (data: any) => {
-    if (data && data.room) {
-        currentRoom = data.room;
-        joinInProgress = false;
-        console.log('Room rejointe:', currentRoom);
-    }
-});
-
-// Fonction pour rejoindre ou créer automatiquement une room de n joueurs
-// Version simplifiée : le frontend demande juste au backend, qui gère tout
+// Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
 async function joinOrCreateRoom(maxPlayers: number) {
-    return new Promise<void>((resolve) => {
-        // On écoute la réponse du backend (room rejointe ou erreur)
-        const handler = (data: any) => {
-            if (data && data.room) {
-                currentRoom = data.room;
-                console.log('Room rejointe:', currentRoom);
-            } else if (data && data.error) {
-                console.error('Erreur lors du join:', data.error);
-            }
-            socket.off('roomJoined', handler);
-            socket.off('error', handler);
-            resolve();
-        };
-        socket.once('roomJoined', handler);
-        socket.once('error', handler);
-        // On demande au backend de nous placer dans une room du bon type
-        socket.emit('joinRoom', { maxPlayers });
-    });
+    if (joinInProgress) return;
+    joinInProgress = true;
+    try {
+        return new Promise<void>((resolve) => {
+            const handler = (data: any) => {
+                if (data && data.room) {
+                    currentRoom = data.room;
+                } else if (data && data.error) {
+                    console.error('Erreur lors du joinRoom:', data.error);
+                }
+                socket.off('roomJoined', handler);
+                socket.off('error', handler);
+                resolve();
+            };
+            socket.once('roomJoined', handler);
+            socket.once('error', handler);
+            socket.emit('joinRoom', { maxPlayers });
+        });
+    } finally {
+        joinInProgress = false;
+    }
 }
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
