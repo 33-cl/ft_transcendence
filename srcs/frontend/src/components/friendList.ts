@@ -4,27 +4,17 @@ export const friendListHTML = /*html*/`
         <hr>
         <div class="friend">
             <img src="./img/tung-tung-tung-sahur.jpeg" alt="Friend Avatar">
-            <p class="friend-name">Tung Tung Tung Sahur</p>
+            <p class="friend-name">tung_sahur92i</p>
         </div>
         <div class="friend">
             <img src="./img/brr-brr-patapim.jpg" alt="Friend Avatar">
-            <p class="friend-name">Brr Brr Patapim</p>
+            <p class="friend-name">BRR Patapim</p>
         </div>
         <div class="friend">
-            <img src="./img/tung-tung-tung-sahur.jpeg" alt="Friend Avatar">
-            <p class="friend-name">Tung Tung Tung Sahur</p>
+            <img src="./img/bombardilo-crocodilo.jpg" alt="Friend Avatar">
+            <p class="friend-name">bombardilo_croco</p>
         </div>
         <div class="friend">
-            <img src="./img/brr-brr-patapim.jpg" alt="Friend Avatar">
-            <p class="friend-name">Brr Brr Patapim</p>
-        </div>
-        <div class="friend">
-            <img src="./img/tung-tung-tung-sahur.jpeg" alt="Friend Avatar">
-            <p class="friend-name">Tung Tung Tung Sahur</p>
-        </div>
-        <div class="friend">
-            <img src="./img/brr-brr-patapim.jpg" alt="Friend Avatar">
-            <p class="friend-name">Brr Brr Patapim</p>
-        </div>
-    </div>
+            <img src="./img/tralalero-tralala.png" alt="Friend Avatar">
+            <p class="friend-name">tralalero</p>
 `;

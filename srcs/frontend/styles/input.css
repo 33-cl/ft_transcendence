@@ -67,10 +67,6 @@
         @apply bg-green-700 scale-95;
     }
 
-    canvas {
-        @apply -z-[1] fixed top-0 left-0 w-full h-full;
-    }
-
     .page {
         @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
     }
