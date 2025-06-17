@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, friendListHTML, mainMenuHTML, gameHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML } from './components/index.js';
 
 // Define all components
 const components = {
@@ -9,6 +9,10 @@ const components = {
     mainMenu: {
         id: 'mainMenu',
         html: mainMenuHTML
+    },
+    leaderboard: {
+        id: 'leaderboard',
+        html: leaderboardHTML
     },
     friendList: {
         id: 'friendList',
@@ -67,6 +71,7 @@ function initializeComponents(): void {
             hideAllPages();
             show('mainMenu');
             show('friendList');
+            show('leaderboard');
         }
         if (target.id === 'localGameBtn') {
             hideAllPages();

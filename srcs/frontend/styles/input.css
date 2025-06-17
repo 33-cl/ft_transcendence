@@ -80,16 +80,39 @@
         @apply p-2 w-[300px] text-base border-2 border-white rounded-md bg-black text-white;
     }
 
-    .friendList {
-        @apply bg-gray-500 w-[15%] h-[65%] absolute right-[2%] top-[22%] overflow-y-auto;
+    #leaderboard{
+        @apply left-[2%];
     }
 
-    .friendList img {
+    #friendList {
+        @apply right-[2%];
+    }
+
+    .user-list {
+        @apply bg-gray-500 w-[15%] h-[65%] absolute top-[22%] overflow-y-auto;
+
+        background-color: rgba(0, 0, 0, 0.5)
+    }
+
+    .user-list img {
         @apply w-20 h-20 rounded-md object-cover;
     }
 
     .friend {
-        @apply flex items-center gap-4 p-2 hover:bg-gray-600 transition-colors;
+        @apply flex items-center gap-4 p-2 hover:bg-gray-600 transition-colors relative;
+    }
+
+    .crown {
+        @apply absolute z-10;
+        top: -2.5vh;
+        left: -1.5vh;
+        width: 120px !important;
+        height: 50px !important;
+        object-fit: fill !important;
+    }
+
+    .profile-pic {
+        @apply relative z-0;
     }
 
     .menu-container {
