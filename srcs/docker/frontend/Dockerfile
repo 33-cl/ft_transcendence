@@ -6,7 +6,8 @@ COPY ./srcs/frontend/package*.json ./
 RUN npm install && \
     npm install -D tailwindcss postcss autoprefixer
 COPY ./srcs/frontend/ ./
-RUN npx tsc --build --force
+RUN npx tsc --build --force && \
+    npx tailwindcss -i ./styles/input.css -o ./styles/output.css
 
 # Stage 2: Nginx static server
 FROM nginx:alpine
@@ -18,7 +19,6 @@ COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/index.html /app/index.html
 COPY --from=builder /app/styles /app/styles
 COPY --from=builder /app/src /app/src
-COPY --from=builder /app/img /app/img
 
 COPY ./srcs/docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY ./srcs/docker/frontend/entrypoint.sh /entrypoint.sh
