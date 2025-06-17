@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/11 17:27:36 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/17 16:10:34 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@ import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
 import { handleMessage } from './messageHandlers.js';
+import https from 'https';
 
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
@@ -37,7 +38,7 @@ function canJoinRoom(socket: Socket, roomName: string): boolean
 }
 
 // Bloque le "zapping" si le client est déjà dans une room non pleine du même type
-function hardBlockAntiZap(socket: Socket, previousRoom: string | null, room: any): boolean
+function hardBlockAntiZap(socket: Socket, previousRoom: string | null, room: any, fastify: FastifyInstance): boolean
 {
 	if (previousRoom)
 	{
@@ -45,7 +46,9 @@ function hardBlockAntiZap(socket: Socket, previousRoom: string | null, room: any
 		if (prevRoomObj && prevRoomObj.players.length < prevRoomObj.maxPlayers && prevRoomObj.maxPlayers === room.maxPlayers)
 		{
 			// Refuse le join et renvoie le client dans sa room actuelle
+			// Protection anti-zap : un joueur ne peut pas zapper entre rooms du même type non pleines
 			socket.emit('roomJoined', { room: previousRoom });
+			fastify.log.warn(`ANTI-ZAP: ${socket.id} tenté de zapper de ${previousRoom} vers ${room.name || previousRoom}`);
 			return true;
 		}
 	}
@@ -53,22 +56,26 @@ function hardBlockAntiZap(socket: Socket, previousRoom: string | null, room: any
 }
 
 // Si le client demande à rejoindre la même room où il est déjà, on confirme simplement
-function handleRoomSwitch(socket: Socket, previousRoom: string | null, roomName: string): boolean
+function handleRoomSwitch(socket: Socket, previousRoom: string | null, roomName: string, fastify: FastifyInstance): boolean
 {
 	if (previousRoom === roomName)
 	{
+		// Protection : ne pas rejoindre deux fois la même room
 		socket.emit('roomJoined', { room: roomName });
+		fastify.log.warn(`ALREADY-IN-ROOM: ${socket.id} a tenté de rejoindre deux fois la room ${roomName}`);
 		return true;
 	}
 	return false;
 }
 
 // Vérifie si la room est pleine
-function handleRoomFull(socket: Socket, room: any): boolean
+function handleRoomFull(socket: Socket, room: any, fastify: FastifyInstance): boolean
 {
 	if (room.players.length >= room.maxPlayers)
 	{
+		// Protection : refuse si la room est pleine
 		socket.emit('error', { error: 'Room is full' });
+		fastify.log.warn(`ROOM-FULL: ${socket.id} a tenté de rejoindre la room pleine ${room.name}`);
 		return true;
 	}
 	return false;
@@ -103,6 +110,14 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: any)
 }
 
 // Fonction principale qui enregistre tous les handlers socket.io
+/**
+ * Enregistre tous les handlers socket.io pour la gestion des rooms.
+ * Toutes les protections (anti-zap, déjà dans la room, room pleine) sont centralisées ici côté backend.
+ * Justification :
+ * - Toute la logique métier de gestion de rooms doit être côté serveur (conformément au sujet).
+ * - Les protections sont loguées pour audit/debug.
+ * - Le frontend ne fait que demander à rejoindre une room, sans logique métier.
+ */
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
 	io.on('connection', (socket: Socket) =>
@@ -110,51 +125,94 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 		// Log la connexion d'un nouveau client
 		fastify.log.info(`Client connecté : ${socket.id}`);
 
-		// Handler pour rejoindre une room existante (créée via REST)
-		socket.on('joinRoom', async (data: any) =>
-		{
-			// Empêche le double join simultané pour un même client
-			if (joinRoomLocks.has(socket.id))
+		// Handler pour rejoindre ou créer une room selon le nombre de joueurs demandé
+		// Si data.maxPlayers est fourni, on cherche/crée une room adaptée
+		// Si data.roomName est fourni, on garde le comportement existant
+			socket.on('joinRoom', async (data: any) =>
 			{
-				fastify.log.warn(`joinRoom already in progress for ${socket.id}`);
-				return;
-			}
-			joinRoomLocks.add(socket.id);
-			try {
-				const { roomName } = data || {};
-				// Vérifie la validité de la room demandée
-				if (!canJoinRoom(socket, roomName))
+				if (joinRoomLocks.has(socket.id)) {
+					fastify.log.warn(`joinRoom already in progress for ${socket.id}`);
 					return;
-				const room = rooms[roomName];
-				const previousRoom = getPlayerRoom(socket.id);
-
-				// Applique la sécurité anti-zap
-				if (hardBlockAntiZap(socket, previousRoom, room))
-					return;
-				// Si déjà dans la room demandée, confirme simplement
-				if (handleRoomSwitch(socket, previousRoom, roomName))
-					return;
-				// Refuse si la room est pleine
-				if (handleRoomFull(socket, room))
-					return;
-
-				// Retire le joueur de sa room précédente (si besoin)
-				if (previousRoom)
-				{
-					removePlayerFromRoom(socket.id);
-					socket.leave(previousRoom);
 				}
-				// Nettoie toutes les rooms où il pourrait être
-				cleanUpPlayerRooms(socket);
-				// Ajoute le joueur à la nouvelle room
-				joinPlayerToRoom(socket, roomName, room);
-			}
-			finally
-			{
-				// Retire le lock pour permettre de rejoindre une autre room ensuite
-				joinRoomLocks.delete(socket.id);
-			}
-		});
+				joinRoomLocks.add(socket.id);
+				try {
+					const maxPlayers = data?.maxPlayers;
+					const previousRoom = getPlayerRoom(socket.id);
+					if (typeof maxPlayers === 'number' && previousRoom) {
+						const prevRoomObj = rooms[previousRoom];
+						if (prevRoomObj && prevRoomObj.maxPlayers === maxPlayers) {
+							// Anti-zap strict : déjà dans une room du bon type (pleine ou non), on ne bouge pas
+							socket.emit('roomJoined', { room: previousRoom });
+							fastify.log.warn(`ANTI-ZAP-STRICT: ${socket.id} déjà dans la room ${previousRoom} (type ${maxPlayers})`);
+							return;
+						}
+					}
+					let roomName = data?.roomName;
+					if (!roomName && typeof maxPlayers === 'number') {
+						roomName = null;
+						for (const [name, room] of Object.entries(rooms)) {
+							if (room.maxPlayers === maxPlayers && room.players.length < maxPlayers) {
+								roomName = name;
+								break;
+							}
+						}
+						if (!roomName) {
+							// Création de la room via l'API REST (POST /rooms)
+							// NOTE : Le backend s'auto-appelle ici en HTTPS pour garantir que toute création de room
+							// passe par l'API REST officielle, même en interne (conformité au sujet, audit, sécurité).
+							// L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés en dev.
+							const postData = JSON.stringify({ maxPlayers });
+							const options = {
+								hostname: 'localhost',
+								port: 8080,
+								path: '/rooms',
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+									'Content-Length': Buffer.byteLength(postData)
+								},
+								rejectUnauthorized: false // pour auto-signé en dev
+							};
+							roomName = await new Promise((resolve, reject) => {
+								const req = https.request(options, (res: any) => {
+									let data = '';
+									res.on('data', (chunk: any) => { data += chunk; });
+									res.on('end', () => {
+										try {
+											const json = JSON.parse(data);
+											resolve(json.roomName);
+										} catch (e) { reject(e); }
+									});
+								});
+								req.on('error', reject);
+								req.write(postData);
+								req.end();
+							});
+						}
+					}
+					if (!canJoinRoom(socket, roomName)) {
+						return;
+					}
+					const room = rooms[roomName];
+					if (hardBlockAntiZap(socket, previousRoom, room, fastify)) {
+						return; // Stoppe ici si anti-zap
+					}
+					if (handleRoomSwitch(socket, previousRoom, roomName, fastify)) {
+						return; // Stoppe ici si déjà dans la room
+					}
+					if (handleRoomFull(socket, room, fastify)) {
+						return;
+					}
+					if (previousRoom) {
+						removePlayerFromRoom(socket.id);
+						socket.leave(previousRoom);
+					}
+					cleanUpPlayerRooms(socket);
+					joinPlayerToRoom(socket, roomName, room);
+				} finally {
+					joinRoomLocks.delete(socket.id);
+				}
+			});
 
 		// Handler pour le ping/pong (test de connexion)
 		socket.on('ping', (data: any) =>

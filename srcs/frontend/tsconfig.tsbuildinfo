@@ -1,1 +1,2 @@
 {"root":["./src/global.d.ts","./src/spa.ts","./src/websocket.ts","./src/components/friendList.ts","./src/components/game.ts","./src/components/index.ts","./src/components/landing.ts","./src/components/mainMenu.ts","./src/components/signIn.ts","./src/components/signUp.ts"],"version":"5.8.3"}
+

@@ -2,10 +2,9 @@
 // Ce fichier expose une API REST pour gérer les rooms (création, listing, suppression)
 
 import { FastifyInstance } from 'fastify';
-import { rooms, roomExists, addPlayerToRoom, Room } from '../socket/roomManager.js';
+import { rooms, roomExists, addPlayerToRoom, Room, getNextRoomName } from '../socket/roomManager.js';
 
-// Compteur local pour générer des noms uniques de room
-let localRoomCounter = 1;
+// Supprime le compteur local, on utilise le compteur global partagé
 
 export default async function roomsRoutes(fastify: FastifyInstance)
 {
@@ -16,10 +15,10 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 		if (!maxPlayers || typeof maxPlayers !== 'number')
 			return reply.status(400).send({ error: 'maxPlayers needed' });
 
-		// Génère un nom unique pour la room
+		// Génère un nom unique pour la room, incrémental et global
 		let roomName;
 		do {
-			roomName = `room${localRoomCounter++}`;
+			roomName = getNextRoomName();
 		} while (roomExists(roomName));
 		// Crée la room vide
 		rooms[roomName] = { players: [], maxPlayers };
