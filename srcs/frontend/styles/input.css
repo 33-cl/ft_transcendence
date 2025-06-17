@@ -4,8 +4,44 @@
 @tailwind components;
 @tailwind utilities;
 
+.stars {
+    @apply fixed top-0 left-0 w-full h-full;
+    z-index: -1;
+}
+
+.stars::before,
+.stars::after {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-full;
+    background-image: 
+        radial-gradient(3px 3px at 20px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 50px 160px, #fff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 90px 40px, #fff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 130px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 160px 120px, #fff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    animation: twinkle 4s infinite;
+    opacity: 0;
+}
+
+.stars::after {
+    background-position: 100px 100px;
+    animation-delay: 2s;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
 
 @layer components {
+
+    h1 {
+        @apply bg-black;
+    }
 
     h2 {
         @apply text-2xl my-[2vh];
@@ -19,9 +55,8 @@
         @apply text-purple-800;
     }
 
-
     button {
-        @apply p-4 border-2 border-white rounded-lg px-4 py-2 text-2xl cursor-pointer;
+        @apply bg-black p-4 border-2 border-white rounded-lg px-4 py-2 text-2xl cursor-pointer;
     }
 
     button:hover {
@@ -30,6 +65,10 @@
 
     button:active {
         @apply bg-green-700 scale-95;
+    }
+
+    canvas {
+        @apply -z-[1] fixed top-0 left-0 w-full h-full;
     }
 
     .page {
@@ -46,7 +85,7 @@
     }
 
     .friendList {
-        @apply bg-gray-500 w-[15%] h-[65%] absolute right-[2%] top-[22%];
+        @apply bg-gray-500 w-[15%] h-[65%] absolute right-[2%] top-[22%] overflow-y-auto;
     }
 
     .friendList img {
@@ -54,13 +93,15 @@
     }
 
     .friend {
-        @apply flex items-center gap-4 p-2;
+        @apply flex items-center gap-4 p-2 hover:bg-gray-600 transition-colors;
+    }
+
+    .menu-container {
+        @apply text-2xl;
     }
 
     .menu-section {
-        /* @apply my-[10vh] mr-[20%] pr-[100%] pl-[100%] bg-blue-500; */
-        @apply text-2xl my-[10vh];
-        
+        @apply my-[10vh];
     }
 
 }
