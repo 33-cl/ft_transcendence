@@ -48,3 +48,7 @@ export function getRoomMaxPlayers(roomName) {
     // si la room n existe pas, retourne null
     return rooms[roomName]?.maxPlayers ?? null;
 }
+// Utilitaire: générer le nom d'une nouvelle room
+export function getNextRoomName() {
+    return `room${roomCounter++}`;
+}
