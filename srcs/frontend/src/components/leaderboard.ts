@@ -6,7 +6,7 @@ export const leaderboardHTML = /*html*/`
             <p class="friend-name">1. tralalero</p>
         </div>
         <div class="friend">
-            <p class="friend-name">2. bombardilo_croco</p>
+            <p class="friend-name">2. bombardilolo</p>
         </div>
         <div class="friend">
             <p class="friend-name">3. tung_sahur92i</p>
