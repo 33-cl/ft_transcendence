@@ -89,9 +89,7 @@
     }
 
     .user-list {
-        @apply bg-gray-500 w-[15%] h-[65%] absolute top-[22%] overflow-y-auto;
-
-        background-color: rgba(0, 0, 0, 0.5)
+        @apply w-[15%] h-[65%] absolute top-[22%] overflow-y-auto;
     }
 
     .user-list img {
@@ -103,13 +101,7 @@
     }
 
     .crown {
-        @apply absolute z-10;
-        top: -2.7vh;
-        left: -2.3vh;
-        width: 130px !important;
-        height: 65px !important;
-        object-fit: fill !important;
-        transform: rotate(-10deg);
+        @apply absolute z-10 top-[-2.7vh] left-[-2.3vh] w-[130px] h-[65px] object-fill rotate-[-10deg] !important;
     }
 
     .profile-pic {
