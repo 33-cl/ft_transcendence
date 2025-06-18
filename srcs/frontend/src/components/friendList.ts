@@ -3,7 +3,7 @@ export const friendListHTML = /*html*/`
         <h2>Friends</h2>
         <hr>
         <div class="friend">
-            <img src="./img/bronze-crown.png" alt="Crown" class="crown">
+       <!-- <img src="./img/bronze-crown.png" alt="Crown" class="crown"> -->
             <img src="./img/tung-tung-tung-sahur.jpeg" alt="Friend Avatar" class="profile-pic">
             <p class="friend-name">tung_sahur92i</p>
         </div>
@@ -12,12 +12,12 @@ export const friendListHTML = /*html*/`
             <p class="friend-name">BRR Patapim</p>
         </div>
         <div class="friend">
-            <img src="./img/silver-crown.png" alt="Crown" class="crown">
+       <!-- <img src="./img/silver-crown.png" alt="Crown" class="crown"> -->
             <img src="./img/bombardilo-crocodilo.jpg" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">bombardilo_croco</p>
+            <p class="friend-name">bombardilolo</p>
         </div>
         <div class="friend">
-            <img src="./img/gold-crown.png" alt="Crown" class="crown">
+            <img src="./img/gold-crown.png" alt="Crown" class="crown" id="gold-crown">
             <img src="./img/tralalero-tralala.png" alt="Friend Avatar" class="profile-pic">
             <p class="friend-name">tralalero</p>
         </div>

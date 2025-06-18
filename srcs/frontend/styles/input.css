@@ -40,7 +40,7 @@
 @layer components {
 
     h1 {
-        @apply bg-black;
+        @apply text-left border-b-[3px] border-white pb-[15px] pt-[20px] w-full text-3xl bg-black;
     }
 
     h2 {
@@ -104,11 +104,12 @@
 
     .crown {
         @apply absolute z-10;
-        top: -2.5vh;
-        left: -1.5vh;
-        width: 120px !important;
-        height: 50px !important;
+        top: -2.7vh;
+        left: -2.3vh;
+        width: 130px !important;
+        height: 65px !important;
         object-fit: fill !important;
+        transform: rotate(-10deg);
     }
 
     .profile-pic {
