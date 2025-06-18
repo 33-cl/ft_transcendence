@@ -42,7 +42,7 @@ const app = fastify({
     credentials: true
   });
   
-  // On n'utilise que du JSON côté frontend, donc pas besoin de fastifyFormbody
+ 
 
   // Route GET très simple
   app.get('/', async (request, reply) => {

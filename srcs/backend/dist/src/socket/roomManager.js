@@ -1,4 +1,3 @@
-// src/socket/roomManager.ts
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
 // on utilise un objet pour stocker les rooms, ou la cle est le nom de la room et la valeur est un objet room
 export const rooms = {};

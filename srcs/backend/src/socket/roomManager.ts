@@ -1,9 +1,12 @@
+import { GameState, createInitialGameState } from '../../Rayan/gameState.js';
+
 // src/socket/roomManager.ts
 
 export interface Room
 {
   players: string[];
   maxPlayers: number;
+  gameState: GameState;
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
