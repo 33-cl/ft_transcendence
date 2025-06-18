@@ -3,6 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { rooms, roomExists, addPlayerToRoom, Room, getNextRoomName } from '../socket/roomManager.js';
+import { createInitialGameState } from '../../Rayan/gameState.js';
 
 // Supprime le compteur local, on utilise le compteur global partagé
 
@@ -20,8 +21,8 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 		do {
 			roomName = getNextRoomName();
 		} while (roomExists(roomName));
-		// Crée la room vide
-		rooms[roomName] = { players: [], maxPlayers };
+		// Crée la room vide avec un gameState initialisé
+		rooms[roomName] = { players: [], maxPlayers, gameState: createInitialGameState() };
 		return { roomName, maxPlayers };
 	});
 
@@ -39,5 +40,12 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 			return reply.status(404).send({ error: 'Room not found' });
 		delete rooms[roomName];
 		return { success: true };
+	});
+
+	// Route GET /db-test : tester la connexion à la base de données et compter les parties
+	fastify.get('/db-test', async (request, reply) => {
+		const db = (await import('../../Rayan/db.js')).default;
+		const row = db.prepare('SELECT COUNT(*) as count FROM games').get() as { count: number };
+		return { gamesCount: row.count };
 	});
 }

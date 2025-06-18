@@ -1,1 +1,1 @@
-{"root":["../server.ts","../src/routes/ping.ts","../src/routes/rooms.ts","../src/routes/users.ts","../src/socket/messageHandlers.ts","../src/socket/roomManager.ts","../src/socket/socketHandlers.ts"],"version":"5.8.3"}
+{"root":["../server.ts","../Rayan/db.ts","../Rayan/gameState.ts","../src/routes/ping.ts","../src/routes/rooms.ts","../src/routes/users.ts","../src/socket/messageHandlers.ts","../src/socket/roomManager.ts","../src/socket/socketHandlers.ts"],"errors":true,"version":"5.8.3"}

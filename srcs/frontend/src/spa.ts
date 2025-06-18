@@ -70,7 +70,7 @@ function initializeComponents(): void {
         }
         if (target.id === 'localGameBtn') {
             hideAllPages();
-            show('game');
+            // show('game'); // Désactivé : le mode local n'est plus supporté
         }
         if (target.id === 'signInBtn') {
             hideAllPages();
