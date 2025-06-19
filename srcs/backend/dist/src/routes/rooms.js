@@ -1,6 +1,7 @@
 // routes/rooms.ts
 // Ce fichier expose une API REST pour gérer les rooms (création, listing, suppression)
 import { rooms, roomExists, getNextRoomName } from '../socket/roomManager.js';
+import { createInitialGameState } from '../../Rayan/gameState.js';
 // Supprime le compteur local, on utilise le compteur global partagé
 export default async function roomsRoutes(fastify) {
     // Route POST /rooms : créer une nouvelle room
@@ -13,8 +14,8 @@ export default async function roomsRoutes(fastify) {
         do {
             roomName = getNextRoomName();
         } while (roomExists(roomName));
-        // Crée la room vide
-        rooms[roomName] = { players: [], maxPlayers };
+        // Crée la room vide avec un gameState initialisé
+        rooms[roomName] = { players: [], maxPlayers, gameState: createInitialGameState() };
         return { roomName, maxPlayers };
     });
     // Route GET /rooms : lister toutes les rooms existantes
@@ -29,4 +30,18 @@ export default async function roomsRoutes(fastify) {
         delete rooms[roomName];
         return { success: true };
     });
+    // ===============================
+    // !!! ROUTE DE TEST DEV UNIQUEMENT !!!
+    // /db-test : à SUPPRIMER avant la mise en production !
+    // ===============================
+    /*
+    fastify.get('/db-test', async (request, reply) => {
+        const db = (await import('../../Rayan/db.js')).default;
+        const row = db.prepare('SELECT COUNT(*) as count FROM games').get() as { count: number };
+        return { gamesCount: row.count };
+    });
+    */
+    // ===============================
+    // FIN ROUTE DE TEST DEV UNIQUEMENT
+    // ===============================
 }

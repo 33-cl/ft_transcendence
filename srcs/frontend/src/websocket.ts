@@ -5,11 +5,24 @@ declare var io: any;
 
 // Connexion socket.io sur le même domaine
 const socket = io('', { transports: ["websocket"], secure: true }); // Connexion sur le même domaine
+(window as any).socket = socket;
 
 // Quand la connexion avec le serveur est établie, ce code s'exécute
 socket.on("connect", () => {
     // Affiche l'identifiant unique de la connexion dans la console
     console.log("Connecté au serveur WebSocket avec l'id:", socket.id);
+});
+
+// --- Ajout : écoute l'attribution du paddle lors du joinRoom ---
+socket.on('roomJoined', (data: any) => {
+    if (data && data.paddle) {
+        (window as any).controlledPaddle = data.paddle;
+        console.log('Vous contrôlez le paddle :', data.paddle);
+    } else {
+        (window as any).controlledPaddle = null;
+    }
+    // Notifie pongControls.ts de l'attribution du paddle
+    document.dispatchEvent(new Event('roomJoined'));
 });
 
 
@@ -86,10 +99,6 @@ function handleWebSocketMessage(message: { type: MessageType, data: MessageData 
     }
 }
 
-let currentRoom: string | null = null;
-
-// Handler global supprimé définitivement pour éviter tout effet de bord
-
 let joinInProgress = false;
 
 // Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
@@ -100,7 +109,8 @@ async function joinOrCreateRoom(maxPlayers: number) {
         return new Promise<void>((resolve) => {
             const handler = (data: any) => {
                 if (data && data.room) {
-                    currentRoom = data.room;
+                    // Room rejointe, tu peux afficher un log ou faire une action ici si besoin
+                    // console.log('Room rejointe:', data.room);
                 } else if (data && data.error) {
                     console.error('Erreur lors du joinRoom:', data.error);
                 }
@@ -118,4 +128,25 @@ async function joinOrCreateRoom(maxPlayers: number) {
 }
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
+
+import { initPongRenderer, draw } from './pongRenderer.js';
+
+// Initialisation du renderer Pong au chargement de la page jeu
+function setupPongCanvas() {
+    initPongRenderer('map');
+}
+
+document.addEventListener('componentsReady', () => {
+    // Si la page jeu est affichée, on initialise le renderer
+    if (document.getElementById('map')) {
+        setupPongCanvas();
+    }
+});
+
+socket.on('gameState', (state: any) => {
+    draw(state);
+});
+
+// Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
+import './pongControls.js'; // Ajoute les contrôles clavier (modularité)
 

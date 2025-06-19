@@ -74,6 +74,8 @@ function initializeComponents(): void {
             show('leaderboard');
         }
         if (target.id === 'localGameBtn') {
+            (window as any).setIsLocalGame(true); // Active le mode local
+            await window.joinOrCreateRoom(1); // Room solo, logique 100% backend
             hideAllPages();
             show('game');
         }
@@ -91,13 +93,20 @@ function initializeComponents(): void {
         }
         // ROOM LOGIC
         if (target.id === 'ranked1v1Btn') {
+            (window as any).setIsLocalGame(false); // Désactive le mode local
             await window.joinOrCreateRoom(2); // 1v1
+            hideAllPages();
+            show('game');
         }
         if (target.id === 'customCreateBtn') {
             await window.joinOrCreateRoom(4); // 2v2 (exemple)
+            hideAllPages();
+            show('game');
         }
         if (target.id === 'customJoinBtn') {
             await window.joinOrCreateRoom(4); // 2v2 (exemple), a changer plus tard pour le join via code
+            hideAllPages();
+            show('game');
         }
         // logique pour les tournois si besoin a add plus tard
     });

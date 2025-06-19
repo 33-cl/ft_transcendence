@@ -1,4 +1,4 @@
-all: backend-build frontend-build build up
+all: build up
 
 up:
 	docker compose up -d
@@ -9,7 +9,7 @@ down:
 build:
 	docker compose build
 
-rebuild: backend-build frontend-build
+rebuild: 
 	docker compose build --no-cache
 
 logs:

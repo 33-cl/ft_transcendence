@@ -6,12 +6,13 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/17 16:10:34 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/19 13:53:30 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
-import { handleMessage } from './messageHandlers.js';
 import https from 'https';
+import { PongGame } from '../../Rayan/pong.js';
+import { Buffer } from 'buffer';
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set();
 // Vérifie si le client peut rejoindre la room (nom valide et room existante)
@@ -78,6 +79,24 @@ function joinPlayerToRoom(socket, roomName, room) {
         addPlayerToRoom(roomName, socket.id);
         socket.join(roomName);
     }
+    // --- Attribution automatique du contrôle paddle (1v1) ---
+    if (room.maxPlayers === 2) {
+        if (!room.paddleBySocket)
+            room.paddleBySocket = {};
+        // Si le joueur n'a pas encore de paddle attribué
+        if (!room.paddleBySocket[socket.id]) {
+            if (!Object.values(room.paddleBySocket).includes('left')) {
+                room.paddleBySocket[socket.id] = 'left';
+            }
+            else {
+                room.paddleBySocket[socket.id] = 'right';
+            }
+        }
+        // On envoie au client le paddle qu'il contrôle
+        socket.emit('roomJoined', { room: roomName, paddle: room.paddleBySocket[socket.id] });
+        return;
+    }
+    // Cas générique (solo, 2v2, etc.)
     socket.emit('roomJoined', { room: roomName });
 }
 // Fonction principale qui enregistre tous les handlers socket.io
@@ -90,6 +109,37 @@ function joinPlayerToRoom(socket, roomName, room) {
  * - Le frontend ne fait que demander à rejoindre une room, sans logique métier.
  */
 export default function registerSocketHandlers(io, fastify) {
+    // Tick global pour toutes les rooms avec un jeu en cours
+    setInterval(() => {
+        for (const [roomName, room] of Object.entries(rooms)) {
+            if (room.pongGame && room.pongGame.state.running) {
+                // --- Mouvement continu des paddles selon l'état des touches ---
+                if (!room.paddleInputs) {
+                    // Initialise l'état des touches pour chaque joueur
+                    room.paddleInputs = {
+                        left: { up: false, down: false },
+                        right: { up: false, down: false }
+                    };
+                }
+                // Applique le mouvement pour chaque joueur
+                const speed = room.pongGame.state.paddleSpeed;
+                if (room.paddleInputs.left.up) {
+                    room.pongGame.state.leftPaddleY = Math.max(0, room.pongGame.state.leftPaddleY - speed);
+                }
+                if (room.paddleInputs.left.down) {
+                    room.pongGame.state.leftPaddleY = Math.min(room.pongGame.state.canvasHeight - room.pongGame.state.paddleHeight, room.pongGame.state.leftPaddleY + speed);
+                }
+                if (room.paddleInputs.right.up) {
+                    room.pongGame.state.rightPaddleY = Math.max(0, room.pongGame.state.rightPaddleY - speed);
+                }
+                if (room.paddleInputs.right.down) {
+                    room.pongGame.state.rightPaddleY = Math.min(room.pongGame.state.canvasHeight - room.pongGame.state.paddleHeight, room.pongGame.state.rightPaddleY + speed);
+                }
+                // Envoie l'état du jeu à tous les clients de la room
+                io.to(roomName).emit('gameState', room.pongGame.state);
+            }
+        }
+    }, 1000 / 60); // 60 FPS
     io.on('connection', (socket) => {
         // Log la connexion d'un nouveau client
         fastify.log.info(`Client connecté : ${socket.id}`);
@@ -127,7 +177,7 @@ export default function registerSocketHandlers(io, fastify) {
                         // Création de la room via l'API REST (POST /rooms)
                         // NOTE : Le backend s'auto-appelle ici en HTTPS pour garantir que toute création de room
                         // passe par l'API REST officielle, même en interne (conformité au sujet, audit, sécurité).
-                        // L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés en dev.
+                        // L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés.
                         const postData = JSON.stringify({ maxPlayers });
                         const options = {
                             hostname: 'localhost',
@@ -179,6 +229,11 @@ export default function registerSocketHandlers(io, fastify) {
                 }
                 cleanUpPlayerRooms(socket);
                 joinPlayerToRoom(socket, roomName, room);
+                if (!room.pongGame && room.players.length === room.maxPlayers) {
+                    // Instancie et démarre le jeu Pong quand la room est pleine
+                    room.pongGame = new PongGame();
+                    room.pongGame.start();
+                }
             }
             finally {
                 joinRoomLocks.delete(socket.id);
@@ -190,7 +245,40 @@ export default function registerSocketHandlers(io, fastify) {
         });
         // Handler pour les messages relayés dans la room
         socket.on('message', (msg) => {
-            handleMessage(socket, fastify, msg);
+            let message;
+            try {
+                message = JSON.parse(msg);
+            }
+            catch (e) {
+                return;
+            }
+            const playerRoom = getPlayerRoom(socket.id);
+            if (!playerRoom)
+                return;
+            const room = rooms[playerRoom];
+            // --- Nouvelle gestion : keydown/keyup pour paddleInputs ---
+            if (!room.paddleInputs) {
+                room.paddleInputs = {
+                    left: { up: false, down: false },
+                    right: { up: false, down: false }
+                };
+            }
+            if ((message.type === 'keydown' || message.type === 'keyup') && room.pongGame) {
+                // message.data = { player: 'left'|'right', direction: 'up'|'down' }
+                const { player, direction } = message.data || {};
+                // --- Sécurité : n'autoriser que le contrôle de son propre paddle (1v1) ---
+                if (room.maxPlayers === 2 && room.paddleBySocket) {
+                    const allowedPaddle = room.paddleBySocket[socket.id];
+                    if (player !== allowedPaddle)
+                        return; // Ignore si tentative de triche
+                }
+                if ((player === 'left' || player === 'right') && (direction === 'up' || direction === 'down')) {
+                    (room.paddleInputs[player][direction]) = (message.type === 'keydown');
+                }
+            }
+            // Ancienne gestion 'move' supprimée (plus utile)
+            // Optionnel : relayer le message aux autres si besoin
+            // handleMessage(socket, fastify, msg);
         });
         // Handler pour la déconnexion du client
         socket.on('disconnect', () => {
