@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/19 10:12:47 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/19 13:53:30 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,6 +108,22 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: any)
 		addPlayerToRoom(roomName, socket.id);
 		socket.join(roomName);
 	}
+    // --- Attribution automatique du contrôle paddle (1v1) ---
+    if (room.maxPlayers === 2) {
+        if (!room.paddleBySocket) room.paddleBySocket = {};
+        // Si le joueur n'a pas encore de paddle attribué
+        if (!room.paddleBySocket[socket.id]) {
+            if (!Object.values(room.paddleBySocket).includes('left')) {
+                room.paddleBySocket[socket.id] = 'left';
+            } else {
+                room.paddleBySocket[socket.id] = 'right';
+            }
+        }
+        // On envoie au client le paddle qu'il contrôle
+        socket.emit('roomJoined', { room: roomName, paddle: room.paddleBySocket[socket.id] });
+        return;
+    }
+	// Cas générique (solo, 2v2, etc.)
 	socket.emit('roomJoined', { room: roomName });
 }
 
@@ -126,6 +142,34 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 	setInterval(() => {
 		for (const [roomName, room] of Object.entries(rooms)) {
 			if (room.pongGame && room.pongGame.state.running) {
+                // --- Mouvement continu des paddles selon l'état des touches ---
+                if (!room.paddleInputs) {
+                    // Initialise l'état des touches pour chaque joueur
+                    room.paddleInputs = {
+                        left: { up: false, down: false },
+                        right: { up: false, down: false }
+                    };
+                }
+                // Applique le mouvement pour chaque joueur
+                const speed = room.pongGame.state.paddleSpeed;
+                if (room.paddleInputs.left.up) {
+                    room.pongGame.state.leftPaddleY = Math.max(0, room.pongGame.state.leftPaddleY - speed);
+                }
+                if (room.paddleInputs.left.down) {
+                    room.pongGame.state.leftPaddleY = Math.min(
+                        room.pongGame.state.canvasHeight - room.pongGame.state.paddleHeight,
+                        room.pongGame.state.leftPaddleY + speed
+                    );
+                }
+                if (room.paddleInputs.right.up) {
+                    room.pongGame.state.rightPaddleY = Math.max(0, room.pongGame.state.rightPaddleY - speed);
+                }
+                if (room.paddleInputs.right.down) {
+                    room.pongGame.state.rightPaddleY = Math.min(
+                        room.pongGame.state.canvasHeight - room.pongGame.state.paddleHeight,
+                        room.pongGame.state.rightPaddleY + speed
+                    );
+                }
 				// Envoie l'état du jeu à tous les clients de la room
 				io.to(roomName).emit('gameState', room.pongGame.state);
 			}
@@ -240,7 +284,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 		// Handler pour les messages relayés dans la room
 		socket.on('message', (msg: string) =>
 		{
-			let message: any;//virer le any??
+			let message: any;
 			try {
 				message = JSON.parse(msg);
 			} catch (e) {
@@ -249,13 +293,26 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 			const playerRoom = getPlayerRoom(socket.id);
 			if (!playerRoom) return;
 			const room = rooms[playerRoom];
-			if (message.type === 'move' && room.pongGame) {
-				// On suppose que message.data = { player: 'left'|'right', direction: 'up'|'down' }
-				const { player, direction } = message.data || {};
-				if ((player === 'left' || player === 'right') && (direction === 'up' || direction === 'down')) {
-					room.pongGame.movePaddle(player, direction);
-				}
-			}
+            // --- Nouvelle gestion : keydown/keyup pour paddleInputs ---
+            if (!room.paddleInputs) {
+                room.paddleInputs = {
+                    left: { up: false, down: false },
+                    right: { up: false, down: false }
+                };
+            }
+            if ((message.type === 'keydown' || message.type === 'keyup') && room.pongGame) {
+                // message.data = { player: 'left'|'right', direction: 'up'|'down' }
+                const { player, direction } = message.data || {};
+                // --- Sécurité : n'autoriser que le contrôle de son propre paddle (1v1) ---
+                if (room.maxPlayers === 2 && room.paddleBySocket) {
+                    const allowedPaddle = room.paddleBySocket[socket.id];
+                    if (player !== allowedPaddle) return; // Ignore si tentative de triche
+                }
+                if ((player === 'left' || player === 'right') && (direction === 'up' || direction === 'down')) {
+                    (room.paddleInputs![player as 'left' | 'right'][direction as 'up' | 'down']) = (message.type === 'keydown');
+                }
+            }
+			// Ancienne gestion 'move' supprimée (plus utile)
 			// Optionnel : relayer le message aux autres si besoin
 			// handleMessage(socket, fastify, msg);
 		});

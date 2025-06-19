@@ -9,6 +9,12 @@ export interface Room
   maxPlayers: number;
   gameState: GameState;
   pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
+  paddleInputs?: {
+    left: { up: boolean; down: boolean };
+    right: { up: boolean; down: boolean };
+  };
+  // Mapping socket.id -> 'left' | 'right' (attribution du contrôle des paddles)
+  paddleBySocket?: Record<string, 'left' | 'right'>;
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
@@ -19,6 +25,8 @@ export let roomCounter = 1;
 // Helper: vérifier si une room existe
 export function roomExists(roomName: string): boolean
 {
+	// retourne true si la room existe, false sinon
+	// le !! permet de convertir la valeur en boolean (! convertit en boolean, puis ! le re-inverse(le true devient false et vice versa))
   return !!rooms[roomName];
 }
 
