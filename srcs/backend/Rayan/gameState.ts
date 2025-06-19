@@ -1,4 +1,3 @@
-
 export interface GameState{
     canvasHeight:   number;
     canvasWidth:    number;
@@ -23,8 +22,8 @@ export interface GameState{
 }
 
 export function createInitialGameState(): GameState {
-    const canvasHeight  = 600;
-    const canvasWidth   = 800;
+    const canvasHeight  = 650;
+    const canvasWidth   = 850;
     const paddleHeight  = 110;
 
     return {
