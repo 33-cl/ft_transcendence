@@ -42,10 +42,18 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 		return { success: true };
 	});
 
-	// Route GET /db-test : tester la connexion à la base de données et compter les parties
+	// ===============================
+	// !!! ROUTE DE TEST DEV UNIQUEMENT !!!
+	// /db-test : à SUPPRIMER avant la mise en production !
+	// ===============================
+	/*
 	fastify.get('/db-test', async (request, reply) => {
 		const db = (await import('../../Rayan/db.js')).default;
 		const row = db.prepare('SELECT COUNT(*) as count FROM games').get() as { count: number };
 		return { gamesCount: row.count };
 	});
+	*/
+	// ===============================
+	// FIN ROUTE DE TEST DEV UNIQUEMENT
+	// ===============================
 }

@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/17 16:10:34 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/19 10:12:47 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@ import { FastifyInstance } from 'fastify';
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
 import { handleMessage } from './messageHandlers.js';
 import https from 'https';
+import { PongGame } from '../../Rayan/pong.js';
+import { Buffer } from 'buffer';
 
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
@@ -120,6 +122,16 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: any)
  */
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
+	// Tick global pour toutes les rooms avec un jeu en cours
+	setInterval(() => {
+		for (const [roomName, room] of Object.entries(rooms)) {
+			if (room.pongGame && room.pongGame.state.running) {
+				// Envoie l'état du jeu à tous les clients de la room
+				io.to(roomName).emit('gameState', room.pongGame.state);
+			}
+		}
+	}, 1000 / 60); // 60 FPS
+
 	io.on('connection', (socket: Socket) =>
 	{
 		// Log la connexion d'un nouveau client
@@ -160,7 +172,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 							// Création de la room via l'API REST (POST /rooms)
 							// NOTE : Le backend s'auto-appelle ici en HTTPS pour garantir que toute création de room
 							// passe par l'API REST officielle, même en interne (conformité au sujet, audit, sécurité).
-							// L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés en dev.
+							// L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés.
 							const postData = JSON.stringify({ maxPlayers });
 							const options = {
 								hostname: 'localhost',
@@ -209,6 +221,11 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 					}
 					cleanUpPlayerRooms(socket);
 					joinPlayerToRoom(socket, roomName, room);
+					if (!room.pongGame && room.players.length === room.maxPlayers) {
+						// Instancie et démarre le jeu Pong quand la room est pleine
+						room.pongGame = new PongGame();
+						room.pongGame.start();
+					}
 				} finally {
 					joinRoomLocks.delete(socket.id);
 				}
@@ -223,7 +240,24 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 		// Handler pour les messages relayés dans la room
 		socket.on('message', (msg: string) =>
 		{
-			handleMessage(socket, fastify, msg);
+			let message: any;//virer le any??
+			try {
+				message = JSON.parse(msg);
+			} catch (e) {
+				return;
+			}
+			const playerRoom = getPlayerRoom(socket.id);
+			if (!playerRoom) return;
+			const room = rooms[playerRoom];
+			if (message.type === 'move' && room.pongGame) {
+				// On suppose que message.data = { player: 'left'|'right', direction: 'up'|'down' }
+				const { player, direction } = message.data || {};
+				if ((player === 'left' || player === 'right') && (direction === 'up' || direction === 'down')) {
+					room.pongGame.movePaddle(player, direction);
+				}
+			}
+			// Optionnel : relayer le message aux autres si besoin
+			// handleMessage(socket, fastify, msg);
 		});
 
 		// Handler pour la déconnexion du client

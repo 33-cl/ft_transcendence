@@ -1,4 +1,5 @@
 import { GameState, createInitialGameState } from '../../Rayan/gameState.js';
+import { PongGame } from '../../Rayan/pong.js';
 
 // src/socket/roomManager.ts
 
@@ -7,6 +8,7 @@ export interface Room
   players: string[];
   maxPlayers: number;
   gameState: GameState;
+  pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
