@@ -73,3 +73,10 @@
 ---
 
 **Pour toute question ou bug, ping qordoux.**
+
+
+joinOrCreateRoom(2)
+socket.on('gameState', (state) => { console.log('État du jeu:', state); });
+
+
+sendMessage('move', { player: 'left', direction: 'up' });
