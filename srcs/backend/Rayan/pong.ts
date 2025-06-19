@@ -74,6 +74,11 @@ export class PongGame {
             this.state.leftScore++;
             this.resetBall();
         }
+
+        // Arrêt de la partie si un joueur atteint le score de victoire
+        if (this.state.leftScore >= this.state.win || this.state.rightScore >= this.state.win) {
+            this.stop();
+        }
     }
 
     resetBall() {

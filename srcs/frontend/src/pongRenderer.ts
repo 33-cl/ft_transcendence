@@ -41,6 +41,22 @@ export function draw(gameState: any)
         const right = gameState.rightScore ?? 0;
         scoreElem.innerHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
     }
+    // Affichage du gagnant si la partie est terminée
+    // const winnerElem = document.getElementById('winnerDisplay');
+    // if (winnerElem) {
+    //     if (gameState.running === false && (gameState.leftScore >= gameState.win || gameState.rightScore >= gameState.win)) {
+    //         let winner = '';
+    //         if (gameState.leftScore > gameState.rightScore)
+    //             winner = "Joueur gauche a gagné !";
+    //         else if (gameState.rightScore > gameState.leftScore)
+    //             winner = "Joueur droit a gagné !";
+    //         else
+    //             winner = "Égalité !";
+    //         winnerElem.innerHTML = `<span class='text-2xl font-bold text-green-400'>${winner}</span>`;
+    //     } else {
+    //         winnerElem.innerHTML = '';
+    //     }
+    // }
 }
 
 (window as any).draw = draw;
