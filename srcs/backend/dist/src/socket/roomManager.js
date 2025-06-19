@@ -4,6 +4,8 @@ export const rooms = {};
 export let roomCounter = 1;
 // Helper: vérifier si une room existe
 export function roomExists(roomName) {
+    // retourne true si la room existe, false sinon
+    // le !! permet de convertir la valeur en boolean (! convertit en boolean, puis ! le re-inverse(le true devient false et vice versa))
     return !!rooms[roomName];
 }
 // Helper: ajouter un joueur à une room existante
