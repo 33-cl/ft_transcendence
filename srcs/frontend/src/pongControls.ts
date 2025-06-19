@@ -19,25 +19,32 @@ function sendKeyEvent(type: 'keydown' | 'keyup', player: 'left' | 'right', direc
 // Mapping dynamique selon le mode de jeu
 let keyToMove: Record<string, { player: 'left' | 'right', direction: 'up' | 'down' }> = {};
 
-function updateKeyMapping() {
-    const paddle = (window as any).controlledPaddle;
-    if ((window as any).isLocalGame) {
-        keyToMove = {
-            w:    { player: 'left',  direction: 'up' },
-            s:    { player: 'left',  direction: 'down' },
-            ArrowUp:    { player: 'right', direction: 'up' },
-            ArrowDown:  { player: 'right', direction: 'down' }
-        };
-    } else {
-        if (paddle === 'left' || paddle === 'right') {
-            keyToMove = {
-                ArrowUp:    { player: paddle, direction: 'up' },
-                ArrowDown:  { player: paddle, direction: 'down' }
-            };
-        } else {
-            keyToMove = {};
-        }
-    }
+function updateKeyMapping()
+{
+	const paddle = (window as any).controlledPaddle;
+	if ((window as any).isLocalGame)
+	{
+		keyToMove =
+		{
+			w:    { player: 'left',  direction: 'up' },
+			s:    { player: 'left',  direction: 'down' },
+			ArrowUp:    { player: 'right', direction: 'up' },
+			ArrowDown:  { player: 'right', direction: 'down' }
+		};
+	}
+	else
+	{
+		if (paddle === 'left' || paddle === 'right')
+		{
+			keyToMove =
+			{
+				ArrowUp:    { player: paddle, direction: 'up' },
+				ArrowDown:  { player: paddle, direction: 'down' }
+			};
+		}
+		else
+			keyToMove = {};
+	}
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)

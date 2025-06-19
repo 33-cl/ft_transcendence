@@ -6,12 +6,14 @@ let ctx: CanvasRenderingContext2D | null = null;
 
 export function initPongRenderer(canvasId: string = 'map') {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvas) {
+    if (!canvas)
+	{
         console.error('Canvas non trouvé:', canvasId);
         return;
     }
     ctx = canvas.getContext('2d');
-    if (!ctx) {
+    if (!ctx)
+	{
         console.error('Impossible d\'obtenir le contexte 2D du canvas');
     }
 }
@@ -40,5 +42,5 @@ export function draw(gameState: any)
         scoreElem.innerHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
     }
 }
-//A REMPLACER???
+
 (window as any).draw = draw;
