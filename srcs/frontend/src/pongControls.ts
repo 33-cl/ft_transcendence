@@ -48,7 +48,8 @@ function updateKeyMapping()
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)
-if (!(window as any)._pongControlsRoomJoinedListener) {
+if (!(window as any)._pongControlsRoomJoinedListener)
+{
     (window as any)._pongControlsRoomJoinedListener = true;
     document.addEventListener('roomJoined', () => {
         updateKeyMapping();
