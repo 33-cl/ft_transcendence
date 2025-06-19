@@ -99,4 +99,8 @@
         @apply my-[10vh];
     }
 
+    #map {
+        @apply border-2 border-white rounded-md;
+    }
+
 }
