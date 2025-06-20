@@ -2,16 +2,17 @@
 // Gère les contrôles clavier et l'envoi des mouvements de raquette au backend
 
 // Le backend envoie le paddle attribué lors du joinRoom : { room: ..., paddle: 'left'|'right' }
-(window as any).controlledPaddle = null;
+window.controlledPaddle = null;
 
 function sendKeyEvent(type: 'keydown' | 'keyup', player: 'left' | 'right', direction: 'up' | 'down') {
-    if ((window as any).isLocalGame) {
-        // En local, on autorise le contrôle des deux paddles
+    console.log(`[FRONT] sendKeyEvent: type=${type}, player=${player}, direction=${direction}, controlledPaddle=${window.controlledPaddle}`);
+    if (window.isLocalGame) {
         window.sendMessage(type, { player, direction });
     } else {
-        // En multi, on ne contrôle que son paddle attribué
-        if ((window as any).controlledPaddle === player) {
+        if (window.controlledPaddle === player) {
             window.sendMessage(type, { player, direction });
+        } else {
+            console.log(`[FRONT] Refusé: tentative de contrôle d'un paddle non attribué (controlledPaddle=${window.controlledPaddle}, demandé=${player})`);
         }
     }
 }
@@ -19,49 +20,50 @@ function sendKeyEvent(type: 'keydown' | 'keyup', player: 'left' | 'right', direc
 // Mapping dynamique selon le mode de jeu
 let keyToMove: Record<string, { player: 'left' | 'right', direction: 'up' | 'down' }> = {};
 
-function updateKeyMapping()
+function updatePaddleKeyBindings()
 {
-	const paddle = (window as any).controlledPaddle;
-	if ((window as any).isLocalGame)
-	{
-		keyToMove =
-		{
-			w:    { player: 'left',  direction: 'up' },
-			s:    { player: 'left',  direction: 'down' },
-			ArrowUp:    { player: 'right', direction: 'up' },
-			ArrowDown:  { player: 'right', direction: 'down' }
-		};
-	}
-	else
-	{
-		if (paddle === 'left' || paddle === 'right')
-		{
-			keyToMove =
-			{
-				ArrowUp:    { player: paddle, direction: 'up' },
-				ArrowDown:  { player: paddle, direction: 'down' }
-			};
-		}
-		else
-			keyToMove = {};
-	}
+    const paddle = window.controlledPaddle;
+    console.log('[FRONT] updatePaddleKeyBindings, controlledPaddle=', paddle);
+    if (window.isLocalGame)
+    {
+        keyToMove =
+        {
+            w:    { player: 'left',  direction: 'up' },
+            s:    { player: 'left',  direction: 'down' },
+            ArrowUp:    { player: 'right', direction: 'up' },
+            ArrowDown:  { player: 'right', direction: 'down' }
+        };
+    }
+    else
+    {
+        if (paddle === 'left' || paddle === 'right')
+        {
+            keyToMove =
+            {
+                ArrowUp:    { player: paddle, direction: 'up' },
+                ArrowDown:  { player: paddle, direction: 'down' }
+            };
+        }
+        else
+            keyToMove = {};
+    }
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)
-if (!(window as any)._pongControlsRoomJoinedListener)
+if (!window._pongControlsRoomJoinedListener)
 {
-    (window as any)._pongControlsRoomJoinedListener = true;
+    window._pongControlsRoomJoinedListener = true;
     document.addEventListener('roomJoined', () => {
-        updateKeyMapping();
+        updatePaddleKeyBindings();
     });
 }
 
-(window as any).setIsLocalGame = (isLocal: boolean) => {
-    (window as any).isLocalGame = isLocal;
-    updateKeyMapping();
+window.setIsLocalGame = (isLocal: boolean) => {
+    window.isLocalGame = isLocal;
+    updatePaddleKeyBindings();
 };
 
-updateKeyMapping(); // Initial
+updatePaddleKeyBindings(); // Initial
 
 const pressedKeys: Record<string, boolean> = {};
 
@@ -81,4 +83,4 @@ document.addEventListener("keyup", function(e){
     }
 });
 
-(window as any).sendKeyEvent = sendKeyEvent;
+window.sendKeyEvent = sendKeyEvent;

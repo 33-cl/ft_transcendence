@@ -9,20 +9,27 @@ const socket = io('', { transports: ["websocket"], secure: true }); // Connexion
 
 // Quand la connexion avec le serveur est établie, ce code s'exécute
 socket.on("connect", () => {
-    // Affiche l'identifiant unique de la connexion dans la console
-    console.log("Connecté au serveur WebSocket avec l'id:", socket.id);
+    console.log("[FRONT] Connecté au serveur WebSocket avec l'id:", socket.id);
 });
 
 // --- Ajout : écoute l'attribution du paddle lors du joinRoom ---
 socket.on('roomJoined', (data: any) => {
     if (data && data.paddle) {
-        (window as any).controlledPaddle = data.paddle;
-        console.log('Vous contrôlez le paddle :', data.paddle);
+        window.controlledPaddle = data.paddle;
+        console.log('[FRONT] Vous contrôlez le paddle :', data.paddle);
     } else {
-        (window as any).controlledPaddle = null;
+        window.controlledPaddle = null;
+        console.log('[FRONT] Pas de paddle attribué, controlledPaddle=null');
     }
-    // Notifie pongControls.ts de l'attribution du paddle
+    console.log('[FRONT] roomJoined event, controlledPaddle=', window.controlledPaddle);
     document.dispatchEvent(new Event('roomJoined'));
+});
+
+// Ajout : log lors de la déconnexion
+socket.on('disconnect', () => {
+    console.log('[FRONT] Déconnecté du serveur WebSocket');
+    window.controlledPaddle = null;
+    console.log('[FRONT] controlledPaddle reset à null (disconnect)');
 });
 
 
@@ -53,6 +60,7 @@ type MessageType = 'move' | 'score' | string;
 // Cette interface permet de créer un objet avec autant de propriétés que l'on souhaite.
 // Chaque propriété (clé) doit être une chaîne de caractères, et sa valeur peut être de n'importe quel type.
 // Exemple d'utilisation : { y: 120, player: "left" }
+//remplacer le any plus tard par un type plus précis si possible
 interface MessageData
 {
     [key: string]: any;
@@ -68,63 +76,37 @@ function sendMessage(type: MessageType, data: MessageData)
 // Expose la fonction pour test dans la console navigateur
 window.sendMessage = sendMessage;
 
-// Handler pour les messages relayés par le serveur (socket.io)
-socket.on('message', (data: any) =>
-{
-    let message;
-    try {
-        message = typeof data === "string" ? JSON.parse(data) : data;
-    } catch (e) {
-        console.error('Message non JSON:', data);
-        return;
-    }
-    handleWebSocketMessage(message);
-});
-
-function handleWebSocketMessage(message: { type: MessageType, data: MessageData })
-{
-	console.log("Message reçu du serveur:", message);
-    switch (message.type)
-	{
-        case 'move':
-            // Traiter le mouvement reçu
-            // Exemple: updatePaddlePosition(message.data)
-            break;
-        case 'score':
-            // Traiter la mise à jour du score
-            break;
-        // Ajouter d'autres types de messages ici
-        default:
-            console.warn('Type de message inconnu:', message.type);
-    }
-}
 
 let joinInProgress = false;
 
 // Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
-async function joinOrCreateRoom(maxPlayers: number) {
-    if (joinInProgress) return;
+async function joinOrCreateRoom(maxPlayers: number)
+{
+    if (joinInProgress)
+        return;
     joinInProgress = true;
-    try {
-        return new Promise<void>((resolve) => {
-            const handler = (data: any) => {
-                if (data && data.room) {
-                    // Room rejointe, tu peux afficher un log ou faire une action ici si besoin
-                    // console.log('Room rejointe:', data.room);
-                } else if (data && data.error) {
-                    console.error('Erreur lors du joinRoom:', data.error);
-                }
-                socket.off('roomJoined', handler);
-                socket.off('error', handler);
-                resolve();
-            };
-            socket.once('roomJoined', handler);
-            socket.once('error', handler);
-            socket.emit('joinRoom', { maxPlayers });
-        });
-    } finally {
-        joinInProgress = false;
-    }
+    return new Promise<void>((resolve, reject) =>
+    {
+		const success = () =>
+		{
+			cleanup();
+			resolve();
+		};
+		const cleanup = () =>
+		{
+			joinInProgress = false;
+			socket.off('roomJoined', success);
+			socket.off('error', failure);
+		};
+		const failure = () =>
+		{
+			cleanup();
+			reject(new Error("Error during joinRoom"));
+		};
+        socket.once('roomJoined', success);
+        socket.once('error', failure);
+        socket.emit('joinRoom', { maxPlayers });
+    });
 }
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
