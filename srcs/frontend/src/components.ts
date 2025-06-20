@@ -1,1 +1,0 @@
-// (Ce fichier est volontairement vide, l'ancienne logique de composants front n'est plus utilisée)
