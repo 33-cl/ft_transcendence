@@ -1,4 +1,8 @@
 // Déclarations globales pour le front TypeScript (non inclus dans le JS final)
+
+//--> Permet d'ajouter des fonctions utilisable dans la console
+
+//Virer les useless plus tard, beaucoup sont la pour le debug
 declare global
 {
 	interface Window
@@ -6,6 +10,11 @@ declare global
 		joinOrCreateRoom: (maxPlayers: number) => Promise<void>;
 		sendPing: () => void;
 		sendMessage: (type: MessageType, data: MessageData) => void;
+		controlledPaddle: 'left' | 'right' | null;
+		isLocalGame: boolean;
+		setIsLocalGame: (isLocal: boolean) => void;
+		_pongControlsRoomJoinedListener: boolean;
+		sendKeyEvent: (type: 'keydown' | 'keyup', player: 'left' | 'right', direction: 'up' | 'down') => void;
 	}
 }
 export {};

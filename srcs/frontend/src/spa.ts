@@ -1,5 +1,12 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML } from './components/index.js';
 
+// Declare global interface for Window
+declare global {
+    interface Window {
+        socket?: any;
+    }
+}
+
 // Define all components
 const components = {
     landing: {
@@ -88,6 +95,7 @@ function initializeComponents(): void {
             show('signUp');
         }
         if (target.id === 'title') {
+            if (window.socket) window.socket.emit('leaveAllRooms');
             hideAllPages();
             show('landing');
         }
