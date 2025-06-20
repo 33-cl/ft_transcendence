@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/20 17:59:14 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/20 19:33:53 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,27 +54,43 @@ function handleRoomFull(socket: Socket, room: any, fastify: FastifyInstance): bo
 }
 
 // Retire le joueur de toutes les rooms où il pourrait être (sécurité)
-function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance)
+function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Server)
 {
     for (const rName in rooms)
     {
         if (rooms[rName].players.includes(socket.id))
         {
+			// room actuelle = room actuelle - client actuel
             rooms[rName].players = rooms[rName].players.filter(id => id !== socket.id);
             if (rooms[rName].players.length === 0)
-            {
-                fastify.log.info(`[DEBUG] Suppression de la room vide : ${rName}`);
                 delete rooms[rName];
-            }
-            else {
+            else
+			{
                 const room = rooms[rName];
-                const onlyOnePlayer = room.players.length === 1;
-                if (room.maxPlayers === 2 && onlyOnePlayer && room.pongGame && room.pongGame.state && room.pongGame.state.running === true) {
+                // Si la partie est en cours, on stoppe et on supprime la room (ranked)
+                if (room.pongGame && room.pongGame.state && room.pongGame.state.running === true)
+				{
                     room.pongGame.stop();
+                    // On retire tous les joueurs restants via leurs socket et on supprime la room
+                    if (io)
+					{
+                        for (const socketId of room.players)
+						{
+							//ne pas retirer le client actu c deja fait
+                            if (socketId !== socket.id && io.sockets.sockets.get(socketId))
+							{
+                                io.sockets.sockets.get(socketId)?.leave(rName);
+                            }
+                        }
+                    }
+                    room.players = [];
+                    delete rooms[rName];
+                    break;
                 }
-                // RESET COMPLET DE LA ROOM POUR TOUS LES MODES SI PARTIE TERMINEE
+                // RESET COMPLET DE LA ROOM, la remettre a 0 
                 const gameEnded = room.pongGame && room.pongGame.state && room.pongGame.state.running === false;
-                if (gameEnded) {
+                if (gameEnded)
+				{
                     delete room.pongGame;
                     delete room.paddleBySocket;
                     delete room.paddleInputs;
@@ -164,6 +180,17 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 				// Envoie l'état du jeu à tous les clients de la room
 				io.to(roomName).emit('gameState', room.pongGame.state);
 			}
+            // --- NETTOYAGE AUTO DES ROOMS FINIES (ranked) ---
+            if (room.pongGame && room.pongGame.state.running === false) {
+                // On retire tous les joueurs et on supprime la room
+                for (const socketId of room.players) {
+                    if (io.sockets.sockets.get(socketId)) {
+                        io.sockets.sockets.get(socketId)?.leave(roomName);
+                    }
+                }
+                room.players = [];
+                delete rooms[roomName];
+            }
 		}
 	}, 1000 / 60); // 60 FPS
 
@@ -198,7 +225,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 						if (!roomName) {
 							// Création de la room via l'API REST (POST /rooms)
 							// NOTE : Le backend s'auto-appelle ici en HTTPS pour garantir que toute création de room
-							// passe par l'API REST officielle, même en interne (conformité au sujet, audit, sécurité).
+							// passe par l'API REST
 							// L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés.
 							const postData = JSON.stringify({ maxPlayers });
 							const options = {
@@ -244,7 +271,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 						socket.leave(previousRoom);
 						fastify.log.info(`[DEBUG] socket.id=${socket.id} leave previousRoom=${previousRoom}`);
 					}
-					cleanUpPlayerRooms(socket, fastify);
+					cleanUpPlayerRooms(socket, fastify, io);
 					joinPlayerToRoom(socket, roomName, room);
 					if (!room.pongGame && room.players.length === room.maxPlayers) {
 						// Instancie et démarre le jeu Pong quand la room est pleine
@@ -306,8 +333,8 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 
 		// Handler pour quitter toutes les rooms explicitement (SPA navigation)
 		socket.on('leaveAllRooms', () => {
-			cleanUpPlayerRooms(socket, fastify);
-			fastify.log.info(`[DEBUG] leaveAllRooms: socket.id=${socket.id}`);
+			cleanUpPlayerRooms(socket, fastify, io);
+			// fastify.log.info(`[DEBUG] leaveAllRooms: socket.id=${socket.id}`);
 		});
 	});
 }
