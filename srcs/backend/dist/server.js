@@ -2,10 +2,10 @@
 import fastify from 'fastify';
 import fs from 'fs'; // Pour lire les fichiers SSL
 import { Server as SocketIOServer } from 'socket.io';
-import fastifyCors from '@fastify/cors';
 import pingRoutes from './src/routes/ping.js';
 import usersRoutes from './src/routes/users.js';
 import roomsRoutes from './src/routes/rooms.js';
+// import signupRoutes from './src/routes/signup.js';
 import registerSocketHandlers from './src/socket/socketHandlers.js';
 // Charger le certificat auto-signé généré dans le conteneur Docker
 const key = fs.readFileSync('key.pem'); // Clé privée SSL
@@ -20,24 +20,24 @@ const app = fastify({
 });
 // Fonction main asynchrone pour tout lancer
 (async () => {
-    // Enregistre le plugin CORS pour Fastify
-    await app.register(fastifyCors, {
-        origin: (origin, cb) => {
-            const allowed = [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "https://localhost:3000",
-                "https://127.0.0.1:3000"
-            ];
-            if (!origin || allowed.includes(origin)) {
-                cb(null, true);
-            }
-            else {
-                cb(new Error("Not allowed by CORS"), false);
-            }
-        },
-        credentials: true
-    });
+    ` // Enregistre le plugin CORS pour Fastify
+  await app.register(fastifyCors, {
+    origin: (origin, cb) => {
+      const allowed = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://localhost:3000",
+        "https://127.0.0.1:3000"
+      ];
+      if (!origin || allowed.includes(origin)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Not allowed by CORS"), false);
+      }
+    },
+    credentials: true
+  });
+  `;
     // On n'utilise que du JSON côté frontend, donc pas besoin de fastifyFormbody
     // Route GET très simple
     app.get('/', async (request, reply) => {

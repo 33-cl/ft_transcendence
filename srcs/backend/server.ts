@@ -7,6 +7,7 @@ import fastifyCors from '@fastify/cors';
 import pingRoutes from './src/routes/ping.js';
 import usersRoutes from './src/routes/users.js';
 import roomsRoutes from './src/routes/rooms.js';
+// import signupRoutes from './src/routes/signup.js';
 import registerSocketHandlers from './src/socket/socketHandlers.js';
 
 // Charger le certificat auto-signé généré dans le conteneur Docker
@@ -24,7 +25,7 @@ const app = fastify({
 
 // Fonction main asynchrone pour tout lancer
 (async () => {
-  // Enregistre le plugin CORS pour Fastify
+ ` // Enregistre le plugin CORS pour Fastify
   await app.register(fastifyCors, {
     origin: (origin, cb) => {
       const allowed = [
@@ -41,7 +42,7 @@ const app = fastify({
     },
     credentials: true
   });
-  
+  `
   // On n'utilise que du JSON côté frontend, donc pas besoin de fastifyFormbody
 
   // Route GET très simple

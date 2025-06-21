@@ -1,4 +1,5 @@
 import { landingHTML, signInHTML, signUpHTML, mainMenuHTML, gameHTML } from './components/index.js';
+import { setupSignUpForm } from './components/signUp.js';
 
 // Define all components
 const components = {
@@ -44,6 +45,11 @@ function show(pageName: keyof typeof components) {
         const event = new CustomEvent('componentsReady');
         document.dispatchEvent(event);
     }, 0);
+
+	document.addEventListener('componentsReady', () => {
+		// Call setup functions for specific components
+		setupSignUpForm();
+	});
 }
 
 function hide(pageName: keyof typeof components) {
