@@ -4,22 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes twinkle {
-    0% { opacity: 0; }
-    50% { opacity: 1; }
-    100% { opacity: 0; }
-}
-
 @layer base {
     html, body {
-        @apply w-full h-full m-0 font-press-start text-white text-center flex flex-col items-center min-h-screen;
+        @apply w-full h-full m-0 font-press-start text-white text-center flex flex-col items-center min-h-screen ;
     }
 }
 
 @layer components {
 
     #background {
-        @apply fixed top-0 left-0 w-full h-full -z-10 block
+        @apply fixed top-0 left-0 w-full h-full -z-10 block;
     }
 
     h1 {
