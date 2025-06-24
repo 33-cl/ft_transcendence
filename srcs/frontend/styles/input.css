@@ -71,6 +71,7 @@
         @apply right-[2%];
     }
 
+
     .user-list {
         @apply w-[15%] h-[65%] absolute top-[22%] overflow-y-auto p-[1vh];
     }
@@ -97,6 +98,26 @@
 
     .menu-section {
         @apply my-[10vh];
+    }
+
+    #matchmaking-page {
+        @apply w-[100vw];
+    }
+
+    #matchmaking h2 {
+        @apply text-5xl;
+    }
+
+    #matchmaking p {
+        @apply text-2xl pb-4;
+    }
+
+    #tipText {
+        @apply m-3;
+    }
+
+    #tips {
+        @apply border-2 border-white fixed bottom-0 left-0;
     }
 
     #map {
