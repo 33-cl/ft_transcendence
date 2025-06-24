@@ -1,4 +1,5 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML } from './components/index.js';
+import { animateDots } from './components/matchmaking.js';
 
 // Declare global interface for Window
 declare global {
@@ -29,6 +30,11 @@ const components = {
         id: 'friendList',
         html: friendListHTML
     },
+	matchmaking:
+	{
+		id: 'matchmaking',
+		html: matchmakingHTML
+	},
     game:
 	{
         id: 'game',
@@ -134,7 +140,20 @@ function initializeComponents(): void
 			hideAllPages();
 			show('game');
 		}
-		// logique pour les tournois si besoin a add plus tard
+		if (target.id === 'cancelSearchBtn')
+		{
+			hideAllPages();
+			show('mainMenu');
+			show('leaderboard');
+			show('friendList');
+		}
+		// Test de l'ecran de chargement sur le bouton Join de tournoi
+		if (target.id === 'tournamentJoinBtn')
+		{
+			hideAllPages();
+			show('matchmaking');
+			animateDots();
+		}
 	});
 }
 
