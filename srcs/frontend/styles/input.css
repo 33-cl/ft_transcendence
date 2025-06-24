@@ -5,117 +5,128 @@
 @tailwind utilities;
 
 @layer base {
-    html, body {
-        @apply w-full h-full m-0 font-press-start text-white text-center flex flex-col items-center min-h-screen ;
-    }
+   html, body {
+       @apply w-full h-full m-0;                         /* Page taking the whole screen */
+       @apply font-press-start text-white text-center; /* Text */
+       @apply flex flex-col items-center min-h-screen;   /* Elements centered */
+   }
 }
 
 @layer components {
 
-    #background {
-        @apply fixed top-0 left-0 w-full h-full -z-10 block;
-    }
+   #background {
+       @apply fixed top-0 left-0 w-full h-full -z-10 block; /* Canvas background positioning */
+   }
 
-    h1 {
-        @apply text-left border-b-[3px] border-white pb-[15px] pt-[20px] w-full text-3xl bg-black;
-    }
+   h1 {
+       @apply text-left border-b-[3px] border-white pb-[15px] pt-[20px];  /* Text alignment and borders */
+       @apply w-full text-3xl bg-black;                                   /* Size and background */
+   }
 
-    h2 {
-        @apply text-2xl my-[2vh];
-    }
+   h2 {
+       @apply text-2xl my-[2vh]; /* Text size and margins */
+   }
 
-    a {
-        @apply text-blue-700;
-    }
+   a {
+       @apply text-blue-700; /* Link color */
+   }
 
-    a:hover {
-        @apply text-purple-800;
-    }
+   a:hover {
+       @apply text-purple-800; /* Link hover color */
+   }
 
-    button {
-        @apply bg-black p-4 border-2 border-white rounded-lg px-4 py-2 text-2xl cursor-pointer;
-    }
+   button {
+       @apply bg-black p-4 border-2 border-white rounded-lg; /* Background and borders */
+       @apply px-4 py-2 text-2xl cursor-pointer;                 /* Padding, text and cursor */
+   }
 
-    button:hover {
-        @apply bg-green-500;
-    }
+   button:hover {
+       @apply bg-green-500; /* Button hover background */
+   }
 
-    button:active {
-        @apply bg-green-700 scale-95;
-    }
+   button:active {
+       @apply bg-green-700 scale-95; /* Button active state */
+   }
 
-    .page {
-        @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
-    }
+   .page {
+       @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4;      /* Layout and spacing */
+       @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2; /* Centering positioning */
+   }
 
-    /* empty pages should not block clicks */
-    .page:empty {
-        pointer-events: none;
-    }
+   .page:empty {
+       pointer-events: none; /* Click-through for empty pages */
+   }
 
-    .page input {
-        @apply p-2 w-[300px] text-base border-2 border-white rounded-md bg-black text-white;
-    }
+   .page input {
+       @apply p-2 w-[300px] text-base;                /* Padding, width and text size */
+       @apply border-2 border-white rounded-md;     /* Borders and corners */
+       @apply bg-black text-white;                /* Colors */
+   }
 
-    #leaderboard {
-        @apply left-[2%];
-    }
+   #leaderboard {
+       @apply left-[2%]; /* Left panel positioning */
+   }
 
-    #friendList {
-        @apply right-[2%];
-    }
+   #friendList {
+       @apply right-[2%]; /* Right panel positioning */
+   }
 
+   .user-list {
+       @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
+       @apply overflow-y-auto p-[1vh];            /* Scroll and padding */
+   }
 
-    .user-list {
-        @apply w-[15%] h-[65%] absolute top-[22%] overflow-y-auto p-[1vh];
-    }
+   .user-list img {
+       @apply w-20 h-20 rounded-md object-cover; /* User avatar styling */
+   }
 
-    .user-list img {
-        @apply w-20 h-20 rounded-md object-cover;
-    }
+   .friend {
+       @apply flex items-center gap-4 p-2 relative;        /* Layout and spacing */
+       @apply hover:bg-gray-600 transition-colors;        /* Hover effects */
+   }
 
-    .friend {
-        @apply flex items-center gap-4 p-2 hover:bg-gray-600 transition-colors relative;
-    }
+   .crown {
+       @apply absolute z-10 top-[-2.7vh] left-[-2vh] !important;     /* Crown positioning */
+       @apply w-[130px] h-[65px] object-fill !important;             /* Crown size and fit */
+       @apply rotate-[-10deg] !important;                 /* Crown rotation */
+   }
 
-    .crown {
-        @apply absolute z-10 top-[-2.7vh] left-[-2vh] w-[130px] h-[65px] object-fill rotate-[-10deg] !important;
-    }
+   .profile-pic {
+       @apply relative z-0; /* Profile picture layering */
+   }
 
-    .profile-pic {
-        @apply relative z-0;
-    }
+   .menu-container {
+       @apply text-2xl; /* Menu text size */
+   }
 
-    .menu-container {
-        @apply text-2xl;
-    }
+   .menu-section {
+       @apply my-[10vh]; /* Menu section spacing */
+   }
 
-    .menu-section {
-        @apply my-[10vh];
-    }
+   #matchmaking-page {
+       @apply w-[100vw]; /* Matchmaking page width */
+   }
 
-    #matchmaking-page {
-        @apply w-[100vw];
-    }
+   #matchmaking h2 {
+       @apply text-4xl; /* Matchmaking title size */
+   }
 
-    #matchmaking h2 {
-        @apply text-4xl;
-    }
+   #searchingText {
+       @apply text-2xl pb-4; /* Search status text styling */
+   }
 
-    #searchingText {
-        @apply text-2xl pb-4;
-    }
+   #tips {
+       @apply bg-black w-[45vw];                   /* Background and width */
+       @apply border-t-2 border-r-2 border-white;  /* Borders */
+       @apply fixed bottom-0 left-0;                 /* Positioning */
+   } 
 
-    #tips {
-        @apply bg-black w-[45vw] border-t-2 border-r-2 border-white fixed bottom-0 left-0;
-    } 
-
-    #tipText {
-        @apply text-xl m-8;
-    }
-    
-    #map {
-        @apply border-2 border-white rounded-md;
-    }
+   #tipText {
+       @apply text-xl m-8; /* Tip text size and margins */
+   }
+   
+   #map {
+       @apply border-2 border-white rounded-md; /* Map borders and corners */
+   }
 
 }
