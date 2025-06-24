@@ -1,5 +1,5 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML } from './components/index.js';
-import { animateDots } from './components/matchmaking.js';
+import { animateDots, switchTips } from './components/matchmaking.js';
 
 // Declare global interface for Window
 declare global {
@@ -153,6 +153,7 @@ function initializeComponents(): void
 			hideAllPages();
 			show('matchmaking');
 			animateDots();
+			switchTips();
 		}
 	});
 }

@@ -108,18 +108,18 @@
         @apply text-5xl;
     }
 
-    #matchmaking p {
+    #searchingText {
         @apply text-2xl pb-4;
     }
 
-    #tipText {
-        @apply m-3;
-    }
-
     #tips {
-        @apply border-2 border-white fixed bottom-0 left-0;
-    }
+        @apply bg-black w-[45vw] border-t-2 border-r-2 border-white fixed bottom-0 left-0;
+    } 
 
+    #tipText {
+        @apply text-xl m-8;
+    }
+    
     #map {
         @apply border-2 border-white rounded-md;
     }
