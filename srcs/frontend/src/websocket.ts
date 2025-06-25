@@ -87,25 +87,20 @@ async function joinOrCreateRoom(maxPlayers: number)
     joinInProgress = true;
     return new Promise<void>((resolve, reject) =>
     {
-		const success = () =>
-		{
-			cleanup();
-			resolve();
-		};
-		const cleanup = () =>
-		{
-			joinInProgress = false;
-			socket.off('roomJoined', success);
-			socket.off('error', failure);
-		};
-		const failure = () =>
-		{
-			cleanup();
-			reject(new Error("Error during joinRoom"));
-		};
-        socket.once('roomJoined', success);
+        const cleanup = () => {
+            joinInProgress = false;
+            socket.off('error', failure);
+        };
+        const failure = () => {
+            cleanup();
+            reject(new Error("Error during joinRoom"));
+        };
+        // On n'utilise plus 'once' sur roomJoined pour ne pas consommer l'event
         socket.once('error', failure);
         socket.emit('joinRoom', { maxPlayers });
+        // On considère la promesse résolue dès qu'on a émis la demande (le handler UX gère la suite)
+        cleanup();
+        resolve();
     });
 }
 // Expose la fonction pour test dans la console navigateur
