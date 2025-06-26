@@ -1,5 +1,6 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
+import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
 declare global {
@@ -78,7 +79,8 @@ function hide(pageName: keyof typeof components)
     if (element) element.innerHTML = '';
 }
 
-function hideAllPages(): void {
+function hideAllPages(): void
+{
     Object.keys(components).forEach(key => hide(key as keyof typeof components));
 }
 
@@ -93,6 +95,17 @@ function initializeComponents(): void
 		if (!target) return;
 		if (target.id === 'guestBtn')
 		{
+			if (!window.socket || !window.socket.connected)
+			{
+				waitForSocketConnection(window.socket, () =>
+				{
+					hideAllPages();
+					show('mainMenu');
+					show('friendList');
+					show('leaderboard');
+				});
+				return;
+			}
 			hideAllPages();
 			show('mainMenu');
 			show('friendList');
@@ -160,20 +173,28 @@ function initializeComponents(): void
 }
 
 // Handler global pour l'event roomJoined (affichage matchmaking/game)
-function setupRoomJoinedHandler() {
-    if (!window.socket) return;
-    if (window._roomJoinedHandlerSet) return;
+function setupRoomJoinedHandler()
+{
+    if (!window.socket)
+		return;
+    if (window._roomJoinedHandlerSet)
+		return;
     window._roomJoinedHandlerSet = true;
-    window.socket.on('roomJoined', (data: any) => {
+    window.socket.on('roomJoined', (data: any) =>
+	{
         console.log('[DEBUG FRONT] Event roomJoined reçu', data);
         // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
-        if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number') {
-            if (data.players < data.maxPlayers) {
+        if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
+		{
+            if (data.players < data.maxPlayers)
+			{
                 hideAllPages();
                 show('matchmaking');
                 animateDots();
                 switchTips();
-            } else {
+            }
+			else
+			{
                 hideAllPages();
                 show('game');
             }
@@ -181,13 +202,18 @@ function setupRoomJoinedHandler() {
     });
 }
 
-// Init as soon as possible
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+// top level statemetn ( s'execute des que le fichier est importe)
+// --> manipuler le dom quúne fois qu'il est pret
+if (document.readyState === 'loading')
+{
+    document.addEventListener('DOMContentLoaded', () =>
+	{
         initializeComponents();
         setupRoomJoinedHandler();
     });
-} else {
+}
+else
+{
     initializeComponents();
     setupRoomJoinedHandler();
 }

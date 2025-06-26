@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/25 20:05:30 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/26 15:35:24 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -364,6 +364,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
     io.on('connection', (socket: Socket) =>
 	{
         fastify.log.info(`Client connecté : ${socket.id}`);
+        console.log('[BACKEND] Nouvelle connexion socket', socket.id, 'à', new Date().toISOString());
 
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
