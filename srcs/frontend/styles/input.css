@@ -96,11 +96,19 @@
    }
 
    .menu-container {
-       @apply text-2xl; /* Menu text size */
+       @apply mt-[7vh]; /* Menu container spacing */
    }
 
    .menu-section {
-       @apply my-[10vh]; /* Menu section spacing */
+       @apply my-[15vh]; /* Menu section spacing */
+   }
+
+   #mainMenu h2 {
+       @apply text-4xl mb-[2vh]; /* Menu text size */
+   }
+
+   #mainMenu button {
+       @apply text-xl; /* Button text size */
    }
 
    #matchmaking-page {
