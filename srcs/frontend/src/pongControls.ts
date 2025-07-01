@@ -20,28 +20,24 @@ function sendKeyEvent(type: 'keydown' | 'keyup', player: 'left' | 'right', direc
 // Mapping dynamique selon le mode de jeu
 let keyToMove: Record<string, { player: 'left' | 'right', direction: 'up' | 'down' }> = {};
 
-function updatePaddleKeyBindings()
-{
+function updatePaddleKeyBindings() {
     const paddle = window.controlledPaddle;
     console.log('[FRONT] updatePaddleKeyBindings, controlledPaddle=', paddle);
-    if (window.isLocalGame)
-    {
+    if (window.isLocalGame) {
         keyToMove =
         {
-            w:    { player: 'left',  direction: 'up' },
-            s:    { player: 'left',  direction: 'down' },
-            ArrowUp:    { player: 'right', direction: 'up' },
-            ArrowDown:  { player: 'right', direction: 'down' }
+            w: { player: 'left', direction: 'up' },
+            s: { player: 'left', direction: 'down' },
+            ArrowUp: { player: 'right', direction: 'up' },
+            ArrowDown: { player: 'right', direction: 'down' }
         };
     }
-    else
-    {
-        if (paddle === 'left' || paddle === 'right')
-        {
+    else {
+        if (paddle === 'left' || paddle === 'right') {
             keyToMove =
             {
-                ArrowUp:    { player: paddle, direction: 'up' },
-                ArrowDown:  { player: paddle, direction: 'down' }
+                ArrowUp: { player: paddle, direction: 'up' },
+                ArrowDown: { player: paddle, direction: 'down' }
             };
         }
         else
@@ -50,8 +46,7 @@ function updatePaddleKeyBindings()
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)
-if (!window._pongControlsRoomJoinedListener)
-{
+if (!window._pongControlsRoomJoinedListener) {
     window._pongControlsRoomJoinedListener = true;
     document.addEventListener('roomJoined', () => {
         updatePaddleKeyBindings();
@@ -67,7 +62,7 @@ updatePaddleKeyBindings(); // Initial
 
 const pressedKeys: Record<string, boolean> = {};
 
-document.addEventListener("keydown", function(e){
+document.addEventListener("keydown", function (e) {
     const move = keyToMove[e.key as string];
     if (move && !pressedKeys[e.key]) {
         sendKeyEvent('keydown', move.player, move.direction);
@@ -75,7 +70,7 @@ document.addEventListener("keydown", function(e){
     }
 });
 
-document.addEventListener("keyup", function(e){
+document.addEventListener("keyup", function (e) {
     const move = keyToMove[e.key as string];
     if (move && pressedKeys[e.key]) {
         sendKeyEvent('keyup', move.player, move.direction);
