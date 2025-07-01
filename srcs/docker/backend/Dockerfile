@@ -13,7 +13,8 @@ RUN apt-get update && \
     apt-get install -y python3 make g++ && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install
+# Installation des dépendances nécessaires pour le backend
+RUN npm install fastify @fastify/cors socket.io && npm install --save-dev @types/node && npm install
 
 COPY ./srcs/backend/ ./
 

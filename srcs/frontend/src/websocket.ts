@@ -76,7 +76,6 @@ function sendMessage(type: MessageType, data: MessageData)
 // Expose la fonction pour test dans la console navigateur
 window.sendMessage = sendMessage;
 
-
 let joinInProgress = false;
 
 // Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
@@ -108,6 +107,7 @@ async function joinOrCreateRoom(maxPlayers: number)
         socket.emit('joinRoom', { maxPlayers });
     });
 }
+
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
 
@@ -131,4 +131,3 @@ socket.on('gameState', (state: any) => {
 
 // Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
 import './pongControls.js'; // Ajoute les contrôles clavier (modularité)
-

@@ -14,9 +14,7 @@ export function initPongRenderer(canvasId: string = 'map')
     }
     ctx = canvas.getContext('2d');
     if (!ctx)
-	{
         console.error('Impossible d\'obtenir le contexte 2D du canvas');
-    }
 }
 
 export function draw(gameState: any)
@@ -33,7 +31,7 @@ export function draw(gameState: any)
     ctx.arc(gameState.ballX, gameState.ballY, gameState.ballRadius, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
     ctx.fill();
-    // Score (optionnel)
+    // Score
     const scoreElem = document.getElementById('score');
     if (scoreElem)
 	{
