@@ -1,6 +1,6 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
-import { waitForSocketConnection } from './utils/socketLoading.js';
+// import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
 declare global {
@@ -95,17 +95,17 @@ function initializeComponents(): void
 		if (!target) return;
 		if (target.id === 'guestBtn')
 		{
-			if (!window.socket || !window.socket.connected)
-			{
-				waitForSocketConnection(window.socket, () =>
-				{
-					hideAllPages();
-					show('mainMenu');
-					show('friendList');
-					show('leaderboard');
-				});
-				return;
-			}
+			// if (!window.socket || !window.socket.connected)
+			// {
+			// 	waitForSocketConnection(window.socket, () =>
+			// 	{
+			// 		hideAllPages();
+			// 		show('mainMenu');
+			// 		show('friendList');
+			// 		show('leaderboard');
+			// 	});
+			// 	return;
+			// }
 			hideAllPages();
 			show('mainMenu');
 			show('friendList');

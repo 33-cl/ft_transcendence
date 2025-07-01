@@ -112,7 +112,7 @@
    }
 
    #matchmaking-page {
-       @apply w-[100vw]; /* Matchmaking page width */
+       @apply w-[100vw];
    }
 
    #matchmaking h2 {
@@ -124,13 +124,12 @@
    }
 
    #tips {
-       @apply bg-black w-[45vw];                   /* Background and width */
-       @apply border-t-2 border-r-2 border-white;  /* Borders */
+       @apply text-gray-400 w-[60vw] mx-[20vw];                   /* Full width and margin */
        @apply fixed bottom-0 left-0;                 /* Positioning */
    } 
 
    #tipText {
-       @apply text-xl m-8; /* Tip text size and margins */
+       @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
    }
    
    #map {

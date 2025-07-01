@@ -4,6 +4,7 @@ class BackgroundCanvas {
     private rotationAngle: number = 0;
     private animationId: number | null = null;
     private stars: Array<{x: number, y: number, radius: number, color: string}> = [];
+    private lastDevicePixelRatio: number = window.devicePixelRatio;
 
     constructor(canvasId: string) {
         // Récupérer le canvas existant plutôt que d'en créer un nouveau
@@ -59,10 +60,10 @@ class BackgroundCanvas {
         // Ajuster le contexte pour compenser le devicePixelRatio
         this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         
-        // Régénérer les étoiles seulement si elles n'existent pas encore
-        if (this.stars.length === 0) {
-            this.generateStars();
-        }
+        // Régénérer les étoiles à chaque resize
+        console.log("width : ", this.canvas.width);
+        console.log("height : ", this.canvas.height);
+        this.generateStars();
         
         // Redessiner le contenu
         this.draw();
@@ -70,6 +71,13 @@ class BackgroundCanvas {
 
     private setupEventListeners(): void {
         window.addEventListener('resize', () => this.resizeCanvas());
+        // Ajout : écouteur pour le zoom (devicePixelRatio change)
+        setInterval(() => {
+            if (window.devicePixelRatio !== this.lastDevicePixelRatio) {
+                this.lastDevicePixelRatio = window.devicePixelRatio;
+                this.resizeCanvas();
+            }
+        }, 300);
     }
 
     private startRotation(): void {
@@ -119,7 +127,7 @@ class BackgroundCanvas {
     private generateStars(): void {
         const diagonal = Math.sqrt(window.innerWidth ** 2 + window.innerHeight ** 2);
         const canvasSize = diagonal * 1.5; // Même facteur que dans les autres méthodes
-        const starCount = 5000; // Augmenté pour couvrir la surface plus grande
+        const starCount = this.canvas.width * 1.3; // Augmenté pour couvrir la surface plus grande
         const minRadius = 0.5;
         const maxRadius = 2.5;
         
