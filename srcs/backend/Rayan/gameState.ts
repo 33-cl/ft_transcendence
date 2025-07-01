@@ -34,7 +34,7 @@ export function createInitialGameState(): GameState {
         paddleMargin:   10,
         leftPaddleY:    canvasHeight / 2 - paddleHeight / 2,
         rightPaddleY:   canvasHeight / 2 - paddleHeight / 2,
-        paddleSpeed:    15,
+        paddleSpeed:    7,
         ballX:          canvasWidth / 2,
         ballY:          canvasHeight / 2,
         ballRadius:     20,

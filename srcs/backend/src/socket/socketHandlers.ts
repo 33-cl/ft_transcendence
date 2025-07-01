@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   socketHandlers.ts                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
+/*   By: maeferre <maeferre@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/26 15:35:24 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/07/01 22:25:00 by maeferre         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -359,7 +359,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
     setInterval(() =>
 	{
         handleGameTick(io);
-    }, 1000 / 60);
+    }, 1000 / 120);
 
     io.on('connection', (socket: Socket) =>
 	{
