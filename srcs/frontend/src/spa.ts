@@ -1,10 +1,12 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
+import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
 declare global {
     interface Window {
         socket?: any;
+        _roomJoinedHandlerSet?: boolean;
     }
 }
 
@@ -77,7 +79,8 @@ function hide(pageName: keyof typeof components)
     if (element) element.innerHTML = '';
 }
 
-function hideAllPages(): void {
+function hideAllPages(): void
+{
     Object.keys(components).forEach(key => hide(key as keyof typeof components));
 }
 
@@ -92,6 +95,17 @@ function initializeComponents(): void
 		if (!target) return;
 		if (target.id === 'guestBtn')
 		{
+			if (!window.socket || !window.socket.connected)
+			{
+				waitForSocketConnection(window.socket, () =>
+				{
+					hideAllPages();
+					show('mainMenu');
+					show('friendList');
+					show('leaderboard');
+				});
+				return;
+			}
 			hideAllPages();
 			show('mainMenu');
 			show('friendList');
@@ -125,23 +139,23 @@ function initializeComponents(): void
 		{
 			(window as any).setIsLocalGame(false); // Désactive le mode local
 			await window.joinOrCreateRoom(2); // 1v1
-			hideAllPages();
-			show('game');
+			//show ('matchmaking') se fait dans joinorcreateroom
 		}
 		if (target.id === 'customCreateBtn')
 		{
+			(window as any).setIsLocalGame(false);
 			await window.joinOrCreateRoom(4); // 2v2 (exemple)
-			hideAllPages();
-			show('game');
+			// L'affichage sera géré par le handler roomJoined
 		}
 		if (target.id === 'customJoinBtn')
 		{
-			await window.joinOrCreateRoom(4); // 2v2 (exemple), a changer plus tard pour le join via code
-			hideAllPages();
-			show('game');
+			(window as any).setIsLocalGame(false);
+			await window.joinOrCreateRoom(4); // 2v2 (exemple), à changer plus tard pour le join via code
+			// L'affichage sera géré par le handler roomJoined
 		}
 		if (target.id === 'cancelSearchBtn')
 		{
+			if (window.socket) window.socket.emit('leaveAllRooms');
 			hideAllPages();
 			show('mainMenu');
 			show('leaderboard');
@@ -158,9 +172,48 @@ function initializeComponents(): void
 	});
 }
 
-// Init as soon as possible
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeComponents);
-} else {
+// Handler global pour l'event roomJoined (affichage matchmaking/game)
+function setupRoomJoinedHandler()
+{
+    if (!window.socket)
+		return;
+    if (window._roomJoinedHandlerSet)
+		return;
+    window._roomJoinedHandlerSet = true;
+    window.socket.on('roomJoined', (data: any) =>
+	{
+        console.log('[DEBUG FRONT] Event roomJoined reçu', data);
+        // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
+        if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
+		{
+            if (data.players < data.maxPlayers)
+			{
+                hideAllPages();
+                show('matchmaking');
+                animateDots();
+                switchTips();
+            }
+			else
+			{
+                hideAllPages();
+                show('game');
+            }
+        }
+    });
+}
+
+// top level statemetn ( s'execute des que le fichier est importe)
+// --> manipuler le dom quúne fois qu'il est pret
+if (document.readyState === 'loading')
+{
+    document.addEventListener('DOMContentLoaded', () =>
+	{
+        initializeComponents();
+        setupRoomJoinedHandler();
+    });
+}
+else
+{
     initializeComponents();
+    setupRoomJoinedHandler();
 }

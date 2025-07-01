@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/06/20 20:37:24 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/06/26 15:35:24 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,8 +58,10 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
         {
 			// room actuelle = room actuelle - client actuel
             rooms[rName].players = rooms[rName].players.filter(id => id !== socket.id);
-            if (rooms[rName].players.length === 0)
+            if (rooms[rName].players.length === 0) {
                 delete rooms[rName];
+                // Suppression silencieuse de la room vide (log retiré)
+            }
             else
 			{
                 const room = rooms[rName];
@@ -98,7 +100,7 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
 }
 
 // Ajoute le joueur à la room et le fait rejoindre côté socket.io
-function joinPlayerToRoom(socket: Socket, roomName: string, room: any)
+function joinPlayerToRoom(socket: Socket, roomName: string, room: any, io?: Server)
 {
 	//si le joueur n'est pas déjà dans la room, on l'ajoute
 	if (!room.players.includes(socket.id))
@@ -106,8 +108,8 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: any)
 		addPlayerToRoom(roomName, socket.id);
 		socket.join(roomName);
 	}
-	// --- Attribution automatique du contrôle paddle (1v1) ---
-	if (room.maxPlayers === 2)
+	// --- Attribution automatique du contrôle paddle (1v1 ou 2v2) ---
+	if (room.maxPlayers === 2 || room.maxPlayers === 4)
 	{
 		if (!room.paddleBySocket) room.paddleBySocket = {};
 		// Purge les anciennes attributions de paddle (joueurs plus dans la room)
@@ -116,19 +118,47 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: any)
 			if (!room.players.includes(id))
 				delete room.paddleBySocket[id];
 		}
-		// Attribution stricte selon l'ordre d'arrivée dans la room
+		// Attribution stricte selon l'ordre d'arrivée dans la room (left/right ou left/right/top/bottom)
 		if (!(socket.id in room.paddleBySocket))
 		{
-			if (room.players[0] === socket.id)
-				room.paddleBySocket[socket.id] = 'left';
-			else
-				room.paddleBySocket[socket.id] = 'right';
+			const paddles = room.maxPlayers === 2 ? ['left', 'right'] : ['left', 'right', 'top', 'bottom'];
+			const idx = room.players.indexOf(socket.id);
+			room.paddleBySocket[socket.id] = paddles[idx] || null;
 		}
-		socket.emit('roomJoined', { room: roomName, paddle: room.paddleBySocket[socket.id] });
+		// --- Broadcast à toute la room l'état matchmaking ---
+		if (io)
+		{
+			for (const id of room.players)
+			{
+				const targetSocket = io.sockets.sockets.get(id);
+				if (!targetSocket) continue;
+				targetSocket.emit('roomJoined',
+				{
+					room: roomName,
+					players: room.players.length,
+					maxPlayers: room.maxPlayers,
+					paddle: room.paddleBySocket[id]
+				});
+			}
+		}
+		else
+		{
+			socket.emit('roomJoined',
+			{
+				room: roomName,
+				players: room.players.length,
+				maxPlayers: room.maxPlayers,
+				paddle: room.paddleBySocket[socket.id]
+			});
+		}
 		return;
 	}
-	// Cas générique (solo, 2v2, etc.)
-	socket.emit('roomJoined', { room: roomName });
+	// Cas générique (solo, etc.)
+	socket.emit('roomJoined', {
+		room: roomName,
+		players: room.players.length,
+		maxPlayers: room.maxPlayers
+	});
 }
 
 // Handler pour rejoindre ou créer une room
@@ -209,7 +239,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
 			fastify.log.info(`[DEBUG] socket.id=${socket.id} leave previousRoom=${previousRoom}`);
 		}
 		cleanUpPlayerRooms(socket, fastify, io);
-		joinPlayerToRoom(socket, roomName, room);
+		joinPlayerToRoom(socket, roomName, room, io);
 		if (!room.pongGame && room.players.length === room.maxPlayers)
 		{
 			// Instancie et démarre le jeu Pong quand la room est pleine
@@ -334,6 +364,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
     io.on('connection', (socket: Socket) =>
 	{
         fastify.log.info(`Client connecté : ${socket.id}`);
+        console.log('[BACKEND] Nouvelle connexion socket', socket.id, 'à', new Date().toISOString());
 
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
