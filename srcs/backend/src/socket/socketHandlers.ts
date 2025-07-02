@@ -6,7 +6,7 @@
 /*   By: maeferre <maeferre@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/07/01 22:25:00 by maeferre         ###   ########.fr       */
+/*   Updated: 2025/07/02 18:30:29 by maeferre         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -289,6 +289,8 @@ function handleGameTick(io: Server)
 		// --- NETTOYAGE AUTO DES ROOMS FINIES (ranked) ---
 		if (room.pongGame && room.pongGame.state.running === false)
 		{
+			// Envoie l'état final AVANT de supprimer la room
+			io.to(roomName).emit('gameState', room.pongGame.state);
 			// On retire tous les joueurs et on supprime la room
 			for (const socketId of room.players)
 			{

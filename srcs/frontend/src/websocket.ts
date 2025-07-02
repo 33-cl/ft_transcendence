@@ -1,5 +1,6 @@
 // websocket.ts
 //'io' est déjà disponible dans la page via le CDN socket.io-clients
+import { show, hideAllPages } from './spa.js';
 
 declare var io: any;
 
@@ -36,15 +37,15 @@ socket.on('disconnect', () => {
 // Fonction pour envoyer un message "ping" au serveur
 function sendPing()
 {
-	// Envoie un message nommé "ping" avec un objet au serveur
+    // Envoie un message nommé "ping" avec un objet au serveur
     socket.emit("ping", { message: "Hello serveur!" });
 }
 
 // Écoute les messages nommés "pong" envoyés par le serveur
 socket.on("pong", (data: any) =>
 {
-	// Affiche le contenu du message reçu dans la console
-	console.log("Message reçu du serveur:", data);
+    // Affiche le contenu du message reçu dans la console
+    console.log("Message reçu du serveur:", data);
 });
 
 // Rend la fonction sendPing accessible depuis la console du navigateur
@@ -122,6 +123,15 @@ document.addEventListener('componentsReady', () => {
 
 socket.on('gameState', (state: any) => {
     draw(state);
+    if (0)
+        hideAllPages();
+    if (state.running === false) {
+        console.log('finished');
+        setTimeout(() => {
+            // hideAllPages();
+            show('gameFinished');
+        }, 1000);
+    }
 });
 
 // Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)

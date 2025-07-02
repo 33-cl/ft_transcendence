@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML, gameFinishedHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -51,7 +51,12 @@ const components = {
 	{
         id: 'signUp',
         html: signUpHTML
-    }
+    },
+	gameFinished:
+	{
+		id: 'gameFinished',
+		html: gameFinishedHTML
+	},
 };
 
 // Init components
@@ -89,11 +94,12 @@ function initializeComponents(): void
 	// Affiche la page d'accueil au chargement
 	show('landing');
 
+		
 	// Ajoute la navigation SPA
 	document.addEventListener('click', async (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
-		if (target.id === 'guestBtn')
+		if (target.id === 'mainMenuBtn')
 		{
 			// if (!window.socket || !window.socket.connected)
 			// {
@@ -202,6 +208,8 @@ function setupRoomJoinedHandler()
     });
 }
 
+
+
 // top level statemetn ( s'execute des que le fichier est importe)
 // --> manipuler le dom quúne fois qu'il est pret
 if (document.readyState === 'loading')
@@ -217,3 +225,5 @@ else
     initializeComponents();
     setupRoomJoinedHandler();
 }
+
+export { show, hideAllPages };

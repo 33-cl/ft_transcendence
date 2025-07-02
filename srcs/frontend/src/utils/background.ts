@@ -1,14 +1,14 @@
 // Configuration globale
-const STAR_COUNT = 4000;
+const STAR_COUNT = 2000;
 const STAR_SIZE_RANGE: [number, number] = [0.5, 3];
 const STAR_OPACITY_RANGE: [number, number] = [0.1, 2];
 
 const BACKGROUND_SCALE = 2;
 
-let ATTRACTION_RADIUS = 50; // valeur dynamique
+let ATTRACTION_RADIUS = 25; // valeur dynamique
 const ATTRACTION_RADIUS_INITIAL = 50;
 const ATTRACTION_RADIUS_MAX = 4000;
-const ATTRACTION_RADIUS_EXP_FACTOR = 1.01; // facteur exponentiel (>1 pour croître)
+const ATTRACTION_RADIUS_EXP_FACTOR = 1.002; // facteur exponentiel (>1 pour croître)
 let lastMouseMoveTime = Date.now();
 const INACTIVITY_THRESHOLD = 2000; // ms avant d'augmenter
 
