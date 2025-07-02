@@ -148,6 +148,9 @@ class BackgroundStarfield {
       const dx = star.x - mouseX;
       const dy = star.y - mouseY;
       const distance = Math.sqrt(dx * dx + dy * dy);
+
+      ATTRACTION_RADIUS = ATTRACTION_RADIUS_INITIAL; // Delete for blackhole
+
       if (distance < ATTRACTION_RADIUS) {
         star.targetX = mouseX;
         star.targetY = mouseY;

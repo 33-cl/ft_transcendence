@@ -1,6 +1,6 @@
 // websocket.ts
 //'io' est déjà disponible dans la page via le CDN socket.io-clients
-import { show, hideAllPages } from './spa.js';
+import { show, hideAllPages, hide } from './spa.js';
 
 declare var io: any;
 
@@ -130,6 +130,7 @@ socket.on('gameState', (state: any) => {
         setTimeout(() => {
             // hideAllPages();
             show('gameFinished');
+            hide('back2main');
         }, 1000);
     }
 });
