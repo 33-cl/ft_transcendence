@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, gameHTML, matchmakingHTML, gameFinishedHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -22,6 +22,11 @@ const components = {
         id: 'mainMenu',
         html: mainMenuHTML
     },
+	back2main:
+	{
+		id: 'back2main',
+		html: back2mainHTML
+	},
     leaderboard:
 	{
         id: 'leaderboard',
@@ -99,7 +104,7 @@ function initializeComponents(): void
 	document.addEventListener('click', async (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
-		if (target.id === 'mainMenuBtn')
+		if (target.id === 'mainMenuBtn' || target.id === 'back2main')
 		{
 			// if (!window.socket || !window.socket.connected)
 			// {
@@ -128,11 +133,13 @@ function initializeComponents(): void
 		{
 			hideAllPages();
 			show('signIn');
+			show('back2main');
 		}
 		if (target.id === 'signUpBtn')		
 		{
 			hideAllPages();
 			show('signUp');
+			show('back2main');
 		}
 		if (target.id === 'title')
 		{
@@ -145,7 +152,7 @@ function initializeComponents(): void
 		{
 			(window as any).setIsLocalGame(false); // Désactive le mode local
 			await window.joinOrCreateRoom(2); // 1v1
-			//show ('matchmaking') se fait dans joinorcreateroom
+			//show('matchmaking');// se fait dans joinorcreateroom
 		}
 		if (target.id === 'customCreateBtn')
 		{
@@ -226,4 +233,4 @@ else
     setupRoomJoinedHandler();
 }
 
-export { show, hideAllPages };
+export { show, hideAllPages, hide };
