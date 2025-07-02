@@ -6,3 +6,4 @@ export { friendListHTML } from './friendList.js';
 export { mainMenuHTML } from './mainMenu.js';
 export { matchmakingHTML } from './matchmaking.js'
 export { gameHTML } from './game.js';
+export { gameFinishedHTML } from './gameFinished.js'; 
