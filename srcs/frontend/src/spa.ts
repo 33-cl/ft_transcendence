@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML, profileHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -62,6 +62,11 @@ const components = {
 		id: 'gameFinished',
 		html: gameFinishedHTML
 	},
+    profile:
+    {
+        id: 'profile',
+        html: profileHTML
+    },
 };
 
 // Init components
@@ -104,6 +109,19 @@ function initializeComponents(): void
 	document.addEventListener('click', async (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
+		
+		// Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
+		let currentElement: HTMLElement | null = target;
+		let isProfileBtn = false;
+		
+		while (currentElement && !isProfileBtn) {
+			if (currentElement.id === 'profileBtn') {
+				isProfileBtn = true;
+			} else {
+				currentElement = currentElement.parentElement;
+			}
+		}
+		
 		if (target.id === 'mainMenuBtn' || target.id === 'back2main')
 		{
 			// if (!window.socket || !window.socket.connected)
@@ -146,6 +164,12 @@ function initializeComponents(): void
 			if (window.socket) window.socket.emit('leaveAllRooms');
 			hideAllPages();
 			show('landing');
+		}
+		if (target.id === 'profileBtn' || isProfileBtn)
+		{
+			hideAllPages();
+			show('profile');
+			show('back2main');
 		}
 		// ROOM LOGIC
 		if (target.id === 'ranked1v1Btn')

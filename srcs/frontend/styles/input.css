@@ -18,10 +18,15 @@
        @apply fixed top-0 left-0 w-full h-full -z-10 block; /* Canvas background positioning */
    }
 
+   /* h1 {
+       @apply text-left border-b-[3px] border-white pb-[15px] pt-[20px]; 
+       @apply w-full text-3xl bg-black;                                   
+   } */
+
    h1 {
-       @apply text-left border-b-[3px] border-white pb-[15px] pt-[20px];  /* Text alignment and borders */
-       @apply w-full text-3xl bg-black;                                   /* Size and background */
-   }
+       @apply text-2xl my-[2vh]; /* Text size and margins */
+       @apply drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]; /* Brillance on the text */
+    }
 
    h2 {
        @apply text-2xl my-[2vh]; /* Text size and margins */
@@ -103,7 +108,7 @@
        @apply my-[15vh]; /* Menu section spacing */
    }
 
-   #mainMenu h2 {
+   #mainMenu h1 {
        @apply text-4xl mb-[2vh]; /* Menu text size */
    }
 
@@ -119,8 +124,8 @@
        @apply w-[100vw];
    }
 
-   #matchmaking h2 {
-       @apply text-4xl; /* Matchmaking title size */
+   #matchmaking h1 {
+       @apply text-4xl;
    }
 
    #matchmaking button {
@@ -144,4 +149,68 @@
        @apply border-2 border-white rounded-md; /* Map borders and corners */
    }
 
+   /* Profile page styling */
+   .profile-container {
+       @apply flex flex-col items-center justify-start w-full h-full pt-16;
+   }
+
+   .username-title {
+       @apply text-5xl mb-12;
+   }
+
+   .profile-stats {
+       @apply flex flex-row items-start justify-center gap-16;
+   }
+
+   .avatar-container {
+       @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden;
+   }
+
+   .avatar-container img {
+       @apply w-full h-full object-cover;
+   }
+
+   .stats-container {
+       @apply flex flex-col items-start text-left;
+   }
+
+   .stat-row {
+       @apply flex flex-row items-center justify-between w-full mb-6;
+   }
+
+   .stat-label {
+       @apply text-4xl my-0 mr-16;
+   }
+
+   .stat-value {
+       @apply text-5xl;
+   }
+
+   .title-value {
+       @apply text-5xl text-amber-500;
+   }
+
+   .match-history {
+       @apply mt-24 w-full max-w-2xl;
+   }
+
+   .match-history h2 {
+       @apply text-3xl mb-6;
+   }
+
+   #match-list {
+       @apply list-none p-0;
+   }
+
+   .match-item {
+       @apply text-xl py-2;
+   }
+
+   .match-item.win {
+       @apply text-green-500;
+   }
+
+   .match-item.loss {
+       @apply text-red-500;
+   }
 }
