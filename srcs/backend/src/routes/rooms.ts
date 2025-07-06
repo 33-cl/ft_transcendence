@@ -2,10 +2,10 @@
 // Ce fichier expose une API REST pour gérer les rooms (création, listing, suppression)
 
 import { FastifyInstance } from 'fastify';
-import { rooms, roomExists, addPlayerToRoom, Room } from '../socket/roomManager';
+import { rooms, roomExists, addPlayerToRoom, Room, getNextRoomName } from '../socket/roomManager.js';
+import { createInitialGameState } from '../../Rayan/gameState.js';
 
-// Compteur local pour générer des noms uniques de room
-let localRoomCounter = 1;
+// Supprime le compteur local, on utilise le compteur global partagé
 
 export default async function roomsRoutes(fastify: FastifyInstance)
 {
@@ -16,13 +16,13 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 		if (!maxPlayers || typeof maxPlayers !== 'number')
 			return reply.status(400).send({ error: 'maxPlayers needed' });
 
-		// Génère un nom unique pour la room
+		// Génère un nom unique pour la room, incrémental et global
 		let roomName;
 		do {
-			roomName = `room${localRoomCounter++}`;
+			roomName = getNextRoomName();
 		} while (roomExists(roomName));
-		// Crée la room vide
-		rooms[roomName] = { players: [], maxPlayers };
+		// Crée la room vide avec un gameState initialisé
+		rooms[roomName] = { players: [], maxPlayers, gameState: createInitialGameState() };
 		return { roomName, maxPlayers };
 	});
 
@@ -40,10 +40,5 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 			return reply.status(404).send({ error: 'Room not found' });
 		delete rooms[roomName];
 		return { success: true };
-	});
-
-	// Route GET /ping : test de vie du backend
-	fastify.get('/ping', async (request, reply) => {
-		return { message: 'pong' };
 	});
 }

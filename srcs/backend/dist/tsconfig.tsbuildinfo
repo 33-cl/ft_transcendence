@@ -1,1 +1,0 @@
-{"root":["../db.ts","../gameState.ts","../server.ts","../@types/better-sqlite3/index.d.ts","../src/routes/rooms.ts","../src/socket/messageHandlers.ts","../src/socket/roomManager.ts","../src/socket/socketHandlers.ts"],"version":"5.8.3"}

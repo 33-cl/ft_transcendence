@@ -5,11 +5,31 @@ declare var io: any;
 
 // Connexion socket.io sur le même domaine
 const socket = io('', { transports: ["websocket"], secure: true }); // Connexion sur le même domaine
+(window as any).socket = socket;
 
 // Quand la connexion avec le serveur est établie, ce code s'exécute
 socket.on("connect", () => {
-    // Affiche l'identifiant unique de la connexion dans la console
-    console.log("Connecté au serveur WebSocket avec l'id:", socket.id);
+    console.log("[FRONT] Connecté au serveur WebSocket avec l'id:", socket.id);
+});
+
+// --- Ajout : écoute l'attribution du paddle lors du joinRoom ---
+socket.on('roomJoined', (data: any) => {
+    if (data && data.paddle) {
+        window.controlledPaddle = data.paddle;
+        console.log('[FRONT] Vous contrôlez le paddle :', data.paddle);
+    } else {
+        window.controlledPaddle = null;
+        console.log('[FRONT] Pas de paddle attribué, controlledPaddle=null');
+    }
+    console.log('[FRONT] roomJoined event, controlledPaddle=', window.controlledPaddle);
+    document.dispatchEvent(new Event('roomJoined'));
+});
+
+// Ajout : log lors de la déconnexion
+socket.on('disconnect', () => {
+    console.log('[FRONT] Déconnecté du serveur WebSocket');
+    window.controlledPaddle = null;
+    console.log('[FRONT] controlledPaddle reset à null (disconnect)');
 });
 
 
@@ -40,6 +60,7 @@ type MessageType = 'move' | 'score' | string;
 // Cette interface permet de créer un objet avec autant de propriétés que l'on souhaite.
 // Chaque propriété (clé) doit être une chaîne de caractères, et sa valeur peut être de n'importe quel type.
 // Exemple d'utilisation : { y: 120, player: "left" }
+//remplacer le any plus tard par un type plus précis si possible
 interface MessageData
 {
     [key: string]: any;
@@ -55,72 +76,53 @@ function sendMessage(type: MessageType, data: MessageData)
 // Expose la fonction pour test dans la console navigateur
 window.sendMessage = sendMessage;
 
-// Handler pour les messages relayés par le serveur (socket.io)
-socket.on('message', (data: any) =>
-{
-    let message;
-    try {
-        message = typeof data === "string" ? JSON.parse(data) : data;
-    } catch (e) {
-        console.error('Message non JSON:', data);
-        return;
-    }
-    handleWebSocketMessage(message);
-});
-
-function handleWebSocketMessage(message: { type: MessageType, data: MessageData })
-{
-	console.log("Message reçu du serveur:", message);
-    switch (message.type)
-	{
-        case 'move':
-            // Traiter le mouvement reçu
-            // Exemple: updatePaddlePosition(message.data)
-            break;
-        case 'score':
-            // Traiter la mise à jour du score
-            break;
-        // Ajouter d'autres types de messages ici
-        default:
-            console.warn('Type de message inconnu:', message.type);
-    }
-}
-
-let currentRoom: string | null = null;
 let joinInProgress = false;
-let lastJoinPromise: Promise<void> | null = null;
 
-// Met à jour la room courante quand on reçoit la confirmation du backend
-socket.on('roomJoined', (data: any) => {
-    if (data && data.room) {
-        currentRoom = data.room;
-        joinInProgress = false;
-        console.log('Room rejointe:', currentRoom);
-    }
-});
-
-// Fonction pour rejoindre ou créer automatiquement une room de n joueurs
-// Version simplifiée : le frontend demande juste au backend, qui gère tout
-async function joinOrCreateRoom(maxPlayers: number) {
-    return new Promise<void>((resolve) => {
-        // On écoute la réponse du backend (room rejointe ou erreur)
-        const handler = (data: any) => {
-            if (data && data.room) {
-                currentRoom = data.room;
-                console.log('Room rejointe:', currentRoom);
-            } else if (data && data.error) {
-                console.error('Erreur lors du join:', data.error);
-            }
-            socket.off('roomJoined', handler);
-            socket.off('error', handler);
-            resolve();
+// Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
+async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false)
+{
+    if (joinInProgress)
+        return;
+    joinInProgress = true;
+    return new Promise<void>((resolve, reject) =>
+    {
+        const cleanup = () => {
+            joinInProgress = false;
+            socket.off('error', failure);
         };
-        socket.once('roomJoined', handler);
-        socket.once('error', handler);
-        // On demande au backend de nous placer dans une room du bon type
-        socket.emit('joinRoom', { maxPlayers });
+        const failure = () => {
+            cleanup();
+            reject(new Error("Error during joinRoom"));
+        };
+        // On n'utilise plus 'once' sur roomJoined pour ne pas consommer l'event
+        socket.once('error', failure);
+        socket.emit('joinRoom', { maxPlayers, isLocalGame }); // <-- Ajout du flag
+        // On considère la promesse résolue dès qu'on a émis la demande (le handler UX gère la suite)
+        cleanup();
+        resolve();
     });
 }
+
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
 
+import { initPongRenderer, draw } from './pongRenderer.js';
+
+// Initialisation du renderer Pong au chargement de la page jeu
+function setupPongCanvas() {
+    initPongRenderer('map');
+}
+
+document.addEventListener('componentsReady', () => {
+    // Si la page jeu est affichée, on initialise le renderer
+    if (document.getElementById('map')) {
+        setupPongCanvas();
+    }
+});
+
+socket.on('gameState', (state: any) => {
+    draw(state);
+});
+
+// Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
+import './pongControls.js'; // Ajoute les contrôles clavier (modularité)

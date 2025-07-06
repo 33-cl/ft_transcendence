@@ -1,58 +1,55 @@
-"use strict";
-// src/socket/roomManager.ts
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.roomCounter = exports.rooms = void 0;
-exports.roomExists = roomExists;
-exports.addPlayerToRoom = addPlayerToRoom;
-exports.removePlayerFromRoom = removePlayerFromRoom;
-exports.getPlayerRoom = getPlayerRoom;
-exports.getRoomMaxPlayers = getRoomMaxPlayers;
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
 // on utilise un objet pour stocker les rooms, ou la cle est le nom de la room et la valeur est un objet room
-exports.rooms = {};
-exports.roomCounter = 1;
+export const rooms = {};
+export let roomCounter = 1;
 // Helper: vérifier si une room existe
-function roomExists(roomName) {
-    return !!exports.rooms[roomName];
+export function roomExists(roomName) {
+    // retourne true si la room existe, false sinon
+    // le !! permet de convertir la valeur en boolean (! convertit en boolean, puis ! le re-inverse(le true devient false et vice versa))
+    return !!rooms[roomName];
 }
 // Helper: ajouter un joueur à une room existante
-function addPlayerToRoom(roomName, socketId) {
-    if (exports.rooms[roomName]
-        && !exports.rooms[roomName].players.includes(socketId)
-        && exports.rooms[roomName].players.length < exports.rooms[roomName].maxPlayers) {
-        exports.rooms[roomName].players.push(socketId);
+export function addPlayerToRoom(roomName, socketId) {
+    if (rooms[roomName]
+        && !rooms[roomName].players.includes(socketId)
+        && rooms[roomName].players.length < rooms[roomName].maxPlayers) {
+        rooms[roomName].players.push(socketId);
         return true;
     }
     return false;
 }
 // Retirer le joueur de sa room
-function removePlayerFromRoom(socketId) {
+export function removePlayerFromRoom(socketId) {
     let playerRoom = null;
-    for (const roomName in exports.rooms) {
-        if (exports.rooms[roomName].players.includes(socketId)) {
+    for (const roomName in rooms) {
+        if (rooms[roomName].players.includes(socketId)) {
             playerRoom = roomName;
             break;
         }
     }
     if (playerRoom) {
-        exports.rooms[playerRoom].players = exports.rooms[playerRoom].players.filter(id => id !== socketId);
-        if (exports.rooms[playerRoom].players.length === 0) {
-            delete exports.rooms[playerRoom];
+        rooms[playerRoom].players = rooms[playerRoom].players.filter(id => id !== socketId);
+        if (rooms[playerRoom].players.length === 0) {
+            delete rooms[playerRoom];
         }
     }
 }
 // Helper: récupérer la room d'un joueur
-function getPlayerRoom(socketId) {
-    for (const roomName in exports.rooms) {
-        if (exports.rooms[roomName].players.includes(socketId)) {
+export function getPlayerRoom(socketId) {
+    for (const roomName in rooms) {
+        if (rooms[roomName].players.includes(socketId)) {
             return roomName;
         }
     }
     return null;
 }
 // Helper: récupérer la capacité max d'une room
-function getRoomMaxPlayers(roomName) {
+export function getRoomMaxPlayers(roomName) {
     // retourne le nombre maximum de joueurs pour une room donnee
     // si la room n existe pas, retourne null
-    return exports.rooms[roomName]?.maxPlayers ?? null;
+    return rooms[roomName]?.maxPlayers ?? null;
+}
+// Utilitaire: générer le nom d'une nouvelle room
+export function getNextRoomName() {
+    return `room${roomCounter++}`;
 }

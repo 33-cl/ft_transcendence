@@ -1,26 +1,28 @@
 <!DOCTYPE html>
 <html class="h-full w-full">
 <head>
-  <title>Pong</title>
-  <!-- <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"> -->
+  <title>ft_transcencence</title>
   <link rel="stylesheet" href="styles/output.css?v=1">
-  <!-- <link rel="stylesheet" href="styles/global.css"> -->
-  <!-- <link rel="stylesheet" href="styles/components/login.css"> -->
-  <!-- <link rel="stylesheet" href="styles/components/mainMenu.css"> -->
 </head>
-<body class="font-press-start bg-black text-white text-center flex flex-col items-center min-h-screen">
-  <h1 id="title" class="text-left border-b-[3px] border-white pb-[15px] pt-[20px] ml-[20px] self-stretch w-full text-3xl">FT_TRANSCENDENCE</h1>
+<body>
+  
+  <canvas id="background"></canvas>
+
+  <h1 id="title">FT_TRANSCENDENCE</h1>
 
   <div id="landing" class="page"></div>
   <div id="mainMenu" class="page"></div>
+  <div id="leaderboard"></div>
+  <div id="friendList"></div>
+  <div id="matchmaking" class="page"></div>
   <div id="signIn" class="page authentication"></div>
   <div id="signUp" class="page authentication"></div>
   <div id="game" class="page"></div>
   <div id="lorem-ipsum" class="page"></div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="dist/websocket.js"></script>
+  <script type="module" src="dist/websocket.js"></script>
   <script type="module" src="dist/spa.js"></script>
-  <script src="src/game.js"></script>
+  <script src="dist/utils/background.js"></script>
 </body>
 </html>

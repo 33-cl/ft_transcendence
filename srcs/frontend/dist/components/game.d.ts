@@ -1,2 +1,0 @@
-export declare const gameHTML = "\n    <canvas id=\"pongCanvas\" width=\"850px\" height=\"650px\"></canvas>\n    <div id=\"score\" class=\"text-2xl\">\n        <span id=\"leftScore\">0</span> -  <span id=\"rightScore\">0</span>\n    </div>\n    <p id=\"winnerDisplay\"></p>\n";
-//# sourceMappingURL=game.d.ts.map

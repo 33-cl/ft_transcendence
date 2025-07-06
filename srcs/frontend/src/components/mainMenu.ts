@@ -1,24 +1,24 @@
 export const mainMenuHTML = /*html*/`
     <div class="menu-container">
         <div class="menu-section">
-            <h2>Play</h2>
+            <h2>Local</h2>
             <div class="button-group">
-                <button id="ranked1v1Btn">1v1 Ranked</button>
-                <button id="localGameBtn">Local</button>
+                <button id="local2p">2 Player</button>
+                <button id="local3p">3 Player</button>
             </div>
         </div>
         <div class="menu-section">
-            <h2>Custom</h2>
+            <h2>Multiplayer</h2>
             <div class="button-group">
-                <button id="customCreateBtn">Create</button>
-                <button id="customJoinBtn">Join</button>
+                <button id="ranked1v1Btn">2 Player</button>
+                <button id="customJoinBtn">3 Player</button>
             </div>
         </div>
         <div class="menu-section">
             <h2>Tournaments</h2>
             <div class="button-group">
-                <button id="tournamentCreateBtn">Create</button>
-                <button id="tournamentJoinBtn">Join</button>
+                <button id="tournamentCreateBtn">8 Player</button>
+                <button id="tournamentJoinBtn">Battle Royale</button>
             </div>
         </div>
     </div>

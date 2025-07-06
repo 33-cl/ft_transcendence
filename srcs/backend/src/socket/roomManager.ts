@@ -1,9 +1,18 @@
+import { GameState, createInitialGameState, PaddleSide } from '../../Rayan/gameState.js';
+import { PongGame } from '../../Rayan/pong.js';
+
 // src/socket/roomManager.ts
 
 export interface Room
 {
   players: string[];
   maxPlayers: number;
+  gameState: GameState;
+  pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
+  // Nouvelle structure : paddleInputs indexé par PaddleSide ('A', 'B', 'C')
+  paddleInputs?: Record<PaddleSide, { up: boolean; down: boolean }>;
+  // Mapping socket.id -> PaddleSide (attribution du contrôle des paddles)
+  paddleBySocket?: Record<string, PaddleSide>;
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
@@ -14,6 +23,8 @@ export let roomCounter = 1;
 // Helper: vérifier si une room existe
 export function roomExists(roomName: string): boolean
 {
+	// retourne true si la room existe, false sinon
+	// le !! permet de convertir la valeur en boolean (! convertit en boolean, puis ! le re-inverse(le true devient false et vice versa))
   return !!rooms[roomName];
 }
 
@@ -71,4 +82,9 @@ export function getRoomMaxPlayers(roomName: string): number | null
 	// retourne le nombre maximum de joueurs pour une room donnee
 	// si la room n existe pas, retourne null
 	return rooms[roomName]?.maxPlayers ?? null;
+}
+
+// Utilitaire: générer le nom d'une nouvelle room
+export function getNextRoomName(): string {
+  return `room${roomCounter++}`;
 }

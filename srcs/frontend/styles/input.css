@@ -4,49 +4,136 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+   html, body {
+       @apply w-full h-full m-0;                         /* Page taking the whole screen */
+       @apply font-press-start text-white text-center; /* Text */
+       @apply flex flex-col items-center min-h-screen;   /* Elements centered */
+   }
+}
 
 @layer components {
 
-    h2 {
-        @apply text-2xl my-[2vh];
-    }
+   #background {
+       @apply fixed top-0 left-0 w-full h-full -z-10 block; /* Canvas background positioning */
+   }
 
-    a {
-        @apply text-blue-700;
-    }
+   h1 {
+       @apply text-left border-b-[3px] border-white pb-[15px] pt-[20px];  /* Text alignment and borders */
+       @apply w-full text-3xl bg-black;                                   /* Size and background */
+   }
 
-    a:hover {
-        @apply text-purple-800;
-    }
+   h2 {
+       @apply text-2xl my-[2vh]; /* Text size and margins */
+   }
 
+   a {
+       @apply text-blue-700; /* Link color */
+   }
 
-    button {
-        @apply p-4 border-2 border-white rounded-lg px-4 py-2 text-2xl cursor-pointer;
-    }
+   a:hover {
+       @apply text-purple-800; /* Link hover color */
+   }
 
-    button:hover {
-        @apply bg-green-500;
-    }
+   button {
+       @apply bg-black p-4 border-2 border-white rounded-lg; /* Background and borders */
+       @apply px-4 py-2 text-2xl cursor-pointer;                 /* Padding, text and cursor */
+   }
 
-    button:active {
-        @apply bg-green-700 scale-95;
-    }
+   button:hover {
+       @apply bg-green-500; /* Button hover background */
+   }
 
-    .page {
-        @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
-    }
+   button:active {
+       @apply bg-green-700 scale-95; /* Button active state */
+   }
 
-    /* empty pages should not block clicks */
-    .page:empty {
-        pointer-events: none;
-    }
+   .page {
+       @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4;      /* Layout and spacing */
+       @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2; /* Centering positioning */
+   }
 
-    .page input {
-        @apply p-2 w-[300px] text-base border-2 border-white rounded-md bg-black text-white;
-    }
+   .page:empty {
+       pointer-events: none; /* Click-through for empty pages */
+   }
 
-    .menu-section {
-        @apply my-[10vh];
-    }
+   .page input {
+       @apply p-2 w-[300px] text-base;                /* Padding, width and text size */
+       @apply border-2 border-white rounded-md;     /* Borders and corners */
+       @apply bg-black text-white;                /* Colors */
+   }
+
+   #leaderboard {
+       @apply left-[2%]; /* Left panel positioning */
+   }
+
+   #friendList {
+       @apply right-[2%]; /* Right panel positioning */
+   }
+
+   .user-list {
+       @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
+       @apply overflow-y-auto p-[1vh];            /* Scroll and padding */
+   }
+
+   .user-list img {
+       @apply w-20 h-20 rounded-md object-cover; /* User avatar styling */
+   }
+
+   .friend {
+       @apply flex items-center gap-4 p-2 relative;        /* Layout and spacing */
+       @apply hover:bg-gray-600 transition-colors;        /* Hover effects */
+   }
+
+   .crown {
+       @apply absolute z-10 top-[-2.7vh] left-[-2vh] !important;     /* Crown positioning */
+       @apply w-[130px] h-[65px] object-fill !important;             /* Crown size and fit */
+       @apply rotate-[-10deg] !important;                 /* Crown rotation */
+   }
+
+   .profile-pic {
+       @apply relative z-0; /* Profile picture layering */
+   }
+
+   .menu-container {
+       @apply mt-[7vh]; /* Menu container spacing */
+   }
+
+   .menu-section {
+       @apply my-[15vh]; /* Menu section spacing */
+   }
+
+   #mainMenu h2 {
+       @apply text-4xl mb-[2vh]; /* Menu text size */
+   }
+
+   #mainMenu button {
+       @apply text-xl; /* Button text size */
+   }
+
+   #matchmaking-page {
+       @apply w-[100vw];
+   }
+
+   #matchmaking h2 {
+       @apply text-4xl; /* Matchmaking title size */
+   }
+
+   #searchingText {
+       @apply text-2xl pb-4; /* Search status text styling */
+   }
+
+   #tips {
+       @apply text-gray-400 w-[60vw] mx-[20vw];                   /* Full width and margin */
+       @apply fixed bottom-0 left-0;                 /* Positioning */
+   } 
+
+   #tipText {
+       @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
+   }
+   
+   #map {
+       @apply border-2 border-white rounded-md; /* Map borders and corners */
+   }
 
 }
