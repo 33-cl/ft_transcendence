@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML, profileHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -67,6 +67,11 @@ const components = {
         id: 'profile',
         html: profileHTML
     },
+	contextMenu:
+	{
+		id: 'contextMenu',
+		html: contextMenuHTML
+	},
 };
 
 // Init components
@@ -105,7 +110,7 @@ function initializeComponents(): void
 	show('landing');
 
 		
-	// Ajoute la navigation SPA
+	// Ajoute la navigation SPA pour le clic gauche
 	document.addEventListener('click', async (e) => {
 		const target = e.target as HTMLElement;
 		if (!target) return;
@@ -206,6 +211,56 @@ function initializeComponents(): void
 			animateDots();
 			switchTips();
 		}
+	});
+	
+	// Ajoute un gestionnaire pour le clic droit (contextmenu)
+	document.addEventListener('contextmenu', (e) => {
+		// Empêcher le menu contextuel par défaut du navigateur
+		e.preventDefault();
+		
+		const target = e.target as HTMLElement;
+		if (!target) return;
+		
+		// Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
+		let currentElement: HTMLElement | null = target;
+		let isProfileBtn = false;
+		
+		while (currentElement && !isProfileBtn) {
+			if (currentElement.id === 'profileBtn') {
+				isProfileBtn = true;
+			} else {
+				currentElement = currentElement.parentElement;
+			}
+		}
+		
+		// Exemple: action spécifique pour le clic droit sur un profil
+		if (isProfileBtn) {
+
+			const menu = document.getElementById('contextMenu');
+			if (menu)
+			{
+				show('contextMenu');
+
+				menu.style.left = `${e.clientX}px`;
+				menu.style.top = `${e.clientY}px`;
+
+				console.log('Menu positionné à', menu.style.left, menu.style.top);
+			}
+
+		}
+	});
+	document.addEventListener('click', (e) => {
+		const menu = document.getElementById('contextMenu');
+		if (!menu) return;
+	
+		// Si le menu n'est pas affiché, rien à faire
+		if (!menu.innerHTML.trim()) return;
+	
+		// Si le clic est à l'intérieur du menu, ne rien faire
+		if (menu.contains(e.target as Node)) return;
+	
+		// Sinon, masquer le menu contextuel
+		hide('contextMenu');
 	});
 }
 
