@@ -100,6 +100,18 @@
        @apply relative z-0; /* Profile picture layering */
    }
 
+   #contextMenu {
+        @apply fixed z-[1000] bg-gray-600 text-base;
+   }
+
+   #contextMenu li {
+       @apply p-4;
+   }
+
+   #contextMenu li:hover {
+       @apply bg-gray-400;
+   }
+
    .menu-container {
        @apply mt-[7vh]; /* Menu container spacing */
    }
@@ -175,19 +187,16 @@
    }
 
    .stat-row {
-       @apply flex flex-row items-center justify-between w-full mb-6;
+       @apply text-4xl flex flex-row items-center justify-between w-full mb-6;
    }
 
    .stat-label {
-       @apply text-4xl my-0 mr-16;
+       @apply my-0 mr-16;
    }
 
-   .stat-value {
-       @apply text-5xl;
-   }
 
    .title-value {
-       @apply text-5xl text-amber-500;
+       @apply  text-amber-500;
    }
 
    .match-history {

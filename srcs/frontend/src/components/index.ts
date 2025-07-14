@@ -4,8 +4,9 @@ export { signUpHTML } from './signUp.js';
 export { back2mainHTML } from './back2main.js';
 export { leaderboardHTML } from './leaderboard.js';
 export { friendListHTML } from './friendList.js';
+export { contextMenuHTML } from './contextMenu.js';
 export { mainMenuHTML } from './mainMenu.js';
 export { matchmakingHTML } from './matchmaking.js'
 export { gameHTML } from './game.js';
 export { gameFinishedHTML } from './gameFinished.js';
-export { profileHTML } from './profile.js';     
+export { profileHTML } from './profile.js'; 
