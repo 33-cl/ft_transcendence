@@ -1,5 +1,6 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
+import { initPasswordMasking } from './utils/passwordMasking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
@@ -106,6 +107,9 @@ function hideAllPages(): void
 
 function initializeComponents(): void
 {
+	// Initialisation du masquage des mots de passe avec des astérisques
+	initPasswordMasking();
+	
 	// Affiche la page d'accueil au chargement
 	show('landing');
 
