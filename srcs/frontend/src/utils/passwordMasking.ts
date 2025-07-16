@@ -96,6 +96,11 @@ function copyStyles(source: HTMLElement, target: HTMLElement): void {
   
   for (let i = 0; i < computedStyle.length; i++) {
     const property = computedStyle[i];
-    target.style.setProperty(property, computedStyle.getPropertyValue(property));
+    if (property) {
+      const value = computedStyle.getPropertyValue(property);
+      if (value) {
+        target.style.setProperty(property, value);
+      }
+    }
   }
 } 
