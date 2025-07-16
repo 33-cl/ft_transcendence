@@ -63,7 +63,7 @@
    }
 
    .page input {
-       @apply p-2 w-[300px] text-base;                /* Padding, width and text size */
+       @apply p-2 w-[300px] text-xl;                /* Padding, width and text size */
        @apply border-2 border-white rounded-md;     /* Borders and corners */
        @apply bg-black text-white;                /* Colors */
    }
