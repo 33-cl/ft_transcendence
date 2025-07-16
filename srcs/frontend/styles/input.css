@@ -63,7 +63,7 @@
    }
 
    .page input {
-       @apply p-2 w-[300px] text-xl;                /* Padding, width and text size */
+       @apply p-2 w-[300px] text-lg;                /* Padding, width and text size */
        @apply border-2 border-white rounded-md;     /* Borders and corners */
        @apply bg-black text-white;                /* Colors */
    }
@@ -121,11 +121,11 @@
    }
 
    #mainMenu h1 {
-       @apply text-4xl mb-[2vh]; /* Menu text size */
+       @apply text-[42px] mb-[2vh]; /* Menu text size */
    }
 
    #mainMenu button {
-       @apply text-xl; /* Button text size */
+       @apply text-3xl; /* Button text size */
    }
 
    #back2main {
