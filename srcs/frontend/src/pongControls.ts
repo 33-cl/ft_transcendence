@@ -7,6 +7,7 @@
 function sendKeyEvent(type: 'keydown' | 'keyup', player: 'A' | 'B' | 'C' | 'left' | 'right', direction: 'up' | 'down') {
     console.log(`[FRONT] sendKeyEvent: type=${type}, player=${player}, direction=${direction}, controlledPaddle=${(window as any).controlledPaddle}`);
     if ((window as any).isLocalGame) {
+        console.log('[FRONT] sendMessage called:', type, player, direction, (window as any).sendMessage);
         (window as any).sendMessage(type, { player, direction });
     } else {
         if ((window as any).controlledPaddle === player) {
@@ -24,38 +25,46 @@ function updatePaddleKeyBindings() {
     const paddle = (window as any).controlledPaddle;
     console.log('[FRONT] updatePaddleKeyBindings, controlledPaddle=', paddle);
     if ((window as any).isLocalGame) {
-        // Mode local : mapping selon le nombre de joueurs
-        if (Array.isArray(paddle)) {
-            // 1v1 local : left/right OU 1v1v1 local : A/B/C
-            // On supporte les deux cas dynamiquement
+        let paddles = paddle;
+        let isPatched1v1 = false;
+        if (Array.isArray(paddle) && paddle.length === 2 && paddle.includes('A') && paddle.includes('C')) {
+            paddles = ['left', 'right'];
+            isPatched1v1 = true;
+        }
+        if (Array.isArray(paddles)) {
             keyToMove = {};
-            if (paddle.includes('A')) {
-                keyToMove['w'] = { player: 'A', direction: 'up' };
-                keyToMove['s'] = { player: 'A', direction: 'down' };
-            }
-            if (paddle.includes('B')) {
-                keyToMove['i'] = { player: 'B', direction: 'up' };
-                keyToMove['k'] = { player: 'B', direction: 'down' };
-            }
-            if (paddle.includes('C')) {
-                keyToMove['ArrowUp'] = { player: 'C', direction: 'up' };
-                keyToMove['ArrowDown'] = { player: 'C', direction: 'down' };
-            }
-            if (paddle.includes('left')) {
+            // 1v1 local : left/right (patch appliqué)
+            if (paddles.includes('left')) {
                 keyToMove['w'] = { player: 'left', direction: 'up' };
                 keyToMove['s'] = { player: 'left', direction: 'down' };
             }
-            if (paddle.includes('right')) {
+            if (paddles.includes('right')) {
                 keyToMove['ArrowUp'] = { player: 'right', direction: 'up' };
                 keyToMove['ArrowDown'] = { player: 'right', direction: 'down' };
+            }
+            // 1v1v1 local : A/B/C (uniquement si patch non appliqué)
+            if (!isPatched1v1) {
+                if (paddles.includes('A')) {
+                    keyToMove['w'] = { player: 'A', direction: 'up' };
+                    keyToMove['s'] = { player: 'A', direction: 'down' };
+                }
+                if (paddles.includes('B')) {
+                    // Paddle B est horizontal : i = gauche, k = droite
+                    keyToMove['i'] = { player: 'B', direction: 'up' }; // up = gauche pour paddle horizontal
+                    keyToMove['k'] = { player: 'B', direction: 'down' }; // down = droite pour paddle horizontal
+                }
+                if (paddles.includes('C')) {
+                    keyToMove['ArrowUp'] = { player: 'C', direction: 'up' };
+                    keyToMove['ArrowDown'] = { player: 'C', direction: 'down' };
+                }
             }
         } else if (['A', 'B', 'C'].includes(paddle)) {
             // Cas fallback (jamais utilisé normalement)
             keyToMove = {
                 w: { player: 'A', direction: 'up' },
                 s: { player: 'A', direction: 'down' },
-                i: { player: 'B', direction: 'up' },
-                k: { player: 'B', direction: 'down' },
+                i: { player: 'B', direction: 'up' }, // up = gauche pour paddle B horizontal
+                k: { player: 'B', direction: 'down' }, // down = droite pour paddle B horizontal
                 ArrowUp: { player: 'C', direction: 'up' },
                 ArrowDown: { player: 'C', direction: 'down' }
             };
@@ -78,8 +87,8 @@ function updatePaddleKeyBindings() {
             };
         } else if (paddle === 'B') {
             keyToMove = {
-                i: { player: 'B', direction: 'up' },
-                k: { player: 'B', direction: 'down' }
+                i: { player: 'B', direction: 'up' }, // up = gauche pour paddle B horizontal
+                k: { player: 'B', direction: 'down' } // down = droite pour paddle B horizontal
             };
         } else if (paddle === 'C') {
             keyToMove = {

@@ -126,7 +126,7 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
     if (room.isLocalGame) {
         if (!room.paddleBySocket) room.paddleBySocket = {};
         if (room.maxPlayers === 2) {
-            room.paddleBySocket[socket.id] = ['A', 'B'];
+            room.paddleBySocket[socket.id] = ['A', 'C']; // A = gauche, C = droite (B reste pour horizontal en 1v1v1)
         } else if (room.maxPlayers === 3) {
             room.paddleBySocket[socket.id] = ['A', 'B', 'C'];
         }
@@ -297,13 +297,13 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         joinPlayerToRoom(socket, roomName, room, io);
         // --- Ajout : en local, on démarre la partie immédiatement ---
         if (isLocalGame && !room.pongGame) {
-            room.pongGame = new PongGame();
+            room.pongGame = new PongGame(room.maxPlayers);
             room.pongGame.start();
         }
         // --- Sinon, comportement normal ---
         else if (!room.pongGame && room.players.length === room.maxPlayers)
         {
-            room.pongGame = new PongGame();
+            room.pongGame = new PongGame(room.maxPlayers);
             room.pongGame.start();
         }
     }
@@ -315,11 +315,20 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
 
 // Helper pour initialiser paddleInputs avec toutes les clés nécessaires
 function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean; down: boolean }> {
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C'];
     const inputs: any = {};
-    for (const side of paddleSides.slice(0, maxPlayers)) {
-        inputs[side] = { up: false, down: false };
+    
+    if (maxPlayers === 2) {
+        // Mode 1v1 : utiliser A (gauche) et C (droite)
+        inputs['A'] = { up: false, down: false };
+        inputs['C'] = { up: false, down: false };
+    } else if (maxPlayers === 3) {
+        // Mode 1v1v1 : utiliser A, B et C
+        inputs['A'] = { up: false, down: false };
+        inputs['B'] = { up: false, down: false };
+        inputs['C'] = { up: false, down: false };
     }
+    
+    console.log(`[DEBUG] initPaddleInputs pour ${maxPlayers} joueurs:`, Object.keys(inputs));
     return inputs;
 }
 
@@ -340,10 +349,20 @@ function handleGameTick(io: any)
             for (const paddle of typedRoom.pongGame.state.paddles) {
                 const input = typedRoom.paddleInputs[paddle.side];
                 if (!input) continue;
-                if (input.up)
-                    paddle.y = Math.max(0, paddle.y - speed);
-                if (input.down)
-                    paddle.y = Math.min(typedRoom.pongGame.state.canvasHeight - typedRoom.pongGame.state.paddleHeight, paddle.y + speed);
+                
+                // Paddle B horizontal : bouge sur l'axe X
+                if (paddle.side === 'B') {
+                    if (input.up) // up = gauche pour paddle horizontal
+                        paddle.x = Math.max(0, paddle.x - speed);
+                    if (input.down) // down = droite pour paddle horizontal
+                        paddle.x = Math.min(typedRoom.pongGame.state.canvasWidth - paddle.width, paddle.x + speed);
+                } else {
+                    // Paddles A et C verticaux : bougent sur l'axe Y
+                    if (input.up)
+                        paddle.y = Math.max(0, paddle.y - speed);
+                    if (input.down)
+                        paddle.y = Math.min(typedRoom.pongGame.state.canvasHeight - paddle.height, paddle.y + speed);
+                }
             }
             // --- LOG DEBUG : Affiche les paddles envoyés en local ---
             if (typedRoom.isLocalGame) {
@@ -351,6 +370,11 @@ function handleGameTick(io: any)
             }
             // Envoie l'état du jeu à tous les clients de la room
             io.to(roomName).emit('gameState', typedRoom.pongGame.state);
+            
+            // Log pour vérifier les scores envoyés
+            if (typedRoom.pongGame.state.paddles && typedRoom.pongGame.state.paddles.some((p: any) => p.score > 0)) {
+                console.log(`[DEBUG SCORES] room=${roomName} scores=`, typedRoom.pongGame.state.paddles.map((p: any) => p.score));
+            }
         }
         // --- NETTOYAGE AUTO DES ROOMS FINIES (ranked) ---
         if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)
@@ -373,6 +397,10 @@ function handleSocketMessage(socket: Socket, msg: string)
     try {
         message = JSON.parse(msg);
     } catch (e) { return; }
+    
+    // Log pour voir TOUS les messages reçus
+    console.log(`[BACKEND] Message reçu de ${socket.id}: type=${message.type}, data=${JSON.stringify(message.data)}`);
+    
     const playerRoom = getPlayerRoom(socket.id);
     if (!playerRoom) return;
     const room = rooms[playerRoom] as RoomType;
@@ -383,16 +411,43 @@ function handleSocketMessage(socket: Socket, msg: string)
     if ((message.type === 'keydown' || message.type === 'keyup') && room.pongGame && room.paddleBySocket) {
         const { player, direction } = message.data || {};
         const allowedPaddle = room.paddleBySocket[socket.id];
+        console.log(`[BACKEND] Handler keydown/keyup: player=${player}, allowedPaddle=${JSON.stringify(allowedPaddle)}, isLocalGame=${room.isLocalGame}`);
         if (room.isLocalGame) {
+            // Mapping pour 1v1 local : left/right → A/C (B reste pour 1v1v1 horizontal)
+            let mappedPlayer = player;
+            if (player === 'left') mappedPlayer = 'A';
+            else if (player === 'right') mappedPlayer = 'C'; // Changé de B vers C
+            
+            console.log(`[BACKEND] Mapping: ${player} → ${mappedPlayer}, allowedPaddle=${JSON.stringify(allowedPaddle)}`);
+            
             // allowedPaddle est un tableau de sides
-            if (Array.isArray(allowedPaddle) && allowedPaddle.includes(player)) {
-                if ((player === 'A' || player === 'B' || player === 'C' || player === 'left' || player === 'right') && (direction === 'up' || direction === 'down'))
-                    room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
+            if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
+                console.log(`[BACKEND] Paddle autorisé, traitement de ${mappedPlayer} ${direction}`);
+                if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
+                    room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
+                    // Appliquer immédiatement le mouvement au jeu
+                    if (message.type === 'keydown') {
+                        console.log(`[BACKEND] Appel movePaddle(${mappedPlayer}, ${direction})`);
+                        try {
+                            room.pongGame.movePaddle(mappedPlayer, direction);
+                            console.log(`[BACKEND] movePaddle réussi`);
+                        } catch (error) {
+                            console.error(`[BACKEND] Erreur dans movePaddle:`, error);
+                        }
+                    }
+                }
+            } else {
+                console.log(`[BACKEND] Paddle NON autorisé: ${mappedPlayer} pas dans ${JSON.stringify(allowedPaddle)}`);
             }
         } else {
             if (player !== allowedPaddle) return;
-            if ((player === 'A' || player === 'B' || player === 'C') && (direction === 'up' || direction === 'down'))
+            if ((player === 'A' || player === 'B' || player === 'C') && (direction === 'up' || direction === 'down')) {
                 room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
+                // Appliquer immédiatement le mouvement au jeu
+                if (message.type === 'keydown') {
+                    room.pongGame.movePaddle(player, direction);
+                }
+            }
         }
     }
 }

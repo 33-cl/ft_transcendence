@@ -20,6 +20,7 @@ export function initPongRenderer(canvasId: string = 'map')
 export function draw(gameState: any)
 {
     if (!ctx || !canvas) return;
+    console.log('[DEBUG] gameState reçu dans draw:', JSON.stringify(gameState)); // Ajout du log pour debug
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // --- DESSIN DU TERRAIN ---
@@ -54,12 +55,24 @@ export function draw(gameState: any)
     }
 
     // --- DESSIN DES PADDLES ---
-    if (gameState.paddles) {
+    if (gameState.paddles && gameState.paddles.length > 0) {
         for (const paddle of gameState.paddles) {
-            console.log('DRAW paddle', paddle, 'canvas', canvas.width, canvas.height); // DEBUG
+            // Fallback pour les propriétés manquantes (1v1 local)
+            const width = paddle.width ?? gameState.paddleWidth ?? 10;
+            const height = paddle.height ?? gameState.paddleHeight ?? 100;
+            let x = paddle.x;
+            if (x === undefined) {
+                if (paddle.side === 'A' || paddle.side === 'left')
+                    x = gameState.paddleMargin ?? 10;
+                else if (paddle.side === 'B' || paddle.side === 'right')
+                    x = (gameState.canvasWidth ?? canvas.width) - (gameState.paddleMargin ?? 10) - width;
+                else
+                    x = 0;
+            }
+            const y = paddle.y ?? 0;
             ctx.save();
             ctx.fillStyle = paddle.color || 'white';
-            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.fillRect(x, y, width, height);
             ctx.restore();
         }
     } else {
@@ -78,11 +91,18 @@ export function draw(gameState: any)
     // --- AFFICHAGE DES SCORES ---
     const scoreElem = document.getElementById('score');
     if (scoreElem) {
-        if (gameState.scores && Array.isArray(gameState.scores)) {
-            // Mode 1v1v1 : scores dynamiques
-            scoreElem.innerHTML = gameState.scores.map((s: number, i: number) => `<span id='score${i}'>${s}</span>`).join(' - ');
+        if (gameState.paddles && Array.isArray(gameState.paddles)) {
+            if (gameState.paddles.length === 3) {
+                // Mode 1v1v1 : scores dynamiques
+                scoreElem.innerHTML = gameState.paddles.map((p: any, i: number) => `<span id='score${i}'>${p.score || 0}</span>`).join(' - ');
+            } else if (gameState.paddles.length === 2) {
+                // Mode 1v1 : gauche vs droite
+                const leftScore = gameState.paddles[0]?.score || 0;
+                const rightScore = gameState.paddles[1]?.score || 0;
+                scoreElem.innerHTML = `<span id='leftScore'>${leftScore}</span> - <span id='rightScore'>${rightScore}</span>`;
+            }
         } else {
-            // Mode 1v1 classique
+            // Fallback pour ancienne structure
             const left = gameState.leftScore ?? 0;
             const right = gameState.rightScore ?? 0;
             scoreElem.innerHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;

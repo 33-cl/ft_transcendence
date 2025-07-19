@@ -114,13 +114,26 @@ function setupPongCanvas() {
 }
 
 document.addEventListener('componentsReady', () => {
-    // Si la page jeu est affichée, on initialise le renderer
-    if (document.getElementById('map')) {
-        setupPongCanvas();
-    }
+    // Attendre un peu que le DOM soit vraiment prêt, puis vérifier le canvas
+    setTimeout(() => {
+        const mapCanvas = document.getElementById('map');
+        if (mapCanvas) {
+            console.log('[FRONT] Canvas trouvé, initialisation du renderer Pong');
+            setupPongCanvas();
+        } else {
+            console.log('[FRONT] Canvas non trouvé, renderer non initialisé');
+        }
+    }, 100);
 });
 
 socket.on('gameState', (state: any) => {
+    console.log('[FRONT] gameState reçu:', { 
+        paddles: state.paddles?.length || 'undefined', 
+        ballX: state.ballX, 
+        ballY: state.ballY,
+        running: state.running,
+        paddlesDetail: state.paddles 
+    });
     draw(state);
 });
 
