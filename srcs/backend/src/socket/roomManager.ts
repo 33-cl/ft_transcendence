@@ -1,4 +1,4 @@
-import { GameState, createInitialGameState } from '../../Rayan/gameState.js';
+import { GameState, createInitialGameState, PaddleSide } from '../../Rayan/gameState.js';
 import { PongGame } from '../../Rayan/pong.js';
 
 // src/socket/roomManager.ts
@@ -9,12 +9,10 @@ export interface Room
   maxPlayers: number;
   gameState: GameState;
   pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
-  paddleInputs?: {
-    left: { up: boolean; down: boolean };
-    right: { up: boolean; down: boolean };
-  };
-  // Mapping socket.id -> 'left' | 'right' (attribution du contrôle des paddles)
-  paddleBySocket?: Record<string, 'left' | 'right'>;
+  // Nouvelle structure : paddleInputs indexé par PaddleSide ('A', 'B', 'C')
+  paddleInputs?: Record<PaddleSide, { up: boolean; down: boolean }>;
+  // Mapping socket.id -> PaddleSide (attribution du contrôle des paddles)
+  paddleBySocket?: Record<string, PaddleSide>;
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques

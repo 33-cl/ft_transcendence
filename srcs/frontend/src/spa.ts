@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
 import { initPasswordMasking } from './utils/passwordMasking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
@@ -48,6 +48,11 @@ const components = {
         id: 'game',
         html: gameHTML
     },
+	game3: 
+	{
+		id: 'game3',
+		html: game3HTML
+	},
     signIn:
 	{
         id: 'signIn',
@@ -149,12 +154,19 @@ function initializeComponents(): void
 			show('friendList');
 			show('leaderboard');
 		}
-		if (target.id === 'localGameBtn')
+		if (target.id === 'local2p')
 		{
 			(window as any).setIsLocalGame(true); // Active le mode local
-			await window.joinOrCreateRoom(1); // Room solo, logique 100% backend
+			await window.joinOrCreateRoom(2, true); // Room locale 1v1 (2 joueurs, mode local)
 			hideAllPages();
 			show('game');
+		}
+		if (target.id === 'local3p')
+		{
+			(window as any).setIsLocalGame(true); // Active le mode local
+			await window.joinOrCreateRoom(3, true); // Room locale 1v1v1 (3 joueurs, mode local)
+			hideAllPages();
+			show('game3'); // Affiche la page 1v1v1
 		}
 		if (target.id === 'signInBtn')
 		{
@@ -279,6 +291,16 @@ function setupRoomJoinedHandler()
     window.socket.on('roomJoined', (data: any) =>
 	{
         console.log('[DEBUG FRONT] Event roomJoined reçu', data);
+		// Si mode local, on affiche directement la page de jeu
+        if (window.isLocalGame) {
+            hideAllPages();
+            if (data.maxPlayers === 3) {
+                show('game3');
+            } else {
+                show('game');
+            }
+            return;
+        }
         // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
         if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
 		{
@@ -292,7 +314,12 @@ function setupRoomJoinedHandler()
 			else
 			{
                 hideAllPages();
-                show('game');
+                 // Affiche la bonne page de jeu selon le mode (2 ou 3 joueurs)
+                if (data.maxPlayers === 3) {
+                    show('game3');
+                } else {
+                    show('game');
+                }
             }
         }
     });

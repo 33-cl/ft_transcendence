@@ -28,15 +28,7 @@ const app = fastify({
   try {
     // Enregistre le plugin CORS pour Fastify
     await app.register(fastifyCors, {
-      origin: (origin: any, cb: any) => { // Fonction pour autoriser certains domaines
-        const allowed = [
-          "http://localhost:3000", "http://127.0.0.1:3000",
-          "https://localhost:3000", "https://127.0.0.1:3000"];
-        if (!origin || allowed.includes(origin))  // Autorise si l'origine est dans la liste
-          cb(null, true);
-        else
-          cb(new Error("Not allowed by CORS"), false); // Refuse sinon
-      },
+      origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
       credentials: true // Autorise les cookies/headers d'authentification
     });
 
@@ -63,15 +55,7 @@ const app = fastify({
   // Configuration de socket.io avec le serveur HTTP(S) (WSS)
   const io = new SocketIOServer(app.server, {
     cors: {
-      origin: (origin, cb) => { // Même logique CORS que plus haut
-        const allowed = [
-          "http://localhost:3000", "http://127.0.0.1:3000",
-          "https://localhost:3000", "https://127.0.0.1:3000"];
-        if (!origin || allowed.includes(origin))
-          cb(null, true);
-        else
-          cb(new Error("Not allowed by CORS"), false);
-      },
+      origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
       methods: ["GET", "POST"], // Autorise les méthodes GET et POST
       credentials: true // Autorise les cookies/headers d'authentification
     }
