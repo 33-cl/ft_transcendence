@@ -7,14 +7,14 @@ declare global
 {
 	interface Window
 	{
-		joinOrCreateRoom: (maxPlayers: number) => Promise<void>;
+		joinOrCreateRoom: (maxPlayers: number, isLocalGame?: boolean) => Promise<void>;
 		sendPing: () => void;
 		sendMessage: (type: MessageType, data: MessageData) => void;
-		controlledPaddle: 'left' | 'right' | null;
+		controlledPaddle: 'left' | 'right' | 'A' | 'B' | 'C' | null;
 		isLocalGame: boolean;
 		setIsLocalGame: (isLocal: boolean) => void;
 		_pongControlsRoomJoinedListener: boolean;
-		sendKeyEvent: (type: 'keydown' | 'keyup', player: 'left' | 'right', direction: 'up' | 'down') => void;
+		sendKeyEvent: (type: 'keydown' | 'keyup', player: 'left' | 'right' | 'A' | 'B' | 'C', direction: 'up' | 'down') => void;
 	}
 }
 export {};

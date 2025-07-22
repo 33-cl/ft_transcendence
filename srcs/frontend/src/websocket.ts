@@ -1,6 +1,5 @@
 // websocket.ts
 //'io' est déjà disponible dans la page via le CDN socket.io-clients
-import { show, hideAllPages, hide } from './spa.js';
 
 declare var io: any;
 
@@ -37,15 +36,15 @@ socket.on('disconnect', () => {
 // Fonction pour envoyer un message "ping" au serveur
 function sendPing()
 {
-    // Envoie un message nommé "ping" avec un objet au serveur
+	// Envoie un message nommé "ping" avec un objet au serveur
     socket.emit("ping", { message: "Hello serveur!" });
 }
 
 // Écoute les messages nommés "pong" envoyés par le serveur
 socket.on("pong", (data: any) =>
 {
-    // Affiche le contenu du message reçu dans la console
-    console.log("Message reçu du serveur:", data);
+	// Affiche le contenu du message reçu dans la console
+	console.log("Message reçu du serveur:", data);
 });
 
 // Rend la fonction sendPing accessible depuis la console du navigateur
@@ -80,7 +79,7 @@ window.sendMessage = sendMessage;
 let joinInProgress = false;
 
 // Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
-async function joinOrCreateRoom(maxPlayers: number)
+async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false)
 {
     if (joinInProgress)
         return;
@@ -97,7 +96,7 @@ async function joinOrCreateRoom(maxPlayers: number)
         };
         // On n'utilise plus 'once' sur roomJoined pour ne pas consommer l'event
         socket.once('error', failure);
-        socket.emit('joinRoom', { maxPlayers });
+        socket.emit('joinRoom', { maxPlayers, isLocalGame }); // <-- Ajout du flag
         // On considère la promesse résolue dès qu'on a émis la demande (le handler UX gère la suite)
         cleanup();
         resolve();
@@ -115,24 +114,27 @@ function setupPongCanvas() {
 }
 
 document.addEventListener('componentsReady', () => {
-    // Si la page jeu est affichée, on initialise le renderer
-    if (document.getElementById('map')) {
-        setupPongCanvas();
-    }
+    // Attendre un peu que le DOM soit vraiment prêt, puis vérifier le canvas
+    setTimeout(() => {
+        const mapCanvas = document.getElementById('map');
+        if (mapCanvas) {
+            console.log('[FRONT] Canvas trouvé, initialisation du renderer Pong');
+            setupPongCanvas();
+        } else {
+            console.log('[FRONT] Canvas non trouvé, renderer non initialisé');
+        }
+    }, 100);
 });
 
 socket.on('gameState', (state: any) => {
+    console.log('[FRONT] gameState reçu:', { 
+        paddles: state.paddles?.length || 'undefined', 
+        ballX: state.ballX, 
+        ballY: state.ballY,
+        running: state.running,
+        paddlesDetail: state.paddles 
+    });
     draw(state);
-    if (0)
-        hideAllPages();
-    if (state.running === false) {
-        console.log('finished');
-        setTimeout(() => {
-            // hideAllPages();
-            show('gameFinished');
-            hide('back2main');
-        }, 1000);
-    }
 });
 
 // Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
