@@ -1,37 +1,53 @@
 # ft_transcendence
 
-Ce projet utilise Docker pour lancer automatiquement l'application web.
+Application web de jeu Pong multijoueur en temps réel.
 
-## Structure du projet
+## Description
 
-```
-.
-├── Makefile
-├── docker-compose.yml
-├── README.md
-└── srcs/
-    ├── frontend/
-    ├── backend/
-    └── docker/
-        ├── frontend/
-        │   └── Dockerfile
-        └── backend/
-            └── Dockerfile
-```
+ft_transcendence est une plateforme de jeu en ligne qui modernise le classique Pong. Les utilisateurs peuvent jouer en temps réel, gérer leurs profils et interagir socialement.
 
-## Commandes disponibles
+## Fonctionnalités
 
-- `make` : Construire les images Docker et démarrer les conteneurs
-- `make up` : Démarrer les conteneurs en arrière-plan
-- `make down` : Arrêter les conteneurs
-- `make build` : Construire les images Docker
-- `make rebuild` : Reconstruire les images Docker sans utiliser le cache
-- `make logs` : Afficher les logs des conteneurs
-- `make clean` : Arrêter les conteneurs et supprimer les ressources Docker non utilisées
-- `make fclean` : Effectuer un nettoyage complet (conteneurs, images, volumes)
-- `make re` : Reconstruire et redémarrer tous les conteneurs
+### Jeu
+- Pong multijoueur en temps réel
+- Matchmaking automatique
+- Système de tournois
+- Historique des parties et statistiques
+- Mode spectateur
 
-## Accès aux services
+### Utilisateurs
+- Authentification sécurisée avec OAuth 42
+- Profils personnalisables
+- Système d'amis
+- Statuts en ligne
 
-- Frontend : http://localhost:3000
-- Backend : http://localhost:8080 
+### Social
+- Chat en temps réel
+- Channels publics et privés
+- Messages directs
+- Système de modération
+
+### Compétition
+- Classement global
+- Système de niveaux
+- Statistiques détaillées
+- Historique des matchs
+
+## Technologies
+
+**Backend**: Django, PostgreSQL, Redis, WebSockets
+**Frontend**: JavaScript, HTML, CSS
+**Infrastructure**: Docker, Nginx
+
+## Utilisation
+
+L'application permet de :
+- Se connecter avec son compte 42
+- Jouer des parties de Pong contre d'autres utilisateurs
+- Participer à des tournois
+- Chatter avec la communauté
+- Consulter son profil et ses statistiques
+
+---
+
+**École 42 - Projet ft_transcendence**
