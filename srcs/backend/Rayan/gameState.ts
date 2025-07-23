@@ -75,7 +75,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         paddleWidth:    paddleWidth,
         paddleMargin:   paddleMargin,
         paddles:        paddles,
-        paddleSpeed:    2,
+        paddleSpeed:    3,
         ballX:          canvasWidth / 2,
         ballY:          canvasHeight / 2,
         ballRadius:     20,
