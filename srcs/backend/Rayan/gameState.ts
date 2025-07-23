@@ -81,7 +81,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         ballRadius:     20,
         ballSpeedX:     5,
         ballSpeedY:     5,
-        win:            20,
+        win:            2,
         running:        false,
     };
 }
