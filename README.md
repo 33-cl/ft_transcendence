@@ -1,5 +1,7 @@
 # ft_transcendence
 
+![Main menu](./srcs/frontend/img/main-menu.png)
+
 Application web de jeu Pong multijoueur en temps réel.
 
 ## Description
