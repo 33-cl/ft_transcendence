@@ -165,9 +165,12 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 		if (!(socket.id in room.paddleBySocket))
 		{
 			if (room.maxPlayers === 2) {
-				const paddles = ['A', 'B'];
+				// En mode 1v1 (local et non-local) : toujours A=gauche et C=droite
+				// B reste réservé pour le paddle horizontal du mode 1v1v1
+				const paddles = ['A', 'C'];
 				const idx = room.players.indexOf(socket.id);
 				room.paddleBySocket[socket.id] = paddles[idx] || null;
+				console.log(`[BACKEND] Attribution paddle 1v1: socketId=${socket.id}, index=${idx}, paddle=${paddles[idx]}, isLocal=${room.isLocalGame}`);
 			} else if (room.maxPlayers === 3) {
 				// Attribution dynamique pour 1v1v1
 				const paddle = assignPaddleToPlayer(room);
@@ -192,6 +195,7 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 					maxPlayers: room.maxPlayers,
 					paddle: room.paddleBySocket[id]
 				});
+				console.log(`[BACKEND] roomJoined envoyé à ${id}: paddle=${room.paddleBySocket[id]}, players=${room.players.length}/${room.maxPlayers}`);
 			}
 		}
 		else
@@ -203,6 +207,7 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 				maxPlayers: room.maxPlayers,
 				paddle: room.paddleBySocket[socket.id]
 			});
+			console.log(`[BACKEND] roomJoined envoyé à ${socket.id}: paddle=${room.paddleBySocket[socket.id]}, players=${room.players.length}/${room.maxPlayers}`);
 		}
 		return;
 	}

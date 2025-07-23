@@ -21,6 +21,10 @@ socket.on('roomJoined', (data: any) => {
         window.controlledPaddle = null;
         console.log('[FRONT] Pas de paddle attribué, controlledPaddle=null');
     }
+    // Stocker maxPlayers pour les contrôles
+    if (data && data.maxPlayers) {
+        (window as any).maxPlayers = data.maxPlayers;
+    }
     console.log('[FRONT] roomJoined event, controlledPaddle=', window.controlledPaddle);
     document.dispatchEvent(new Event('roomJoined'));
 });
@@ -70,7 +74,7 @@ interface MessageData
 function sendMessage(type: MessageType, data: MessageData)
 {
     const msg = JSON.stringify({ type, data });// Convertit l'objet en chaîne JSON
-    socket.send(msg);
+    socket.emit('message', msg); // Utilise emit au lieu de send pour Socket.IO
 }
 
 // Expose la fonction pour test dans la console navigateur
@@ -84,6 +88,10 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
     if (joinInProgress)
         return;
     joinInProgress = true;
+    
+    // Définir le mode local avant de créer/rejoindre la room
+    (window as any).setIsLocalGame(isLocalGame);
+    
     return new Promise<void>((resolve, reject) =>
     {
         const cleanup = () => {
@@ -105,6 +113,12 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
 
 // Expose la fonction pour test dans la console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
+
+// Fonction pour définir le mode local
+(window as any).setIsLocalGame = (isLocal: boolean) => {
+    (window as any).isLocalGame = isLocal;
+    console.log('[FRONT] setIsLocalGame appelé:', isLocal);
+};
 
 import { initPongRenderer, draw } from './pongRenderer.js';
 
