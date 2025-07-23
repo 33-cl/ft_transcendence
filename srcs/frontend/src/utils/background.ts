@@ -16,7 +16,7 @@ const EASE = 0.1;
 
 // Configuration des étoiles filantes
 const SHOOTING_STAR_COUNT = 3; // nombre maximum d'étoiles filantes simultanées
-const SHOOTING_STAR_SPAWN_RATE = 0.003; // probabilité de spawn par frame
+const SHOOTING_STAR_SPAWN_RATE = 0.0015; // probabilité de spawn par frame
 const SHOOTING_STAR_SPEED_RANGE: [number, number] = [3, 8];
 const SHOOTING_STAR_LENGTH_RANGE: [number, number] = [50, 150];
 const SHOOTING_STAR_OPACITY = 0.8;
