@@ -209,7 +209,7 @@ export class PongGame {
                 this.resetBall();
             }
             // But à droite
-            if (this.state.ballX > canvasWidth) {
+            if (this.state.ballX + this.state.ballRadius > canvasWidth) {
                 paddles[0].score++;
                 console.log(`[BACKEND] But ! Score mis à jour - Gauche: ${paddles[0].score}, Droite: ${paddles[1].score}`);
                 this.resetBall();
