@@ -203,7 +203,7 @@ export class PongGame {
                 this.state.ballX = paddles[1].x - ballRadius;
             }
             // But à gauche
-            if (this.state.ballX < 0) {
+            if (this.state.ballX - this.state.ballRadius < 0) {
                 paddles[1].score++;
                 console.log(`[BACKEND] But ! Score mis à jour - Gauche: ${paddles[0].score}, Droite: ${paddles[1].score}`);
                 this.resetBall();
