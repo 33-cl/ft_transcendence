@@ -21,6 +21,9 @@ const SHOOTING_STAR_SPEED_RANGE: [number, number] = [3, 8];
 const SHOOTING_STAR_LENGTH_RANGE: [number, number] = [50, 150];
 const SHOOTING_STAR_OPACITY = 0.8;
 const SHOOTING_STAR_FADE_RATE = 0.02;
+const SHOOTING_STAR_GRAVITY_RADIUS = 150; // rayon d'attraction pour les étoiles filantes
+const SHOOTING_STAR_GRAVITY_STRENGTH_MAX = 0.3; // force d'attraction maximale (quand très proche)
+const SHOOTING_STAR_GRAVITY_STRENGTH_MIN = 0.05; // force d'attraction minimale (à la limite du rayon)
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
@@ -91,6 +94,7 @@ class ShootingStar {
   active: boolean = true;
   lifespan: number;
   age: number = 0;
+  baseSpeed: number; // vitesse constante à maintenir
 
   constructor(canvasWidth: number, canvasHeight: number) {
     // Spawn depuis les bords de l'écran
@@ -128,9 +132,10 @@ class ShootingStar {
     this.maxOpacity = SHOOTING_STAR_OPACITY;
     this.opacity = 0;
     this.lifespan = 180 + Math.random() * 120; // Durée de vie entre 180 et 300 frames (~3-5 secondes à 60fps)
+    this.baseSpeed = speed; // Stocker la vitesse de base
   }
 
-  update(canvasWidth: number, canvasHeight: number): void {
+  update(canvasWidth: number, canvasHeight: number, mouseX: number, mouseY: number): void {
     this.age++;
     
     // Calculer l'opacité basée sur l'âge et la durée de vie
@@ -146,6 +151,39 @@ class ShootingStar {
       // Fade out progressif (30% de la durée de vie)
       const fadeProgress = (lifeProgress - 0.7) / 0.3;
       this.opacity = this.maxOpacity * (1 - fadeProgress);
+    }
+
+    // Calculer la distance à la souris
+    const dx = mouseX - this.x;
+    const dy = mouseY - this.y;
+    const distanceToMouse = Math.sqrt(dx * dx + dy * dy);
+
+    // Appliquer la gravité si dans le rayon d'attraction
+    if (distanceToMouse < SHOOTING_STAR_GRAVITY_RADIUS && distanceToMouse > 0) {
+      // Calculer la force d'attraction inversement proportionnelle à la distance
+      // Plus proche = plus d'attraction (utilise une fonction inverse avec normalisation)
+      const distanceRatio = distanceToMouse / SHOOTING_STAR_GRAVITY_RADIUS; // 0 à 1
+      const inverseDistanceRatio = 1 - distanceRatio; // 1 à 0 (1 = très proche, 0 = loin)
+      
+      // Interpolation entre force min et max basée sur la proximité
+      const gravityStrength = SHOOTING_STAR_GRAVITY_STRENGTH_MIN + 
+        (SHOOTING_STAR_GRAVITY_STRENGTH_MAX - SHOOTING_STAR_GRAVITY_STRENGTH_MIN) * 
+        Math.pow(inverseDistanceRatio, 2); // Puissance 2 pour une courbe plus prononcée
+      
+      // Vecteur unitaire vers la souris
+      const gravityX = (dx / distanceToMouse) * gravityStrength;
+      const gravityY = (dy / distanceToMouse) * gravityStrength;
+      
+      // Appliquer la force de gravité
+      this.velocityX += gravityX;
+      this.velocityY += gravityY;
+    }
+
+    // Normaliser la vitesse pour maintenir la vitesse constante
+    const currentSpeed = Math.sqrt(this.velocityX * this.velocityX + this.velocityY * this.velocityY);
+    if (currentSpeed > 0) {
+      this.velocityX = (this.velocityX / currentSpeed) * this.baseSpeed;
+      this.velocityY = (this.velocityY / currentSpeed) * this.baseSpeed;
     }
 
     // Mettre à jour la position
@@ -296,7 +334,7 @@ class BackgroundStarfield {
 
   private updateShootingStars(): void {
     this.shootingStars.forEach(shootingStar => {
-      shootingStar.update(this.canvas.width, this.canvas.height);
+      shootingStar.update(this.canvas.width, this.canvas.height, mouseX, mouseY);
     });
 
     // Supprimer les étoiles filantes inactives
