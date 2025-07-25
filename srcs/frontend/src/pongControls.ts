@@ -23,8 +23,18 @@ let keyToMove: Record<string, { player: 'A' | 'B' | 'C' | 'left' | 'right', dire
 
 function updatePaddleKeyBindings() {
     const paddle = (window as any).controlledPaddle;
-    console.log('[FRONT] updatePaddleKeyBindings, controlledPaddle=', paddle);
-    if ((window as any).isLocalGame) {
+    const isLocal = (window as any).isLocalGame;
+    const maxPlayers = (window as any).maxPlayers;
+    
+    console.log('[FRONT] updatePaddleKeyBindings DEBUG:', {
+        paddle,
+        isLocal,
+        maxPlayers,
+        paddleType: typeof paddle,
+        isArray: Array.isArray(paddle)
+    });
+    
+    if (isLocal) {
         let paddles = paddle;
         let isPatched1v1 = false;
         if (Array.isArray(paddle) && paddle.length === 2 && paddle.includes('A') && paddle.includes('C')) {
@@ -79,26 +89,19 @@ function updatePaddleKeyBindings() {
         }
     }
     else {
-        // Mode online : chaque joueur ne contrôle que son paddle
-        if (paddle === 'A') {
+        // Mode online : chaque joueur utilise les flèches directionnelles
+        console.log('[FRONT] Mode ONLINE - Attribution des contrôles pour paddle:', paddle);
+        
+        if (paddle === 'A' || paddle === 'B' || paddle === 'C') {
             keyToMove = {
-                w: { player: 'A', direction: 'up' },
-                s: { player: 'A', direction: 'down' }
+                ArrowUp: { player: paddle, direction: 'up' },
+                ArrowDown: { player: paddle, direction: 'down' }
             };
-        } else if (paddle === 'B') {
-            keyToMove = {
-                i: { player: 'B', direction: 'up' }, // up = gauche pour paddle B horizontal
-                k: { player: 'B', direction: 'down' } // down = droite pour paddle B horizontal
-            };
-        } else if (paddle === 'C') {
-            keyToMove = {
-                ArrowUp: { player: 'C', direction: 'up' },
-                ArrowDown: { player: 'C', direction: 'down' }
-            };
+            console.log('[FRONT] Contrôles assignés pour paddle', paddle, ':', keyToMove);
         } else if (paddle === 'left') {
             keyToMove = {
-                w: { player: 'left', direction: 'up' },
-                s: { player: 'left', direction: 'down' }
+                ArrowUp: { player: 'left', direction: 'up' },
+                ArrowDown: { player: 'left', direction: 'down' }
             };
         } else if (paddle === 'right') {
             keyToMove = {
@@ -107,8 +110,11 @@ function updatePaddleKeyBindings() {
             };
         } else {
             keyToMove = {};
+            console.log('[FRONT] ERREUR: Paddle non reconnu:', paddle);
         }
     }
+    
+    console.log('[FRONT] Mapping final des touches:', keyToMove);
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)

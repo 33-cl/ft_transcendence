@@ -13,77 +13,24 @@ declare global {
 
 // Define all components
 const components = {
-    landing:
-	{
-        id: 'landing',
-        html: landingHTML
-    },
-    mainMenu:
-	{
-        id: 'mainMenu',
-        html: mainMenuHTML
-    },
-	back2main:
-	{
-		id: 'back2main',
-		html: back2mainHTML
-	},
-    leaderboard:
-	{
-        id: 'leaderboard',
-        html: leaderboardHTML
-    },
-    friendList:
-	{
-        id: 'friendList',
-        html: friendListHTML
-    },
-	matchmaking:
-	{
-		id: 'matchmaking',
-		html: matchmakingHTML
-	},
-    game:
-	{
-        id: 'game',
-        html: gameHTML
-    },
-	game3: 
-	{
-		id: 'game3',
-		html: game3HTML
-	},
-    signIn:
-	{
-        id: 'signIn',
-        html: signInHTML
-    },
-    signUp:
-	{
-        id: 'signUp',
-        html: signUpHTML
-    },
-	gameFinished:
-	{
-		id: 'gameFinished',
-		html: gameFinishedHTML
-	},
-    profile:
-    {
-        id: 'profile',
-        html: profileHTML
-    },
-	contextMenu:
-	{
-		id: 'contextMenu',
-		html: contextMenuHTML
-	},
+    landing: {id: 'landing', html: landingHTML},
+    mainMenu: {id: 'mainMenu', html: mainMenuHTML},
+	back2main: {id: 'back2main', html: back2mainHTML},
+	leaderboard: {id: 'leaderboard', html: leaderboardHTML},
+	friendList: {id: 'friendList', html: friendListHTML},
+	matchmaking: {id: 'matchmaking', html: matchmakingHTML},
+    game: {id: 'game', html: gameHTML},
+	game3: {id: 'game3', html: game3HTML},
+    signIn: {id: 'signIn', html: signInHTML},
+    signUp: {id: 'signUp', html: signUpHTML},
+	gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
+    profile: {id: 'profile', html: profileHTML},
+	contextMenu: {id: 'contextMenu', html: contextMenuHTML},
 };
 
 // Init components
 function show(pageName: keyof typeof components)
 {
-
     // Show the requested component
     const component = components[pageName];
     const element = document.getElementById(component.id);
@@ -156,14 +103,12 @@ function initializeComponents(): void
 		}
 		if (target.id === 'local2p')
 		{
-			(window as any).setIsLocalGame(true); // Active le mode local
 			await window.joinOrCreateRoom(2, true); // Room locale 1v1 (2 joueurs, mode local)
 			hideAllPages();
 			show('game');
 		}
 		if (target.id === 'local3p')
 		{
-			(window as any).setIsLocalGame(true); // Active le mode local
 			await window.joinOrCreateRoom(3, true); // Room locale 1v1v1 (3 joueurs, mode local)
 			hideAllPages();
 			show('game3'); // Affiche la page 1v1v1
@@ -195,19 +140,16 @@ function initializeComponents(): void
 		// ROOM LOGIC
 		if (target.id === 'ranked1v1Btn')
 		{
-			(window as any).setIsLocalGame(false); // Désactive le mode local
-			await window.joinOrCreateRoom(2); // 1v1
+			await window.joinOrCreateRoom(2); // 1v1 online (pas de mode local)
 			//show('matchmaking');// se fait dans joinorcreateroom
 		}
 		if (target.id === 'customCreateBtn')
 		{
-			(window as any).setIsLocalGame(false);
 			await window.joinOrCreateRoom(4); // 2v2 (exemple)
 			// L'affichage sera géré par le handler roomJoined
 		}
 		if (target.id === 'customJoinBtn')
 		{
-			(window as any).setIsLocalGame(false);
 			await window.joinOrCreateRoom(4); // 2v2 (exemple), à changer plus tard pour le join via code
 			// L'affichage sera géré par le handler roomJoined
 		}
