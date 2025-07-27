@@ -37,7 +37,7 @@ export function switchTips() {
         "FUN FACT: At 131 years old, the Frenchman Quentin Ordoux is the oldest man in the world!",
         "TIP: Use the arrow keys to move.",
         "TIP: Your paddle might break if you hit too hard...",
-        "TIP: If you don't move enough, the universe migth by absorbed by a blackhole ;)"
+        "WARNING: NEVER LET A SHOOTING STAR HIT THE BLACKHOLE... NEVER !!!"
     ];
 
     let idx;
