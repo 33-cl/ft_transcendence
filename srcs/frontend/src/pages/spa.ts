@@ -1,6 +1,5 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
-import { animateDots, switchTips } from './components/matchmaking.js';
-import { initPasswordMasking } from './utils/passwordMasking.js';
+import { initPasswordMasking } from '../utils/passwordMasking.js';
+import { show, load , hideAllPages, hide } from './utils.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
@@ -9,52 +8,6 @@ declare global {
         socket?: any;
         _roomJoinedHandlerSet?: boolean;
     }
-}
-
-// Define all components
-const components = {
-    landing: {id: 'landing', html: landingHTML},
-    mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-	back2main: {id: 'back2main', html: back2mainHTML},
-	leaderboard: {id: 'leaderboard', html: leaderboardHTML},
-	friendList: {id: 'friendList', html: friendListHTML},
-	matchmaking: {id: 'matchmaking', html: matchmakingHTML},
-    game: {id: 'game', html: gameHTML},
-	game3: {id: 'game3', html: game3HTML},
-    signIn: {id: 'signIn', html: signInHTML},
-    signUp: {id: 'signUp', html: signUpHTML},
-	gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
-    profile: {id: 'profile', html: profileHTML},
-	contextMenu: {id: 'contextMenu', html: contextMenuHTML},
-};
-
-// Init components
-function show(pageName: keyof typeof components)
-{
-    // Show the requested component
-    const component = components[pageName];
-    const element = document.getElementById(component.id);
-    if (element)
-        element.innerHTML = component.html;
-
-    // Notifies each element is ready
-    setTimeout(() =>
-	{
-        const event = new CustomEvent('componentsReady');
-        document.dispatchEvent(event);
-    }, 0);
-}
-
-function hide(pageName: keyof typeof components)
-{
-    const component = components[pageName];
-    const element = document.getElementById(component.id);
-    if (element) element.innerHTML = '';
-}
-
-function hideAllPages(): void
-{
-    Object.keys(components).forEach(key => hide(key as keyof typeof components));
 }
 
 function initializeComponents(): void
@@ -84,90 +37,41 @@ function initializeComponents(): void
 		}
 		
 		if (target.id === 'mainMenuBtn' || target.id === 'back2main')
-		{
-			// if (!window.socket || !window.socket.connected)
-			// {
-			// 	waitForSocketConnection(window.socket, () =>
-			// 	{
-			// 		hideAllPages();
-			// 		show('mainMenu');
-			// 		show('friendList');
-			// 		show('leaderboard');
-			// 	});
-			// 	return;
-			// }
-			hideAllPages();
-			show('mainMenu');
-			show('friendList');
-			show('leaderboard');
-		}
+			load('mainMenu');
 		if (target.id === 'local2p')
 		{
-			await window.joinOrCreateRoom(2, true); // Room locale 1v1 (2 joueurs, mode local)
-			hideAllPages();
-			show('game');
+			await window.joinOrCreateRoom(2, true);
+			load('game'); 
 		}
 		if (target.id === 'local3p')
 		{
-			await window.joinOrCreateRoom(3, true); // Room locale 1v1v1 (3 joueurs, mode local)
-			hideAllPages();
-			show('game3'); // Affiche la page 1v1v1
+			await window.joinOrCreateRoom(3, true);
+			load('game3');
 		}
 		if (target.id === 'signInBtn')
-		{
-			hideAllPages();
-			show('signIn');
-			show('back2main');
-		}
+			load('signIn');
 		if (target.id === 'signUpBtn')		
-		{
-			hideAllPages();
-			show('signUp');
-			show('back2main');
-		}
-		if (target.id === 'title')
-		{
-			if (window.socket) window.socket.emit('leaveAllRooms');
-			hideAllPages();
-			show('landing');
-		}
+			load('signUp');
 		if (target.id === 'profileBtn' || isProfileBtn)
-		{
-			hideAllPages();
-			show('profile');
-			show('back2main');
-		}
-		// ROOM LOGIC
+			load('profile');
+
+		// MULTIPLAYER
 		if (target.id === 'ranked1v1Btn')
-		{
-			await window.joinOrCreateRoom(2); // 1v1 online (pas de mode local)
-			//show('matchmaking');// se fait dans joinorcreateroom
-		}
+			await window.joinOrCreateRoom(2);
 		if (target.id === 'customCreateBtn')
-		{
-			await window.joinOrCreateRoom(4); // 2v2 (exemple)
-			// L'affichage sera géré par le handler roomJoined
-		}
+			await window.joinOrCreateRoom(4);
 		if (target.id === 'customJoinBtn')
-		{
-			await window.joinOrCreateRoom(4); // 2v2 (exemple), à changer plus tard pour le join via code
-			// L'affichage sera géré par le handler roomJoined
-		}
+			await window.joinOrCreateRoom(4);
 		if (target.id === 'cancelSearchBtn')
 		{
 			if (window.socket) window.socket.emit('leaveAllRooms');
-			hideAllPages();
-			show('mainMenu');
-			show('leaderboard');
-			show('friendList');
+			load('mainMenu');
 		}
-		// Test de l'ecran de chargement sur le bouton Join de tournoi
+
+		// TEST
 		if (target.id === 'tournamentJoinBtn')
 		{
-			hideAllPages();
-			show('matchmaking');
-			animateDots();
-			switchTips();
+			load('matchmaking');
 		}
 	});
 	
@@ -247,20 +151,13 @@ function setupRoomJoinedHandler()
         if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
 		{
             if (data.players < data.maxPlayers)
-			{
-                hideAllPages();
-                show('matchmaking');
-                animateDots();
-                switchTips();
-            }
+                load('matchmaking');
 			else
 			{
-                hideAllPages();
-                 // Affiche la bonne page de jeu selon le mode (2 ou 3 joueurs)
                 if (data.maxPlayers === 3) {
-                    show('game3');
+                    load('game3');
                 } else {
-                    show('game');
+                    load('game');
                 }
             }
         }
