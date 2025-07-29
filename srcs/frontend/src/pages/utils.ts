@@ -33,7 +33,7 @@ function show(pageName: keyof typeof components)
     }, 0);
 }
 
-function load(pageName: string)
+function load(pageName: string, updateHistory: boolean = true)
 {
     hideAllPages();
     if (pageName === 'landing')
@@ -73,6 +73,9 @@ function load(pageName: string)
         show('gameFinished');
     else
         console.warn(`Page ${pageName} not found`);
+
+    if (updateHistory)
+        window.history.pushState({ page: pageName }, '', `/${pageName}`);
 }
 
 function hide(pageName: keyof typeof components)

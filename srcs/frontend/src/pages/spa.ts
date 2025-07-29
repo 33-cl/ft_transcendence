@@ -164,7 +164,15 @@ function setupRoomJoinedHandler()
     });
 }
 
-
+window.addEventListener('popstate', function(event) {
+    if (event.state?.page) {
+        // Charge la page sans mettre à jour l'historique
+        load(event.state.page, false);
+    } else {
+        // Page par défaut si aucun état n'est sauvegardé
+        load('landing', false);
+    }
+});
 
 // top level statemetn ( s'execute des que le fichier est importe)
 // --> manipuler le dom quúne fois qu'il est pret
