@@ -21,7 +21,7 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 		do {
 			roomName = getNextRoomName();
 		} while (roomExists(roomName));
-		// Crée la room vide avec un gameState initialisé
+		// Crée la room vide avec un gameState initialisé (par défaut: 2 joueurs)
 		rooms[roomName] = { players: [], maxPlayers, gameState: createInitialGameState() };
 		return { roomName, maxPlayers };
 	});

@@ -1,0 +1,13 @@
+# Global ignore for build context
+node_modules
+**/node_modules
+**/*.log
+.env
+
+# Ignore backend build outputs and locks from host
+srcs/backend/dist
+srcs/backend/package-lock.json
+
+# Ignore frontend build outputs
+srcs/frontend/node_modules
+srcs/frontend/dist

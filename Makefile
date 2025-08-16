@@ -30,4 +30,18 @@ backend-build:
 frontend-build:
 	cd srcs/frontend && npx tsc --build --force
 
-.PHONY: all up down build rebuild logs clean fclean re
+# Convenience: DB inspection
+users:
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select id,email,username,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
+
+users-count:
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const row=db.prepare("select count(*) as n from users").get(); console.log(row.n);'
+
+db-copy:
+	docker compose cp backend:/app/pong.db ./pong.db
+
+# Optional (requires sqlite3 on host):
+users-sql: db-copy
+	sqlite3 ./pong.db 'SELECT id,email,username,created_at FROM users ORDER BY id;'
+
+.PHONY: all up down build rebuild logs clean fclean re backend-build frontend-build users users-count db-copy users-sql

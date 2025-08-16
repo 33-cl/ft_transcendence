@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   socketHandlers.ts                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: maeferre <maeferre@student.42.fr>          +#+  +:+       +#+        */
+/*   By: odx <odx@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/07/01 22:25:00 by maeferre         ###   ########.fr       */
+/*   Updated: 2025/08/14 23:46:24 by odx              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,7 +93,7 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
                     delete room.pongGame;
                     delete room.paddleBySocket;
                     delete room.paddleInputs;
-                    room.gameState = createInitialGameState();
+					room.gameState = createInitialGameState();
                 }
             }
         }
@@ -247,10 +247,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             }
             if (!roomName)
             {
-                // Création de la room via l'API REST (POST /rooms)
-                // NOTE : Le backend s'auto-appelle ici en HTTPS pour garantir que toute création de room
-                // passe par l'API REST
-                // L'option rejectUnauthorized: false permet d'accepter les certificats auto-signés.
+                // Création de la room via l'API REST (POST /rooms) avec HTTPS auto-signé
                 const postData = JSON.stringify({ maxPlayers });
                 const options = {
                     hostname: 'localhost',
@@ -261,8 +258,8 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                         'Content-Type': 'application/json',
                         'Content-Length': Buffer.byteLength(postData)
                     },
-                    rejectUnauthorized: false // pour auto-signé en dev
-                };
+                    rejectUnauthorized: false // auto-signé en dev
+                } as any;
                 roomName = await new Promise((resolve, reject) =>
                 {
                     const req = https.request(options, (res: any) =>

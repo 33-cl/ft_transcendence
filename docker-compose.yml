@@ -20,5 +20,4 @@ services:
       - "8080:8080"
     volumes:
       - ./srcs/backend/src:/app/src
-      - /app/node_modules
     restart: unless-stopped

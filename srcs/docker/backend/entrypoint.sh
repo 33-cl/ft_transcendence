@@ -14,5 +14,5 @@ else
   echo "[entrypoint] Certificats SSL déjà présents, aucune génération."
 fi
 
-npx tsc --build --force
-node dist/server.js
+# Ne recompile pas en runtime, utilise le build produit à l'image
+exec node dist/server.js
