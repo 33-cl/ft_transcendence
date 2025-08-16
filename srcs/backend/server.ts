@@ -10,6 +10,7 @@ import { Server as SocketIOServer } from 'socket.io';
 
 import usersRoutes from './src/routes/users.js'; // Route /users (API REST)
 import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
+import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
 
@@ -39,11 +40,12 @@ const app = fastify({
     // Enregistre les routes
     app.register(usersRoutes); // Ajoute les routes /users
     app.register(roomsRoutes); // Ajoute les routes /rooms
+    app.register(authRoutes);  // Ajoute les routes /auth
 
     // DEBUG : log le body reçu pour POST /rooms
     app.addHook('preHandler', (request, _reply, done) => {
       if (request.url.startsWith('/rooms') && request.method === 'POST') {
-        app.log.info('POST /rooms body:', request.body); // Log le body de la requête POST /rooms
+        app.log.info({ body: request.body }, 'POST /rooms body');
       }
       done(); // Passe au handler suivant
     });
@@ -53,7 +55,7 @@ const app = fastify({
     app.log.info(`✅ Serveur lancé sur ${address}`); // Log l'adresse du serveur
 
   // Configuration de socket.io avec le serveur HTTP(S) (WSS)
-  const io = new SocketIOServer(app.server, {
+  const io = new SocketIOServer(app.server as any, {
     cors: {
       origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
       methods: ["GET", "POST"], // Autorise les méthodes GET et POST
