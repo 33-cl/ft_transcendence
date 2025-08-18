@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   socketHandlers.ts                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: odx <odx@student.42.fr>                    +#+  +:+       +#+        */
+/*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/14 23:46:24 by odx              ###   ########.fr       */
+/*   Updated: 2025/08/18 15:25:12 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,6 +67,27 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
             else
 			{
                 const room = rooms[rName];
+                
+                // NOUVEAU : Pour les jeux locaux, on supprime toujours la room complètement
+                // Cela évite le problème de double clic pour relancer une partie locale
+                if (room.isLocalGame) {
+                    if (room.pongGame) {
+                        room.pongGame.stop();
+                    }
+                    // Retirer tous les joueurs de la room
+                    if (io) {
+                        for (const socketId of room.players) {
+                            if (socketId !== socket.id && io.sockets.sockets.get(socketId)) {
+                                io.sockets.sockets.get(socketId)?.leave(rName);
+                            }
+                        }
+                    }
+                    room.players = [];
+                    delete rooms[rName];
+                    continue;
+                }
+                
+                // Pour les jeux non-locaux : comportement original
                 // Si la partie est en cours, on stoppe et on supprime la room (ranked)
                 if (room.pongGame && room.pongGame.state && room.pongGame.state.running === true)
 				{
@@ -171,7 +192,6 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 				const paddles = ['A', 'C'];
 				const idx = room.players.indexOf(socket.id);
 				room.paddleBySocket[socket.id] = paddles[idx] || null;
-				console.log(`[BACKEND] Attribution paddle 1v1: socketId=${socket.id}, index=${idx}, paddle=${paddles[idx]}, isLocal=${room.isLocalGame}`);
 			} else if (room.maxPlayers === 3) {
 				// Attribution dynamique pour 1v1v1
 				const paddle = assignPaddleToPlayer(room);
@@ -196,7 +216,6 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 					maxPlayers: room.maxPlayers,
 					paddle: room.paddleBySocket[id]
 				});
-				console.log(`[BACKEND] roomJoined envoyé à ${id}: paddle=${room.paddleBySocket[id]}, players=${room.players.length}/${room.maxPlayers}`);
 			}
 		}
 		else
@@ -208,7 +227,6 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 				maxPlayers: room.maxPlayers,
 				paddle: room.paddleBySocket[socket.id]
 			});
-			console.log(`[BACKEND] roomJoined envoyé à ${socket.id}: paddle=${room.paddleBySocket[socket.id]}, players=${room.players.length}/${room.maxPlayers}`);
 		}
 		return;
 	}
@@ -232,24 +250,34 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
     try
     {
         const maxPlayers = data?.maxPlayers;
-        const isLocalGame = data?.isLocalGame === true; // <--- Ajout
+        const isLocalGame = data?.isLocalGame === true;
         const previousRoom = getPlayerRoom(socket.id);
         let roomName = data?.roomName;
+        
         if (!roomName && typeof maxPlayers === 'number')
         {
             roomName = null;
+            // IMPORTANT: Pour les jeux locaux, on cherche/crée des rooms différentes
+            // Cela évite que les rooms locales interfèrent avec le multiplayer
             for (const [name, room] of Object.entries(rooms))
             {
-                if (room.maxPlayers === maxPlayers && room.players.length < maxPlayers)
+                if (room.maxPlayers === maxPlayers && 
+                    room.players.length < maxPlayers &&
+                    room.isLocalGame === isLocalGame)
                 {
                     roomName = name;
                     break;
                 }
             }
+            
             if (!roomName)
             {
-                // Création de la room via l'API REST (POST /rooms) avec HTTPS auto-signé
-                const postData = JSON.stringify({ maxPlayers });
+                const roomPrefix = isLocalGame ? 'local' : 'multi';
+                const postData = JSON.stringify({ 
+                    maxPlayers,
+                    roomPrefix
+                });
+                
                 const options = {
                     hostname: 'localhost',
                     port: 8080,
@@ -261,6 +289,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                     },
                     rejectUnauthorized: false // auto-signé en dev
                 } as any;
+                
                 roomName = await new Promise((resolve, reject) =>
                 {
                     const req = https.request(options, (res: any) =>
@@ -274,10 +303,14 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                                 const json = JSON.parse(data);
                                 resolve(json.roomName);
                             }
-                            catch (e) { reject(e); }
+                            catch (e) { 
+                                reject(e); 
+                            }
                         });
                     });
-                    req.on('error', reject);
+                    req.on('error', (err) => {
+                        reject(err);
+                    });
                     req.write(postData);
                     req.end();
                 });
@@ -286,8 +319,11 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         if (!canJoinRoom(socket, roomName))
             return;
         const room = rooms[roomName] as RoomType;
+        
         // Ajout : stocke le flag isLocalGame dans la room
-        if (isLocalGame) room.isLocalGame = true;
+        // IMPORTANT: On set le flag à la valeur actuelle, pas seulement si true
+        room.isLocalGame = isLocalGame;
+        
         if (handleRoomFull(socket, room, fastify))
             return;
         if (previousRoom)
@@ -297,7 +333,9 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             fastify.log.info(`[DEBUG] socket.id=${socket.id} leave previousRoom=${previousRoom}`);
         }
         cleanUpPlayerRooms(socket, fastify, io);
+        
         joinPlayerToRoom(socket, roomName, room, io);
+        
         // --- Ajout : en local, on démarre la partie immédiatement ---
         if (isLocalGame && !room.pongGame) {
             room.pongGame = new PongGame(room.maxPlayers);
@@ -325,13 +363,11 @@ function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean;
         inputs['A'] = { up: false, down: false };
         inputs['C'] = { up: false, down: false };
     } else if (maxPlayers === 3) {
-        // Mode 1v1v1 : utiliser A, B et C
         inputs['A'] = { up: false, down: false };
         inputs['B'] = { up: false, down: false };
         inputs['C'] = { up: false, down: false };
     }
     
-    console.log(`[DEBUG] initPaddleInputs pour ${maxPlayers} joueurs:`, Object.keys(inputs));
     return inputs;
 }
 
@@ -367,19 +403,8 @@ function handleGameTick(io: any)
                         paddle.y = Math.min(typedRoom.pongGame.state.canvasHeight - paddle.height, paddle.y + speed);
                 }
             }
-            // --- LOG DEBUG : Affiche les paddles envoyés en local ---
-            if (typedRoom.isLocalGame) {
-                console.log(`[DEBUG LOCAL] room=${roomName} paddles=`, JSON.stringify(typedRoom.pongGame.state.paddles));
-            }
-            // Envoie l'état du jeu à tous les clients de la room
             io.to(roomName).emit('gameState', typedRoom.pongGame.state);
-            
-            // Log pour vérifier les scores envoyés
-            if (typedRoom.pongGame.state.paddles && typedRoom.pongGame.state.paddles.some((p: any) => p.score > 0)) {
-                console.log(`[DEBUG SCORES] room=${roomName} scores=`, typedRoom.pongGame.state.paddles.map((p: any) => p.score));
-            }
         }
-        // --- NETTOYAGE AUTO DES ROOMS FINIES (ranked) ---
         if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)
         {
             for (const socketId of typedRoom.players)
@@ -401,9 +426,6 @@ function handleSocketMessage(socket: Socket, msg: string)
         message = JSON.parse(msg);
     } catch (e) { return; }
     
-    // Log pour voir TOUS les messages reçus
-    console.log(`[BACKEND] Message reçu de ${socket.id}: type=${message.type}, data=${JSON.stringify(message.data)}`);
-    
     const playerRoom = getPlayerRoom(socket.id);
     if (!playerRoom) return;
     const room = rooms[playerRoom] as RoomType;
@@ -414,39 +436,27 @@ function handleSocketMessage(socket: Socket, msg: string)
     if ((message.type === 'keydown' || message.type === 'keyup') && room.pongGame && room.paddleBySocket) {
         const { player, direction } = message.data || {};
         const allowedPaddle = room.paddleBySocket[socket.id];
-        console.log(`[BACKEND] Handler keydown/keyup: player=${player}, allowedPaddle=${JSON.stringify(allowedPaddle)}, isLocalGame=${room.isLocalGame}`);
         if (room.isLocalGame) {
-            // Mapping pour 1v1 local : left/right → A/C (B reste pour 1v1v1 horizontal)
             let mappedPlayer = player;
             if (player === 'left') mappedPlayer = 'A';
-            else if (player === 'right') mappedPlayer = 'C'; // Changé de B vers C
+            else if (player === 'right') mappedPlayer = 'C';
             
-            console.log(`[BACKEND] Mapping: ${player} → ${mappedPlayer}, allowedPaddle=${JSON.stringify(allowedPaddle)}`);
-            
-            // allowedPaddle est un tableau de sides
             if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
-                console.log(`[BACKEND] Paddle autorisé, traitement de ${mappedPlayer} ${direction}`);
                 if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
                     room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
-                    // Appliquer immédiatement le mouvement au jeu
                     if (message.type === 'keydown') {
-                        console.log(`[BACKEND] Appel movePaddle(${mappedPlayer}, ${direction})`);
                         try {
                             room.pongGame.movePaddle(mappedPlayer, direction);
-                            console.log(`[BACKEND] movePaddle réussi`);
                         } catch (error) {
                             console.error(`[BACKEND] Erreur dans movePaddle:`, error);
                         }
                     }
                 }
-            } else {
-                console.log(`[BACKEND] Paddle NON autorisé: ${mappedPlayer} pas dans ${JSON.stringify(allowedPaddle)}`);
             }
         } else {
             if (player !== allowedPaddle) return;
             if ((player === 'A' || player === 'B' || player === 'C') && (direction === 'up' || direction === 'down')) {
                 room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
-                // Appliquer immédiatement le mouvement au jeu
                 if (message.type === 'keydown') {
                     room.pongGame.movePaddle(player, direction);
                 }
@@ -470,15 +480,15 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
 // Fonction principale qui enregistre tous les handlers socket.io
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
+    // Réduction du tick rate de 120 FPS à 60 FPS pour améliorer les performances
     setInterval(() =>
 	{
         handleGameTick(io);
-    }, 1000 / 120);
+    }, 1000 / 60);
 
     io.on('connection', (socket: Socket) =>
 	{
         fastify.log.info(`Client connecté : ${socket.id}`);
-        console.log('[BACKEND] Nouvelle connexion socket', socket.id, 'à', new Date().toISOString());
 
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));

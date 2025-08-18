@@ -1,6 +1,7 @@
 import { initPasswordMasking } from '../utils/passwordMasking.js';
 import { show, load , hideAllPages, hide } from './utils.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
+import { cleanupGameState } from '../game/gameCleanup.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
@@ -21,11 +22,20 @@ function initializeComponents(): void
     // Affiche la page d'accueil au chargement
     show('landing');
 
+    // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
+    if ((window as any)._navigationListenerSet) {
+        console.log('[SPA] Event listener de navigation déjà configuré, abandon');
+        return;
+    }
+    (window as any)._navigationListenerSet = true;
+    console.log('[SPA] Configuration de l\'event listener de navigation');
     
     // Ajoute la navigation SPA pour le clic gauche
     document.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
         if (!target) return;
+        
+        console.log('[SPA] Clic détecté sur:', target.id || target.className || target.tagName);
         
         // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
         let currentElement: HTMLElement | null = target;
@@ -39,19 +49,27 @@ function initializeComponents(): void
             }
         }
         
-        if (target.id === 'mainMenuBtn' || target.id === 'goToMain')
+        // NAVIGATION PRINCIPALE - avec nettoyage spécial pour retour au menu principal
+        if (target.id === 'mainMenuBtn' || target.id === 'back2main' || target.id === 'goToMain') {
+            // Nettoyage complet avant de retourner au menu principal
+            // Cela résout le bug des paddles qui ne s'affichent plus au 2ème jeu local
+            cleanupGameState();
             load('mainMenu');
+        }
         if (target.id === 'goToProfile')
             load('profile');
         if (target.id === 'local2p')
         {
+            // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
+            // Cela évite un double chargement qui cause le bug des paddles
             await window.joinOrCreateRoom(2, true);
-            load('game'); 
+            // Ne pas appeler load('game') ici ! Le handler roomJoined s'en occupe
         }
         if (target.id === 'local3p')
         {
+            // Même principe pour le jeu 3 joueurs
             await window.joinOrCreateRoom(3, true);
-            load('game3');
+            // Ne pas appeler load('game3') ici !
         }
         if (target.id === 'signInBtn')
             load('signIn');
@@ -144,11 +162,10 @@ function setupRoomJoinedHandler()
         console.log('[DEBUG FRONT] Event roomJoined reçu', data);
         // Si mode local, on affiche directement la page de jeu
         if (window.isLocalGame) {
-            hideAllPages();
             if (data.maxPlayers === 3) {
-                show('game3');
+                load('game3');
             } else {
-                show('game');
+                load('game');
             }
             return;
         }

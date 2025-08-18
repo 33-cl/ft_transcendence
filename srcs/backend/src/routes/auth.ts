@@ -47,7 +47,7 @@ function isValidPassword(password: string): boolean {
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(password, salt, 64).toString('hex');
-  // format: algo:salt:hash
+  // return sous format: algo:salt:hash
   return `scrypt:${salt}:${hash}`;
 }
 
@@ -58,10 +58,12 @@ function verifyPassword(password: string, stored: string): boolean {
     if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
     const salt = parts[1];
     const expectedHex = parts[2];
+	//on rehash avec le meme salt donc on compare les 2 meme choses
     const actualHex = scryptSync(password, salt, 64).toString('hex');
     const a = Buffer.from(actualHex, 'hex');
     const b = Buffer.from(expectedHex, 'hex');
-    if (a.length !== b.length) return false;
+    if (a.length !== b.length)
+		return false;
     return timingSafeEqual(a, b);
   } catch {
     return false;
