@@ -119,6 +119,40 @@ export function draw(gameState: any)
     ctx.fillStyle = 'white';
     ctx.fill();
 
+    // --- AFFICHAGE DU COMPTE À REBOURS ---
+    if (gameState.ballCountdown && gameState.ballCountdown > 0) {
+        ctx.save();
+        
+        // Configuration de la typographie selon la DA du site
+        ctx.font = 'bold 96px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const countdownText = gameState.ballCountdown.toString();
+        const centerX = gameState.canvasWidth / 2;
+        const centerY = gameState.canvasHeight / 2;
+        
+        // Effet d'ombre portée pour plus de visibilité
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillText(countdownText, centerX + 4, centerY + 4);
+        
+        // Contour blanc pour un meilleur contraste
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+        ctx.strokeText(countdownText, centerX, centerY);
+        
+        // Texte principal en vert selon la DA du site
+        ctx.fillStyle = '#22c55e'; // Vert conforme à la palette du site
+        ctx.fillText(countdownText, centerX, centerY);
+        
+        // Effet de brillance/glow
+        ctx.shadowColor = '#22c55e';
+        ctx.shadowBlur = 20;
+        ctx.fillText(countdownText, centerX, centerY);
+        
+        ctx.restore();
+    }
+
     // --- AFFICHAGE DES SCORES ---
     const scoreElem = document.getElementById('score');
     if (scoreElem) {

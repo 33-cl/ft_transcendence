@@ -25,6 +25,7 @@ export interface GameState{
 
     win:            number;
     running:        boolean;
+    ballCountdown:  number; // Compte à rebours avant que la balle commence à bouger
 }
 
 export function createInitialGameState(numPlayers: number = 2): GameState {
@@ -83,5 +84,6 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         ballSpeedY:     5,
         win:            4,
         running:        false,
+        ballCountdown:  3, // Délai de 3 secondes avant que la balle commence
     };
 }
