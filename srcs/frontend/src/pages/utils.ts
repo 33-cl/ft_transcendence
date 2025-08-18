@@ -1,11 +1,11 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
 import { animateDots, switchTips } from '../components/matchmaking.js';
+import { cleanupGameState } from '../game/gameCleanup.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
     mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-    goToMain: {id: 'goToMain', html: goToMainHTML},
-    goToProfile: {id: 'goToProfile', html: goToProfileHTML},
+    back2main: {id: 'back2main', html: goToMainHTML},
     leaderboard: {id: 'leaderboard', html: leaderboardHTML},
     friendList: {id: 'friendList', html: friendListHTML},
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
@@ -36,6 +36,15 @@ function show(pageName: keyof typeof components)
 
 function load(pageName: string, updateHistory: boolean = true)
 {
+    // OPTIMISÉ: Nettoyer l'état du jeu seulement si nécessaire
+    // et éviter les nettoyages inutiles qui ralentissent l'interface
+    if (pageName !== 'game' && pageName !== 'game3' && pageName !== 'matchmaking') {
+        // Ne nettoyer que si on a vraiment besoin (éviter les appels inutiles)
+        if ((window as any).socket || (window as any).controlledPaddle || (window as any).isLocalGame) {
+            cleanupGameState();
+        }
+    }
+    
     hideAllPages();
     if (pageName === 'landing')
         show('landing');
@@ -49,12 +58,12 @@ function load(pageName: string, updateHistory: boolean = true)
     else if (pageName === 'signIn')
     {
         show('signIn');
-        show('goToMain');
+        show('back2main');
     }
     else if (pageName === 'signUp')
     {
         show('signUp');
-        show('goToMain');
+        show('back2main');
     }
     else if (pageName === 'game')
         show('game');
@@ -69,7 +78,7 @@ function load(pageName: string, updateHistory: boolean = true)
     else if (pageName === 'profile')
     {
         show('profile');
-        show('goToMain');
+        show('back2main');
     }
     else if (pageName === 'gameFinished')
         show('gameFinished');

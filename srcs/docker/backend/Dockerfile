@@ -27,6 +27,12 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# Install OpenSSL and generate SSL certificates at build time
+RUN apt-get update && \
+    apt-get install -y openssl && \
+    rm -rf /var/lib/apt/lists/* && \
+    openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+
 # Copy built app and node_modules from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules

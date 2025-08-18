@@ -5,15 +5,11 @@
 (window as any).controlledPaddle = null;
 
 function sendKeyEvent(type: 'keydown' | 'keyup', player: 'A' | 'B' | 'C' | 'left' | 'right', direction: 'up' | 'down') {
-    console.log(`[FRONT] sendKeyEvent: type=${type}, player=${player}, direction=${direction}, controlledPaddle=${(window as any).controlledPaddle}`);
     if ((window as any).isLocalGame) {
-        console.log('[FRONT] sendMessage called:', type, player, direction, (window as any).sendMessage);
         (window as any).sendMessage(type, { player, direction });
     } else {
         if ((window as any).controlledPaddle === player) {
             (window as any).sendMessage(type, { player, direction });
-        } else {
-            console.log(`[FRONT] Refusé: tentative de contrôle d'un paddle non attribué (controlledPaddle=${(window as any).controlledPaddle}, demandé=${player})`);
         }
     }
 }
@@ -24,15 +20,6 @@ let keyToMove: Record<string, { player: 'A' | 'B' | 'C' | 'left' | 'right', dire
 function updatePaddleKeyBindings() {
     const paddle = (window as any).controlledPaddle;
     const isLocal = (window as any).isLocalGame;
-    const maxPlayers = (window as any).maxPlayers;
-    
-    console.log('[FRONT] updatePaddleKeyBindings DEBUG:', {
-        paddle,
-        isLocal,
-        maxPlayers,
-        paddleType: typeof paddle,
-        isArray: Array.isArray(paddle)
-    });
     
     if (isLocal) {
         let paddles = paddle;
@@ -90,14 +77,12 @@ function updatePaddleKeyBindings() {
     }
     else {
         // Mode online : chaque joueur utilise les flèches directionnelles
-        console.log('[FRONT] Mode ONLINE - Attribution des contrôles pour paddle:', paddle);
         
         if (paddle === 'A' || paddle === 'B' || paddle === 'C') {
             keyToMove = {
                 ArrowUp: { player: paddle, direction: 'up' },
                 ArrowDown: { player: paddle, direction: 'down' }
             };
-            console.log('[FRONT] Contrôles assignés pour paddle', paddle, ':', keyToMove);
         } else if (paddle === 'left') {
             keyToMove = {
                 ArrowUp: { player: 'left', direction: 'up' },
@@ -110,11 +95,8 @@ function updatePaddleKeyBindings() {
             };
         } else {
             keyToMove = {};
-            console.log('[FRONT] ERREUR: Paddle non reconnu:', paddle);
         }
     }
-    
-    console.log('[FRONT] Mapping final des touches:', keyToMove);
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)
@@ -133,6 +115,21 @@ if (!(window as any)._pongControlsRoomJoinedListener) {
 updatePaddleKeyBindings(); // Initial
 
 const pressedKeys: Record<string, boolean> = {};
+
+// Fonction de nettoyage des contrôles
+export function cleanupPongControls(): void {
+    keyToMove = {};
+    (window as any).controlledPaddle = null;
+    (window as any).isLocalGame = false;
+    (window as any)._pongControlsRoomJoinedListener = false;
+    
+    Object.keys(pressedKeys).forEach(key => {
+        pressedKeys[key] = false;
+    });
+}
+
+// Expose la fonction de cleanup globalement
+(window as any).cleanupPongControls = cleanupPongControls;
 
 document.addEventListener("keydown", function (e) {
     const move = keyToMove[e.key as string];

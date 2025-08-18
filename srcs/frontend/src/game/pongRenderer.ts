@@ -7,21 +7,52 @@ let ctx: CanvasRenderingContext2D | null = null;
 export function initPongRenderer(canvasId: string = 'map')
 {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvas)
-	{
-        console.error('Canvas non trouvé:', canvasId);
+    if (!canvas) {
         return;
     }
+    
     ctx = canvas.getContext('2d');
-    if (!ctx)
-        console.error('Impossible d\'obtenir le contexte 2D du canvas');
+    if (!ctx) {
+        return;
+    }
 }
+
+// Fonction de nettoyage du renderer
+export function resetPongRenderer(): void {
+    if (canvas && ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    canvas = null;
+    ctx = null;
+}
+
+// Expose la fonction de reset globalement pour le cleanup
+(window as any).resetPongRenderer = resetPongRenderer;
 
 export function draw(gameState: any)
 {
-    if (!ctx || !canvas) return;
-    console.log('[DEBUG] gameState reçu dans draw:', JSON.stringify(gameState)); // Ajout du log pour debug
+    // Logs de debug temporairement désactivés pour les performances
+    // const drawId = Math.random().toString(36).substr(2, 9);
+    // console.log(`[DRAW-${drawId}] === DÉBUT RENDU ===`);
+    // console.log(`[DRAW-${drawId}] Canvas/ctx disponibles:`, !!canvas, !!ctx);
+    
+    if (!ctx || !canvas) {
+        console.error(`[DRAW] Pas de canvas/ctx - abandon du rendu`);
+        return;
+    }
+    
+    // Log simplifié pour debug uniquement si nécessaire
+    // console.log(`[DRAW] gameState:`, {
+    //     paddlesCount: gameState.paddles?.length,
+    //     ballX: gameState.ballX,
+    //     ballY: gameState.ballY,
+    //     running: gameState.running
+    // });
+    
+    // Clear le canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // ...existing code...
 
     // --- DESSIN DU TERRAIN ---
     if (gameState.paddles && gameState.paddles.length === 3) {
@@ -108,6 +139,8 @@ export function draw(gameState: any)
             scoreElem.innerHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
         }
     }
+
+    // console.log(`[DRAW] === FIN RENDU ===`);
 }
 
 (window as any).draw = draw;
