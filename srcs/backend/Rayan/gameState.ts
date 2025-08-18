@@ -1,4 +1,4 @@
-export type PaddleSide = 'A' | 'B' | 'C';
+export type PaddleSide = 'A' | 'B' | 'C' | 'D';
 
 export interface GameState{
     canvasHeight:   number;
@@ -35,7 +35,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
     const paddleMargin  = 10;
     const paddleY       = canvasHeight / 2 - paddleHeight / 2;
 
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C'];
+    const paddleSides: PaddleSide[] = ['A', 'B', 'C', 'D'];
     const paddles: { x: number; y: number; width: number; height: number; side: PaddleSide; score: number }[] = [];
     
     for (let i = 0; i < numPlayers; i++) {
@@ -51,18 +51,32 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
             } else if (side === 'C') {
                 x = canvasWidth - paddleMargin - paddleWidth;
             }
-        } else if (numPlayers === 3) {
-            // Mode 1v1v1 : paddle A à gauche, paddle C à droite, paddle B en bas (horizontal)
+        } else if (numPlayers === 4) {
+            // Mode 1v1v1v1 : disposition carrée avec 4 paddles
             if (side === 'A') {
+                // Paddle A : gauche (vertical)
                 x = paddleMargin;
+                y = canvasHeight / 2 - paddleHeight / 2;
+                width = paddleWidth;
+                height = paddleHeight;
             } else if (side === 'B') {
-                // Paddle B : horizontal en bas
-                x = canvasWidth / 2 - paddleHeight / 2; // Centré horizontalement
+                // Paddle B : bas (horizontal)
+                x = canvasWidth / 2 - paddleHeight / 2;
                 y = canvasHeight - paddleMargin - paddleWidth;
-                width = paddleHeight; // Largeur du paddle horizontal
-                height = paddleWidth; // Hauteur du paddle horizontal
+                width = paddleHeight; // 110 pixels de largeur
+                height = paddleWidth; // 10 pixels de hauteur
             } else if (side === 'C') {
+                // Paddle C : droite (vertical)
                 x = canvasWidth - paddleMargin - paddleWidth;
+                y = canvasHeight / 2 - paddleHeight / 2;
+                width = paddleWidth;
+                height = paddleHeight;
+            } else if (side === 'D') {
+                // Paddle D : haut (horizontal) - même taille que B
+                x = canvasWidth / 2 - paddleHeight / 2;
+                y = paddleMargin;
+                width = paddleHeight; // 110 pixels de largeur (même que B)
+                height = paddleWidth; // 10 pixels de hauteur (même que B)
             }
         }
         

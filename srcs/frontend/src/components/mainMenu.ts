@@ -4,7 +4,7 @@ export const mainMenuHTML = /*html*/`
             <h1>Local</h1>
             <div class="button-group">
                 <button id="local2p">2 Player</button>
-                <button id="local3p">3 Player</button>
+                <button id="local4p">4 Player</button>
             </div>
         </div>
         <div class="menu-section">
