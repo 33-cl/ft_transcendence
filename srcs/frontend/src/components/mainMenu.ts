@@ -21,10 +21,6 @@ export const mainMenuHTML = /*html*/`
                 <button id="tournamentJoinBtn">Battle Royale</button>
             </div>
         </div>
-        <div class="menu-section">
-            <button id="goToMain">Main menu</button>
-            <button id="goToProfile">Profile</button>
-        </div>
     </div>
 `;
 
