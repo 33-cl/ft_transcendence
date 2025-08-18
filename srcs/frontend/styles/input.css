@@ -132,6 +132,30 @@
         @apply fixed bottom-[20px] left-[20px] m-0 z-[100] bg-none shadow-none;
    }
 
+   #goToProfile-component {
+       @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 z-[100]; /* Position, border, arrondi, fond, layout */
+   }
+
+   #goToProfile img {
+       @apply w-[75px] h-[75px] rounded-md mr-4; /* Photo à gauche, taille et arrondi */
+   }
+
+   .goToProfile-info {
+       @apply flex flex-col items-start; /* Colonne pseudo + bouton */
+   }
+
+   .goToProfile-username {
+       @apply text-xl font-bold mb-2; /* Pseudo en haut */
+   }
+
+   .goToProfile-logout {
+       @apply bg-red-800 text-white px-10 py-2 rounded-md border-none text-base; /* Bouton déconnexion */
+   }
+
+    .goToProfile-logout:hover {
+        @apply bg-red-900; /* Bouton déconnexion hover */
+    }
+
    #matchmaking-page {
        @apply w-[100vw];
    }
