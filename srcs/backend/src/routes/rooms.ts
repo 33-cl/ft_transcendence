@@ -12,17 +12,26 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 	// Route POST /rooms : créer une nouvelle room
 	fastify.post('/rooms', async (request, reply) => 
 	{
-		const { maxPlayers } = request.body as { maxPlayers: number };
+		const { maxPlayers, roomPrefix } = request.body as { maxPlayers: number; roomPrefix?: string };
 		if (!maxPlayers || typeof maxPlayers !== 'number')
 			return reply.status(400).send({ error: 'maxPlayers needed' });
 
 		// Génère un nom unique pour la room, incrémental et global
+		// AJOUT: Utilise le préfixe pour différencier les rooms locales et multiplayer
+		const prefix = roomPrefix || 'room';
 		let roomName;
 		do {
-			roomName = getNextRoomName();
+			roomName = `${prefix}-${getNextRoomName()}`;
 		} while (roomExists(roomName));
 		// Crée la room vide avec un gameState initialisé (par défaut: 2 joueurs)
-		rooms[roomName] = { players: [], maxPlayers, gameState: createInitialGameState() };
+		// AJOUT: Marque la room comme locale si c'est un préfixe local
+		const room = { 
+			players: [], 
+			maxPlayers, 
+			gameState: createInitialGameState(),
+			isLocalGame: prefix === 'local'
+		} as any;
+		rooms[roomName] = room;
 		return { roomName, maxPlayers };
 	});
 
