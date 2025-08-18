@@ -29,12 +29,16 @@ export function cleanupGameState(): void {
     const sessionId = generateSessionId();
     cleanupState.cleanupCount++;
     
-    console.log(`[CLEANUP-${sessionId}] Nettoyage #${cleanupState.cleanupCount}`);
-    // console.log(`[CLEANUP-${sessionId}] État avant:`, {
-    //     previousSessionId: cleanupState.sessionId,
-    //     windowControlledPaddle: (window as any).controlledPaddle,
-    //     windowIsLocalGame: (window as any).isLocalGame
-    // });
+    // OPTIMISATION: Vérifier rapidement s'il y a vraiment quelque chose à nettoyer
+    const hasGameState = (window as any).controlledPaddle || 
+                        (window as any).isLocalGame || 
+                        cleanupState.gameStateInitialized ||
+                        cleanupState.canvas;
+    
+    if (!hasGameState) {
+        // Rien à nettoyer, sortir rapidement
+        return;
+    }
     
     // 1. Reset des variables globales du jeu
     (window as any).controlledPaddle = null;
@@ -46,7 +50,6 @@ export function cleanupGameState(): void {
         const ctx = cleanupState.canvas.getContext('2d');
         if (ctx) {
             ctx.clearRect(0, 0, cleanupState.canvas.width, cleanupState.canvas.height);
-            console.log(`[CLEANUP-${sessionId}] Canvas nettoyé`);
         }
     }
     
@@ -76,13 +79,12 @@ export function cleanupGameState(): void {
     (window as any)._roomJoinedHandlerSet = false;
     (window as any)._navigationListenerSet = false; // Reset du flag de navigation
     
-    console.log(`[CLEANUP-${sessionId}] === FIN NETTOYAGE ===`);
+    // CLEANUP TERMINÉ - État remis à zéro pour la prochaine session
 }
 
 // Force la sortie de la room actuelle pour éviter les conflits
 function forceLeaveCurrentRoom(): void {
     if ((window as any).socket) {
-        console.log('[CLEANUP] Envoi de leaveAllRooms au serveur');
         (window as any).socket.emit('leaveAllRooms');
     }
 }

@@ -1,17 +1,12 @@
 #!/bin/sh
 set -e
 
-# Vérifie si openssl est installé, sinon l'installe (utile en dev/CI)
-if ! command -v openssl >/dev/null 2>&1; then
-  apt-get update && apt-get install -y openssl
-fi
-
-# Génère un certificat auto-signé si absent
+# Vérifie que les certificats sont bien présents (générés à la build)
 if [ ! -f key.pem ] || [ ! -f cert.pem ]; then
-  echo "[entrypoint] Génération d'un certificat SSL auto-signé (key.pem/cert.pem) pour Fastify..."
-  openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+  echo "[entrypoint] ERREUR: Certificats SSL manquants, ils devraient être générés à la build !"
+  exit 1
 else
-  echo "[entrypoint] Certificats SSL déjà présents, aucune génération."
+  echo "[entrypoint] Certificats SSL détectés, démarrage du serveur..."
 fi
 
 # Ne recompile pas en runtime, utilise le build produit à l'image

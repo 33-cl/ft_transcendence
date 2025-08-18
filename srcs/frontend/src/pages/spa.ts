@@ -24,18 +24,14 @@ function initializeComponents(): void
 
     // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
     if ((window as any)._navigationListenerSet) {
-        console.log('[SPA] Event listener de navigation déjà configuré, abandon');
         return;
     }
     (window as any)._navigationListenerSet = true;
-    console.log('[SPA] Configuration de l\'event listener de navigation');
     
     // Ajoute la navigation SPA pour le clic gauche
     document.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
         if (!target) return;
-        
-        console.log('[SPA] Clic détecté sur:', target.id || target.className || target.tagName);
         
         // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
         let currentElement: HTMLElement | null = target;
@@ -128,8 +124,6 @@ function initializeComponents(): void
 
                 menu.style.left = `${e.clientX}px`;
                 menu.style.top = `${e.clientY}px`;
-
-                console.log('Menu positionné à', menu.style.left, menu.style.top);
             }
 
         }
@@ -159,7 +153,6 @@ function setupRoomJoinedHandler()
     window._roomJoinedHandlerSet = true;
     window.socket.on('roomJoined', (data: any) =>
     {
-        console.log('[DEBUG FRONT] Event roomJoined reçu', data);
         // Si mode local, on affiche directement la page de jeu
         if (window.isLocalGame) {
             if (data.maxPlayers === 3) {

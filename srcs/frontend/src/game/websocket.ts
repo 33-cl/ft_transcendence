@@ -13,25 +13,12 @@ let roomJoinedListenerSet = false;
 let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 
-// Fonction utilitaire pour compter les listeners (Socket.IO client n'a pas listenerCount)
-function getListenerCount(eventName: string): number {
-    try {
-        // Socket.IO client expose parfois _callbacks ou _events mais ce n'est pas fiable
-        if (socket._callbacks && socket._callbacks[`$${eventName}`]) {
-            return socket._callbacks[`$${eventName}`].length;
-        }
-        return 0;
-    } catch (e) {
-        return 0;
-    }
-}
-
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
     // Event listener connect
     if (!connectListenerSet) {
         socket.on("connect", () => {
-            console.log("[FRONT] Connecté au serveur WebSocket avec l'id:", socket.id);
+            // Connexion établie
         });
         connectListenerSet = true;
     }
@@ -45,7 +32,7 @@ function setupGlobalSocketListeners() {
             window.controlledPaddle = null;
         }
         if (data && data.maxPlayers) {
-            (window as any).maxPlayers = data.maxPlayers;axPlayers;axPlayers;
+            (window as any).maxPlayers = data.maxPlayers;
         }
         document.dispatchEvent(new Event('roomJoined'));
     });
@@ -62,8 +49,8 @@ function setupGlobalSocketListeners() {
     
     // Event listener pong
     if (!pongListenerSet) {
-        socket.on("pong", (data: any) => {
-            console.log("Message reçu du serveur:", data);
+        socket.on("pong", () => {
+            // Message reçu du serveur
         });
         pongListenerSet = true;
     }
@@ -171,39 +158,21 @@ document.addEventListener('componentsReady', () => {
 let gameStateListenerActive = false;
 let disconnectListenerActive = false;
 let leftRoomListenerActive = false;
-let gameStateListenerCount = 0;
 
 // Fonction pour nettoyer les event listeners du jeu
 function cleanupGameEventListeners() {
-    console.log('[CLEANUP-WS] Nettoyage des event listeners WebSocket du jeu');
-    console.log('[CLEANUP-WS] État avant nettoyage:', {
-        gameStateListenerActive,
-        gameStateListenerCount,
-        disconnectListenerActive,
-        leftRoomListenerActive,
-        gameStateListenersCount: getListenerCount('gameState'),
-        disconnectListenersCount: getListenerCount('disconnect'),
-        leftRoomListenersCount: getListenerCount('leftRoom')
-    });
-    
     if (gameStateListenerActive) {
-        console.log('[CLEANUP-WS] Suppression des listeners gameState');
         socket.removeAllListeners('gameState');
         gameStateListenerActive = false;
-        gameStateListenerCount = 0;
     }
     if (disconnectListenerActive) {
-        console.log('[CLEANUP-WS] Suppression des listeners disconnect');
         socket.removeAllListeners('disconnect');
         disconnectListenerActive = false;
     }
     if (leftRoomListenerActive) {
-        console.log('[CLEANUP-WS] Suppression des listeners leftRoom');
         socket.removeAllListeners('leftRoom');
         leftRoomListenerActive = false;
     }
-    
-    console.log('[CLEANUP-WS] Nettoyage terminé');
 }
 
 // Fonction pour configurer les event listeners du jeu (une seule fois)
@@ -211,18 +180,9 @@ function setupGameEventListeners() {
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
     
-    console.log('[SETUP] Configuration des event listeners WebSocket du jeu');
-    
     // Event listener pour les états de jeu
     if (!gameStateListenerActive) {
         socket.on('gameState', (state: any) => {
-            console.log('[FRONT] gameState reçu:', { 
-                paddles: state.paddles?.length || 'undefined', 
-                ballX: state.ballX, 
-                ballY: state.ballY,
-                running: state.running,
-                paddlesDetail: state.paddles 
-            });
             draw(state);
         });
         gameStateListenerActive = true;
@@ -231,7 +191,6 @@ function setupGameEventListeners() {
     // Nettoyage lors de la déconnexion d'une room
     if (!disconnectListenerActive) {
         socket.on('disconnect', () => {
-            console.log('[FRONT] Socket déconnecté, nettoyage de l\'état du jeu');
             cleanupGameState();
             cleanupGameEventListeners();
         });
@@ -241,7 +200,6 @@ function setupGameEventListeners() {
     // Nettoyage lors de la sortie d'une room
     if (!leftRoomListenerActive) {
         socket.on('leftRoom', () => {
-            console.log('[FRONT] Quitté la room, nettoyage de l\'état du jeu');
             cleanupGameState();
         });
         leftRoomListenerActive = true;
