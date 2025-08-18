@@ -20,6 +20,7 @@ import { PongGame } from '../../Rayan/pong.js';
 import { Buffer } from 'buffer';
 import { createInitialGameState } from '../../Rayan/gameState.js';
 import { PaddleSide } from '../../Rayan/gameState.js';
+import { RoomType } from '../types.js';
 
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
@@ -485,15 +486,4 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
         socket.on('disconnect', () => handleSocketDisconnect(socket));
         socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));
     });
-}
-
-// Definition de l'interface RoomType directement ici pour éviter les problèmes d'import de type
-export interface RoomType {
-    players: string[];
-    maxPlayers: number;
-    isLocalGame?: boolean; // <-- Ajouté pour corriger l'erreur de typage
-    paddleBySocket?: any;
-    paddleInputs?: any;
-    pongGame?: any;
-    gameState?: any;
 }
