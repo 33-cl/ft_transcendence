@@ -6,6 +6,9 @@ import { GameState, createInitialGameState } from './gameState.js';
 export class PongGame {
     public state: GameState;
     private interval: ReturnType<typeof setInterval> | null = null;
+    private ballStartTime: number = 0;
+    private ballDelayMs: number = 3000; // 3 secondes
+    private isFirstLaunch: boolean = true; // Track si c'est le premier lancement
 
     constructor(numPlayers: number = 2) {
         this.state = createInitialGameState(numPlayers);
@@ -14,6 +17,7 @@ export class PongGame {
     start() {
         if (this.interval) return;
         this.state.running = true;
+        this.ballStartTime = Date.now(); // Enregistre le moment où le jeu commence
         this.interval = setInterval(() => this.update(), 1000 / 60); // 60 FPS
     }
 
@@ -24,23 +28,17 @@ export class PongGame {
     }
 
     movePaddle(player: 'left' | 'right' | 'A' | 'B' | 'C', direction: 'up' | 'down') {
-        console.log('[BACKEND] movePaddle called:', player, direction, 'paddles.length=', this.state.paddles?.length);
         const speed = this.state.paddleSpeed;
         // Mode 1v1 : paddles[0] = A (gauche), paddles[1] = C (droite)
         if (this.state.paddles && this.state.paddles.length === 2) {
-            console.log('[BACKEND] Mode 1v1, paddle sides:', this.state.paddles.map(p => p.side));
             if (player === 'left' || player === 'A') {
                 // Paddle A est à l'index 0
-                console.log('[BACKEND] Déplacement paddle A (index 0)');
                 if (direction === 'up') this.state.paddles[0].y = Math.max(0, this.state.paddles[0].y - speed);
                 else this.state.paddles[0].y = Math.min(this.state.canvasHeight - this.state.paddles[0].height, this.state.paddles[0].y + speed);
             } else if (player === 'right' || player === 'C') {
                 // Paddle C est à l'index 1
-                console.log('[BACKEND] Déplacement paddle C (index 1)');
                 if (direction === 'up') this.state.paddles[1].y = Math.max(0, this.state.paddles[1].y - speed);
                 else this.state.paddles[1].y = Math.min(this.state.canvasHeight - this.state.paddles[1].height, this.state.paddles[1].y + speed);
-            } else {
-                console.log('[BACKEND] Player non reconnu en mode 1v1:', player);
             }
         }
         // Mode 1v1v1 : paddles[0]=A, paddles[1]=B, paddles[2]=C
@@ -59,19 +57,42 @@ export class PongGame {
                 else if (player === 'B') {
                     const minX = 0;
                     const maxX = this.state.canvasWidth - this.state.paddles[idx].width;
-                    const oldX = this.state.paddles[idx].x;
                     if (direction === 'up') this.state.paddles[idx].x = Math.max(minX, this.state.paddles[idx].x - speed); // left
                     else this.state.paddles[idx].x = Math.min(maxX, this.state.paddles[idx].x + speed); // right
-                    console.log(`[BACKEND] Paddle B moved from x=${oldX} to x=${this.state.paddles[idx].x} (direction=${direction})`);
                 }
             }
         }
     }
 
     update() {
-        // Déplacement de la balle
-        this.state.ballX += this.state.ballSpeedX;
-        this.state.ballY += this.state.ballSpeedY;
+        // Vérifier si le délai de 3 secondes est écoulé avant de faire bouger la balle
+        const currentTime = Date.now();
+        const timeElapsed = currentTime - this.ballStartTime;
+        const ballShouldMove = timeElapsed >= this.ballDelayMs;
+        
+        // Mettre à jour le compte à rebours pour l'affichage SEULEMENT au premier lancement
+        if (this.isFirstLaunch && !ballShouldMove && timeElapsed >= 0) {
+            const remainingTime = Math.max(0, this.ballDelayMs - timeElapsed);
+            this.state.ballCountdown = Math.ceil(remainingTime / 1000);
+        } else {
+            this.state.ballCountdown = 0;
+            if (ballShouldMove && this.isFirstLaunch) {
+                this.isFirstLaunch = false; // Après le premier lancement, plus de countdown
+            }
+        }
+        
+        // Déplacement de la balle seulement après le délai (pour le premier lancement uniquement)
+        if (this.isFirstLaunch && !ballShouldMove) {
+            return; // Attendre le countdown uniquement au premier lancement
+        } else if (!this.isFirstLaunch || ballShouldMove) {
+            this.state.ballX += this.state.ballSpeedX;
+            this.state.ballY += this.state.ballSpeedY;
+        }
+
+        // Les collisions et buts ne se déclenchent que si la balle bouge
+        if (this.isFirstLaunch && !ballShouldMove) {
+            return; // Sortir de la fonction si la balle ne doit pas encore bouger
+        }
 
         // Mode 1v1v1 (hexagone, 3 paddles)
         if (this.state.paddles && this.state.paddles.length === 3) {
@@ -150,21 +171,18 @@ export class PongGame {
             if (this.state.ballX < 0) {
                 paddles[1].score++;
                 paddles[2].score++;
-                console.log(`[BACKEND] But 1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}`);
                 this.resetBall();
             }
             // Si la balle sort par le côté C (droit)
             if (this.state.ballX > canvasWidth) {
                 paddles[0].score++;
                 paddles[1].score++;
-                console.log(`[BACKEND] But 1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}`);
                 this.resetBall();
             }
             // Si la balle sort par le bas (sous le paddle B)
             if (this.state.ballY > canvasHeight) {
                 paddles[0].score++;
                 paddles[2].score++;
-                console.log(`[BACKEND] But 1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}`);
                 this.resetBall();
             }
             // Fin de partie si un joueur atteint le score cible
@@ -205,13 +223,11 @@ export class PongGame {
             // But à gauche
             if (this.state.ballX - this.state.ballRadius < 0) {
                 paddles[1].score++;
-                console.log(`[BACKEND] But ! Score mis à jour - Gauche: ${paddles[0].score}, Droite: ${paddles[1].score}`);
                 this.resetBall();
             }
             // But à droite
             if (this.state.ballX + this.state.ballRadius > canvasWidth) {
                 paddles[0].score++;
-                console.log(`[BACKEND] But ! Score mis à jour - Gauche: ${paddles[0].score}, Droite: ${paddles[1].score}`);
                 this.resetBall();
             }
             // Arrêt de la partie si un joueur atteint le score de victoire
@@ -227,6 +243,14 @@ export class PongGame {
         this.state.ballY = this.state.canvasHeight / 2;
         this.state.ballSpeedX *= -1;
         this.state.ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);
+        
+        // Reset timer only on first launch, not on subsequent ball resets
+        if (this.isFirstLaunch) {
+            this.ballStartTime = Date.now();
+        } else {
+            // For subsequent resets, ensure countdown is disabled
+            this.state.ballCountdown = 0;
+        }
     }
 }
 
