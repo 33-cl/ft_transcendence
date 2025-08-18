@@ -13,6 +13,8 @@ import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
 import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
+import { getUserById } from './src/user.js'; // Importe le getter getUserById
+
 
 // Charger le certificat auto-signé généré dans le conteneur Docker
 const key = fs.readFileSync('key.pem');   // Lit la clé privée SSL depuis le fichier
@@ -41,6 +43,17 @@ const app = fastify({
     app.register(usersRoutes); // Ajoute les routes /users
     app.register(roomsRoutes); // Ajoute les routes /rooms
     app.register(authRoutes);  // Ajoute les routes /auth
+
+    // Route GET pour récupérer les infos d'un utilisateur
+    app.get('/profile/:id', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const user = getUserById(id);
+      if (!user) {
+        reply.code(404).send({ error: 'Utilisateur non trouvé' });
+      } else {
+        reply.send(user);
+      }
+    });
 
     // DEBUG : log le body reçu pour POST /rooms
     app.addHook('preHandler', (request, _reply, done) => {

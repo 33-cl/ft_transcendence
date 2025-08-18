@@ -39,8 +39,10 @@ function initializeComponents(): void
             }
         }
         
-        if (target.id === 'mainMenuBtn' || target.id === 'back2main')
+        if (target.id === 'mainMenuBtn' || target.id === 'goToMain')
             load('mainMenu');
+        if (target.id === 'goToProfile')
+            load('profile');
         if (target.id === 'local2p')
         {
             await window.joinOrCreateRoom(2, true);

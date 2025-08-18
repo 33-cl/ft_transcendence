@@ -1,10 +1,11 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
 import { animateDots, switchTips } from '../components/matchmaking.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
     mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-    back2main: {id: 'back2main', html: back2mainHTML},
+    goToMain: {id: 'goToMain', html: goToMainHTML},
+    goToProfile: {id: 'goToProfile', html: goToProfileHTML},
     leaderboard: {id: 'leaderboard', html: leaderboardHTML},
     friendList: {id: 'friendList', html: friendListHTML},
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
@@ -47,12 +48,12 @@ function load(pageName: string, updateHistory: boolean = true)
     else if (pageName === 'signIn')
     {
         show('signIn');
-        show('back2main');
+        show('goToMain');
     }
     else if (pageName === 'signUp')
     {
         show('signUp');
-        show('back2main');
+        show('goToMain');
     }
     else if (pageName === 'game')
         show('game');
@@ -67,7 +68,7 @@ function load(pageName: string, updateHistory: boolean = true)
     else if (pageName === 'profile')
     {
         show('profile');
-        show('back2main');
+        show('goToMain');
     }
     else if (pageName === 'gameFinished')
         show('gameFinished');
