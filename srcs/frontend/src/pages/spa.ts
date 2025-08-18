@@ -59,6 +59,8 @@ function initializeComponents(): void
             load('signUp');
         if (target.id === 'profileBtn' || isProfileBtn)
             load('profile');
+        if (target.id === 'logOutBtn')
+            load('signIn');
 
         // MULTIPLAYER
         if (target.id === 'ranked1v1Btn')

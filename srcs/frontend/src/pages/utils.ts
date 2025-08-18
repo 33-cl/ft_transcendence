@@ -44,6 +44,7 @@ function load(pageName: string, updateHistory: boolean = true)
         show('mainMenu');
         show('friendList');
         show('leaderboard');
+        show('goToProfile');
     }
     else if (pageName === 'signIn')
     {
