@@ -6,33 +6,19 @@ let ctx: CanvasRenderingContext2D | null = null;
 
 export function initPongRenderer(canvasId: string = 'map')
 {
-    console.log('[RENDERER] initPongRenderer appelé avec canvasId:', canvasId);
-    console.log('[RENDERER] État actuel - canvas:', !!canvas, 'ctx:', !!ctx);
-    
-    const previousCanvas = canvas;
-    const previousCtx = ctx;
-    
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
-        console.error('[RENDERER] Canvas non trouvé:', canvasId);
-        console.error('[RENDERER] Éléments disponibles:', Array.from(document.querySelectorAll('canvas')).map(c => c.id));
         return;
     }
     
     ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error('[RENDERER] Impossible d\'obtenir le contexte 2D du canvas');
         return;
     }
-    
-    console.log('[RENDERER] Canvas initialisé avec succès');
-    console.log('[RENDERER] Changement d\'état - canvas:', previousCanvas !== canvas, 'ctx:', previousCtx !== ctx);
-    console.log('[RENDERER] Canvas dimensions:', canvas.width, 'x', canvas.height);
 }
 
 // Fonction de nettoyage du renderer
 export function resetPongRenderer(): void {
-    console.log('[RENDERER] Nettoyage du renderer Pong');
     if (canvas && ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }

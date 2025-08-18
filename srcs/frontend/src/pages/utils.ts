@@ -1,11 +1,11 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
 import { animateDots, switchTips } from '../components/matchmaking.js';
 import { cleanupGameState } from '../game/gameCleanup.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
     mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-    back2main: {id: 'back2main', html: back2mainHTML},
+    back2main: {id: 'back2main', html: goToMainHTML},
     leaderboard: {id: 'leaderboard', html: leaderboardHTML},
     friendList: {id: 'friendList', html: friendListHTML},
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
@@ -36,15 +36,13 @@ function show(pageName: keyof typeof components)
 
 function load(pageName: string, updateHistory: boolean = true)
 {
-    console.log(`[UTILS] Navigation vers la page: ${pageName}`);
-    
-    // IMPORTANT: Nettoyer l'état du jeu avant chaque navigation
-    // SAUF si on navigue vers une page de jeu ou de matchmaking (pour éviter de casser le jeu en cours)
+    // OPTIMISÉ: Nettoyer l'état du jeu seulement si nécessaire
+    // et éviter les nettoyages inutiles qui ralentissent l'interface
     if (pageName !== 'game' && pageName !== 'game3' && pageName !== 'matchmaking') {
-        console.log(`[UTILS] Nettoyage de l'état du jeu car navigation vers ${pageName}`);
-        cleanupGameState();
-    } else {
-        console.log(`[UTILS] Pas de nettoyage car navigation vers une page de jeu: ${pageName}`);
+        // Ne nettoyer que si on a vraiment besoin (éviter les appels inutiles)
+        if ((window as any).socket || (window as any).controlledPaddle || (window as any).isLocalGame) {
+            cleanupGameState();
+        }
     }
     
     hideAllPages();

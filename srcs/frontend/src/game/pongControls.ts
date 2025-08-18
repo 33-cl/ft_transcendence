@@ -77,14 +77,12 @@ function updatePaddleKeyBindings() {
     }
     else {
         // Mode online : chaque joueur utilise les flèches directionnelles
-        console.log('[FRONT] Mode ONLINE - Attribution des contrôles pour paddle:', paddle);
         
         if (paddle === 'A' || paddle === 'B' || paddle === 'C') {
             keyToMove = {
                 ArrowUp: { player: paddle, direction: 'up' },
                 ArrowDown: { player: paddle, direction: 'down' }
             };
-            console.log('[FRONT] Contrôles assignés pour paddle', paddle, ':', keyToMove);
         } else if (paddle === 'left') {
             keyToMove = {
                 ArrowUp: { player: 'left', direction: 'up' },
@@ -97,11 +95,8 @@ function updatePaddleKeyBindings() {
             };
         } else {
             keyToMove = {};
-            console.log('[FRONT] ERREUR: Paddle non reconnu:', paddle);
         }
     }
-    
-    console.log('[FRONT] Mapping final des touches:', keyToMove);
 }
 
 // Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)
