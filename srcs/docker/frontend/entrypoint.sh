@@ -12,3 +12,4 @@ fi
 
 # Lance nginx en mode non-démon
 nginx -g 'daemon off;'
+
