@@ -8,6 +8,7 @@ export interface Room
   players: string[];
   maxPlayers: number;
   gameState: GameState;
+  isLocalGame?: boolean; // Ajouté : flag pour indiquer si c'est un jeu local
   pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
   // Nouvelle structure : paddleInputs indexé par PaddleSide ('A', 'B', 'C')
   paddleInputs?: Record<PaddleSide, { up: boolean; down: boolean }>;

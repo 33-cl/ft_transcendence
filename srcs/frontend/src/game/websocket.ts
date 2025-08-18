@@ -4,37 +4,60 @@
 declare var io: any;
 
 // Connexion socket.io sur le même domaine
-const socket = io('', { transports: ["websocket"], secure: true }); // Connexion sur le même domaine
+const socket = io('', { transports: ["websocket"], secure: true });
 (window as any).socket = socket;
 
-// Quand la connexion avec le serveur est établie, ce code s'exécute
-socket.on("connect", () => {
-    console.log("[FRONT] Connecté au serveur WebSocket avec l'id:", socket.id);
-});
+// Variables pour éviter la duplication d'event listeners globaux
+let connectListenerSet = false;
+let roomJoinedListenerSet = false;
+let disconnectBasicListenerSet = false;
+let pongListenerSet = false;
 
-// --- Ajout : écoute l'attribution du paddle lors du joinRoom ---
-socket.on('roomJoined', (data: any) => {
-    if (data && data.paddle) {
-        window.controlledPaddle = data.paddle;
-        console.log('[FRONT] Vous contrôlez le paddle :', data.paddle);
-    } else {
-        window.controlledPaddle = null;
-        console.log('[FRONT] Pas de paddle attribué, controlledPaddle=null');
+// Fonction pour configurer les event listeners globaux (une seule fois)
+function setupGlobalSocketListeners() {
+    // Event listener connect
+    if (!connectListenerSet) {
+        socket.on("connect", () => {
+            // Connexion établie
+        });
+        connectListenerSet = true;
     }
-    // Stocker maxPlayers pour les contrôles
-    if (data && data.maxPlayers) {
-        (window as any).maxPlayers = data.maxPlayers;
+    
+    // Event listener roomJoined
+    if (!roomJoinedListenerSet) {
+    socket.on('roomJoined', (data: any) => {
+        if (data && data.paddle) {
+            window.controlledPaddle = data.paddle;
+        } else {
+            window.controlledPaddle = null;
+        }
+        if (data && data.maxPlayers) {
+            (window as any).maxPlayers = data.maxPlayers;
+        }
+        document.dispatchEvent(new Event('roomJoined'));
+    });
+        roomJoinedListenerSet = true;
     }
-    console.log('[FRONT] roomJoined event, controlledPaddle=', window.controlledPaddle);
-    document.dispatchEvent(new Event('roomJoined'));
-});
+    
+    // Event listener disconnect basique
+    if (!disconnectBasicListenerSet) {
+        socket.on('disconnect', () => {
+            window.controlledPaddle = null;
+        });
+        disconnectBasicListenerSet = true;
+    }
+    
+    // Event listener pong
+    if (!pongListenerSet) {
+        socket.on("pong", () => {
+            // Message reçu du serveur
+        });
+        pongListenerSet = true;
+    }
+}
 
-// Ajout : log lors de la déconnexion
-socket.on('disconnect', () => {
-    console.log('[FRONT] Déconnecté du serveur WebSocket');
-    window.controlledPaddle = null;
-    console.log('[FRONT] controlledPaddle reset à null (disconnect)');
-});
+// Configurer les listeners globaux au chargement
+setupGlobalSocketListeners();
 
 
 // Fonction pour envoyer un message "ping" au serveur
@@ -43,13 +66,6 @@ function sendPing()
 	// Envoie un message nommé "ping" avec un objet au serveur
     socket.emit("ping", { message: "Hello serveur!" });
 }
-
-// Écoute les messages nommés "pong" envoyés par le serveur
-socket.on("pong", (data: any) =>
-{
-	// Affiche le contenu du message reçu dans la console
-	console.log("Message reçu du serveur:", data);
-});
 
 // Rend la fonction sendPing accessible depuis la console du navigateur
 // Tu peux taper sendPing() dans la console pour tester l'envoi d'un message
@@ -85,11 +101,11 @@ let joinInProgress = false;
 // Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
 async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false)
 {
-    if (joinInProgress)
+    if (joinInProgress) {
         return;
+    }
     joinInProgress = true;
     
-    // Définir le mode local avant de créer/rejoindre la room
     (window as any).setIsLocalGame(isLocalGame);
     
     return new Promise<void>((resolve, reject) =>
@@ -117,10 +133,10 @@ window.joinOrCreateRoom = joinOrCreateRoom;
 // Fonction pour définir le mode local
 (window as any).setIsLocalGame = (isLocal: boolean) => {
     (window as any).isLocalGame = isLocal;
-    console.log('[FRONT] setIsLocalGame appelé:', isLocal);
 };
 
 import { initPongRenderer, draw } from './pongRenderer.js';
+import { cleanupGameState } from './gameCleanup.js';
 
 // Initialisation du renderer Pong au chargement de la page jeu
 function setupPongCanvas() {
@@ -132,24 +148,67 @@ document.addEventListener('componentsReady', () => {
     setTimeout(() => {
         const mapCanvas = document.getElementById('map');
         if (mapCanvas) {
-            console.log('[FRONT] Canvas trouvé, initialisation du renderer Pong');
             setupPongCanvas();
-        } else {
-            console.log('[FRONT] Canvas non trouvé, renderer non initialisé');
+            setupGameEventListeners();
         }
     }, 100);
 });
 
-socket.on('gameState', (state: any) => {
-    console.log('[FRONT] gameState reçu:', { 
-        paddles: state.paddles?.length || 'undefined', 
-        ballX: state.ballX, 
-        ballY: state.ballY,
-        running: state.running,
-        paddlesDetail: state.paddles 
-    });
-    draw(state);
-});
+// Variables pour éviter la duplication d'event listeners
+let gameStateListenerActive = false;
+let disconnectListenerActive = false;
+let leftRoomListenerActive = false;
+
+// Fonction pour nettoyer les event listeners du jeu
+function cleanupGameEventListeners() {
+    if (gameStateListenerActive) {
+        socket.removeAllListeners('gameState');
+        gameStateListenerActive = false;
+    }
+    if (disconnectListenerActive) {
+        socket.removeAllListeners('disconnect');
+        disconnectListenerActive = false;
+    }
+    if (leftRoomListenerActive) {
+        socket.removeAllListeners('leftRoom');
+        leftRoomListenerActive = false;
+    }
+}
+
+// Fonction pour configurer les event listeners du jeu (une seule fois)
+function setupGameEventListeners() {
+    // Nettoyer d'abord les anciens listeners
+    cleanupGameEventListeners();
+    
+    // Event listener pour les états de jeu
+    if (!gameStateListenerActive) {
+        socket.on('gameState', (state: any) => {
+            draw(state);
+        });
+        gameStateListenerActive = true;
+    }
+
+    // Nettoyage lors de la déconnexion d'une room
+    if (!disconnectListenerActive) {
+        socket.on('disconnect', () => {
+            cleanupGameState();
+            cleanupGameEventListeners();
+        });
+        disconnectListenerActive = true;
+    }
+
+    // Nettoyage lors de la sortie d'une room
+    if (!leftRoomListenerActive) {
+        socket.on('leftRoom', () => {
+            cleanupGameState();
+        });
+        leftRoomListenerActive = true;
+    }
+}
+
+// Exposer les fonctions de cleanup globalement
+(window as any).cleanupGameEventListeners = cleanupGameEventListeners;
+(window as any).setupGameEventListeners = setupGameEventListeners;
 
 // Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
 import './pongControls.js'; // Ajoute les contrôles clavier (modularité)
