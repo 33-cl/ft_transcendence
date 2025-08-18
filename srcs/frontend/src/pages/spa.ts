@@ -20,7 +20,7 @@ function initializeComponents(): void
     initPasswordMasking();
     
     // Affiche la page d'accueil au chargement
-    show('landing');
+    show('signIn');
 
     // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
     if ((window as any)._navigationListenerSet) {
@@ -73,6 +73,8 @@ function initializeComponents(): void
             load('signUp');
         if (target.id === 'profileBtn' || isProfileBtn)
             load('profile');
+        if (target.id === 'logOutBtn')
+            load('signIn');
 
         // MULTIPLAYER
         if (target.id === 'ranked1v1Btn')
@@ -186,7 +188,7 @@ window.addEventListener('popstate', function(event) {
         load(event.state.page, false);
     } else {
         // Page par défaut si aucun état n'est sauvegardé
-        load('landing', false);
+        load('signIn', false);
     }
 });
 
