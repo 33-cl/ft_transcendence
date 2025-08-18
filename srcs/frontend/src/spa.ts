@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, back2mainHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from './components/index.js';
 import { animateDots, switchTips } from './components/matchmaking.js';
 import { initPasswordMasking } from './utils/passwordMasking.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
@@ -15,7 +15,7 @@ declare global {
 const components = {
     landing: {id: 'landing', html: landingHTML},
     mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-	back2main: {id: 'back2main', html: back2mainHTML},
+	back2main: {id: 'back2main', html: goToMainHTML},
 	leaderboard: {id: 'leaderboard', html: leaderboardHTML},
 	friendList: {id: 'friendList', html: friendListHTML},
 	matchmaking: {id: 'matchmaking', html: matchmakingHTML},

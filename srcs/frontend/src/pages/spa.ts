@@ -46,7 +46,7 @@ function initializeComponents(): void
         }
         
         // NAVIGATION PRINCIPALE - avec nettoyage spécial pour retour au menu principal
-        if (target.id === 'mainMenuBtn' || target.id === 'back2main' || target.id === 'goToMain') {
+        if (target.id === 'mainMenuBtn' || target.id === 'bacVk2main' || target.id === 'goToMain') {
             // Nettoyage complet avant de retourner au menu principal
             // Cela résout le bug des paddles qui ne s'affichent plus au 2ème jeu local
             cleanupGameState();
@@ -61,11 +61,11 @@ function initializeComponents(): void
             await window.joinOrCreateRoom(2, true);
             // Ne pas appeler load('game') ici ! Le handler roomJoined s'en occupe
         }
-        if (target.id === 'local3p')
+        if (target.id === 'local4p')
         {
-            // Même principe pour le jeu 3 joueurs
-            await window.joinOrCreateRoom(3, true);
-            // Ne pas appeler load('game3') ici !
+            // Même principe pour le jeu 4 joueurs
+            await window.joinOrCreateRoom(4, true);
+            // Ne pas appeler load('game4') ici !
         }
         if (target.id === 'signInBtn')
             load('signIn');
@@ -157,8 +157,8 @@ function setupRoomJoinedHandler()
     {
         // Si mode local, on affiche directement la page de jeu
         if (window.isLocalGame) {
-            if (data.maxPlayers === 3) {
-                load('game3');
+            if (data.maxPlayers === 4) {
+                load('game4');
             } else {
                 load('game');
             }
@@ -171,8 +171,8 @@ function setupRoomJoinedHandler()
                 load('matchmaking');
             else
             {
-                if (data.maxPlayers === 3) {
-                    load('game3');
+                if (data.maxPlayers === 4) {
+                    load('game4');
                 } else {
                     load('game');
                 }
