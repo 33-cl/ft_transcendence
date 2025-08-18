@@ -8,7 +8,7 @@ export { contextMenuHTML } from './contextMenu.js';
 export { mainMenuHTML } from './mainMenu.js';
 export { matchmakingHTML } from './matchmaking.js'
 export { gameHTML } from './game.js';
-export { game3HTML } from './game3.js';
+export { game4HTML } from './game4.js';
 export { gameFinishedHTML } from './gameFinished.js';
 export { profileHTML } from './profile.js';
 export { goToProfileHTML } from './goToProfile.js';

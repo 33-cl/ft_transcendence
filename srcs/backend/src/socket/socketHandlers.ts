@@ -123,9 +123,9 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
 }
 
 // Ajoute le joueur à la room et le fait rejoindre côté socket.io
-// Ajout : attribution dynamique des paddles pour 1v1v1
+// Ajout : attribution dynamique des paddles pour 1v1v1v1
 function assignPaddleToPlayer(room: RoomType): PaddleSide | null {
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C'];
+    const paddleSides: PaddleSide[] = ['A', 'B', 'C', 'D'];
     for (const side of paddleSides.slice(0, room.maxPlayers)) {
         if (!room.paddleBySocket || !Object.values(room.paddleBySocket).includes(side)) {
             return side;
@@ -148,9 +148,9 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
     if (room.isLocalGame) {
         if (!room.paddleBySocket) room.paddleBySocket = {};
         if (room.maxPlayers === 2) {
-            room.paddleBySocket[socket.id] = ['A', 'C']; // A = gauche, C = droite (B reste pour horizontal en 1v1v1)
-        } else if (room.maxPlayers === 3) {
-            room.paddleBySocket[socket.id] = ['A', 'B', 'C'];
+            room.paddleBySocket[socket.id] = ['A', 'C']; // A = gauche, C = droite 
+        } else if (room.maxPlayers === 4) {
+            room.paddleBySocket[socket.id] = ['A', 'B', 'C', 'D'];
         }
         // Broadcast à toute la room l'état matchmaking
         if (io) {
@@ -174,7 +174,7 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
         }
         return;
     }
-    if (room.maxPlayers === 2 || room.maxPlayers === 3 || room.maxPlayers === 4)
+    if (room.maxPlayers === 2 || room.maxPlayers === 4)
 	{
 		if (!room.paddleBySocket) room.paddleBySocket = {};
 		// Purge les anciennes attributions de paddle (joueurs plus dans la room)
@@ -188,18 +188,14 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 		{
 			if (room.maxPlayers === 2) {
 				// En mode 1v1 (local et non-local) : toujours A=gauche et C=droite
-				// B reste réservé pour le paddle horizontal du mode 1v1v1
 				const paddles = ['A', 'C'];
 				const idx = room.players.indexOf(socket.id);
 				room.paddleBySocket[socket.id] = paddles[idx] || null;
-			} else if (room.maxPlayers === 3) {
-				// Attribution dynamique pour 1v1v1
+				console.log(`[BACKEND] Attribution paddle 1v1: socketId=${socket.id}, index=${idx}, paddle=${paddles[idx]}, isLocal=${room.isLocalGame}`);
+			} else if (room.maxPlayers === 4) {
+				// Attribution dynamique pour 1v1v1v1
 				const paddle = assignPaddleToPlayer(room);
 				room.paddleBySocket[socket.id] = paddle;
-			} else if (room.maxPlayers === 4) {
-				const paddles = ['left', 'right', 'top', 'bottom'];
-				const idx = room.players.indexOf(socket.id);
-				room.paddleBySocket[socket.id] = paddles[idx] || null;
 			}
 		}
 		// --- Broadcast à toute la room l'état matchmaking ---
@@ -362,10 +358,12 @@ function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean;
         // Mode 1v1 : utiliser A (gauche) et C (droite)
         inputs['A'] = { up: false, down: false };
         inputs['C'] = { up: false, down: false };
-    } else if (maxPlayers === 3) {
+    } else if (maxPlayers === 4) {
+        // Mode 1v1v1v1 : utiliser A, B, C et D
         inputs['A'] = { up: false, down: false };
         inputs['B'] = { up: false, down: false };
         inputs['C'] = { up: false, down: false };
+        inputs['D'] = { up: false, down: false };
     }
     
     return inputs;
@@ -389,8 +387,8 @@ function handleGameTick(io: any)
                 const input = typedRoom.paddleInputs[paddle.side];
                 if (!input) continue;
                 
-                // Paddle B horizontal : bouge sur l'axe X
-                if (paddle.side === 'B') {
+                // Paddle B et D horizontaux : bougent sur l'axe X
+                if (paddle.side === 'B' || paddle.side === 'D') {
                     if (input.up) // up = gauche pour paddle horizontal
                         paddle.x = Math.max(0, paddle.x - speed);
                     if (input.down) // down = droite pour paddle horizontal
@@ -442,7 +440,8 @@ function handleSocketMessage(socket: Socket, msg: string)
             else if (player === 'right') mappedPlayer = 'C';
             
             if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
-                if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
+                console.log(`[BACKEND] Paddle autorisé, traitement de ${mappedPlayer} ${direction}`);
+                if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'D' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
                     room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
                     if (message.type === 'keydown') {
                         try {
@@ -455,7 +454,7 @@ function handleSocketMessage(socket: Socket, msg: string)
             }
         } else {
             if (player !== allowedPaddle) return;
-            if ((player === 'A' || player === 'B' || player === 'C') && (direction === 'up' || direction === 'down')) {
+            if ((player === 'A' || player === 'B' || player === 'C' || player === 'D') && (direction === 'up' || direction === 'down')) {
                 room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
                 if (message.type === 'keydown') {
                     room.pongGame.movePaddle(player, direction);
