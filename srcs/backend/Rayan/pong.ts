@@ -257,13 +257,12 @@ export class PongGame {
         this.state.ballX = this.state.canvasWidth / 2;
         this.state.ballY = this.state.canvasHeight / 2;
         
-        // Restaurer les vitesses d'origine (pas de multiplication pour éviter l'accélération)
-        const baseSpeedX = 4; // Vitesse horizontale d'origine
-        const baseSpeedY = 1; // Vitesse verticale d'origine
+        // Vitesse équilibrée pour une trajectoire linéaire (speedX = speedY)
+        const baseSpeed = 3; // Vitesse uniforme pour X et Y
         
-        // Direction aléatoire pour X et Y
-        this.state.ballSpeedX = baseSpeedX * (Math.random() > 0.5 ? 1 : -1);
-        this.state.ballSpeedY = baseSpeedY * (Math.random() > 0.5 ? 1 : -1);
+        // Direction aléatoire pour X et Y (trajectoire diagonale équilibrée)
+        this.state.ballSpeedX = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+        this.state.ballSpeedY = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
         
         // Reset timer only on first launch, not on subsequent ball resets
         if (this.isFirstLaunch) {
