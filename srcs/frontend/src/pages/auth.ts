@@ -96,7 +96,7 @@ document.addEventListener('componentsReady', () => {
 
 document.addEventListener('componentsReady', () => {
     // SignIn
-    const btnIn = document.getElementById('signIn');
+    const btnIn = document.getElementById('signInButton');
     if (!btnIn || (btnIn as any)._bound) return;
     (btnIn as any)._bound = true;
 
@@ -107,7 +107,7 @@ document.addEventListener('componentsReady', () => {
             el = document.createElement('div');
             el.id = 'signInMsg';
             el.style.marginTop = '8px';
-            const container = (document.getElementById('signIn') as HTMLElement)?.parentElement;
+            const container = (document.getElementById('signInButton') as HTMLElement)?.parentElement;
             container?.appendChild(el);
         }
         return el!;

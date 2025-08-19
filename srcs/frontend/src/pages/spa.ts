@@ -1,4 +1,3 @@
-import { initPasswordMasking } from '../utils/passwordMasking.js';
 import { show, load , hideAllPages, hide } from './utils.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
@@ -16,8 +15,7 @@ declare global {
 
 function initializeComponents(): void
 {
-    // Initialisation du masquage des mots de passe avec des astérisques
-    initPasswordMasking();
+    // Password masking removed - using simple validation on submit instead
     
     // Affiche la page d'accueil au chargement
     show('signIn');
