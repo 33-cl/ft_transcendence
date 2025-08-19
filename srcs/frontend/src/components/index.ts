@@ -12,3 +12,4 @@ export { game4HTML } from './game4.js';
 export { gameFinishedHTML } from './gameFinished.js';
 export { profileHTML } from './profile.js';
 export { goToProfileHTML } from './goToProfile.js';
+export { settingsHTML } from './settings.js';

@@ -34,11 +34,16 @@ function initializeComponents(): void
         // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
         let currentElement: HTMLElement | null = target;
         let isProfileBtn = false;
+        let isSettingsBtn = false;
         
-        while (currentElement && !isProfileBtn) {
+        while (currentElement && !isProfileBtn && !isSettingsBtn) {
             if (currentElement.id === 'profileBtn') {
                 isProfileBtn = true;
-            } else {
+            }
+            else if (currentElement.id === 'settingsBtn') {
+                isSettingsBtn = true;
+            } 
+            else {
                 currentElement = currentElement.parentElement;
             }
         }
@@ -52,6 +57,10 @@ function initializeComponents(): void
         }
         if (target.id === 'goToProfile')
             load('profile');
+        if (target.id === 'settingsBtn' || isSettingsBtn)
+        {
+            load('settings');
+        }
         if (target.id === 'local2p')
         {
             // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
