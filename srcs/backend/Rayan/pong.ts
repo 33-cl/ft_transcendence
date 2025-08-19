@@ -162,32 +162,32 @@ export class PongGame {
             }
 
             // --- Buts (attribution des points) ---
-            // Si la balle sort par le côté A (gauche) - joueur A éliminé
-            if (this.state.ballX < 0) {
+            // Si la balle sort complètement par le côté A (gauche) - joueur A éliminé
+            if (this.state.ballX + ballRadius < 0) {
                 paddles[1].score++; // B gagne
                 paddles[2].score++; // C gagne
                 paddles[3].score++; // D gagne
                 console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
                 this.resetBall();
             }
-            // Si la balle sort par le côté C (droite) - joueur C éliminé
-            if (this.state.ballX > canvasWidth) {
+            // Si la balle sort complètement par le côté C (droite) - joueur C éliminé
+            if (this.state.ballX - ballRadius > canvasWidth) {
                 paddles[0].score++; // A gagne
                 paddles[1].score++; // B gagne
                 paddles[3].score++; // D gagne
                 console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
                 this.resetBall();
             }
-            // Si la balle sort par le bas - joueur B éliminé
-            if (this.state.ballY > canvasHeight) {
+            // Si la balle sort complètement par le bas - joueur B éliminé
+            if (this.state.ballY - ballRadius > canvasHeight) {
                 paddles[0].score++; // A gagne
                 paddles[2].score++; // C gagne
                 paddles[3].score++; // D gagne
                 console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
                 this.resetBall();
             }
-            // Si la balle sort par le haut - joueur D éliminé
-            if (this.state.ballY < 0) {
+            // Si la balle sort complètement par le haut - joueur D éliminé
+            if (this.state.ballY + ballRadius < 0) {
                 paddles[0].score++; // A gagne
                 paddles[1].score++; // B gagne
                 paddles[2].score++; // C gagne
@@ -235,13 +235,13 @@ export class PongGame {
                 this.state.ballSpeedX *= -1;
                 this.state.ballX = paddles[1].x - ballRadius;
             }
-            // But à gauche
-            if (this.state.ballX - this.state.ballRadius < 0) {
+            // But à gauche - balle sort complètement
+            if (this.state.ballX + ballRadius < 0) {
                 paddles[1].score++;
                 this.resetBall();
             }
-            // But à droite
-            if (this.state.ballX + this.state.ballRadius > canvasWidth) {
+            // But à droite - balle sort complètement
+            if (this.state.ballX - ballRadius > canvasWidth) {
                 paddles[0].score++;
                 this.resetBall();
             }
