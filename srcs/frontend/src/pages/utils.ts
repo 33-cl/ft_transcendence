@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML } from '../components/index.js';
 import { animateDots, switchTips } from '../components/matchmaking.js';
 
 const components = {
@@ -16,6 +16,8 @@ const components = {
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
+    settings: {id: 'settings', html: settingsHTML},
+
 };
 
 function show(pageName: keyof typeof components)
@@ -50,6 +52,8 @@ function load(pageName: string, updateHistory: boolean = true)
         show('leaderboard');
         show('goToProfile');
     }
+    else if (pageName === 'settings')
+        show('settings');
     else if (pageName === 'signIn')
     {
         show('signIn');
