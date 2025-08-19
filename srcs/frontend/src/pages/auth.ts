@@ -77,11 +77,22 @@ document.addEventListener('componentsReady', () => {
             const res = await fetch('/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, username, password })
             });
+            
             if (res.status === 201) {
-                msg.textContent = 'Registration successful. You can sign in.';
+                const data = await res.json().catch(() => ({} as any));
+                msg.textContent = 'Account created and signed in successfully!';
                 msg.style.color = 'lightgreen';
+                (window as any).currentUser = data?.user || null;
+                
+                // Vérifier la session pour s'assurer que tout est correct
+                try { 
+                    await fetch('/auth/me', { credentials: 'include' }); 
+                } catch {}
+                
+                load('mainMenu');
             } else {
                 const data = await res.json().catch(() => ({} as any));
                 msg.textContent = data?.error || 'Registration error.';
