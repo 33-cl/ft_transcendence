@@ -157,7 +157,7 @@
     }
 
    .settingsBtn {
-        @apply absolute top-[10px] right-[10px] bg-none border-none cursor-pointer; /* Settings button */
+        @apply absolute top-[10px] right-[10px] bg-none border-none cursor-pointer !important; /* Settings button */
    }
 
    #matchmaking-page {
