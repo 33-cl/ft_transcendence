@@ -92,6 +92,21 @@ document.addEventListener('componentsReady', () => {
             msg.style.color = 'orange';
         }
     });
+
+    // Ajouter event listeners pour la touche Entrée sur les champs SignUp
+    const signUpInputs = ['username', 'email', 'password', 'confirmPassword'];
+    signUpInputs.forEach(inputId => {
+        const input = getEl(inputId);
+        if (input && !(input as any)._enterBound) {
+            (input as any)._enterBound = true;
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnUp.click();
+                }
+            });
+        }
+    });
 });
 
 document.addEventListener('componentsReady', () => {
@@ -145,6 +160,21 @@ document.addEventListener('componentsReady', () => {
         } catch (e) {
             msg.textContent = 'Cannot reach server.';
             msg.style.color = 'orange';
+        }
+    });
+
+    // Ajouter event listeners pour la touche Entrée sur les champs SignIn
+    const signInInputs = ['username', 'password'];
+    signInInputs.forEach(inputId => {
+        const input = getEl(inputId);
+        if (input && !(input as any)._enterBound) {
+            (input as any)._enterBound = true;
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnIn.click();
+                }
+            });
         }
     });
 
