@@ -94,8 +94,8 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         ballX:          canvasWidth / 2,
         ballY:          canvasHeight / 2,
         ballRadius:     20,
-        ballSpeedX:     3, // Vitesse équilibrée pour trajectoire linéaire
-        ballSpeedY:     3, // Vitesse équilibrée pour trajectoire linéaire
+        ballSpeedX:     1,
+        ballSpeedY:     1,
         win:            4,
         running:        false,
         ballCountdown:  3, // Délai de 3 secondes avant que la balle commence
