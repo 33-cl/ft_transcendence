@@ -112,53 +112,95 @@ export class PongGame {
             const { canvasWidth, canvasHeight, ballRadius } = this.state;
             const paddles = this.state.paddles;
 
-            // --- Collisions avec les paddles (corrigées pour éviter le passage aux coins) ---
-            // Paddle A (gauche, vertical) - vérifier collision depuis la droite
-            if (
-                this.state.ballX - ballRadius <= paddles[0].x + paddles[0].width &&
-                this.state.ballX + ballRadius >= paddles[0].x &&
-                this.state.ballY + ballRadius >= paddles[0].y &&
-                this.state.ballY - ballRadius <= paddles[0].y + paddles[0].height &&
-                this.state.ballSpeedX < 0  // Balle se dirige vers la gauche
-            ) {
-                this.state.ballSpeedX *= -1;
-                this.state.ballX = paddles[0].x + paddles[0].width + ballRadius;
-            }
-
-            // Paddle B (bas, horizontal) - vérifier collision depuis le haut
-            if (
-                this.state.ballY + ballRadius >= paddles[1].y &&
-                this.state.ballY - ballRadius <= paddles[1].y + paddles[1].height &&
-                this.state.ballX + ballRadius >= paddles[1].x &&
-                this.state.ballX - ballRadius <= paddles[1].x + paddles[1].width &&
-                this.state.ballSpeedY > 0  // Balle se dirige vers le bas
-            ) {
-                this.state.ballSpeedY *= -1;
-                this.state.ballY = paddles[1].y - ballRadius;
-            }
-
-            // Paddle C (droite, vertical) - vérifier collision depuis la gauche
-            if (
-                this.state.ballX + ballRadius >= paddles[2].x &&
-                this.state.ballX - ballRadius <= paddles[2].x + paddles[2].width &&
-                this.state.ballY + ballRadius >= paddles[2].y &&
-                this.state.ballY - ballRadius <= paddles[2].y + paddles[2].height &&
-                this.state.ballSpeedX > 0  // Balle se dirige vers la droite
-            ) {
-                this.state.ballSpeedX *= -1;
-                this.state.ballX = paddles[2].x - ballRadius;
-            }
-
-            // Paddle D (haut, horizontal) - vérifier collision depuis le bas
-            if (
-                this.state.ballY - ballRadius <= paddles[3].y + paddles[3].height &&
-                this.state.ballY + ballRadius >= paddles[3].y &&
-                this.state.ballX + ballRadius >= paddles[3].x &&
-                this.state.ballX - ballRadius <= paddles[3].x + paddles[3].width &&
-                this.state.ballSpeedY < 0  // Balle se dirige vers le haut
-            ) {
-                this.state.ballSpeedY *= -1;
-                this.state.ballY = paddles[3].y + paddles[3].height + ballRadius;
+            // --- Collisions avec les paddles (logique améliorée pour bords et coins) ---
+            
+            // Fonction helper pour détecter collision précise avec un paddle rectangulaire
+            const checkPaddleCollision = (paddle: any, paddleIndex: number) => {
+                const ballCenterX = this.state.ballX;
+                const ballCenterY = this.state.ballY;
+                const ballLeft = ballCenterX - ballRadius;
+                const ballRight = ballCenterX + ballRadius;
+                const ballTop = ballCenterY - ballRadius;
+                const ballBottom = ballCenterY + ballRadius;
+                
+                const paddleLeft = paddle.x;
+                const paddleRight = paddle.x + paddle.width;
+                const paddleTop = paddle.y;
+                const paddleBottom = paddle.y + paddle.height;
+                
+                // Vérifier si la balle intersecte avec le rectangle du paddle
+                const intersects = ballRight > paddleLeft && 
+                                 ballLeft < paddleRight && 
+                                 ballBottom > paddleTop && 
+                                 ballTop < paddleBottom;
+                
+                if (!intersects) return false;
+                
+                // Calculer la distance du centre de la balle aux bords du paddle
+                const distToLeft = Math.abs(ballCenterX - paddleLeft);
+                const distToRight = Math.abs(ballCenterX - paddleRight);
+                const distToTop = Math.abs(ballCenterY - paddleTop);
+                const distToBottom = Math.abs(ballCenterY - paddleBottom);
+                
+                // Déterminer quelle face est la plus proche du centre de la balle
+                const minDistX = Math.min(distToLeft, distToRight);
+                const minDistY = Math.min(distToTop, distToBottom);
+                
+                // Seuil de tolérance pour éviter les rebonds fantômes aux coins
+                const tolerance = ballRadius * 0.1;
+                
+                // Collision principalement horizontale (faces gauche/droite)
+                if (minDistX < minDistY - tolerance) {
+                    if (paddleIndex === 0 && ballCenterX > paddleLeft) { // Paddle A (gauche) - collision face droite
+                        if (this.state.ballSpeedX < 0) { // Balle va vers la gauche
+                            this.state.ballSpeedX = Math.abs(this.state.ballSpeedX);
+                            this.state.ballX = paddleRight + ballRadius;
+                        }
+                    } else if (paddleIndex === 2 && ballCenterX < paddleRight) { // Paddle C (droite) - collision face gauche
+                        if (this.state.ballSpeedX > 0) { // Balle va vers la droite
+                            this.state.ballSpeedX = -Math.abs(this.state.ballSpeedX);
+                            this.state.ballX = paddleLeft - ballRadius;
+                        }
+                    }
+                }
+                // Collision principalement verticale (faces haut/bas)
+                else if (minDistY < minDistX - tolerance) {
+                    if (paddleIndex === 1 && ballCenterY < paddleBottom) { // Paddle B (bas) - collision face haut
+                        if (this.state.ballSpeedY > 0) { // Balle va vers le bas
+                            this.state.ballSpeedY = -Math.abs(this.state.ballSpeedY);
+                            this.state.ballY = paddleTop - ballRadius;
+                        }
+                    } else if (paddleIndex === 3 && ballCenterY > paddleTop) { // Paddle D (haut) - collision face bas
+                        if (this.state.ballSpeedY < 0) { // Balle va vers le haut
+                            this.state.ballSpeedY = Math.abs(this.state.ballSpeedY);
+                            this.state.ballY = paddleBottom + ballRadius;
+                        }
+                    }
+                }
+                // Collision aux coins - rebond selon la direction de la balle
+                else {
+                    // Pour les coins, on regarde la direction de la balle pour décider du rebond
+                    if (paddleIndex === 0 && this.state.ballSpeedX < 0) { // Paddle A, balle vers gauche
+                        this.state.ballSpeedX = Math.abs(this.state.ballSpeedX);
+                        this.state.ballX = paddleRight + ballRadius;
+                    } else if (paddleIndex === 2 && this.state.ballSpeedX > 0) { // Paddle C, balle vers droite
+                        this.state.ballSpeedX = -Math.abs(this.state.ballSpeedX);
+                        this.state.ballX = paddleLeft - ballRadius;
+                    } else if (paddleIndex === 1 && this.state.ballSpeedY > 0) { // Paddle B, balle vers bas
+                        this.state.ballSpeedY = -Math.abs(this.state.ballSpeedY);
+                        this.state.ballY = paddleTop - ballRadius;
+                    } else if (paddleIndex === 3 && this.state.ballSpeedY < 0) { // Paddle D, balle vers haut
+                        this.state.ballSpeedY = Math.abs(this.state.ballSpeedY);
+                        this.state.ballY = paddleBottom + ballRadius;
+                    }
+                }
+                
+                return true;
+            };
+            
+            // Vérifier les collisions pour chaque paddle
+            for (let i = 0; i < paddles.length; i++) {
+                checkPaddleCollision(paddles[i], i);
             }
 
             // --- Buts (attribution des points) ---
@@ -208,33 +250,60 @@ export class PongGame {
         if (this.state.paddles && this.state.paddles.length === 2) {
             const { canvasWidth, canvasHeight, paddleHeight, paddleWidth, paddleMargin, ballRadius } = this.state;
             const paddles = this.state.paddles;
-            // Collisions haut/bas
-            if (this.state.ballY < ballRadius || this.state.ballY > canvasHeight - ballRadius) {
-                this.state.ballSpeedY *= -1;
+            
+            // Collisions haut/bas avec les bords du terrain
+            if (this.state.ballY - ballRadius <= 0) {
+                this.state.ballSpeedY = Math.abs(this.state.ballSpeedY);
+                this.state.ballY = ballRadius;
             }
-            // Paddle gauche (paddles[0]) - vérifier collision depuis la droite
-            if (
-                this.state.ballX - ballRadius <= paddles[0].x + paddles[0].width &&
-                this.state.ballX + ballRadius >= paddles[0].x &&
-                this.state.ballY + ballRadius >= paddles[0].y &&
-                this.state.ballY - ballRadius <= paddles[0].y + paddles[0].height &&
-                this.state.ballSpeedX < 0  // Balle se dirige vers la gauche
-            ) {
-                this.state.ballSpeedX *= -1;
-                this.state.ballX = paddles[0].x + paddles[0].width + ballRadius;
+            if (this.state.ballY + ballRadius >= canvasHeight) {
+                this.state.ballSpeedY = -Math.abs(this.state.ballSpeedY);
+                this.state.ballY = canvasHeight - ballRadius;
             }
             
-            // Paddle droit (paddles[1]) - vérifier collision depuis la gauche
-            if (
-                this.state.ballX + ballRadius >= paddles[1].x &&
-                this.state.ballX - ballRadius <= paddles[1].x + paddles[1].width &&
-                this.state.ballY + ballRadius >= paddles[1].y &&
-                this.state.ballY - ballRadius <= paddles[1].y + paddles[1].height &&
-                this.state.ballSpeedX > 0  // Balle se dirige vers la droite
-            ) {
-                this.state.ballSpeedX *= -1;
-                this.state.ballX = paddles[1].x - ballRadius;
-            }
+            // Fonction helper pour collision précise avec les paddles verticaux
+            const checkPaddleCollision1v1 = (paddle: any, isLeftPaddle: boolean) => {
+                const ballCenterX = this.state.ballX;
+                const ballCenterY = this.state.ballY;
+                const ballLeft = ballCenterX - ballRadius;
+                const ballRight = ballCenterX + ballRadius;
+                const ballTop = ballCenterY - ballRadius;
+                const ballBottom = ballCenterY + ballRadius;
+                
+                const paddleLeft = paddle.x;
+                const paddleRight = paddle.x + paddle.width;
+                const paddleTop = paddle.y;
+                const paddleBottom = paddle.y + paddle.height;
+                
+                // Vérifier si la balle intersecte avec le rectangle du paddle
+                const intersects = ballRight > paddleLeft && 
+                                 ballLeft < paddleRight && 
+                                 ballBottom > paddleTop && 
+                                 ballTop < paddleBottom;
+                
+                if (!intersects) return false;
+                
+                // Vérifier la direction de la balle pour éviter les rebonds fantômes
+                if (isLeftPaddle && this.state.ballSpeedX > 0) return false; // Balle s'éloigne du paddle gauche
+                if (!isLeftPaddle && this.state.ballSpeedX < 0) return false; // Balle s'éloigne du paddle droit
+                
+                // Pour les paddles verticaux, on rebondit toujours sur l'axe X
+                if (isLeftPaddle) { // Paddle gauche
+                    this.state.ballSpeedX = Math.abs(this.state.ballSpeedX);
+                    this.state.ballX = paddleRight + ballRadius;
+                } else { // Paddle droit
+                    this.state.ballSpeedX = -Math.abs(this.state.ballSpeedX);
+                    this.state.ballX = paddleLeft - ballRadius;
+                }
+                
+                return true;
+            };
+            
+            // Vérifier collision avec paddle gauche (index 0)
+            checkPaddleCollision1v1(paddles[0], true);
+            
+            // Vérifier collision avec paddle droit (index 1)
+            checkPaddleCollision1v1(paddles[1], false);
             // But à gauche - balle sort complètement
             if (this.state.ballX + ballRadius < 0) {
                 paddles[1].score++;
