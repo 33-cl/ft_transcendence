@@ -5,7 +5,7 @@ const components = {
     landing: {id: 'landing', html: landingHTML},
     mainMenu: {id: 'mainMenu', html: mainMenuHTML},
     goToMain: {id: 'goToMain', html: goToMainHTML},
-    goToProfile: {id: 'goToProfile', html: goToProfileHTML},
+    goToProfile: {id: 'goToProfile', html: goToProfileHTML}, // stocke la fonction
     leaderboard: {id: 'leaderboard', html: leaderboardHTML},
     friendList: {id: 'friendList', html: friendListHTML},
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
@@ -23,8 +23,12 @@ function show(pageName: keyof typeof components)
     // Show the requested component
     const component = components[pageName];
     const element = document.getElementById(component.id);
-    if (element)
-        element.innerHTML = component.html;
+    if (element) {
+        if (typeof component.html === 'function')
+            element.innerHTML = component.html();
+        else
+            element.innerHTML = component.html;
+    }
 
     // Notifies each element is ready
     setTimeout(() =>

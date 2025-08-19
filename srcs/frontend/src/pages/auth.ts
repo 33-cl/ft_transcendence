@@ -77,11 +77,22 @@ document.addEventListener('componentsReady', () => {
             const res = await fetch('/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, username, password })
             });
+            
             if (res.status === 201) {
-                msg.textContent = 'Registration successful. You can sign in.';
+                const data = await res.json().catch(() => ({} as any));
+                msg.textContent = 'Account created and signed in successfully!';
                 msg.style.color = 'lightgreen';
+                (window as any).currentUser = data?.user || null;
+                
+                // Vérifier la session pour s'assurer que tout est correct
+                try { 
+                    await fetch('/auth/me', { credentials: 'include' }); 
+                } catch {}
+                
+                load('mainMenu');
             } else {
                 const data = await res.json().catch(() => ({} as any));
                 msg.textContent = data?.error || 'Registration error.';
@@ -92,11 +103,26 @@ document.addEventListener('componentsReady', () => {
             msg.style.color = 'orange';
         }
     });
+
+    // Ajouter event listeners pour la touche Entrée sur les champs SignUp
+    const signUpInputs = ['username', 'email', 'password', 'confirmPassword'];
+    signUpInputs.forEach(inputId => {
+        const input = getEl(inputId);
+        if (input && !(input as any)._enterBound) {
+            (input as any)._enterBound = true;
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnUp.click();
+                }
+            });
+        }
+    });
 });
 
 document.addEventListener('componentsReady', () => {
     // SignIn
-    const btnIn = document.getElementById('signIn');
+    const btnIn = document.getElementById('signInButton');
     if (!btnIn || (btnIn as any)._bound) return;
     (btnIn as any)._bound = true;
 
@@ -107,7 +133,7 @@ document.addEventListener('componentsReady', () => {
             el = document.createElement('div');
             el.id = 'signInMsg';
             el.style.marginTop = '8px';
-            const container = (document.getElementById('signIn') as HTMLElement)?.parentElement;
+            const container = (document.getElementById('signInButton') as HTMLElement)?.parentElement;
             container?.appendChild(el);
         }
         return el!;
@@ -145,6 +171,21 @@ document.addEventListener('componentsReady', () => {
         } catch (e) {
             msg.textContent = 'Cannot reach server.';
             msg.style.color = 'orange';
+        }
+    });
+
+    // Ajouter event listeners pour la touche Entrée sur les champs SignIn
+    const signInInputs = ['username', 'password'];
+    signInInputs.forEach(inputId => {
+        const input = getEl(inputId);
+        if (input && !(input as any)._enterBound) {
+            (input as any)._enterBound = true;
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnIn.click();
+                }
+            });
         }
     });
 

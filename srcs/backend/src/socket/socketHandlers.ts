@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/18 15:25:12 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/08/18 19:00:52 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -447,7 +447,7 @@ function handleSocketMessage(socket: Socket, msg: string)
                         try {
                             room.pongGame.movePaddle(mappedPlayer, direction);
                         } catch (error) {
-                            console.error(`[BACKEND] Erreur dans movePaddle:`, error);
+                            // Log supprimé pour améliorer les performances
                         }
                     }
                 }
@@ -479,7 +479,7 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
 // Fonction principale qui enregistre tous les handlers socket.io
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
-    // Réduction du tick rate de 120 FPS à 60 FPS pour améliorer les performances
+    // Tick rate à 60 FPS pour un gameplay fluide
     setInterval(() =>
 	{
         handleGameTick(io);
