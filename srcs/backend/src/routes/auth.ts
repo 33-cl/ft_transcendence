@@ -131,6 +131,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const info = stmt.run(email.trim().toLowerCase(), username.trim(), password_hash, null);
 
       const created = db.prepare('SELECT id, email, username, avatar_url, created_at, updated_at FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
+      
+      // Créer automatiquement une session pour l'utilisateur nouvellement inscrit
+      const token = randomBytes(32).toString('hex');
+      const maxAge = 60 * 60 * 24 * 7; // 7 jours
+      const expiresAt = fmtSqliteDate(new Date(Date.now() + maxAge * 1000));
+      db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
+        .run(token, created.id, expiresAt);
+
+      setSessionCookie(reply, token, maxAge);
+
       return reply.code(201).send({ user: created });
     } catch (e: any) {
       const msg = typeof e?.message === 'string' ? e.message : '';
