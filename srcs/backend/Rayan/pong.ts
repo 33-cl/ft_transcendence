@@ -14,20 +14,23 @@ export class PongGame {
         this.state = createInitialGameState(numPlayers);
     }
 
-    start() {
+    start() 
+    {
         if (this.interval) return;
         this.state.running = true;
         this.ballStartTime = Date.now(); // Enregistre le moment où le jeu commence
-        this.interval = setInterval(() => this.update(), 1000 / 120); // 60 FPS
+        this.interval = setInterval(() => this.update(), 1000 / 60); // 60 FPS
     }
 
-    stop() {
+    stop() 
+    {
         if (this.interval) clearInterval(this.interval);
         this.interval = null;
         this.state.running = false;
     }
 
-    movePaddle(player: 'left' | 'right' | 'A' | 'B' | 'C' | 'D', direction: 'up' | 'down') {
+    movePaddle(player: 'left' | 'right' | 'A' | 'B' | 'C' | 'D', direction: 'up' | 'down') 
+    {
         console.log('[BACKEND] movePaddle called:', player, direction, 'paddles.length=', this.state.paddles?.length);
         const speed = this.state.paddleSpeed;
         // Mode 1v1 : paddles[0] = A (gauche), paddles[1] = C (droite)
@@ -52,24 +55,26 @@ export class PongGame {
             
             console.log(`[BACKEND] Mode 4 joueurs - player=${player}, idx=${idx}, paddles count=${this.state.paddles.length}`);
             
-            if (idx !== -1) {
+            if (idx !== -1) 
+            {
                 // Paddle A et C : verticaux (y bouge)
-                if (player === 'A' || player === 'C') {
+                if (player === 'A' || player === 'C') 
+                {
                     const oldY = this.state.paddles[idx].y;
                     if (direction === 'up') this.state.paddles[idx].y = Math.max(0, this.state.paddles[idx].y - speed);
                     else this.state.paddles[idx].y = Math.min(this.state.canvasHeight - this.state.paddles[idx].height, this.state.paddles[idx].y + speed);
                     console.log(`[BACKEND] Paddle ${player} (vertical) moved from y=${oldY} to y=${this.state.paddles[idx].y} (direction=${direction})`);
                 }
                 // Paddle B et D : horizontaux (x bouge)
-                else if (player === 'B' || player === 'D') {
+                else if (player === 'B' || player === 'D') 
+                {
                     const minX = 0;
                     const maxX = this.state.canvasWidth - this.state.paddles[idx].width;
                     if (direction === 'up') this.state.paddles[idx].x = Math.max(minX, this.state.paddles[idx].x - speed); // left
                     else this.state.paddles[idx].x = Math.min(maxX, this.state.paddles[idx].x + speed); // right
                 }
-            } else {
+            } else
                 console.log(`[BACKEND] ERREUR: Paddle ${player} non trouvé en mode 4 joueurs !`);
-            }
         }
     }
 
@@ -99,59 +104,61 @@ export class PongGame {
         }
 
         // Les collisions et buts ne se déclenchent que si la balle bouge
-        if (this.isFirstLaunch && !ballShouldMove) {
+        if (this.isFirstLaunch && !ballShouldMove)
             return; // Sortir de la fonction si la balle ne doit pas encore bouger
-        }
 
         // Mode 1v1v1v1 (carré, 4 paddles)
         if (this.state.paddles && this.state.paddles.length === 4) {
             const { canvasWidth, canvasHeight, ballRadius } = this.state;
             const paddles = this.state.paddles;
 
-            // --- Collisions avec les paddles ---
-            // Paddle A (gauche, vertical)
+            // --- Collisions avec les paddles (corrigées pour éviter le passage aux coins) ---
+            // Paddle A (gauche, vertical) - vérifier collision depuis la droite
             if (
                 this.state.ballX - ballRadius <= paddles[0].x + paddles[0].width &&
-                this.state.ballX > paddles[0].x &&
-                this.state.ballY >= paddles[0].y &&
-                this.state.ballY <= paddles[0].y + paddles[0].height
+                this.state.ballX + ballRadius >= paddles[0].x &&
+                this.state.ballY + ballRadius >= paddles[0].y &&
+                this.state.ballY - ballRadius <= paddles[0].y + paddles[0].height &&
+                this.state.ballSpeedX < 0  // Balle se dirige vers la gauche
             ) {
                 this.state.ballSpeedX *= -1;
                 this.state.ballX = paddles[0].x + paddles[0].width + ballRadius;
             }
 
-            // Paddle B (bas, horizontal)
+            // Paddle B (bas, horizontal) - vérifier collision depuis le haut
             if (
                 this.state.ballY + ballRadius >= paddles[1].y &&
-                this.state.ballY < paddles[1].y + paddles[1].height &&
-                this.state.ballX >= paddles[1].x &&
-                this.state.ballX <= paddles[1].x + paddles[1].width
+                this.state.ballY - ballRadius <= paddles[1].y + paddles[1].height &&
+                this.state.ballX + ballRadius >= paddles[1].x &&
+                this.state.ballX - ballRadius <= paddles[1].x + paddles[1].width &&
+                this.state.ballSpeedY > 0  // Balle se dirige vers le bas
             ) {
                 this.state.ballSpeedY *= -1;
                 this.state.ballY = paddles[1].y - ballRadius;
             }
 
-            // Paddle C (droite, vertical)
+            // Paddle C (droite, vertical) - vérifier collision depuis la gauche
             if (
                 this.state.ballX + ballRadius >= paddles[2].x &&
-                this.state.ballX < paddles[2].x + paddles[2].width &&
-                this.state.ballY >= paddles[2].y &&
-                this.state.ballY <= paddles[2].y + paddles[2].height
+                this.state.ballX - ballRadius <= paddles[2].x + paddles[2].width &&
+                this.state.ballY + ballRadius >= paddles[2].y &&
+                this.state.ballY - ballRadius <= paddles[2].y + paddles[2].height &&
+                this.state.ballSpeedX > 0  // Balle se dirige vers la droite
             ) {
                 this.state.ballSpeedX *= -1;
                 this.state.ballX = paddles[2].x - ballRadius;
             }
 
-            // Paddle D (haut, horizontal)
+            // Paddle D (haut, horizontal) - vérifier collision depuis le bas
             if (
                 this.state.ballY - ballRadius <= paddles[3].y + paddles[3].height &&
-                this.state.ballY > paddles[3].y &&
-                this.state.ballX >= paddles[3].x &&
-                this.state.ballX <= paddles[3].x + paddles[3].width
+                this.state.ballY + ballRadius >= paddles[3].y &&
+                this.state.ballX + ballRadius >= paddles[3].x &&
+                this.state.ballX - ballRadius <= paddles[3].x + paddles[3].width &&
+                this.state.ballSpeedY < 0  // Balle se dirige vers le haut
             ) {
                 this.state.ballSpeedY *= -1;
                 this.state.ballY = paddles[3].y + paddles[3].height + ballRadius;
-                console.log(`[BACKEND] Collision avec paddle D ! ballY=${this.state.ballY}, paddleD.y=${paddles[3].y}, paddleD.height=${paddles[3].height}, paddleD.width=${paddles[3].width}`);
             }
 
             // --- Buts (attribution des points) ---
@@ -205,20 +212,25 @@ export class PongGame {
             if (this.state.ballY < ballRadius || this.state.ballY > canvasHeight - ballRadius) {
                 this.state.ballSpeedY *= -1;
             }
-            // Paddle gauche (paddles[0])
+            // Paddle gauche (paddles[0]) - vérifier collision depuis la droite
             if (
-                this.state.ballX - ballRadius < paddles[0].x + paddles[0].width &&
-                this.state.ballY > paddles[0].y &&
-                this.state.ballY < paddles[0].y + paddles[0].height
+                this.state.ballX - ballRadius <= paddles[0].x + paddles[0].width &&
+                this.state.ballX + ballRadius >= paddles[0].x &&
+                this.state.ballY + ballRadius >= paddles[0].y &&
+                this.state.ballY - ballRadius <= paddles[0].y + paddles[0].height &&
+                this.state.ballSpeedX < 0  // Balle se dirige vers la gauche
             ) {
                 this.state.ballSpeedX *= -1;
                 this.state.ballX = paddles[0].x + paddles[0].width + ballRadius;
             }
-            // Paddle droit (paddles[1])
+            
+            // Paddle droit (paddles[1]) - vérifier collision depuis la gauche
             if (
-                this.state.ballX + ballRadius > paddles[1].x &&
-                this.state.ballY > paddles[1].y &&
-                this.state.ballY < paddles[1].y + paddles[1].height
+                this.state.ballX + ballRadius >= paddles[1].x &&
+                this.state.ballX - ballRadius <= paddles[1].x + paddles[1].width &&
+                this.state.ballY + ballRadius >= paddles[1].y &&
+                this.state.ballY - ballRadius <= paddles[1].y + paddles[1].height &&
+                this.state.ballSpeedX > 0  // Balle se dirige vers la droite
             ) {
                 this.state.ballSpeedX *= -1;
                 this.state.ballX = paddles[1].x - ballRadius;
@@ -244,8 +256,14 @@ export class PongGame {
     resetBall() {
         this.state.ballX = this.state.canvasWidth / 2;
         this.state.ballY = this.state.canvasHeight / 2;
-        this.state.ballSpeedX *= -1;
-        this.state.ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);
+        
+        // Restaurer les vitesses d'origine (pas de multiplication pour éviter l'accélération)
+        const baseSpeedX = 4; // Vitesse horizontale d'origine
+        const baseSpeedY = 1; // Vitesse verticale d'origine
+        
+        // Direction aléatoire pour X et Y
+        this.state.ballSpeedX = baseSpeedX * (Math.random() > 0.5 ? 1 : -1);
+        this.state.ballSpeedY = baseSpeedY * (Math.random() > 0.5 ? 1 : -1);
         
         // Reset timer only on first launch, not on subsequent ball resets
         if (this.isFirstLaunch) {
