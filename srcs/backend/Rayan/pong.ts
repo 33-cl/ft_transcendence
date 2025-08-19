@@ -18,7 +18,7 @@ export class PongGame {
         if (this.interval) return;
         this.state.running = true;
         this.ballStartTime = Date.now(); // Enregistre le moment où le jeu commence
-        this.interval = setInterval(() => this.update(), 1000 / 60); // 60 FPS
+        this.interval = setInterval(() => this.update(), 1000 / 120); // 60 FPS
     }
 
     stop() {

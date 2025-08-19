@@ -18,7 +18,7 @@ function initializeComponents(): void
     // Password masking removed - using simple validation on submit instead
     
     // Affiche la page d'accueil au chargement
-    show('signIn');
+    // show('signIn');
 
     // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
     if ((window as any)._navigationListenerSet) {
@@ -185,7 +185,7 @@ window.addEventListener('popstate', function(event) {
         // Charge la page sans mettre à jour l'historique
         load(event.state.page, false);
     } else {
-        // Page par défaut si aucun état n'est sauvegardé
+        // Page par défaut si aucun état n'est sauvegarde
         load('signIn', false);
     }
 });
@@ -197,6 +197,10 @@ if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', async () =>
     {
         await checkSessionOnce();
+        if (window.currentUser)
+            load('mainMenu');
+        else
+            load('signIn');
         initializeComponents();
         setupRoomJoinedHandler();
     });
@@ -205,6 +209,10 @@ else
 {
     (async () => {
         await checkSessionOnce();
+        if (window.currentUser)
+            load('mainMenu');
+        else
+            load('signIn');
         initializeComponents();
         setupRoomJoinedHandler();
     })();
