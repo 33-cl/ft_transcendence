@@ -17,6 +17,7 @@ logs:
 
 clean: down
 	rm -rf srcs/frontend/dist/*
+	rm -rf srcs/backend/dist/*
 	docker system prune -af
 
 fclean: clean
