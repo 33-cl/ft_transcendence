@@ -9,9 +9,13 @@ export class PongGame {
     private ballStartTime: number = 0;
     private ballDelayMs: number = 3000; // 3 secondes
     private isFirstLaunch: boolean = true; // Track si c'est le premier lancement
+    private accelerationCount: number = 0; // Compteur d'accélérations
 
     constructor(numPlayers: number = 2) {
         this.state = createInitialGameState(numPlayers);
+        // Ne pas appeler resetBall() ici pour éviter de recréer un état initial
+        // L'état initial de gameState.ts est déjà correct
+        this.accelerationCount = 0;
     }
 
     start() 
@@ -147,10 +151,12 @@ export class PongGame {
                     if (paddleIndex === 0 && this.state.ballSpeedX < 0) { // Paddle A (gauche), balle vers gauche
                         this.state.ballSpeedX = -this.state.ballSpeedX; // Inverser composante horizontale
                         this.state.ballX = paddleRight + ballRadius; // Repositionner à droite du paddle
+                        this.accelerateBall(); // Accélération après contact
                         return true;
                     } else if (paddleIndex === 2 && this.state.ballSpeedX > 0) { // Paddle C (droite), balle vers droite
                         this.state.ballSpeedX = -this.state.ballSpeedX; // Inverser composante horizontale
                         this.state.ballX = paddleLeft - ballRadius; // Repositionner à gauche du paddle
+                        this.accelerateBall(); // Accélération après contact
                         return true;
                     }
                 }
@@ -160,10 +166,12 @@ export class PongGame {
                     if (paddleIndex === 1 && this.state.ballSpeedY > 0) { // Paddle B (bas), balle vers bas
                         this.state.ballSpeedY = -this.state.ballSpeedY; // Inverser composante verticale
                         this.state.ballY = paddleTop - ballRadius; // Repositionner au-dessus du paddle
+                        this.accelerateBall(); // Accélération après contact
                         return true;
                     } else if (paddleIndex === 3 && this.state.ballSpeedY < 0) { // Paddle D (haut), balle vers haut
                         this.state.ballSpeedY = -this.state.ballSpeedY; // Inverser composante verticale
                         this.state.ballY = paddleBottom + ballRadius; // Repositionner en-dessous du paddle
+                        this.accelerateBall(); // Accélération après contact
                         return true;
                     }
                 }
@@ -180,10 +188,12 @@ export class PongGame {
                         if (paddleIndex === 0 && this.state.ballSpeedX < 0) {
                             this.state.ballSpeedX = -this.state.ballSpeedX;
                             this.state.ballX = paddleRight + ballRadius;
+                            this.accelerateBall(); // Accélération après contact
                             return true;
                         } else if (paddleIndex === 2 && this.state.ballSpeedX > 0) {
                             this.state.ballSpeedX = -this.state.ballSpeedX;
                             this.state.ballX = paddleLeft - ballRadius;
+                            this.accelerateBall(); // Accélération après contact
                             return true;
                         }
                     } else {
@@ -191,10 +201,12 @@ export class PongGame {
                         if (paddleIndex === 1 && this.state.ballSpeedY > 0) {
                             this.state.ballSpeedY = -this.state.ballSpeedY;
                             this.state.ballY = paddleTop - ballRadius;
+                            this.accelerateBall(); // Accélération après contact
                             return true;
                         } else if (paddleIndex === 3 && this.state.ballSpeedY < 0) {
                             this.state.ballSpeedY = -this.state.ballSpeedY;
                             this.state.ballY = paddleBottom + ballRadius;
+                            this.accelerateBall(); // Accélération après contact
                             return true;
                         }
                     }
@@ -300,9 +312,11 @@ export class PongGame {
                 if (isLeftPaddle) { // Paddle gauche
                     this.state.ballSpeedX = -this.state.ballSpeedX; // Inverser composante horizontale
                     this.state.ballX = paddleRight + ballRadius; // Repositionner à droite du paddle
+                    this.accelerateBall(); // Accélération après contact avec paddle
                 } else { // Paddle droit
                     this.state.ballSpeedX = -this.state.ballSpeedX; // Inverser composante horizontale
                     this.state.ballX = paddleLeft - ballRadius; // Repositionner à gauche du paddle
+                    this.accelerateBall(); // Accélération après contact avec paddle
                 }
                 
                 return true;
@@ -335,12 +349,21 @@ export class PongGame {
         this.state.ballX = this.state.canvasWidth / 2;
         this.state.ballY = this.state.canvasHeight / 2;
         
-        // Vitesse équilibrée pour une trajectoire linéaire (speedX = speedY)
-        const baseSpeed = 3; // Vitesse uniforme pour X et Y
+        // Remettre le compteur d'accélération à zéro
+        this.accelerationCount = 0;
+        
+        // Utiliser directement les valeurs initiales du gameState pour la cohérence
+        const initialState = createInitialGameState(this.state.paddles?.length || 2);
+        const baseSpeedX = Math.abs(initialState.ballSpeedX); // 1 depuis gameState.ts
+        const baseSpeedY = Math.abs(initialState.ballSpeedY); // 1 depuis gameState.ts
         
         // Direction aléatoire pour X et Y (trajectoire diagonale équilibrée)
-        this.state.ballSpeedX = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
-        this.state.ballSpeedY = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+        this.state.ballSpeedX = baseSpeedX * (Math.random() > 0.5 ? 1 : -1);
+        this.state.ballSpeedY = baseSpeedY * (Math.random() > 0.5 ? 1 : -1);
+        
+        // Log pour confirmer le reset de vitesse
+        const resetSpeed = Math.sqrt(this.state.ballSpeedX * this.state.ballSpeedX + this.state.ballSpeedY * this.state.ballSpeedY);
+        console.log(`🔄 REMISE EN JEU - Vitesse reset à: ${resetSpeed.toFixed(2)} (baseX: ${baseSpeedX}, baseY: ${baseSpeedY}) - Compteur accélération: ${this.accelerationCount}`);
         
         // Reset timer only on first launch, not on subsequent ball resets
         if (this.isFirstLaunch) {
@@ -348,6 +371,54 @@ export class PongGame {
         } else {
             // For subsequent resets, ensure countdown is disabled
             this.state.ballCountdown = 0;
+        }
+    }
+
+    // Fonction utilitaire pour accélérer la balle après contact avec paddle
+    private accelerateBall() {
+        const accelerationFactor = 1.15; // Augmentation de 15% de la vitesse (plus visible)
+        const maxSpeed = 10; // Vitesse maximale réduite pour garder le jeu jouable
+        
+        // Calculer la vitesse actuelle AVANT accélération
+        const currentSpeedBefore = Math.sqrt(this.state.ballSpeedX * this.state.ballSpeedX + this.state.ballSpeedY * this.state.ballSpeedY);
+        
+        // Appliquer l'accélération seulement si on n'a pas atteint la vitesse maximale
+        if (currentSpeedBefore < maxSpeed) {
+            // Sauvegarder les vitesses avant modification
+            const oldSpeedX = this.state.ballSpeedX;
+            const oldSpeedY = this.state.ballSpeedY;
+            
+            // Appliquer l'accélération
+            this.state.ballSpeedX *= accelerationFactor;
+            this.state.ballSpeedY *= accelerationFactor;
+            
+            // Incrémenter le compteur d'accélération
+            this.accelerationCount++;
+            
+            // Calculer la vitesse APRÈS accélération
+            const currentSpeedAfter = Math.sqrt(this.state.ballSpeedX * this.state.ballSpeedX + this.state.ballSpeedY * this.state.ballSpeedY);
+            
+            // Log détaillé pour vérifier l'accélération
+            console.log(`🚀 ACCÉLÉRATION PADDLE #${this.accelerationCount}:`, {
+                vitesse_avant: currentSpeedBefore.toFixed(2),
+                vitesse_après: currentSpeedAfter.toFixed(2),
+                gain: `+${((currentSpeedAfter - currentSpeedBefore) / currentSpeedBefore * 100).toFixed(1)}%`,
+                ballSpeedX_avant: oldSpeedX.toFixed(2),
+                ballSpeedX_après: this.state.ballSpeedX.toFixed(2),
+                ballSpeedY_avant: oldSpeedY.toFixed(2),
+                ballSpeedY_après: this.state.ballSpeedY.toFixed(2),
+                facteur: accelerationFactor,
+                vitesse_max: maxSpeed,
+                total_accelerations: this.accelerationCount
+            });
+        } else {
+            // Log quand la vitesse maximale est atteinte
+            console.log(`⚠️ VITESSE MAXIMALE ATTEINTE:`, {
+                vitesse_actuelle: currentSpeedBefore.toFixed(2),
+                vitesse_max: maxSpeed,
+                message: "Pas d'accélération supplémentaire",
+                total_accelerations: this.accelerationCount
+            });
         }
     }
 }
