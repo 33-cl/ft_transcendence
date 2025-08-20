@@ -118,7 +118,7 @@ export class PongGame {
             const checkCircleRectangleCollision = (paddle: any, paddleIndex: number) => {
                 const ballCenterX = this.state.ballX;
                 const ballCenterY = this.state.ballY;
-                
+
                 const paddleLeft = paddle.x;
                 const paddleRight = paddle.x + paddle.width;
                 const paddleTop = paddle.y;
