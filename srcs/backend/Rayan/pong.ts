@@ -10,6 +10,7 @@ export class PongGame {
     private ballDelayMs: number = 3000; // 3 secondes
     private isFirstLaunch: boolean = true; // Track si c'est le premier lancement
     private accelerationCount: number = 0; // Compteur d'accélérations
+    private pointScored: boolean = false; // Flag pour éviter de marquer plusieurs points
 
     constructor(numPlayers: number = 2) {
         this.state = createInitialGameState(numPlayers);
@@ -223,36 +224,48 @@ export class PongGame {
             }
 
             // --- Buts (attribution des points) ---
-            // Si la balle sort complètement par le côté A (gauche) - joueur A éliminé
-            if (this.state.ballX + ballRadius < 0) {
-                paddles[1].score++; // B gagne
-                paddles[2].score++; // C gagne
-                paddles[3].score++; // D gagne
-                console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
-                this.resetBall();
+            // Comptabiliser le point quand la MOITIÉ de la balle est sortie, mais seulement UNE FOIS
+            
+            if (!this.pointScored) {
+                // Si la moitié de la balle sort par le côté gauche - joueur A éliminé
+                if (this.state.ballX + ballRadius/2 <= 0) {
+                    paddles[1].score++; // B gagne
+                    paddles[2].score++; // C gagne
+                    paddles[3].score++; // D gagne
+                    this.pointScored = true; // Marquer qu'un point a été attribué
+                    console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
+                }
+                // Si la moitié de la balle sort par le côté droit - joueur C éliminé
+                else if (this.state.ballX - ballRadius/2 >= canvasWidth) {
+                    paddles[0].score++; // A gagne
+                    paddles[1].score++; // B gagne
+                    paddles[3].score++; // D gagne
+                    this.pointScored = true; // Marquer qu'un point a été attribué
+                    console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
+                }
+                // Si la moitié de la balle sort par le bas - joueur B éliminé
+                else if (this.state.ballY - ballRadius/2 >= canvasHeight) {
+                    paddles[0].score++; // A gagne
+                    paddles[2].score++; // C gagne
+                    paddles[3].score++; // D gagne
+                    this.pointScored = true; // Marquer qu'un point a été attribué
+                    console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
+                }
+                // Si la moitié de la balle sort par le haut - joueur D éliminé
+                else if (this.state.ballY + ballRadius/2 <= 0) {
+                    paddles[0].score++; // A gagne
+                    paddles[1].score++; // B gagne
+                    paddles[2].score++; // C gagne
+                    this.pointScored = true; // Marquer qu'un point a été attribué
+                    console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
+                }
             }
-            // Si la balle sort complètement par le côté C (droite) - joueur C éliminé
-            if (this.state.ballX - ballRadius > canvasWidth) {
-                paddles[0].score++; // A gagne
-                paddles[1].score++; // B gagne
-                paddles[3].score++; // D gagne
-                console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
-                this.resetBall();
-            }
-            // Si la balle sort complètement par le bas - joueur B éliminé
-            if (this.state.ballY - ballRadius > canvasHeight) {
-                paddles[0].score++; // A gagne
-                paddles[2].score++; // C gagne
-                paddles[3].score++; // D gagne
-                console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
-                this.resetBall();
-            }
-            // Si la balle sort complètement par le haut - joueur D éliminé
-            if (this.state.ballY + ballRadius < 0) {
-                paddles[0].score++; // A gagne
-                paddles[1].score++; // B gagne
-                paddles[2].score++; // C gagne
-                console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
+            
+            // Reset seulement quand la balle sort COMPLÈTEMENT (pour l'effet visuel)
+            if (this.state.ballX + ballRadius < 0 || 
+                this.state.ballX - ballRadius > canvasWidth ||
+                this.state.ballY + ballRadius < 0 || 
+                this.state.ballY - ballRadius > canvasHeight) {
                 this.resetBall();
             }
 
@@ -327,14 +340,28 @@ export class PongGame {
             
             // Vérifier collision avec paddle droit (index 1)
             checkCircleRectangleCollision1v1(paddles[1], false);
-            // But à gauche
-            if (this.state.ballX - this.state.ballRadius < 0) {
-                paddles[1].score++;
-                this.resetBall();
+            
+            // --- Buts (attribution des points) ---
+            // Comptabiliser le point quand la MOITIÉ de la balle est sortie, mais seulement UNE FOIS
+            
+            if (!this.pointScored) {
+                // But à gauche - la moitié de la balle sort par la gauche
+                if (this.state.ballX + ballRadius/2 <= 0) {
+                    paddles[1].score++;
+                    this.pointScored = true; // Marquer qu'un point a été attribué
+                    console.log(`[BACKEND] But 1v1 ! Score joueur droit: ${paddles[1].score}`);
+                }
+                // But à droite - la moitié de la balle sort par la droite
+                else if (this.state.ballX - ballRadius/2 >= canvasWidth) {
+                    paddles[0].score++;
+                    this.pointScored = true; // Marquer qu'un point a été attribué
+                    console.log(`[BACKEND] But 1v1 ! Score joueur gauche: ${paddles[0].score}`);
+                }
             }
-            // But à droite
-            if (this.state.ballX + this.state.ballRadius > canvasWidth) {
-                paddles[0].score++;
+            
+            // Reset seulement quand la balle sort COMPLÈTEMENT (pour l'effet visuel)
+            if (this.state.ballX + ballRadius < 0 || 
+                this.state.ballX - ballRadius > canvasWidth) {
                 this.resetBall();
             }
             // Arrêt de la partie si un joueur atteint le score de victoire
@@ -351,6 +378,9 @@ export class PongGame {
         
         // Remettre le compteur d'accélération à zéro
         this.accelerationCount = 0;
+        
+        // Remettre le flag de point marqué à false pour le prochain point
+        this.pointScored = false;
         
         // Utiliser directement les valeurs initiales du gameState pour la cohérence
         const initialState = createInitialGameState(this.state.paddles?.length || 2);
