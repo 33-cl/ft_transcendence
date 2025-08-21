@@ -62,7 +62,13 @@
        pointer-events: none; /* Click-through for empty pages */
    }
 
-   .page input {
+    #signIn input {
+       @apply p-2 w-[300px] text-lg;                /* Padding, width and text size */
+       @apply border-2 border-white rounded-md;     /* Borders and corners */
+       @apply bg-black text-white;                /* Colors */
+   }
+
+   #signUp input {
        @apply p-2 w-[300px] text-lg;                /* Padding, width and text size */
        @apply border-2 border-white rounded-md;     /* Borders and corners */
        @apply bg-black text-white;                /* Colors */
@@ -162,13 +168,37 @@
 
    /*Setting Page*/
 
+   #settings-form {
+        @apply text-left;
+   }
+
    #settings-buttons {
-        @apply mt-4;
+        @apply flex justify-center gap-10 mt-6;
    }
 
    #change-pp {
         @apply text-orange-400 cursor-pointer;
+        @apply inline-block text-right w-[150px];
    }
+
+   #settings input{
+        @apply text-right;
+   } 
+   
+   #settings input {
+        @apply w-[150px];
+        @apply caret-transparent bg-transparent border-none outline-none;
+        @apply focus:ring-0 focus:outline-none focus:border-none;
+   }
+
+   #settings input::placeholder {
+        @apply text-white;
+   }
+
+   #settings input:focus::placeholder {
+        @apply text-transparent;
+    }
+
 
    /*Matchmaking page*/
 
