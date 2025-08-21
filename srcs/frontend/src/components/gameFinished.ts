@@ -1,4 +1,4 @@
 export const gameFinishedHTML = /*html*/`
-    <button id="localGameBtn">Restart</button>
-    <button id="mainMenuBtn">Back to main menu</button>
+    <button id="localGameBtn" class="default-button">Restart</button>
+    <button id="mainMenuBtn" class="default-button">Back to main menu</button>
 `; 

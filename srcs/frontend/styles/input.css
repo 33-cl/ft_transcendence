@@ -40,16 +40,16 @@
        @apply text-purple-800; /* Link hover color */
    }
 
-   button {
+   .default-button {
        @apply bg-black p-4 border-2 border-white rounded-lg; /* Background and borders */
        @apply px-4 py-2 text-2xl cursor-pointer;                 /* Padding, text and cursor */
    }
 
-   button:hover {
+   .default-button:hover {
        @apply bg-green-500; /* Button hover background */
    }
 
-   button:active {
+   .default-button:active {
        @apply bg-green-700 scale-95; /* Button active state */
    }
 
@@ -128,9 +128,9 @@
        @apply text-3xl; /* Button text size */
    }
 
-   #goToMain {
+   .bottom-left {
         @apply fixed bottom-[20px] left-[20px] m-0 z-[100] bg-none shadow-none;
-   } 
+   }
 
    #goToProfile-component {
        @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 z-[100]; /* Position, border, arrondi, fond, layout */
@@ -160,9 +160,17 @@
         @apply absolute top-[10px] right-[10px] bg-none border-none cursor-pointer !important; /* Settings button */
    }
 
-   #settings-form button {
-        @apply border-none bg-none;
+   /*Setting Page*/
+
+   #settings-buttons {
+        @apply mt-4;
    }
+
+   #change-pp {
+        @apply text-orange-400 cursor-pointer;
+   }
+
+   /*Matchmaking page*/
 
    #matchmaking-page {
        @apply w-[100vw];
