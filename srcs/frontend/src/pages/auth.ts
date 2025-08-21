@@ -1,4 +1,5 @@
 import { load } from './utils.js';
+import { DEV_CONFIG } from '../config/dev.js';
 
 function isValidEmailSimple(email: string): boolean {
     if (!email || typeof email !== 'string') return false;
@@ -196,4 +197,30 @@ document.addEventListener('componentsReady', () => {
             window.currentUser = null;
         };
     }
+});
+
+// DEV ONLY: Handler pour le bouton Skip Login
+document.addEventListener('componentsReady', () => {
+    if (!DEV_CONFIG.SKIP_LOGIN_ENABLED) return; // Skip si désactivé en configuration
+    
+    const skipBtn = document.getElementById('skipLoginBtn');
+    if (!skipBtn || (skipBtn as any)._bound) return;
+    (skipBtn as any)._bound = true;
+
+    skipBtn.addEventListener('click', async () => {
+        // Utiliser l'utilisateur de test défini dans la configuration
+        window.currentUser = { ...DEV_CONFIG.DEV_USER };
+        
+        // Afficher un message de confirmation
+        const msg = document.getElementById('signInMsg');
+        if (msg) {
+            msg.textContent = `Logged in as ${DEV_CONFIG.DEV_USER.username} (bypassed auth)`;
+            msg.style.color = 'lightgreen';
+        }
+        
+        // Rediriger vers le menu principal
+        setTimeout(() => {
+            load('mainMenu');
+        }, 500);
+    });
 });
