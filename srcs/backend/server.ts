@@ -11,16 +11,17 @@ import { Server as SocketIOServer } from 'socket.io';
 import usersRoutes from './src/routes/users.js'; // Route /users (API REST)
 import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
 import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
+import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
 import { getUserById } from './src/user.js'; // Importe le getter getUserById
 
 
-// Charger le certificat auto-signé généré dans le conteneur Docker
-const key = fs.readFileSync('key.pem');   // Lit la clé privée SSL depuis le fichier
-const cert = fs.readFileSync('cert.pem'); // Lit le certificat SSL depuis le fichier
+// Configuration SSL pour HTTPS sécurisé
+const key = fs.readFileSync('./key.pem');  // Clé privée SSL
+const cert = fs.readFileSync('./cert.pem'); // Certificat SSL
 
-// Création de Fastify en mode HTTPS
+// Create Fastify instance with HTTPS
 const app = fastify({
   logger: true, // Active les logs Fastify
   https: {key, cert}  // Utilise la clé privée et certification SSL
@@ -43,6 +44,7 @@ const app = fastify({
     app.register(usersRoutes); // Ajoute les routes /users
     app.register(roomsRoutes); // Ajoute les routes /rooms
     app.register(authRoutes);  // Ajoute les routes /auth
+    app.register(matchesRoutes); // Ajoute les routes /matches
 
     // Route GET pour récupérer les infos d'un utilisateur
     app.get('/profile/:id', async (request, reply) => {

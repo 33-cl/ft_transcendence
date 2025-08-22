@@ -32,10 +32,13 @@ frontend-build:
 
 # Convenience: DB inspection
 users:
-	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select id,email,username,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select id,email,username,wins,losses,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
 
 users-count:
 	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const row=db.prepare("select count(*) as n from users").get(); console.log(row.n);'
+
+matches:
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select m.id, winner.username as winner, loser.username as loser, m.winner_score, m.loser_score, m.match_type, m.created_at from matches m join users winner on m.winner_id = winner.id join users loser on m.loser_id = loser.id order by m.created_at desc").all(); console.log(JSON.stringify(rows,null,2));'
 
 db-copy:
 	docker compose cp backend:/app/pong.db ./pong.db

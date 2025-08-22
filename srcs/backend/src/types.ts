@@ -9,4 +9,5 @@ export interface RoomType {
     paddleInputs?: any;
     pongGame?: any;
     gameState?: any;
+    playerUsernames?: Record<string, string>; // Mapping socket.id -> username for authenticated players
 }

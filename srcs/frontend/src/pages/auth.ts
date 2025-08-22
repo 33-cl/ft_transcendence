@@ -17,6 +17,11 @@ export async function checkSessionOnce() {
         if (res.ok) {
             const data = await res.json();
             window.currentUser = data?.user || null;
+            
+            // Force websocket reconnection after successful auth verification
+            if (window.currentUser && (window as any).reconnectWebSocket) {
+                (window as any).reconnectWebSocket();
+            }
         } else {
             window.currentUser = null;
         }
@@ -92,6 +97,12 @@ document.addEventListener('componentsReady', () => {
                     await fetch('/auth/me', { credentials: 'include' }); 
                 } catch {}
                 
+                // Force websocket reconnection after successful registration
+                if ((window as any).currentUser && (window as any).reconnectWebSocket) {
+                    console.log('Registration successful, reconnecting websocket with cookies...');
+                    (window as any).reconnectWebSocket();
+                }
+                
                 load('mainMenu');
             } else {
                 const data = await res.json().catch(() => ({} as any));
@@ -163,6 +174,13 @@ document.addEventListener('componentsReady', () => {
                 msg.style.color = 'lightgreen';
                 (window as any).currentUser = data?.user || null;
                 try { await fetch('/auth/me', { credentials: 'include' }); } catch {}
+                
+                // Force websocket reconnection after successful login
+                if ((window as any).currentUser && (window as any).reconnectWebSocket) {
+                    console.log('Login successful, reconnecting websocket with cookies...');
+                    (window as any).reconnectWebSocket();
+                }
+                
                 load('mainMenu'); // laisser le caller gérer la navigation si besoin
             } else {
                 msg.textContent = data?.error || 'Login failed.';

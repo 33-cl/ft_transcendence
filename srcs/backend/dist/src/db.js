@@ -1,8 +1,6 @@
 import Database from 'better-sqlite3';
-
 // Ouvre (ou crée) la base SQLite (même nom que déjà utilisé ailleurs pour cohérence)
 const db = new Database('pong.db');
-
 // Schéma minimal pour user management (étape 1)
 db.exec(`
   PRAGMA foreign_keys = ON;
@@ -39,5 +37,4 @@ db.exec(`
     FOREIGN KEY(loser_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
-
 export default db;

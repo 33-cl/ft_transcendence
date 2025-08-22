@@ -3,8 +3,15 @@
 
 declare var io: any;
 
+// Pre-import load to avoid dynamic imports in event handlers
+import { load } from '../pages/utils.js';
+
 // Connexion socket.io sur le même domaine
-const socket = io('', { transports: ["websocket"], secure: true });
+let socket = io('', { 
+  transports: ["websocket"], 
+  secure: true,
+  withCredentials: true  // IMPORTANT: Permet la transmission des cookies de session
+});
 (window as any).socket = socket;
 
 // Variables pour éviter la duplication d'event listeners globaux
@@ -12,6 +19,7 @@ let connectListenerSet = false;
 let roomJoinedListenerSet = false;
 let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
+let errorListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -25,17 +33,46 @@ function setupGlobalSocketListeners() {
     
     // Event listener roomJoined
     if (!roomJoinedListenerSet) {
-    socket.on('roomJoined', (data: any) => {
-        if (data && data.paddle) {
-            window.controlledPaddle = data.paddle;
-        } else {
-            window.controlledPaddle = null;
-        }
-        if (data && data.maxPlayers) {
-            (window as any).maxPlayers = data.maxPlayers;
-        }
-        document.dispatchEvent(new Event('roomJoined'));
-    });
+        socket.on('roomJoined', (data: any) => {
+            // Set global variables
+            if (data && data.paddle) {
+                window.controlledPaddle = data.paddle;
+            } else {
+                window.controlledPaddle = null;
+            }
+            if (data && data.maxPlayers) {
+                (window as any).maxPlayers = data.maxPlayers;
+            }
+            
+            // Update paddle key bindings immediately after setting controlledPaddle
+            if ((window as any).updatePaddleKeyBindings) {
+                (window as any).updatePaddleKeyBindings();
+            }
+            
+            // Use pre-imported load function instead of dynamic import
+            // Si mode local, on affiche directement la page de jeu
+            if ((window as any).isLocalGame) {
+                if (data.maxPlayers === 3) {
+                    load('game3');
+                } else {
+                    load('game');
+                }
+                return;
+            }
+            
+            // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
+            if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number') {
+                if (data.players < data.maxPlayers) {
+                    load('matchmaking');
+                } else {
+                    if (data.maxPlayers === 3) {
+                        load('game3');
+                    } else {
+                        load('game');
+                    }
+                }
+            }
+        });
         roomJoinedListenerSet = true;
     }
     
@@ -54,11 +91,60 @@ function setupGlobalSocketListeners() {
         });
         pongListenerSet = true;
     }
+
+    // Event listener for errors
+    if (!errorListenerSet) {
+        socket.on('error', (data: any) => {
+            // Handle specific error types
+            if (data && data.code === 'JOIN_IN_PROGRESS') {
+                // Don't show error to user for this case, just log it
+                return;
+            }
+            
+            // Handle other errors by showing them to the user
+            if (data && data.error) {
+                console.error('Server error:', data.error);
+                // You could show a toast notification or alert here
+            }
+        });
+        errorListenerSet = true;
+    }
 }
 
 // Configurer les listeners globaux au chargement
 setupGlobalSocketListeners();
 
+// Function to reconnect websocket after authentication
+function reconnectWebSocket() {
+    if (socket && socket.connected) {
+        // Remove all listeners from the old socket to prevent duplicates
+        socket.removeAllListeners();
+        socket.disconnect();
+    }
+    
+    // Wait a moment to ensure the old connection is fully closed
+    setTimeout(() => {
+        // Create a new socket connection with fresh cookies
+        socket = io('', { 
+            transports: ["websocket"], 
+            secure: true,
+            withCredentials: true,
+            forceNew: true  // Force a new connection
+        });
+        
+        (window as any).socket = socket;
+        
+        // Reset listener flags to re-setup listeners
+        connectListenerSet = false;
+        roomJoinedListenerSet = false;
+        disconnectBasicListenerSet = false;
+        pongListenerSet = false;
+        errorListenerSet = false;
+        
+        // Re-setup global listeners
+        setupGlobalSocketListeners();
+    }, 100); // Small delay to ensure clean reconnection
+}
 
 // Fonction pour envoyer un message "ping" au serveur
 function sendPing()
@@ -97,13 +183,24 @@ function sendMessage(type: MessageType, data: MessageData)
 window.sendMessage = sendMessage;
 
 let joinInProgress = false;
+let lastJoinAttempt = 0;
+const JOIN_DEBOUNCE_MS = 1000; // 1 second debounce
 
 // Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
 async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false)
 {
+    const now = Date.now();
+    
+    // Debounce check - prevent too rapid successive calls
+    if (now - lastJoinAttempt < JOIN_DEBOUNCE_MS) {
+        return;
+    }
+    
     if (joinInProgress) {
         return;
     }
+    
+    lastJoinAttempt = now;
     joinInProgress = true;
     
     (window as any).setIsLocalGame(isLocalGame);
@@ -127,13 +224,49 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
     });
 }
 
-// Expose la fonction pour test dans la console navigateur
+// Async function to properly leave current room and wait for completion
+async function leaveCurrentRoomAsync(): Promise<void> {
+    return new Promise<void>((resolve) => {
+        if (!socket || !socket.connected) {
+            resolve();
+            return;
+        }
+        
+        // Set up a one-time listener for the completion event
+        socket.once('leaveAllRoomsComplete', () => {
+            resolve();
+        });
+        
+        // Set up a timeout fallback in case the server doesn't respond
+        const fallbackTimeout = setTimeout(() => {
+            resolve();
+        }, 3000); // 3 second timeout
+        
+        // Clean up the timeout when we get the response
+        socket.once('leaveAllRoomsComplete', () => {
+            clearTimeout(fallbackTimeout);
+        });
+        
+        socket.emit('leaveAllRooms');
+    });
+}
+
+// Expose the async cleanup function globally
+(window as any).leaveCurrentRoomAsync = leaveCurrentRoomAsync;
+
+// Expose the function for test in the console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
+
+// Expose reconnectWebSocket globally for auth-triggered reconnections
+(window as any).reconnectWebSocket = reconnectWebSocket;
 
 // Fonction pour définir le mode local
 (window as any).setIsLocalGame = (isLocal: boolean) => {
     (window as any).isLocalGame = isLocal;
 };
+
+// Expose reconnectWebSocket globally for auth-triggered reconnections
+(window as any).reconnectWebSocket = reconnectWebSocket;
 
 import { initPongRenderer, draw } from './pongRenderer.js';
 import { cleanupGameState } from './gameCleanup.js';

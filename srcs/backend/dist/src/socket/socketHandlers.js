@@ -6,70 +6,51 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/22 09:45:57 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/08/19 15:45:47 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-// src/socket/socketHandlers.ts
-
-import { Server, Socket } from 'socket.io';
-import { FastifyInstance } from 'fastify';
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
 import https from 'https';
 import { PongGame } from '../../Rayan/pong.js';
 import { Buffer } from 'buffer';
 import { createInitialGameState } from '../../Rayan/gameState.js';
-import { PaddleSide } from '../../Rayan/gameState.js';
-import { RoomType } from '../types.js';
-import { authenticateSocket, getSocketUser, removeSocketUser, isSocketAuthenticated } from './socketAuth.js';
+import { authenticateSocket, getSocketUser, removeSocketUser } from './socketAuth.js';
 import { updateUserStats, getUserByUsername } from '../user.js';
-
 // Mutex to prevent concurrent joinRoom for the same socket
-const joinRoomLocks = new Set<string>();
-
+const joinRoomLocks = new Set();
 // Vérifie si le client peut rejoindre la room (nom valide et room existante)
-function canJoinRoom(socket: Socket, roomName: string): boolean {
-	if (!roomName || typeof roomName !== 'string')
-	{
-		socket.emit('error', { error: 'roomName requested' });
-		return false;
-	}
-	if (!roomExists(roomName))
-	{
-		socket.emit('error', { error: 'Room does not exist' });
-		return false;
-	}
-	return true;
+function canJoinRoom(socket, roomName) {
+    if (!roomName || typeof roomName !== 'string') {
+        socket.emit('error', { error: 'roomName requested' });
+        return false;
+    }
+    if (!roomExists(roomName)) {
+        socket.emit('error', { error: 'Room does not exist' });
+        return false;
+    }
+    return true;
 }
-
 // Vérifie si la room est pleine
-function handleRoomFull(socket: Socket, room: RoomType, fastify: FastifyInstance): boolean
-{
-	if (room.players.length >= room.maxPlayers)
-	{
-		// Protection : refuse si la room est pleine
-		socket.emit('error', { error: 'Room is full' });
-		return true;
-	}
-	return false;
+function handleRoomFull(socket, room, fastify) {
+    if (room.players.length >= room.maxPlayers) {
+        // Protection : refuse si la room est pleine
+        socket.emit('error', { error: 'Room is full' });
+        return true;
+    }
+    return false;
 }
-
 // Retire le joueur de toutes les rooms où il pourrait être (sécurité)
-function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Server) {
-    for (const rName in rooms)
-    {
-        if (rooms[rName].players.includes(socket.id))
-        {
-			// room actuelle = room actuelle - client actuel
+function cleanUpPlayerRooms(socket, fastify, io) {
+    for (const rName in rooms) {
+        if (rooms[rName].players.includes(socket.id)) {
+            // room actuelle = room actuelle - client actuel
             rooms[rName].players = rooms[rName].players.filter(id => id !== socket.id);
             if (rooms[rName].players.length === 0) {
                 delete rooms[rName];
                 // Suppression silencieuse de la room vide (log retiré)
             }
-            else
-			{
+            else {
                 const room = rooms[rName];
-                
                 // NOUVEAU : Pour les jeux locaux, on supprime toujours la room complètement
                 // Cela évite le problème de double clic pour relancer une partie locale
                 if (room.isLocalGame) {
@@ -88,20 +69,15 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
                     delete rooms[rName];
                     continue;
                 }
-                
                 // Pour les jeux non-locaux : comportement original
                 // Si la partie est en cours, on stoppe et on supprime la room (ranked)
-                if (room.pongGame && room.pongGame.state && room.pongGame.state.running === true)
-				{
+                if (room.pongGame && room.pongGame.state && room.pongGame.state.running === true) {
                     room.pongGame.stop();
                     // On retire tous les joueurs restants via leurs socket et on supprime la room
-                    if (io)
-					{
-                        for (const socketId of room.players)
-						{
-							//ne pas retirer le client actu c deja fait
-                            if (socketId !== socket.id && io.sockets.sockets.get(socketId))
-							{
+                    if (io) {
+                        for (const socketId of room.players) {
+                            //ne pas retirer le client actu c deja fait
+                            if (socketId !== socket.id && io.sockets.sockets.get(socketId)) {
                                 io.sockets.sockets.get(socketId)?.leave(rName);
                             }
                         }
@@ -112,23 +88,21 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
                 }
                 // RESET COMPLET DE LA ROOM, la remettre a 0 
                 const gameEnded = room.pongGame && room.pongGame.state && room.pongGame.state.running === false;
-                if (gameEnded)
-				{
+                if (gameEnded) {
                     delete room.pongGame;
                     delete room.paddleBySocket;
                     delete room.paddleInputs;
                     delete room.playerUsernames; // Clean up username mappings
-					room.gameState = createInitialGameState();
+                    room.gameState = createInitialGameState();
                 }
             }
         }
     }
 }
-
 // Ajoute le joueur à la room et le fait rejoindre côté socket.io
 // Ajout : attribution dynamique des paddles pour 1v1v1
-function assignPaddleToPlayer(room: RoomType): PaddleSide | null {
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C'];
+function assignPaddleToPlayer(room) {
+    const paddleSides = ['A', 'B', 'C'];
     for (const side of paddleSides.slice(0, room.maxPlayers)) {
         if (!room.paddleBySocket || !Object.values(room.paddleBySocket).includes(side)) {
             return side;
@@ -136,30 +110,30 @@ function assignPaddleToPlayer(room: RoomType): PaddleSide | null {
     }
     return null;
 }
-
 // Modifie joinPlayerToRoom pour gérer le mode 1v1v1
-function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?: Server)
-{
+function joinPlayerToRoom(socket, roomName, room, io) {
     //si le joueur n'est pas déjà dans la room, on l'ajoute
-    if (!room.players.includes(socket.id))
-    {
+    if (!room.players.includes(socket.id)) {
         addPlayerToRoom(roomName, socket.id);
         socket.join(roomName);
     }
     // --- Attribution automatique du contrôle paddle (1v1, 1v1v1, 2v2) ---
     // Ajout : si isLocalGame, attribuer tous les paddles au même socket
     if (room.isLocalGame) {
-        if (!room.paddleBySocket) room.paddleBySocket = {};
+        if (!room.paddleBySocket)
+            room.paddleBySocket = {};
         if (room.maxPlayers === 2) {
             room.paddleBySocket[socket.id] = ['A', 'C']; // A = gauche, C = droite (B reste pour horizontal en 1v1v1)
-        } else if (room.maxPlayers === 3) {
+        }
+        else if (room.maxPlayers === 3) {
             room.paddleBySocket[socket.id] = ['A', 'B', 'C'];
         }
         // Broadcast à toute la room l'état matchmaking
         if (io) {
             for (const id of room.players) {
                 const targetSocket = io.sockets.sockets.get(id);
-                if (!targetSocket) continue;
+                if (!targetSocket)
+                    continue;
                 targetSocket.emit('roomJoined', {
                     room: roomName,
                     players: room.players.length,
@@ -167,7 +141,8 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
                     paddle: room.paddleBySocket[id]
                 });
             }
-        } else {
+        }
+        else {
             socket.emit('roomJoined', {
                 room: roomName,
                 players: room.players.length,
@@ -177,124 +152,95 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
         }
         return;
     }
-    if (room.maxPlayers === 2 || room.maxPlayers === 3 || room.maxPlayers === 4)
-	{
-		if (!room.paddleBySocket) room.paddleBySocket = {};
-		// Purge les anciennes attributions de paddle (joueurs plus dans la room)
-		for (const id in room.paddleBySocket)
-		{
-			if (!room.players.includes(id))
-				delete room.paddleBySocket[id];
-		}
-		// Attribution stricte selon l'ordre d'arrivée dans la room
-		if (!(socket.id in room.paddleBySocket))
-		{
-			if (room.maxPlayers === 2) {
-				// En mode 1v1 (local et non-local) : toujours A=gauche et C=droite
-				// B reste réservé pour le paddle horizontal du mode 1v1v1
-				const paddles = ['A', 'C'];
-				const idx = room.players.indexOf(socket.id);
-				room.paddleBySocket[socket.id] = paddles[idx] || null;
-			} else if (room.maxPlayers === 3) {
-				// Attribution dynamique pour 1v1v1
-				const paddle = assignPaddleToPlayer(room);
-				room.paddleBySocket[socket.id] = paddle;
-			} else if (room.maxPlayers === 4) {
-				const paddles = ['left', 'right', 'top', 'bottom'];
-				const idx = room.players.indexOf(socket.id);
-				room.paddleBySocket[socket.id] = paddles[idx] || null;
-			}
-		}
-		// --- Broadcast à toute la room l'état matchmaking ---
-		if (io)
-		{
-			for (const id of room.players)
-			{
-				const targetSocket = io.sockets.sockets.get(id);
-				if (!targetSocket) continue;
-				targetSocket.emit('roomJoined',
-				{
-					room: roomName,
-					players: room.players.length,
-					maxPlayers: room.maxPlayers,
-					paddle: room.paddleBySocket[id]
-				});
-			}
-		}
-		else
-		{
-			socket.emit('roomJoined',
-			{
-				room: roomName,
-				players: room.players.length,
-				maxPlayers: room.maxPlayers,
-				paddle: room.paddleBySocket[socket.id]
-			});
-		}
-		return;
-	}
-	// Cas générique (solo, etc.)
-	socket.emit('roomJoined', {
-		room: roomName,
-		players: room.players.length,
-		maxPlayers: room.maxPlayers
-	});
-}
-
-// Handler pour rejoindre ou créer une room
-async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstance, io: Server)
-{
-    if (joinRoomLocks.has(socket.id))
-    {
-        socket.emit('error', { error: 'joinRoom already in progress', code: 'JOIN_IN_PROGRESS' });
+    if (room.maxPlayers === 2 || room.maxPlayers === 3 || room.maxPlayers === 4) {
+        if (!room.paddleBySocket)
+            room.paddleBySocket = {};
+        // Purge les anciennes attributions de paddle (joueurs plus dans la room)
+        for (const id in room.paddleBySocket) {
+            if (!room.players.includes(id))
+                delete room.paddleBySocket[id];
+        }
+        // Attribution stricte selon l'ordre d'arrivée dans la room
+        if (!(socket.id in room.paddleBySocket)) {
+            if (room.maxPlayers === 2) {
+                // En mode 1v1 (local et non-local) : toujours A=gauche et C=droite
+                // B reste réservé pour le paddle horizontal du mode 1v1v1
+                const paddles = ['A', 'C'];
+                const idx = room.players.indexOf(socket.id);
+                room.paddleBySocket[socket.id] = paddles[idx] || null;
+            }
+            else if (room.maxPlayers === 3) {
+                // Attribution dynamique pour 1v1v1
+                const paddle = assignPaddleToPlayer(room);
+                room.paddleBySocket[socket.id] = paddle;
+            }
+            else if (room.maxPlayers === 4) {
+                const paddles = ['left', 'right', 'top', 'bottom'];
+                const idx = room.players.indexOf(socket.id);
+                room.paddleBySocket[socket.id] = paddles[idx] || null;
+            }
+        }
+        // --- Broadcast à toute la room l'état matchmaking ---
+        if (io) {
+            for (const id of room.players) {
+                const targetSocket = io.sockets.sockets.get(id);
+                if (!targetSocket)
+                    continue;
+                targetSocket.emit('roomJoined', {
+                    room: roomName,
+                    players: room.players.length,
+                    maxPlayers: room.maxPlayers,
+                    paddle: room.paddleBySocket[id]
+                });
+            }
+        }
+        else {
+            socket.emit('roomJoined', {
+                room: roomName,
+                players: room.players.length,
+                maxPlayers: room.maxPlayers,
+                paddle: room.paddleBySocket[socket.id]
+            });
+        }
         return;
     }
-    
+    // Cas générique (solo, etc.)
+    socket.emit('roomJoined', {
+        room: roomName,
+        players: room.players.length,
+        maxPlayers: room.maxPlayers
+    });
+}
+// Handler pour rejoindre ou créer une room
+async function handleJoinRoom(socket, data, fastify, io) {
+    if (joinRoomLocks.has(socket.id)) {
+        fastify.log.warn(`joinRoom already in progress for ${socket.id}`);
+        return;
+    }
     joinRoomLocks.add(socket.id);
-    
-    try
-    {
+    try {
         const maxPlayers = data?.maxPlayers;
         const isLocalGame = data?.isLocalGame === true;
         const previousRoom = getPlayerRoom(socket.id);
-        
-        if (previousRoom) {
-            // Get the room object and clean up paddle assignments
-            const oldRoom = rooms[previousRoom];
-            if (oldRoom && oldRoom.paddleBySocket) {
-                delete oldRoom.paddleBySocket[socket.id];
-            }
-            
-            removePlayerFromRoom(socket.id);
-            socket.leave(previousRoom);
-        }
-        
         let roomName = data?.roomName;
-        
-        if (!roomName && typeof maxPlayers === 'number')
-        {
+        if (!roomName && typeof maxPlayers === 'number') {
             roomName = null;
             // IMPORTANT: Pour les jeux locaux, on cherche/crée des rooms différentes
             // Cela évite que les rooms locales interfèrent avec le multiplayer
-            for (const [name, room] of Object.entries(rooms))
-            {
-                if (room.maxPlayers === maxPlayers && 
+            for (const [name, room] of Object.entries(rooms)) {
+                if (room.maxPlayers === maxPlayers &&
                     room.players.length < maxPlayers &&
-                    room.isLocalGame === isLocalGame)
-                {
+                    room.isLocalGame === isLocalGame) {
                     roomName = name;
                     break;
                 }
             }
-            
-            if (!roomName)
-            {
+            if (!roomName) {
                 const roomPrefix = isLocalGame ? 'local' : 'multi';
-                const postData = JSON.stringify({ 
+                const postData = JSON.stringify({
                     maxPlayers,
                     roomPrefix
                 });
-                
                 const options = {
                     hostname: 'localhost',
                     port: 8080,
@@ -305,23 +251,18 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                         'Content-Length': Buffer.byteLength(postData)
                     },
                     rejectUnauthorized: false // auto-signé en dev
-                } as any;
-                
-                roomName = await new Promise((resolve, reject) =>
-                {
-                    const req = https.request(options, (res: any) =>
-                    {
+                };
+                roomName = await new Promise((resolve, reject) => {
+                    const req = https.request(options, (res) => {
                         let data = '';
-                        res.on('data', (chunk: any) => { data += chunk; });
-                        res.on('end', () =>
-                        {
-                            try
-                            {
+                        res.on('data', (chunk) => { data += chunk; });
+                        res.on('end', () => {
+                            try {
                                 const json = JSON.parse(data);
                                 resolve(json.roomName);
                             }
-                            catch (e) { 
-                                reject(e); 
+                            catch (e) {
+                                reject(e);
                             }
                         });
                     });
@@ -335,168 +276,108 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         }
         if (!canJoinRoom(socket, roomName))
             return;
-        const room = rooms[roomName] as RoomType;
-        
+        const room = rooms[roomName];
         // Ajout : stocke le flag isLocalGame dans la room
         // IMPORTANT: On set le flag à la valeur actuelle, pas seulement si true
         room.isLocalGame = isLocalGame;
-        
         if (handleRoomFull(socket, room, fastify))
             return;
-        if (previousRoom)
-        {
-            console.log(`🔄 JOIN: Removing socket ${socket.id} from previous room ${previousRoom}`);
+        if (previousRoom) {
             removePlayerFromRoom(socket.id);
             socket.leave(previousRoom);
+            fastify.log.info(`[DEBUG] socket.id=${socket.id} leave previousRoom=${previousRoom}`);
         }
-        
-        // Double-check we're completely clean before proceeding
-        const stillInRoom = getPlayerRoom(socket.id);
-        if (stillInRoom) {
-            console.log(`⚠️  JOIN: Socket ${socket.id} still in room ${stillInRoom} after cleanup. Force cleaning...`);
-            removePlayerFromRoom(socket.id);
-            socket.leave(stillInRoom);
-        }
-        
         cleanUpPlayerRooms(socket, fastify, io);
-        
         joinPlayerToRoom(socket, roomName, room, io);
-        
-        // For online games, require authentication
+        // For online games, store username if authenticated
         if (!isLocalGame) {
-            let user = getSocketUser(socket.id);
-            
-            // Always try to re-authenticate from cookies if no user cached or force re-auth
-            if (!user) {
-                user = authenticateSocket(socket, fastify);
-            }
-            
+            const user = getSocketUser(socket.id);
             if (user) {
-                if (!room.playerUsernames) room.playerUsernames = {};
+                if (!room.playerUsernames)
+                    room.playerUsernames = {};
                 room.playerUsernames[socket.id] = user.username;
-                fastify.log.info(`Socket ${socket.id} authenticated user ${user.username} added to room ${roomName}`);
-            } else {
-                // Reject unauthenticated sockets from joining online games
-                fastify.log.warn(`Socket ${socket.id} failed authentication for online game`);
-                socket.emit('error', { error: 'Authentication failed. Please login again to play online multiplayer games.' });
-                removePlayerFromRoom(socket.id);
-                socket.leave(roomName);
-                return;
             }
         }
-        
         // --- Ajout : en local, on démarre la partie immédiatement ---
         if (isLocalGame && !room.pongGame) {
             room.pongGame = new PongGame(room.maxPlayers);
             room.pongGame.start();
         }
         // --- Sinon, comportement normal ---
-        else if (!room.pongGame && room.players.length === room.maxPlayers)
-        {
+        else if (!room.pongGame && room.players.length === room.maxPlayers) {
             // Create game end callback for online multiplayer games
-            const gameEndCallback = !isLocalGame ? (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+            const gameEndCallback = !isLocalGame ? (winner, loser) => {
                 handleGameEnd(roomName, room, winner, loser, fastify);
             } : undefined;
-            
             room.pongGame = new PongGame(room.maxPlayers, gameEndCallback);
             room.pongGame.start();
         }
     }
-    finally
-    {
+    finally {
         joinRoomLocks.delete(socket.id);
     }
 }
-
 // Helper pour initialiser paddleInputs avec toutes les clés nécessaires
-function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean; down: boolean }> {
-    const inputs: Record<PaddleSide, { up: boolean; down: boolean }> = {
+function initPaddleInputs(maxPlayers) {
+    const inputs = {
         'A': { up: false, down: false },
         'B': { up: false, down: false },
         'C': { up: false, down: false }
     };
-    
     return inputs;
 }
-
 // Handle game end for online multiplayer games
-function handleGameEnd(roomName: string, room: RoomType, winner: { side: string; score: number }, loser: { side: string; score: number }, fastify: FastifyInstance) {
+function handleGameEnd(roomName, room, winner, loser, fastify) {
     // Only process win/loss for online games with authenticated players
     if (room.isLocalGame) {
+        fastify.log.info(`Game ended in local room ${roomName} - no win/loss tracking (local games don't count)`);
         return;
     }
-    
     if (!room.playerUsernames || !room.paddleBySocket) {
         fastify.log.warn(`Game ended in room ${roomName} but missing player username data`);
         return;
     }
-
     try {
-        fastify.log.info(`Game ended in room ${roomName}: Winner side=${winner.side} score=${winner.score}, Loser side=${loser.side} score=${loser.score}`);
-        fastify.log.info(`PaddleBySocket mapping:`, room.paddleBySocket);
-        
         // Find the socket IDs for winner and loser based on paddle sides
-        let winnerSocketId: string | null = null;
-        let loserSocketId: string | null = null;
-
+        let winnerSocketId = null;
+        let loserSocketId = null;
         for (const [socketId, paddleSide] of Object.entries(room.paddleBySocket)) {
-            // Handle both array format (local games) and single value format (online games)
-            const controlledSides = Array.isArray(paddleSide) ? paddleSide : [paddleSide];
-            
-            if (controlledSides.includes(winner.side)) {
+            if (paddleSide === winner.side) {
                 winnerSocketId = socketId;
             }
-            if (controlledSides.includes(loser.side)) {
+            else if (paddleSide === loser.side) {
                 loserSocketId = socketId;
             }
         }
-
-        fastify.log.info(`Found: winnerSocketId=${winnerSocketId}, loserSocketId=${loserSocketId}`);
-
         // Get usernames for winner and loser
         const winnerUsername = winnerSocketId ? room.playerUsernames[winnerSocketId] : null;
         const loserUsername = loserSocketId ? room.playerUsernames[loserSocketId] : null;
-
         if (winnerUsername && loserUsername) {
-            // Check if same user is playing against themselves (same cookies/session)
-            if (winnerUsername === loserUsername) {
-                fastify.log.info(`Game ended in room ${roomName}: Same user playing against themselves - no stats recorded`);
-                return;
-            }
-            
             // Get users from database by username
-            const winnerUser = getUserByUsername(winnerUsername) as any;
-            const loserUser = getUserByUsername(loserUsername) as any;
-            
+            const winnerUser = getUserByUsername(winnerUsername);
+            const loserUser = getUserByUsername(loserUsername);
             if (winnerUser && loserUser) {
-                // Double check with user IDs as well (extra security)
-                if (winnerUser.id === loserUser.id) {
-                    fastify.log.info(`Game ended in room ${roomName}: Same user ID detected - no stats recorded`);
-                    return;
-                }
-                
                 // Update user statistics using user IDs from database
                 updateUserStats(winnerUser.id, loserUser.id, winner.score, loser.score, 'online');
-                fastify.log.info(`Match recorded: ${winnerUsername} defeated ${loserUsername} (${winner.score}-${loser.score})`);
-            } else {
+                fastify.log.info(`Game ended in room ${roomName}: Winner ${winnerUsername} (${winner.score}) vs Loser ${loserUsername} (${loser.score})`);
+            }
+            else {
                 fastify.log.warn(`Could not find users in database. Winner: ${winnerUsername}, Loser: ${loserUsername}`);
             }
-        } else {
+        }
+        else {
             fastify.log.warn(`Could not get usernames for match result. Winner: ${winnerUsername}, Loser: ${loserUsername}`);
         }
-    } catch (error) {
+    }
+    catch (error) {
         fastify.log.error(`Error recording match result: ${error}`);
     }
 }
-
 // Tick global pour toutes les rooms avec un jeu en cours (adapté pour paddles dynamiques)
-function handleGameTick(io: any)
-{
-    for (const [roomName, room] of Object.entries(rooms))
-    {
-        const typedRoom = room as RoomType; // Cast pour éviter l'erreur TS2339
-        if (typedRoom.pongGame && typedRoom.pongGame.state.running)
-        {
+function handleGameTick(io) {
+    for (const [roomName, room] of Object.entries(rooms)) {
+        const typedRoom = room; // Cast pour éviter l'erreur TS2339
+        if (typedRoom.pongGame && typedRoom.pongGame.state.running) {
             // Initialise l'état des touches pour chaque paddle si besoin
             if (!typedRoom.paddleInputs) {
                 typedRoom.paddleInputs = initPaddleInputs(typedRoom.maxPlayers);
@@ -505,15 +386,16 @@ function handleGameTick(io: any)
             const speed = typedRoom.pongGame.state.paddleSpeed;
             for (const paddle of typedRoom.pongGame.state.paddles) {
                 const input = typedRoom.paddleInputs[paddle.side];
-                if (!input) continue;
-                
+                if (!input)
+                    continue;
                 // Paddle B horizontal : bouge sur l'axe X
                 if (paddle.side === 'B') {
                     if (input.up) // up = gauche pour paddle horizontal
                         paddle.x = Math.max(0, paddle.x - speed);
                     if (input.down) // down = droite pour paddle horizontal
                         paddle.x = Math.min(typedRoom.pongGame.state.canvasWidth - paddle.width, paddle.x + speed);
-                } else {
+                }
+                else {
                     // Paddles A et C verticaux : bougent sur l'axe Y
                     if (input.up)
                         paddle.y = Math.max(0, paddle.y - speed);
@@ -523,10 +405,8 @@ function handleGameTick(io: any)
             }
             io.to(roomName).emit('gameState', typedRoom.pongGame.state);
         }
-        if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)
-        {
-            for (const socketId of typedRoom.players)
-            {
+        if (typedRoom.pongGame && typedRoom.pongGame.state.running === false) {
+            for (const socketId of typedRoom.players) {
                 if (io.sockets.sockets.get(socketId))
                     io.sockets.sockets.get(socketId)?.leave(roomName);
             }
@@ -535,18 +415,19 @@ function handleGameTick(io: any)
         }
     }
 }
-
 // Handler pour les messages relayés dans la room (adapté pour paddleInputs dynamiques)
-function handleSocketMessage(socket: Socket, msg: string)
-{
-    let message: any;
+function handleSocketMessage(socket, msg) {
+    let message;
     try {
         message = JSON.parse(msg);
-    } catch (e) { return; }
-    
+    }
+    catch (e) {
+        return;
+    }
     const playerRoom = getPlayerRoom(socket.id);
-    if (!playerRoom) return;
-    const room = rooms[playerRoom] as RoomType;
+    if (!playerRoom)
+        return;
+    const room = rooms[playerRoom];
     if (!room.paddleInputs) {
         room.paddleInputs = initPaddleInputs(room.maxPlayers);
     }
@@ -556,25 +437,29 @@ function handleSocketMessage(socket: Socket, msg: string)
         const allowedPaddle = room.paddleBySocket[socket.id];
         if (room.isLocalGame) {
             let mappedPlayer = player;
-            if (player === 'left') mappedPlayer = 'A';
-            else if (player === 'right') mappedPlayer = 'C';
-            
+            if (player === 'left')
+                mappedPlayer = 'A';
+            else if (player === 'right')
+                mappedPlayer = 'C';
             if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
                 if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
-                    room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
+                    room.paddleInputs[mappedPlayer][direction] = (message.type === 'keydown');
                     if (message.type === 'keydown') {
                         try {
                             room.pongGame.movePaddle(mappedPlayer, direction);
-                        } catch (error) {
+                        }
+                        catch (error) {
                             // Log supprimé pour améliorer les performances
                         }
                     }
                 }
             }
-        } else {
-            if (player !== allowedPaddle) return;
+        }
+        else {
+            if (player !== allowedPaddle)
+                return;
             if ((player === 'A' || player === 'B' || player === 'C') && (direction === 'up' || direction === 'down')) {
-                room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
+                room.paddleInputs[player][direction] = (message.type === 'keydown');
                 if (message.type === 'keydown') {
                     room.pongGame.movePaddle(player, direction);
                 }
@@ -582,80 +467,31 @@ function handleSocketMessage(socket: Socket, msg: string)
         }
     }
 }
-
 // Handler pour la déconnexion du client
-function handleSocketDisconnect(socket: Socket)
-{
+function handleSocketDisconnect(socket) {
     removePlayerFromRoom(socket.id);
     removeSocketUser(socket.id); // Clean up user authentication data
 }
-
 // Handler pour quitter toutes les rooms explicitement (SPA navigation)
-function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Server)
-{
-    // CRITICAL FIX: Remove any pending join room locks immediately
-    if (joinRoomLocks.has(socket.id)) {
-        joinRoomLocks.delete(socket.id);
-    }
-    
-    const previousRoom = getPlayerRoom(socket.id);
-    if (previousRoom) {
-        // Get the room object and clean up paddle assignments
-        const room = rooms[previousRoom];
-        if (room && room.paddleBySocket) {
-            delete room.paddleBySocket[socket.id];
-        }
-        
-        // Remove from room manager
-        removePlayerFromRoom(socket.id);
-        // Leave socket.io room
-        socket.leave(previousRoom);
-    }
-    
-    // Force additional cleanup
+function handleLeaveAllRooms(socket, fastify, io) {
     cleanUpPlayerRooms(socket, fastify, io);
-    
-    // Triple-check cleanup was successful and force removal if needed
-    const roomAfterCleanup = getPlayerRoom(socket.id);
-    if (roomAfterCleanup) {
-        // Get the room object and clean up paddle assignments
-        const room = rooms[roomAfterCleanup];
-        if (room && room.paddleBySocket) {
-            delete room.paddleBySocket[socket.id];
-        }
-        
-        // Force remove from room manager
-        removePlayerFromRoom(socket.id);
-        // Also force leave the socket.io room
-        socket.leave(roomAfterCleanup);
-    }
-    
-    // Emit confirmation that cleanup is complete
-    socket.emit('leaveAllRoomsComplete', { status: 'success' });
 }
-
 // Fonction principale qui enregistre tous les handlers socket.io
-export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
-{
+export default function registerSocketHandlers(io, fastify) {
     // Tick rate à 60 FPS pour un gameplay fluide
-    setInterval(() =>
-	{
+    setInterval(() => {
         handleGameTick(io);
     }, 1000 / 60);
-
-    io.on('connection', (socket: Socket) =>
-	{
+    io.on('connection', (socket) => {
         fastify.log.info(`Client connecté : ${socket.id}`);
-
         // Authenticate the socket connection
-        const user = authenticateSocket(socket, fastify);
+        const user = authenticateSocket(socket);
         if (user) {
             fastify.log.info(`Socket ${socket.id} authenticated as user ${user.username} (${user.id})`);
         }
-
-        socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
+        socket.on('joinRoom', (data) => handleJoinRoom(socket, data, fastify, io));
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
-        socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
+        socket.on('message', (msg) => handleSocketMessage(socket, msg));
         socket.on('disconnect', () => handleSocketDisconnect(socket));
         socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));
     });

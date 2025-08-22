@@ -4,6 +4,10 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "npx ts-node --esm server.ts",
+    "dev:compiled": "tsc && node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -23,6 +27,7 @@
     "@types/node": "^22.15.33",
     "@types/socket.io": "^3.0.1",
     "@types/socket.io-client": "^1.4.36",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
