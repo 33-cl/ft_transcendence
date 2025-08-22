@@ -14,6 +14,8 @@ export interface Room
   paddleInputs?: Record<PaddleSide, { up: boolean; down: boolean }>;
   // Mapping socket.id -> PaddleSide (attribution du contrôle des paddles)
   paddleBySocket?: Record<string, PaddleSide>;
+  // Mapping socket.id -> username for authenticated players (online games only)
+  playerUsernames?: Record<string, string>;
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
@@ -54,10 +56,22 @@ export function removePlayerFromRoom(socketId: string)
 			break;
 		}
 	}
-	if (playerRoom)
+	if (playerRoom && rooms[playerRoom])
 	{
-		rooms[playerRoom].players = rooms[playerRoom].players.filter(id => id !== socketId);
-		if (rooms[playerRoom].players.length === 0)
+		const room = rooms[playerRoom];
+		room.players = room.players.filter(id => id !== socketId);
+		
+		// Clean up username mapping when player leaves
+		if (room.playerUsernames && room.playerUsernames[socketId]) {
+			delete room.playerUsernames[socketId];
+		}
+		
+		// Clean up paddle assignments
+		if (room.paddleBySocket && room.paddleBySocket[socketId]) {
+			delete room.paddleBySocket[socketId];
+		}
+		
+		if (room.players.length === 0)
 		{
 			delete rooms[playerRoom];
 		}

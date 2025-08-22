@@ -114,6 +114,9 @@ if (!(window as any)._pongControlsRoomJoinedListener) {
 
 updatePaddleKeyBindings(); // Initial
 
+// Expose the function globally so websocket.ts can call it
+(window as any).updatePaddleKeyBindings = updatePaddleKeyBindings;
+
 const pressedKeys: Record<string, boolean> = {};
 
 // Fonction de nettoyage des contrôles

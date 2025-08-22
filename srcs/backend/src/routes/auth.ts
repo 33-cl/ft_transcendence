@@ -87,14 +87,15 @@ function setSessionCookie(reply: any, token: string, maxAgeSec: number) {
     `Max-Age=${maxAgeSec}`,
     `Expires=${expires.toUTCString()}`
   ].join('; ');
+  
+  // Pour permettre plusieurs sessions simultanées, on peut utiliser un approach plus flexible
+  // En utilisant des cookies avec des noms uniques par session
   reply.header('Set-Cookie', cookie);
 }
 
 function clearSessionCookie(reply: any) {
-  const cookie = [
-    'sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-  ];
-  reply.header('Set-Cookie', cookie.join('; '));
+  const cookie = 'sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  reply.header('Set-Cookie', cookie);
 }
 
 function parseCookies(header?: string): Record<string, string> {
@@ -111,6 +112,26 @@ function parseCookies(header?: string): Record<string, string> {
 export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/register', async (request, reply) => {
     const { email, username, password } = (request.body as RegisterBody) || {};
+
+    // Vérifier si ce navigateur a déjà une session active
+    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+    const existingSessionToken = cookies['sid'];
+    
+    if (existingSessionToken) {
+      const existingSession = db.prepare(`
+        SELECT s.user_id, u.username FROM sessions s 
+        JOIN users u ON u.id = s.user_id 
+        WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
+      `).get(existingSessionToken) as { user_id: number; username: string } | undefined;
+      
+      if (existingSession) {
+        return reply.code(409).send({ 
+          error: `This browser already has an active session for user '${existingSession.username}'. Please logout first to create a new account.`,
+          code: 'BROWSER_ALREADY_CONNECTED',
+          currentUser: existingSession.username
+        });
+      }
+    }
 
     // Validations
     if (!email || !isValidEmail(email)) {
@@ -163,6 +184,26 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
     if (!login || !password) return reply.code(400).send({ error: 'Missing credentials.' });
 
+    // Vérifier si ce navigateur a déjà une session active (même si c'est un autre utilisateur)
+    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+    const existingSessionToken = cookies['sid'];
+    
+    if (existingSessionToken) {
+      const existingSession = db.prepare(`
+        SELECT s.user_id, u.username FROM sessions s 
+        JOIN users u ON u.id = s.user_id 
+        WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
+      `).get(existingSessionToken) as { user_id: number; username: string } | undefined;
+      
+      if (existingSession) {
+        return reply.code(409).send({ 
+          error: `This browser already has an active session for user '${existingSession.username}'. Please logout first or use a different browser.`,
+          code: 'BROWSER_ALREADY_CONNECTED',
+          currentUser: existingSession.username
+        });
+      }
+    }
+
     // Récupérer l'utilisateur par email (lowercased) ou username
     const byEmail = isValidEmail(login);
     const user = (byEmail
@@ -173,7 +214,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(401).send({ error: 'Invalid credentials.' });
     }
 
-    // Créer une session 7 jours
+    // Créer une nouvelle session 7 jours (le navigateur n'a pas de session active)
     const token = randomBytes(32).toString('hex');
     const maxAge = 60 * 60 * 24 * 7;
     const expiresAt = fmtSqliteDate(new Date(Date.now() + maxAge * 1000));

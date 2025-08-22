@@ -26,8 +26,20 @@ function initializeComponents(): void
     }
     (window as any)._navigationListenerSet = true;
     
+    // Global click debounce to prevent double-clicks
+    let lastClickTime = 0;
+    const CLICK_DEBOUNCE_MS = 300; // 300ms debounce
+    
     // Ajoute la navigation SPA pour le clic gauche
     document.addEventListener('click', async (e) => {
+        const now = Date.now();
+        if (now - lastClickTime < CLICK_DEBOUNCE_MS) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        lastClickTime = now;
+        
         const target = e.target as HTMLElement;
         if (!target) return;
         
@@ -48,6 +60,20 @@ function initializeComponents(): void
             // Nettoyage complet avant de retourner au menu principal
             // Cela résout le bug des paddles qui ne s'affichent plus au 2ème jeu local
             cleanupGameState();
+            
+            // Wait for proper room cleanup before proceeding
+            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+                try {
+                    await (window as any).leaveCurrentRoomAsync();
+                } catch (error) {
+                    console.warn('Room cleanup failed, proceeding anyway:', error);
+                }
+            } else if (window.socket) {
+                window.socket.emit('leaveAllRooms');
+                // Add a small delay to allow cleanup to process
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
             load('mainMenu');
         }
         if (target.id === 'goToProfile')
@@ -71,19 +97,74 @@ function initializeComponents(): void
             load('signUp');
         if (target.id === 'profileBtn' || isProfileBtn)
             load('profile');
-        if (target.id === 'logOutBtn')
+        if (target.id === 'logOutBtn') {
+            // Appeler le logout côté serveur
+            try {
+                await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+            } catch (e) {
+                console.error('Logout request failed:', e);
+            }
+            
+            // Vider le cache et réinitialiser l'état de l'application
+            window.currentUser = null;
+            
+            // Vider le cache du navigateur pour cette application
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                } catch (e) {
+                    console.warn('Failed to clear cache:', e);
+                }
+            }
+            
+            // Vider le localStorage et sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Rediriger vers la page de connexion sans rafraîchir
             load('signIn');
+        }
 
         // MULTIPLAYER
-        if (target.id === 'ranked1v1Btn')
-            await window.joinOrCreateRoom(2);
+        if (target.id === 'ranked1v1Btn') {
+            // Ensure any previous room is cleaned up first
+            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+                try {
+                    await (window as any).leaveCurrentRoomAsync();
+                } catch (error) {
+                    console.warn('Pre-cleanup failed, proceeding anyway:', error);
+                }
+            }
+            
+            try {
+                await window.joinOrCreateRoom(2);
+            } catch (error) {
+                console.error('Error in joinOrCreateRoom(2):', error);
+                // Show error to user
+                if (window.socket) {
+                    window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                }
+            }
+        }
         if (target.id === 'customCreateBtn')
             await window.joinOrCreateRoom(4);
         if (target.id === 'customJoinBtn')
             await window.joinOrCreateRoom(4);
         if (target.id === 'cancelSearchBtn')
         {
-            if (window.socket) window.socket.emit('leaveAllRooms');
+            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+                try {
+                    await (window as any).leaveCurrentRoomAsync();
+                } catch (error) {
+                    console.warn('Room cleanup failed, proceeding anyway:', error);
+                }
+            } else if (window.socket) {
+                window.socket.emit('leaveAllRooms');
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
             load('mainMenu');
         }
 
@@ -144,39 +225,10 @@ function initializeComponents(): void
 }
 
 // Handler global pour l'event roomJoined (affichage matchmaking/game)
+// REMOVED: Navigation is now handled directly in websocket.ts to avoid duplicate handlers
 function setupRoomJoinedHandler()
 {
-    if (!window.socket)
-        return;
-    if (window._roomJoinedHandlerSet)
-        return;
-    window._roomJoinedHandlerSet = true;
-    window.socket.on('roomJoined', (data: any) =>
-    {
-        // Si mode local, on affiche directement la page de jeu
-        if (window.isLocalGame) {
-            if (data.maxPlayers === 3) {
-                load('game3');
-            } else {
-                load('game');
-            }
-            return;
-        }
-        // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
-        if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
-        {
-            if (data.players < data.maxPlayers)
-                load('matchmaking');
-            else
-            {
-                if (data.maxPlayers === 3) {
-                    load('game3');
-                } else {
-                    load('game');
-                }
-            }
-        }
-    });
+    // Navigation is now handled directly in websocket.ts when roomJoined event is received
 }
 
 

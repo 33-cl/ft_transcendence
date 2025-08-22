@@ -37,8 +37,8 @@ ft_transcendence est une plateforme de jeu en ligne qui modernise le classique P
 
 ## Technologies
 
-**Backend**: Django, PostgreSQL, Redis, WebSockets
-**Frontend**: JavaScript, HTML, CSS
+**Backend**: 
+**Frontend**: JavaScript, HTML, CSS, tailwind
 **Infrastructure**: Docker, Nginx
 
 ## Utilisation
