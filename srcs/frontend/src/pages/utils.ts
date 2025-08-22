@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game3HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML } from '../components/index.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML } from '../components/index.js';
 import { animateDots, switchTips } from '../components/matchmaking.js';
 
 const components = {
@@ -10,12 +10,14 @@ const components = {
     friendList: {id: 'friendList', html: friendListHTML},
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
     game: {id: 'game', html: gameHTML},
-    game3: {id: 'game3', html: game3HTML},
+    game4: {id: 'game4', html: game4HTML},
     signIn: {id: 'signIn', html: signInHTML},
     signUp: {id: 'signUp', html: signUpHTML},
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
+    settings: {id: 'settings', html: settingsHTML},
+
 };
 
 function show(pageName: keyof typeof components)
@@ -50,6 +52,8 @@ function load(pageName: string, updateHistory: boolean = true)
         show('leaderboard');
         show('goToProfile');
     }
+    else if (pageName === 'settings')
+        show('settings');
     else if (pageName === 'signIn')
     {
         show('signIn');
@@ -62,8 +66,8 @@ function load(pageName: string, updateHistory: boolean = true)
     }
     else if (pageName === 'game')
         show('game');
-    else if (pageName === 'game3')
-        show('game3');
+    else if (pageName === 'game4')
+        show('game4');
     else if (pageName === 'matchmaking')
     {
         show('matchmaking');

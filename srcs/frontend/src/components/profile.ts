@@ -1,20 +1,24 @@
-export const profileHTML = /*html*/`
+export function profileHTML() {
+    const username = window.currentUser?.username || 'user';
+    const wins = window.currentUser?.username || 0;
+    const losses = window.currentUser?.username || 0;
+    return /*html*/ `
     <div class="profile-container">
-        <h1 class="username-title">tung_sahur92</h1>
+        <h1 class="username-title">${username}</h1>
         
         <div class="profile-stats">
             <div class="avatar-container">
-                <img src="./img/tung-tung-tung-sahur.jpeg" alt="User Avatar" class="profile-pic">
+                <img src="./img/default-pp.jpg" alt="User Avatar" class="profile-pic">
             </div>
             
             <div class="stats-container">
                 <div class="stat-row">
                     <h2 class="stat-label">WINS</h2>
-                    <span class="stat-value">100</span>
+                    <span class="stat-value">${wins}</span>
                 </div>
                 <div class="stat-row">
                     <h2 class="stat-label">LOSSES</h2>
-                    <span class="stat-value">84</span>
+                    <span class="stat-value">${losses}</span>
                 </div>
                 <div class="stat-row">
                     <h2 class="stat-label">TITLE</h2>
@@ -34,4 +38,5 @@ export const profileHTML = /*html*/`
             </ul>
         </div>
     </div>
-`; 
+    `;
+}

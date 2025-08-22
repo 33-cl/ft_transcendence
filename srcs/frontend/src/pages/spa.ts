@@ -18,7 +18,7 @@ function initializeComponents(): void
     // Password masking removed - using simple validation on submit instead
     
     // Affiche la page d'accueil au chargement
-    show('signIn');
+    // show('signIn');
 
     // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
     if ((window as any)._navigationListenerSet) {
@@ -46,17 +46,22 @@ function initializeComponents(): void
         // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
         let currentElement: HTMLElement | null = target;
         let isProfileBtn = false;
+        let isSettingsBtn = false;
         
-        while (currentElement && !isProfileBtn) {
+        while (currentElement && !isProfileBtn && !isSettingsBtn) {
             if (currentElement.id === 'profileBtn') {
                 isProfileBtn = true;
-            } else {
+            }
+            else if (currentElement.id === 'settingsBtn') {
+                isSettingsBtn = true;
+            } 
+            else {
                 currentElement = currentElement.parentElement;
             }
         }
         
         // NAVIGATION PRINCIPALE - avec nettoyage spécial pour retour au menu principal
-        if (target.id === 'mainMenuBtn' || target.id === 'back2main' || target.id === 'goToMain') {
+        if (target.id === 'mainMenuBtn' || target.id === 'bacVk2main' || target.id === 'goToMain') {
             // Nettoyage complet avant de retourner au menu principal
             // Cela résout le bug des paddles qui ne s'affichent plus au 2ème jeu local
             cleanupGameState();
@@ -78,6 +83,10 @@ function initializeComponents(): void
         }
         if (target.id === 'goToProfile')
             load('profile');
+        if (target.id === 'settingsBtn' || isSettingsBtn)
+        {
+            load('settings');
+        }
         if (target.id === 'local2p')
         {
             // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
@@ -85,11 +94,11 @@ function initializeComponents(): void
             await window.joinOrCreateRoom(2, true);
             // Ne pas appeler load('game') ici ! Le handler roomJoined s'en occupe
         }
-        if (target.id === 'local3p')
+        if (target.id === 'local4p')
         {
-            // Même principe pour le jeu 3 joueurs
-            await window.joinOrCreateRoom(3, true);
-            // Ne pas appeler load('game3') ici !
+            // Même principe pour le jeu 4 joueurs
+            await window.joinOrCreateRoom(4, true);
+            // Ne pas appeler load('game4') ici !
         }
         if (target.id === 'signInBtn')
             load('signIn');
@@ -228,7 +237,37 @@ function initializeComponents(): void
 // REMOVED: Navigation is now handled directly in websocket.ts to avoid duplicate handlers
 function setupRoomJoinedHandler()
 {
-    // Navigation is now handled directly in websocket.ts when roomJoined event is received
+    if (!window.socket)
+        return;
+    if (window._roomJoinedHandlerSet)
+        return;
+    window._roomJoinedHandlerSet = true;
+    window.socket.on('roomJoined', (data: any) =>
+    {
+        // Si mode local, on affiche directement la page de jeu
+        if (window.isLocalGame) {
+            if (data.maxPlayers === 4) {
+                load('game4');
+            } else {
+                load('game');
+            }
+            return;
+        }
+        // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
+        if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
+        {
+            if (data.players < data.maxPlayers)
+                load('matchmaking');
+            else
+            {
+                if (data.maxPlayers === 4) {
+                    load('game4');
+                } else {
+                    load('game');
+                }
+            }
+        }
+    });
 }
 
 
@@ -237,7 +276,7 @@ window.addEventListener('popstate', function(event) {
         // Charge la page sans mettre à jour l'historique
         load(event.state.page, false);
     } else {
-        // Page par défaut si aucun état n'est sauvegardé
+        // Page par défaut si aucun état n'est sauvegarde
         load('signIn', false);
     }
 });
@@ -249,6 +288,10 @@ if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', async () =>
     {
         await checkSessionOnce();
+        if (window.currentUser)
+            load('mainMenu');
+        else
+            load('signIn');
         initializeComponents();
         setupRoomJoinedHandler();
     });
@@ -257,6 +300,10 @@ else
 {
     (async () => {
         await checkSessionOnce();
+        if (window.currentUser)
+            load('mainMenu');
+        else
+            load('signIn');
         initializeComponents();
         setupRoomJoinedHandler();
     })();

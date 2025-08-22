@@ -4,6 +4,17 @@
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 
+// Fonction pour obtenir la couleur selon le paddle
+function getColorForSide(side: string): string {
+    const colors: Record<string, string> = {
+        'A': '#ff4444',  // Rouge - Gauche
+        'B': '#44ff44',  // Vert - Bas  
+        'C': '#4444ff',  // Bleu - Droite
+        'D': '#ffff44'   // Jaune - Haut
+    };
+    return colors[side] || '#ffffff';
+}
+
 export function initPongRenderer(canvasId: string = 'map')
 {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -55,26 +66,12 @@ export function draw(gameState: any)
     // ...existing code...
 
     // --- DESSIN DU TERRAIN ---
-    if (gameState.paddles && gameState.paddles.length === 3) {
-        // Mode 1v1v1 : hexagone irrégulier
-        const w = canvas.width;
-        const h = canvas.height;
-        const cx = w / 2;
-        const cy = h / 2;
-        const r = Math.min(w, h) * 0.42;
+    if (gameState.paddles && gameState.paddles.length === 4) {
+        // Mode 1v1v1v1 : carré avec bordures
         ctx.save();
         ctx.strokeStyle = '#888';
         ctx.lineWidth = 4;
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = Math.PI / 3 * i - Math.PI / 2;
-            const x = cx + r * Math.cos(angle);
-            const y = cy + r * Math.sin(angle);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.stroke();
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
     } else {
         // Mode 1v1 : rectangle classique
@@ -157,9 +154,9 @@ export function draw(gameState: any)
     const scoreElem = document.getElementById('score');
     if (scoreElem) {
         if (gameState.paddles && Array.isArray(gameState.paddles)) {
-            if (gameState.paddles.length === 3) {
-                // Mode 1v1v1 : scores dynamiques
-                scoreElem.innerHTML = gameState.paddles.map((p: any, i: number) => `<span id='score${i}'>${p.score || 0}</span>`).join(' - ');
+            if (gameState.paddles.length === 4) {
+                // Mode 1v1v1v1 : scores des 4 joueurs
+                scoreElem.innerHTML = gameState.paddles.map((p: any, i: number) => `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${p.side}: ${p.score || 0}</span>`).join(' | ');
             } else if (gameState.paddles.length === 2) {
                 // Mode 1v1 : gauche vs droite
                 const leftScore = gameState.paddles[0]?.score || 0;
