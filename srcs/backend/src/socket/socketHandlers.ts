@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/22 09:45:57 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/08/22 11:23:38 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ import { createInitialGameState } from '../../Rayan/gameState.js';
 import { PaddleSide } from '../../Rayan/gameState.js';
 import { RoomType } from '../types.js';
 import { authenticateSocket, getSocketUser, removeSocketUser, isSocketAuthenticated } from './socketAuth.js';
-import { updateUserStats, getUserByUsername } from '../user.js';
+import { updateUserStats, getUserByUsername, getUserById } from '../user.js';
 
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
@@ -126,9 +126,9 @@ function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io?: Serve
 }
 
 // Ajoute le joueur à la room et le fait rejoindre côté socket.io
-// Ajout : attribution dynamique des paddles pour 1v1v1
+// Ajout : attribution dynamique des paddles pour 1v1v1v1
 function assignPaddleToPlayer(room: RoomType): PaddleSide | null {
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C'];
+    const paddleSides: PaddleSide[] = ['A', 'B', 'C', 'D'];
     for (const side of paddleSides.slice(0, room.maxPlayers)) {
         if (!room.paddleBySocket || !Object.values(room.paddleBySocket).includes(side)) {
             return side;
@@ -151,9 +151,9 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
     if (room.isLocalGame) {
         if (!room.paddleBySocket) room.paddleBySocket = {};
         if (room.maxPlayers === 2) {
-            room.paddleBySocket[socket.id] = ['A', 'C']; // A = gauche, C = droite (B reste pour horizontal en 1v1v1)
-        } else if (room.maxPlayers === 3) {
-            room.paddleBySocket[socket.id] = ['A', 'B', 'C'];
+            room.paddleBySocket[socket.id] = ['A', 'C']; // A = gauche, C = droite 
+        } else if (room.maxPlayers === 4) {
+            room.paddleBySocket[socket.id] = ['A', 'B', 'C', 'D'];
         }
         // Broadcast à toute la room l'état matchmaking
         if (io) {
@@ -177,7 +177,7 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
         }
         return;
     }
-    if (room.maxPlayers === 2 || room.maxPlayers === 3 || room.maxPlayers === 4)
+    if (room.maxPlayers === 2 || room.maxPlayers === 4)
 	{
 		if (!room.paddleBySocket) room.paddleBySocket = {};
 		// Purge les anciennes attributions de paddle (joueurs plus dans la room)
@@ -191,18 +191,14 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 		{
 			if (room.maxPlayers === 2) {
 				// En mode 1v1 (local et non-local) : toujours A=gauche et C=droite
-				// B reste réservé pour le paddle horizontal du mode 1v1v1
 				const paddles = ['A', 'C'];
 				const idx = room.players.indexOf(socket.id);
 				room.paddleBySocket[socket.id] = paddles[idx] || null;
-			} else if (room.maxPlayers === 3) {
-				// Attribution dynamique pour 1v1v1
+				console.log(`[BACKEND] Attribution paddle 1v1: socketId=${socket.id}, index=${idx}, paddle=${paddles[idx]}, isLocal=${room.isLocalGame}`);
+			} else if (room.maxPlayers === 4) {
+				// Attribution dynamique pour 1v1v1v1
 				const paddle = assignPaddleToPlayer(room);
 				room.paddleBySocket[socket.id] = paddle;
-			} else if (room.maxPlayers === 4) {
-				const paddles = ['left', 'right', 'top', 'bottom'];
-				const idx = room.players.indexOf(socket.id);
-				room.paddleBySocket[socket.id] = paddles[idx] || null;
 			}
 		}
 		// --- Broadcast à toute la room l'état matchmaking ---
@@ -410,11 +406,19 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
 
 // Helper pour initialiser paddleInputs avec toutes les clés nécessaires
 function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean; down: boolean }> {
-    const inputs: Record<PaddleSide, { up: boolean; down: boolean }> = {
-        'A': { up: false, down: false },
-        'B': { up: false, down: false },
-        'C': { up: false, down: false }
-    };
+    const inputs: any = {};
+    
+    if (maxPlayers === 2) {
+        // Mode 1v1 : utiliser A (gauche) et C (droite)
+        inputs['A'] = { up: false, down: false };
+        inputs['C'] = { up: false, down: false };
+    } else if (maxPlayers === 4) {
+        // Mode 1v1v1v1 : utiliser A, B, C et D
+        inputs['A'] = { up: false, down: false };
+        inputs['B'] = { up: false, down: false };
+        inputs['C'] = { up: false, down: false };
+        inputs['D'] = { up: false, down: false };
+    }
     
     return inputs;
 }
@@ -490,7 +494,7 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
 }
 
 // Tick global pour toutes les rooms avec un jeu en cours (adapté pour paddles dynamiques)
-function handleGameTick(io: any)
+function handleGameTick(io: any, fastify: FastifyInstance)
 {
     for (const [roomName, room] of Object.entries(rooms))
     {
@@ -507,8 +511,8 @@ function handleGameTick(io: any)
                 const input = typedRoom.paddleInputs[paddle.side];
                 if (!input) continue;
                 
-                // Paddle B horizontal : bouge sur l'axe X
-                if (paddle.side === 'B') {
+                // Paddle B et D horizontaux : bougent sur l'axe X
+                if (paddle.side === 'B' || paddle.side === 'D') {
                     if (input.up) // up = gauche pour paddle horizontal
                         paddle.x = Math.max(0, paddle.x - speed);
                     if (input.down) // down = droite pour paddle horizontal
@@ -525,6 +529,14 @@ function handleGameTick(io: any)
         }
         if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)
         {
+            // Appeler handleGameEnd pour enregistrer les statistiques avant de nettoyer
+            if (typedRoom.players.length > 0) {
+                const firstPlayer = io.sockets.sockets.get(typedRoom.players[0]);
+                if (firstPlayer) {
+                    handleGameEndStats(firstPlayer, fastify, io);
+                }
+            }
+            
             for (const socketId of typedRoom.players)
             {
                 if (io.sockets.sockets.get(socketId))
@@ -560,7 +572,8 @@ function handleSocketMessage(socket: Socket, msg: string)
             else if (player === 'right') mappedPlayer = 'C';
             
             if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
-                if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
+                console.log(`[BACKEND] Paddle autorisé, traitement de ${mappedPlayer} ${direction}`);
+                if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'D' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
                     room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
                     if (message.type === 'keydown') {
                         try {
@@ -573,7 +586,7 @@ function handleSocketMessage(socket: Socket, msg: string)
             }
         } else {
             if (player !== allowedPaddle) return;
-            if ((player === 'A' || player === 'B' || player === 'C') && (direction === 'up' || direction === 'down')) {
+            if ((player === 'A' || player === 'B' || player === 'C' || player === 'D') && (direction === 'up' || direction === 'down')) {
                 room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
                 if (message.type === 'keydown') {
                     room.pongGame.movePaddle(player, direction);
@@ -587,7 +600,8 @@ function handleSocketMessage(socket: Socket, msg: string)
 function handleSocketDisconnect(socket: Socket)
 {
     removePlayerFromRoom(socket.id);
-    removeSocketUser(socket.id); // Clean up user authentication data
+    // Nettoyer l'authentification du socket
+    removeSocketUser(socket.id);
 }
 
 // Handler pour quitter toutes les rooms explicitement (SPA navigation)
@@ -634,23 +648,142 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
     socket.emit('leaveAllRoomsComplete', { status: 'success' });
 }
 
+// Handler pour la fin de partie avec gestion des statistiques
+async function handleGameEndStats(socket: Socket, fastify: FastifyInstance, io: Server) {
+    const playerRoom = getPlayerRoom(socket.id);
+    if (!playerRoom) return;
+    
+    const room = rooms[playerRoom] as RoomType;
+    if (!room || !room.pongGame) return;
+    
+    const gameState = room.pongGame.state;
+    
+    // Empêcher l'enregistrement de statistiques pour les jeux locaux
+    if (room.isLocalGame) {
+        console.log(`[BACKEND] Jeu local détecté - pas d'enregistrement de statistiques`);
+        return;
+    }
+    
+    // Vérifier qu'il y a exactement 2 joueurs pour un jeu en ligne
+    if (room.players.length !== 2) {
+        console.log(`[BACKEND] Nombre de joueurs incorrect pour statistiques: ${room.players.length}`);
+        return;
+    }
+    
+    // Déterminer le gagnant selon le score
+    let winnerSocketId: string | null = null;
+    let loserSocketId: string | null = null;
+    let winnerScore = 0;
+    let loserScore = 0;
+    
+    if (gameState.paddles && gameState.paddles.length === 2) {
+        const leftPaddle = gameState.paddles[0];
+        const rightPaddle = gameState.paddles[1];
+        
+        if (leftPaddle.score > rightPaddle.score) {
+            winnerScore = leftPaddle.score;
+            loserScore = rightPaddle.score;
+        } else if (rightPaddle.score > leftPaddle.score) {
+            winnerScore = rightPaddle.score;
+            loserScore = leftPaddle.score;
+        } else {
+            console.log(`[BACKEND] Match nul - pas d'enregistrement de statistiques`);
+            return;
+        }
+        
+        // Mapper les paddles aux socket IDs avec gestion des formats array et single value
+        if (room.paddleBySocket) {
+            for (const [socketId, paddleAssignment] of Object.entries(room.paddleBySocket)) {
+                // Gestion des deux formats: array (['A', 'C']) et single value ('A' ou 'C')
+                let controlsPaddles: string[] = [];
+                if (Array.isArray(paddleAssignment)) {
+                    controlsPaddles = paddleAssignment;
+                } else if (typeof paddleAssignment === 'string') {
+                    controlsPaddles = [paddleAssignment];
+                }
+                
+                // Vérifier si ce socket contrôle le paddle gagnant
+                const controlsLeftPaddle = controlsPaddles.includes('A') || controlsPaddles.includes('left');
+                const controlsRightPaddle = controlsPaddles.includes('C') || controlsPaddles.includes('right');
+                
+                if (leftPaddle.score > rightPaddle.score && controlsLeftPaddle) {
+                    winnerSocketId = socketId;
+                } else if (rightPaddle.score > leftPaddle.score && controlsRightPaddle) {
+                    winnerSocketId = socketId;
+                } else if (leftPaddle.score > rightPaddle.score && controlsRightPaddle) {
+                    loserSocketId = socketId;
+                } else if (rightPaddle.score > leftPaddle.score && controlsLeftPaddle) {
+                    loserSocketId = socketId;
+                }
+            }
+        }
+    }
+    
+    // Vérifier qu'on a identifié le gagnant et le perdant
+    if (!winnerSocketId || !loserSocketId) {
+        console.error(`[BACKEND] Impossible d'identifier gagnant/perdant:`, {
+            winnerSocketId,
+            loserSocketId,
+            players: room.players,
+            paddleBySocket: room.paddleBySocket
+        });
+        return;
+    }
+    
+    try {
+        // Récupérer les informations utilisateur via les sessions socket
+        const winnerSocket = io.sockets.sockets.get(winnerSocketId);
+        const loserSocket = io.sockets.sockets.get(loserSocketId);
+        
+        if (!winnerSocket || !loserSocket) {
+            console.error(`[BACKEND] Sockets non trouvés pour les statistiques`);
+            return;
+        }
+        
+        // Extraire les IDs utilisateur des sessions socket authentifiées
+        const winnerUser = getSocketUser(winnerSocketId);
+        const loserUser = getSocketUser(loserSocketId);
+        
+        if (!winnerUser?.id || !loserUser?.id) {
+            console.error(`[BACKEND] Utilisateurs non authentifiés - pas de statistiques`);
+            return;
+        }
+        
+        // Vérifier que ce ne sont pas le même utilisateur (protection anti-triche)
+        if (winnerUser.id === loserUser.id) {
+            console.log(`[BACKEND] Même utilisateur détecté - pas d'enregistrement de statistiques`);
+            return;
+        }
+        
+        // Enregistrer les statistiques
+        await updateUserStats(winnerUser.id, loserUser.id, winnerScore, loserScore, 'online');
+        
+        console.log(`[BACKEND] Statistiques enregistrées: ${winnerUser.username} (${winnerScore}) vs ${loserUser.username} (${loserScore})`);
+        
+    } catch (error) {
+        console.error(`[BACKEND] Erreur lors de l'enregistrement des statistiques:`, error);
+    }
+}
+
 // Fonction principale qui enregistre tous les handlers socket.io
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
     // Tick rate à 60 FPS pour un gameplay fluide
     setInterval(() =>
 	{
-        handleGameTick(io);
-    }, 1000 / 60);
+        handleGameTick(io, fastify);
+    }, 1000 / 120);
 
     io.on('connection', (socket: Socket) =>
 	{
         fastify.log.info(`Client connecté : ${socket.id}`);
-
-        // Authenticate the socket connection
+        
+        // Authentifier le socket à la connexion
         const user = authenticateSocket(socket, fastify);
         if (user) {
-            fastify.log.info(`Socket ${socket.id} authenticated as user ${user.username} (${user.id})`);
+            fastify.log.info(`Socket ${socket.id} authentifié pour l'utilisateur ${user.username} (${user.id})`);
+        } else {
+            fastify.log.warn(`Socket ${socket.id} non authentifié`);
         }
 
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));

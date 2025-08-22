@@ -16,7 +16,8 @@ const EASE = 0.1;
 
 // Configuration des étoiles filantes
 const SHOOTING_STAR_COUNT = 3; // nombre maximum d'étoiles filantes simultanées
-const SHOOTING_STAR_SPAWN_RATE = 0.003; // probabilité de spawn par frame
+const SHOOTING_STAR_SPAWN_RATE = 0; // probabilité de spawn par frame
+// const SHOOTING_STAR_SPAWN_RATE = 0.003; // probabilité de spawn par frame
 const SHOOTING_STAR_SPEED_RANGE: [number, number] = [3, 8];
 const SHOOTING_STAR_LENGTH_RANGE: [number, number] = [50, 150];
 const SHOOTING_STAR_OPACITY = 0.8;
@@ -27,10 +28,12 @@ const SHOOTING_STAR_GRAVITY_STRENGTH_MIN = 0.05; // force d'attraction minimale 
 
 // Configuration du trou noir
 const BLACK_HOLE_SIZE = 15; // taille réduite
+// const BLACK_HOLE_SIZE = 0; // taille réduite
 const BLACK_HOLE_SPEED = 0.0005; // vitesse la plus lente des étoiles
 const BLACK_HOLE_MIN_DISTANCE = 200; // distance minimale du centre
 const BLACK_HOLE_MAX_DISTANCE = 500; // distance maximale du centre
 const BLACK_HOLE_RING_STARS = 200; // nombre d'étoiles dans l'anneau
+// const BLACK_HOLE_RING_STARS = 0; // nombre d'étoiles dans l'anneau
 const BLACK_HOLE_RING_MIN_RADIUS_MULTIPLIER = 2; // multiplicateur pour le rayon minimum (taille * 2)
 const BLACK_HOLE_RING_MAX_RADIUS_MULTIPLIER = 3.5; // multiplicateur pour le rayon maximum (taille * 6)
 const BLACK_HOLE_RING_SPEED = 0.02; // vitesse de rotation de l'anneau

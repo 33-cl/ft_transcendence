@@ -1,13 +1,13 @@
 all: build up
 
+build:
+	docker compose build
+
 up:
 	docker compose up -d
 
 down:
 	docker compose down
-
-build:
-	docker compose build
 
 rebuild: 
 	docker compose build --no-cache
@@ -17,6 +17,7 @@ logs:
 
 clean: down
 	rm -rf srcs/frontend/dist/*
+	rm -rf srcs/backend/dist/*
 	docker system prune -af
 
 fclean: clean

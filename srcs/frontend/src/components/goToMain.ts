@@ -1,3 +1,3 @@
 export const goToMainHTML = /*html*/ `
-    <button id="goToMain">Main menu</button>
+    <button id="goToMain" class="default-button bottom-left">Main menu</button>
 `;

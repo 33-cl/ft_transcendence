@@ -2,7 +2,7 @@ export const matchmakingHTML = /*html*/`
     <div id="matchmaking-page">
         <h1>MATCHMAKING</h1>
         <p id="searchingText">Searching for an opponent...</p>
-        <button id="cancelSearchBtn">Cancel Search</button>
+        <button id="cancelSearchBtn" class="default-button">Cancel Search</button>
 
         <div id="tips">
             <p id="tipText"></p>
