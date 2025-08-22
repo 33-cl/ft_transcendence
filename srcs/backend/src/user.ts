@@ -8,47 +8,6 @@ export function getUserByUsername(username: string) {
   return db.prepare('SELECT id, username, email, avatar_url, wins, losses, created_at FROM users WHERE username = ?').get(username);
 }
 
-export function updateUserStats(winnerId: number, loserId: number, winnerScore: number, loserScore: number, matchType: string = 'online') {
-  const updateWinner = db.prepare('UPDATE users SET wins = wins + 1 WHERE id = ?');
-  const updateLoser = db.prepare('UPDATE users SET losses = losses + 1 WHERE id = ?');
-  const insertMatch = db.prepare(`
-    INSERT INTO matches (winner_id, loser_id, winner_score, loser_score, match_type)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-
-  // Transaction pour s'assurer que tout se passe bien
-  const transaction = db.transaction(() => {
-    updateWinner.run(winnerId);
-    updateLoser.run(loserId);
-    insertMatch.run(winnerId, loserId, winnerScore, loserScore, matchType);
-  });
-
-  transaction();
-}
-
-export function getUserStats(id: string) {
-  return db.prepare('SELECT username, wins, losses FROM users WHERE id = ?').get(id);
-}
-
-export function getMatchHistory(userId: string, limit: number = 10) {
-  return db.prepare(`
-    SELECT 
-      m.*,
-      winner.username as winner_name,
-      loser.username as loser_name
-    FROM matches m
-    JOIN users winner ON m.winner_id = winner.id
-    JOIN users loser ON m.loser_id = loser.id
-    WHERE m.winner_id = ? OR m.loser_id = ?
-    ORDER BY m.created_at DESC
-    LIMIT ?
-  `).all(userId, userId, limit);
-}
-
-export function getUserByUsername(username: string) {
-  return db.prepare('SELECT id, username, email, avatar_url, created_at FROM users WHERE username = ?').get(username);
-}
-
 // Fonction pour mettre à jour les statistiques des utilisateurs après un match
 export function updateUserStats(winnerId: number, loserId: number, winnerScore: number, loserScore: number, matchType: string = 'online') {
   try {
@@ -83,19 +42,31 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
       )
     `);
 
-    // Enregistrer le match
+    // Mettre à jour les stats des utilisateurs et enregistrer le match dans une transaction
+    const updateWinner = db.prepare('UPDATE users SET wins = wins + 1 WHERE id = ?');
+    const updateLoser = db.prepare('UPDATE users SET losses = losses + 1 WHERE id = ?');
     const insertMatch = db.prepare(`
       INSERT INTO matches (winner_id, loser_id, winner_score, loser_score, match_type)
       VALUES (?, ?, ?, ?, ?)
     `);
-    
-    insertMatch.run(winnerId, loserId, winnerScore, loserScore, matchType);
 
+    // Transaction pour s'assurer que tout se passe bien
+    const transaction = db.transaction(() => {
+      updateWinner.run(winnerId);
+      updateLoser.run(loserId);
+      insertMatch.run(winnerId, loserId, winnerScore, loserScore, matchType);
+    });
+
+    transaction();
     console.log(`[BACKEND] Match enregistré avec succès: ${winner.username} vs ${loser.username}`);
 
   } catch (error) {
     console.error(`[BACKEND] Erreur lors de l'enregistrement des statistiques:`, error);
   }
+}
+
+export function getUserStats(id: string) {
+  return db.prepare('SELECT username, wins, losses FROM users WHERE id = ?').get(id);
 }
 
 // Fonction pour récupérer l'historique des matchs d'un utilisateur
