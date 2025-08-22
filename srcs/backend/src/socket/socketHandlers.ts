@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/22 11:23:38 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/08/22 12:09:21 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -639,7 +639,7 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
     }
     
     // Emit confirmation that cleanup is complete
-    socket.emit('leaveAllRoomsComplete', { status: 'success' });
+    socket.emit('leaveAllRoomsComplete', { status: 'success' }); 
 }
 
 // Fonction principale qui enregistre tous les handlers socket.io
