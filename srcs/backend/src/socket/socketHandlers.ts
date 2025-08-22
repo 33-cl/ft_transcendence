@@ -529,14 +529,8 @@ function handleGameTick(io: any, fastify: FastifyInstance)
         }
         if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)
         {
-            // Appeler handleGameEnd pour enregistrer les statistiques avant de nettoyer
-            if (typedRoom.players.length > 0) {
-                const firstPlayer = io.sockets.sockets.get(typedRoom.players[0]);
-                if (firstPlayer) {
-                    handleGameEndStats(firstPlayer, fastify, io);
-                }
-            }
-            
+            // Nettoyage de la room après la fin du jeu
+            // Les statistiques sont déjà gérées par le callback handleGameEnd
             for (const socketId of typedRoom.players)
             {
                 if (io.sockets.sockets.get(socketId))
@@ -646,123 +640,6 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
     
     // Emit confirmation that cleanup is complete
     socket.emit('leaveAllRoomsComplete', { status: 'success' });
-}
-
-// Handler pour la fin de partie avec gestion des statistiques
-async function handleGameEndStats(socket: Socket, fastify: FastifyInstance, io: Server) {
-    const playerRoom = getPlayerRoom(socket.id);
-    if (!playerRoom) return;
-    
-    const room = rooms[playerRoom] as RoomType;
-    if (!room || !room.pongGame) return;
-    
-    const gameState = room.pongGame.state;
-    
-    // Empêcher l'enregistrement de statistiques pour les jeux locaux
-    if (room.isLocalGame) {
-        console.log(`[BACKEND] Jeu local détecté - pas d'enregistrement de statistiques`);
-        return;
-    }
-    
-    // Vérifier qu'il y a exactement 2 joueurs pour un jeu en ligne
-    if (room.players.length !== 2) {
-        console.log(`[BACKEND] Nombre de joueurs incorrect pour statistiques: ${room.players.length}`);
-        return;
-    }
-    
-    // Déterminer le gagnant selon le score
-    let winnerSocketId: string | null = null;
-    let loserSocketId: string | null = null;
-    let winnerScore = 0;
-    let loserScore = 0;
-    
-    if (gameState.paddles && gameState.paddles.length === 2) {
-        const leftPaddle = gameState.paddles[0];
-        const rightPaddle = gameState.paddles[1];
-        
-        if (leftPaddle.score > rightPaddle.score) {
-            winnerScore = leftPaddle.score;
-            loserScore = rightPaddle.score;
-        } else if (rightPaddle.score > leftPaddle.score) {
-            winnerScore = rightPaddle.score;
-            loserScore = leftPaddle.score;
-        } else {
-            console.log(`[BACKEND] Match nul - pas d'enregistrement de statistiques`);
-            return;
-        }
-        
-        // Mapper les paddles aux socket IDs avec gestion des formats array et single value
-        if (room.paddleBySocket) {
-            for (const [socketId, paddleAssignment] of Object.entries(room.paddleBySocket)) {
-                // Gestion des deux formats: array (['A', 'C']) et single value ('A' ou 'C')
-                let controlsPaddles: string[] = [];
-                if (Array.isArray(paddleAssignment)) {
-                    controlsPaddles = paddleAssignment;
-                } else if (typeof paddleAssignment === 'string') {
-                    controlsPaddles = [paddleAssignment];
-                }
-                
-                // Vérifier si ce socket contrôle le paddle gagnant
-                const controlsLeftPaddle = controlsPaddles.includes('A') || controlsPaddles.includes('left');
-                const controlsRightPaddle = controlsPaddles.includes('C') || controlsPaddles.includes('right');
-                
-                if (leftPaddle.score > rightPaddle.score && controlsLeftPaddle) {
-                    winnerSocketId = socketId;
-                } else if (rightPaddle.score > leftPaddle.score && controlsRightPaddle) {
-                    winnerSocketId = socketId;
-                } else if (leftPaddle.score > rightPaddle.score && controlsRightPaddle) {
-                    loserSocketId = socketId;
-                } else if (rightPaddle.score > leftPaddle.score && controlsLeftPaddle) {
-                    loserSocketId = socketId;
-                }
-            }
-        }
-    }
-    
-    // Vérifier qu'on a identifié le gagnant et le perdant
-    if (!winnerSocketId || !loserSocketId) {
-        console.error(`[BACKEND] Impossible d'identifier gagnant/perdant:`, {
-            winnerSocketId,
-            loserSocketId,
-            players: room.players,
-            paddleBySocket: room.paddleBySocket
-        });
-        return;
-    }
-    
-    try {
-        // Récupérer les informations utilisateur via les sessions socket
-        const winnerSocket = io.sockets.sockets.get(winnerSocketId);
-        const loserSocket = io.sockets.sockets.get(loserSocketId);
-        
-        if (!winnerSocket || !loserSocket) {
-            console.error(`[BACKEND] Sockets non trouvés pour les statistiques`);
-            return;
-        }
-        
-        // Extraire les IDs utilisateur des sessions socket authentifiées
-        const winnerUser = getSocketUser(winnerSocketId);
-        const loserUser = getSocketUser(loserSocketId);
-        
-        if (!winnerUser?.id || !loserUser?.id) {
-            console.error(`[BACKEND] Utilisateurs non authentifiés - pas de statistiques`);
-            return;
-        }
-        
-        // Vérifier que ce ne sont pas le même utilisateur (protection anti-triche)
-        if (winnerUser.id === loserUser.id) {
-            console.log(`[BACKEND] Même utilisateur détecté - pas d'enregistrement de statistiques`);
-            return;
-        }
-        
-        // Enregistrer les statistiques
-        await updateUserStats(winnerUser.id, loserUser.id, winnerScore, loserScore, 'online');
-        
-        console.log(`[BACKEND] Statistiques enregistrées: ${winnerUser.username} (${winnerScore}) vs ${loserUser.username} (${loserScore})`);
-        
-    } catch (error) {
-        console.error(`[BACKEND] Erreur lors de l'enregistrement des statistiques:`, error);
-    }
 }
 
 // Fonction principale qui enregistre tous les handlers socket.io
