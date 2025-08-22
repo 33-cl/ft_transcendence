@@ -1,0 +1,1 @@
+{"root":["../server.ts","../Rayan/db.ts","../Rayan/gameState.ts","../Rayan/pong.ts","../src/db.ts","../src/types.ts","../src/user.ts","../src/routes/auth.ts","../src/routes/matches.ts","../src/routes/profile.ts","../src/routes/rooms.ts","../src/routes/users.ts","../src/socket/roomManager.ts","../src/socket/socketAuth.ts","../src/socket/socketHandlers.ts"],"version":"5.8.3"}
