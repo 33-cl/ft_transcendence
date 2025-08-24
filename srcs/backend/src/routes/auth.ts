@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import db from '../db.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import { removeUserFromActiveList } from '../socket/socketAuth.js';
 
 interface RegisterBody {
   email?: string;
@@ -14,6 +15,8 @@ interface DbUser {
   username: string;
   password_hash: string;
   avatar_url?: string | null;
+  wins: number;
+  losses: number;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +28,8 @@ interface SessionJoinRow {
   email: string;
   username: string;
   avatar_url?: string | null;
+  wins: number;
+  losses: number;
   created_at: string;
   updated_at: string;
 }
@@ -151,7 +156,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       );
       const info = stmt.run(email.trim().toLowerCase(), username.trim(), password_hash, null);
 
-      const created = db.prepare('SELECT id, email, username, avatar_url, created_at, updated_at FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
+      const created = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
       
       // Créer automatiquement une session pour l'utilisateur nouvellement inscrit
       const token = randomBytes(32).toString('hex');
@@ -228,6 +233,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
       email: user.email,
       username: user.username,
       avatar_url: user.avatar_url ?? null,
+      wins: user.wins,
+      losses: user.losses,
       created_at: user.created_at,
       updated_at: user.updated_at
     };
@@ -240,7 +247,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     const sid = cookies['sid'];
     if (!sid) return reply.code(401).send({ error: 'No session.' });
 
-    const row = db.prepare('SELECT s.token, s.expires_at, u.id, u.email, u.username, u.avatar_url, u.created_at, u.updated_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?').get(sid) as SessionJoinRow | undefined;
+    const row = db.prepare('SELECT s.token, s.expires_at, u.id, u.email, u.username, u.avatar_url, u.wins, u.losses, u.created_at, u.updated_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?').get(sid) as SessionJoinRow | undefined;
     if (!row) return reply.code(401).send({ error: 'Invalid session.' });
 
     // Vérifier expiration
@@ -256,6 +263,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
       email: row.email,
       username: row.username,
       avatar_url: row.avatar_url ?? null,
+      wins: row.wins,
+      losses: row.losses,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }});
@@ -265,7 +274,20 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/logout', async (request, reply) => {
     const cookies = parseCookies(request.headers['cookie'] as string | undefined);
     const sid = cookies['sid'];
-    if (sid) db.prepare('DELETE FROM sessions WHERE token = ?').run(sid);
+    
+    if (sid) {
+      // Get user ID from session before deleting it
+      const sessionRow = db.prepare('SELECT user_id FROM sessions WHERE token = ?').get(sid) as { user_id: number } | undefined;
+      
+      // Delete session from database
+      db.prepare('DELETE FROM sessions WHERE token = ?').run(sid);
+      
+      // Clean up user from active users list
+      if (sessionRow) {
+        removeUserFromActiveList(sessionRow.user_id);
+      }
+    }
+    
     clearSessionCookie(reply);
     return reply.send({ ok: true });
   });

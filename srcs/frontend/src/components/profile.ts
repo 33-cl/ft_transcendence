@@ -1,7 +1,7 @@
 export function profileHTML() {
     const username = window.currentUser?.username || 'user';
-    const wins = window.currentUser?.username || 0;
-    const losses = window.currentUser?.username || 0;
+    const wins = window.currentUser?.wins || 0;
+    const losses = window.currentUser?.losses || 0;
     return /*html*/ `
     <div class="profile-container">
         <h1 class="username-title">${username}</h1>

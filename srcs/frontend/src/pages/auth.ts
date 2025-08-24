@@ -31,6 +31,35 @@ export async function checkSessionOnce() {
     }
 }
 
+// Function to refresh user stats after a game
+export async function refreshUserStats() {
+    if (!window.currentUser) return false;
+    
+    try {
+        const res = await fetch('/auth/me', { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            const newUser = data?.user;
+            if (newUser && newUser.id === window.currentUser.id) {
+                const oldWins = window.currentUser.wins || 0;
+                const oldLosses = window.currentUser.losses || 0;
+                
+                window.currentUser = newUser;
+                
+                // Log if stats changed
+                if (newUser.wins !== oldWins || newUser.losses !== oldLosses) {
+                    console.log(`Stats updated: ${oldWins} -> ${newUser.wins} wins, ${oldLosses} -> ${newUser.losses} losses`);
+                    return true; // Stats changed
+                }
+            }
+        }
+        return false; // No change
+    } catch (error) {
+        console.error('Failed to refresh user stats:', error);
+        return false;
+    }
+}
+
 // Handlers d'inscription (SignUp) et connexion (SignIn)
 document.addEventListener('componentsReady', () => {
     // SignUp
@@ -242,3 +271,6 @@ document.addEventListener('componentsReady', () => {
         }, 500);
     });
 });
+
+// Expose refreshUserStats globally for post-game stats refresh
+(window as any).refreshUserStats = refreshUserStats;

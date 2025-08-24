@@ -47,10 +47,32 @@ function load(pageName: string, updateHistory: boolean = true)
         show('landing');
     else if (pageName === 'mainMenu')
     {
-        show('mainMenu');
-        show('friendList');
-        show('leaderboard');
-        show('goToProfile');
+        // Refresh user stats BEFORE showing components to ensure displayed data is current
+        if (window.currentUser && (window as any).refreshUserStats) {
+            (window as any).refreshUserStats().then((statsChanged: boolean) => {
+                if (statsChanged) {
+                    console.log('📊 User stats refreshed before main menu display');
+                }
+                // Show components after stats are refreshed
+                show('mainMenu');
+                show('friendList');
+                show('leaderboard');
+                show('goToProfile');
+            }).catch((error: any) => {
+                console.warn('Failed to refresh user stats before main menu:', error);
+                // Still show components even if refresh fails
+                show('mainMenu');
+                show('friendList');
+                show('leaderboard');
+                show('goToProfile');
+            });
+        } else {
+            // No user or refresh function available, show components directly
+            show('mainMenu');
+            show('friendList');
+            show('leaderboard');
+            show('goToProfile');
+        }
     }
     else if (pageName === 'settings')
         show('settings');
@@ -76,8 +98,26 @@ function load(pageName: string, updateHistory: boolean = true)
     }
     else if (pageName === 'profile')
     {
-        show('profile');
-        show('goToMain');
+        // Refresh user stats BEFORE showing profile to ensure displayed data is current
+        if (window.currentUser && (window as any).refreshUserStats) {
+            (window as any).refreshUserStats().then((statsChanged: boolean) => {
+                if (statsChanged) {
+                    console.log('📊 User stats refreshed before profile display');
+                }
+                // Show components after stats are refreshed
+                show('profile');
+                show('goToMain');
+            }).catch((error: any) => {
+                console.warn('Failed to refresh user stats before profile:', error);
+                // Still show components even if refresh fails
+                show('profile');
+                show('goToMain');
+            });
+        } else {
+            // No user or refresh function available, show components directly
+            show('profile');
+            show('goToMain');
+        }
     }
     else if (pageName === 'gameFinished')
         show('gameFinished');
