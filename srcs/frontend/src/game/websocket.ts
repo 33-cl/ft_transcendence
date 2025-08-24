@@ -104,7 +104,7 @@ function setupGlobalSocketListeners() {
             // Handle user already connected error - just ignore silently
             if (data && data.code === 'USER_ALREADY_CONNECTED') {
                 // Don't show popup, don't reload, just silently ignore
-                console.log('User already connected elsewhere, ignoring connection attempt');
+                // console.log('User already connected elsewhere, ignoring connection attempt');
                 return;
             }
             
@@ -112,7 +112,7 @@ function setupGlobalSocketListeners() {
             
             // Handle other errors by showing them to the user
             if (data && data.error) {
-                console.error('Server error:', data.error);
+                // console.error('Server error:', data.error);
                 // You could show a toast notification or alert here
             }
         });
