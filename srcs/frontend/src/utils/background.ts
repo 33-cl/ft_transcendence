@@ -16,8 +16,8 @@ const EASE = 0.1;
 
 // Configuration des étoiles filantes
 const SHOOTING_STAR_COUNT = 3; // nombre maximum d'étoiles filantes simultanées
-const SHOOTING_STAR_SPAWN_RATE = 0; // probabilité de spawn par frame
-// const SHOOTING_STAR_SPAWN_RATE = 0.003; // probabilité de spawn par frame
+// const SHOOTING_STAR_SPAWN_RATE = 0; // probabilité de spawn par frame
+const SHOOTING_STAR_SPAWN_RATE = 0.003; // probabilité de spawn par frame
 const SHOOTING_STAR_SPEED_RANGE: [number, number] = [3, 8];
 const SHOOTING_STAR_LENGTH_RANGE: [number, number] = [50, 150];
 const SHOOTING_STAR_OPACITY = 0.8;
@@ -44,19 +44,21 @@ const COLLAPSE_DETECTION_RADIUS = 25; // Distance pour détecter la collision av
 const COLLAPSE_RING_DURATION = 120; // Durée d'absorption des étoiles de l'anneau (frames)
 const COLLAPSE_STARS_DURATION = 300; // Durée d'absorption des étoiles du background (frames)
 const COLLAPSE_SHOOTING_STARS_DURATION = 180; // Durée d'absorption des étoiles filantes (frames)
-const COLLAPSE_FINAL_DURATION = 180; // Durée avant que le trou noir disparaisse aussi (frames)
+const COLLAPSE_FINAL_DURATION = 180; // Durée avant le reset (frames)
+const RESET_DURATION = 100; // Durée de la régénération des étoiles (frames)
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
 
-// États de l'easter egg - modifié pour l'effondrement définitif
+// États modifiés pour inclure le reset
 enum CollapseState {
   NORMAL,
   RING_COLLAPSE,
   STARS_COLLAPSE,
   SHOOTING_STARS_COLLAPSE,
   FINAL_COLLAPSE,
-  COMPLETE_VOID // État définitif - plus rien n'existe
+  RESETTING, // État pour la régénération
+  RESET_COMPLETE // État final - plus d'actions possibles
 }
 
 class Star {
@@ -73,6 +75,14 @@ class Star {
   isCollapsingToBlackHole: boolean = false;
   collapseStartTime: number = 0;
   originalOpacity: number; // Sauvegarder l'opacité originale
+  
+  // Nouvelles propriétés pour le reset
+  isResetting: boolean = false;
+  resetStartTime: number = 0;
+  resetStartX: number = 0;
+  resetStartY: number = 0;
+  originalAngle: number;
+  originalDistance: number;
 
   constructor(private centerX: number, private centerY: number) {
     this.angle = Math.random() * Math.PI * 2;
@@ -81,6 +91,10 @@ class Star {
     this.opacity = Math.random() * (STAR_OPACITY_RANGE[1] - STAR_OPACITY_RANGE[0]) + STAR_OPACITY_RANGE[0];
     this.originalOpacity = this.opacity; // Sauvegarder l'opacité originale
     this.speed = 0.0005 + Math.random() * 0.001;
+    
+    // Sauvegarder les propriétés originales pour le reset
+    this.originalAngle = this.angle;
+    this.originalDistance = this.distance;
 
     // Initial position
     this.x = this.centerX + Math.cos(this.angle) * this.distance;
@@ -96,7 +110,48 @@ class Star {
     this.targetY = blackHoleY;
   }
 
+  startReset(blackHoleX: number, blackHoleY: number, delay: number = 0): void {
+    this.isResetting = true;
+    this.isCollapsingToBlackHole = false;
+    this.resetStartTime = Date.now() + delay;
+    this.resetStartX = blackHoleX;
+    this.resetStartY = blackHoleY;
+    this.x = blackHoleX;
+    this.y = blackHoleY;
+    this.opacity = 0;
+    
+    // Recalculer la position finale basée sur les propriétés originales
+    this.targetX = this.centerX + Math.cos(this.originalAngle) * this.originalDistance;
+    this.targetY = this.centerY + Math.sin(this.originalAngle) * this.originalDistance;
+  }
+
   update(blackHoleX?: number, blackHoleY?: number): void {
+    if (this.isResetting) {
+      const currentTime = Date.now();
+      if (currentTime >= this.resetStartTime) {
+        // Animation de reset depuis le trou noir vers la position originale
+        const resetProgress = Math.min((currentTime - this.resetStartTime) / (RESET_DURATION * 16.67), 1);
+        const easeProgress = 1 - Math.pow(1 - resetProgress, 3); // Ease out cubic
+        
+        // Interpolation de position
+        this.x = this.resetStartX + (this.targetX - this.resetStartX) * easeProgress;
+        this.y = this.resetStartY + (this.targetY - this.resetStartY) * easeProgress;
+        
+        // Restauration progressive de l'opacité
+        this.opacity = this.originalOpacity * easeProgress;
+        
+        // Restauration progressive de l'angle et distance pour continuer l'orbite
+        this.angle = this.originalAngle;
+        this.distance = this.originalDistance;
+        
+        if (resetProgress >= 1) {
+          this.isResetting = false;
+          this.attractionTimer = 0;
+        }
+      }
+      return;
+    }
+
     if (this.isCollapsingToBlackHole && blackHoleX !== undefined && blackHoleY !== undefined) {
       const currentTime = Date.now();
       if (currentTime >= this.collapseStartTime) {
@@ -111,7 +166,7 @@ class Star {
           // Faire disparaître l'étoile progressivement
           this.opacity *= 0.98;
         } else {
-          // Étoile absorbée - elle reste invisible définitivement
+          // Étoile absorbée - elle reste invisible temporairement
           this.opacity = 0;
         }
       }
@@ -163,8 +218,10 @@ class BlackHole {
   }[] = [];
   collapseState: CollapseState = CollapseState.NORMAL;
   collapseTimer: number = 0;
-  isVisible: boolean = true; // Contrôler la visibilité du trou noir
-  blackHoleOpacity: number = 1; // Opacité du trou noir lui-même
+  isVisible: boolean = true;
+  blackHoleOpacity: number = 1;
+  finalBlackHoleX: number = 0; // Position finale du trou noir pour le reset
+  finalBlackHoleY: number = 0;
 
   constructor(private centerX: number, private centerY: number) {
     this.angle = Math.random() * Math.PI * 2;
@@ -273,14 +330,23 @@ class BlackHole {
           // Faire disparaître progressivement le trou noir lui-même
           this.blackHoleOpacity -= 1 / COLLAPSE_FINAL_DURATION;
           if (this.collapseTimer >= COLLAPSE_FINAL_DURATION) {
-            this.collapseState = CollapseState.COMPLETE_VOID;
+            // Sauvegarder la position finale du trou noir
+            this.finalBlackHoleX = this.x;
+            this.finalBlackHoleY = this.y;
+            this.collapseState = CollapseState.RESETTING;
+            this.collapseTimer = 0;
             this.isVisible = false;
             this.blackHoleOpacity = 0;
           }
           break;
           
-        case CollapseState.COMPLETE_VOID:
-          // État définitif - rien ne se passe, tout reste noir
+        case CollapseState.RESETTING:
+          // Le trou noir reste invisible et ne fait rien
+          // Le reset est géré par la classe BackgroundStarfield
+          break;
+          
+        case CollapseState.RESET_COMPLETE:
+          // État final définitif - plus aucune action
           break;
       }
     }
@@ -326,7 +392,7 @@ class BlackHole {
           point.opacity = star.opacity * fadeRatio * 0.5;
         });
       });
-    } else if (this.collapseState !== CollapseState.COMPLETE_VOID) {
+    } else if (this.collapseState !== CollapseState.RESETTING && this.collapseState !== CollapseState.RESET_COMPLETE) {
       // Pendant le collapse, mettre à jour les étoiles de l'anneau
       this.ringStars.forEach(star => {
         if (star.isCollapsing) {
@@ -367,7 +433,7 @@ class BlackHole {
 
   draw(ctx: CanvasRenderingContext2D): void {
     // Ne rien dessiner si le trou noir n'est pas visible
-    if (!this.isVisible || this.collapseState === CollapseState.COMPLETE_VOID) return;
+    if (!this.isVisible || this.collapseState === CollapseState.RESETTING || this.collapseState === CollapseState.RESET_COMPLETE) return;
     
     // Dessiner les traînées des étoiles de l'anneau d'abord
     this.ringStars.forEach(star => {
@@ -427,8 +493,20 @@ class BlackHole {
     return this.collapseState === CollapseState.SHOOTING_STARS_COLLAPSE;
   }
 
+  shouldReset(): boolean {
+    return this.collapseState === CollapseState.RESETTING;
+  }
+
+  markResetComplete(): void {
+    this.collapseState = CollapseState.RESET_COMPLETE;
+  }
+
+  getFinalPosition(): { x: number, y: number } {
+    return { x: this.finalBlackHoleX, y: this.finalBlackHoleY };
+  }
+
   isInVoidState(): boolean {
-    return this.collapseState === CollapseState.COMPLETE_VOID;
+    return false; // Plus d'état void permanent
   }
 }
 
@@ -509,7 +587,7 @@ class ShootingStar {
         this.opacity *= 0.97;
         this.maxOpacity *= 0.97;
       } else {
-        // Étoile filante absorbée - reste inactive définitivement
+        // Étoile filante absorbée
         this.active = false;
         return;
       }
@@ -651,6 +729,7 @@ class BackgroundStarfield {
   private shootingStars: ShootingStar[] = [];
   private blackHole: BlackHole | null = null;
   private animationFrameId: number | null = null;
+  private hasResetStarted: boolean = false; // Pour s'assurer que le reset ne se lance qu'une fois
 
   constructor(canvasId: string) {
     const canvasElement = document.getElementById(canvasId);
@@ -686,8 +765,8 @@ class BackgroundStarfield {
   private resizeCanvas(): void {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    // Ne recréer les étoiles que si on n'est pas dans l'état void
-    if (!this.blackHole || !this.blackHole.isInVoidState()) {
+    // Recréer les étoiles seulement si on n'est pas en cours de reset
+    if (!this.blackHole || (!this.blackHole.shouldReset() && !this.hasResetStarted)) {
       this.createStars();
     }
   }
@@ -700,8 +779,8 @@ class BackgroundStarfield {
       new Star(centerX, centerY)
     );
     
-    // Créer le trou noir seulement si on n'est pas dans l'état void
-    if (!this.blackHole || !this.blackHole.isInVoidState()) {
+    // Créer le trou noir seulement la première fois
+    if (!this.blackHole) {
       this.blackHole = new BlackHole(centerX, centerY);
     }
   }
@@ -714,8 +793,8 @@ class BackgroundStarfield {
 
   private updateShootingStars(): void {
     this.shootingStars.forEach(shootingStar => {
-      // Vérifier les collisions avec le trou noir
-      if (this.blackHole && this.blackHole.checkShootingStarCollision(shootingStar)) {
+      // Vérifier les collisions avec le trou noir seulement s'il est visible
+      if (this.blackHole && this.blackHole.isVisible && this.blackHole.checkShootingStarCollision(shootingStar)) {
         this.blackHole.startCollapse();
         shootingStar.active = false; // Absorber immédiatement l'étoile qui a touché le trou noir
         return;
@@ -768,7 +847,7 @@ class BackgroundStarfield {
 
       ATTRACTION_RADIUS = ATTRACTION_RADIUS_INITIAL; // Delete for blackhole
 
-      if (distance < ATTRACTION_RADIUS && !star.isCollapsingToBlackHole) {
+      if (distance < ATTRACTION_RADIUS && !star.isCollapsingToBlackHole && !star.isResetting) {
         star.targetX = mouseX;
         star.targetY = mouseY;
         star.attractionTimer = 500; // ms
@@ -776,15 +855,40 @@ class BackgroundStarfield {
     });
   }
 
+  private handleReset(): void {
+    if (this.blackHole && this.blackHole.shouldReset() && !this.hasResetStarted) {
+      this.hasResetStarted = true;
+      const finalPosition = this.blackHole.getFinalPosition();
+      
+      // Démarrer le reset de toutes les étoiles avec des délais échelonnés
+      this.stars.forEach((star, index) => {
+        const delay = index * 2; // Délai progressif pour un effet de vague
+        star.startReset(finalPosition.x, finalPosition.y, delay);
+      });
+      
+      // Recréer progressivement les étoiles filantes
+      setTimeout(() => {
+        this.shootingStars = []; // Vider les étoiles filantes existantes
+      }, 1000);
+      
+      // Marquer définitivement la fin du reset
+      setTimeout(() => {
+        this.hasResetStarted = false;
+        // Marquer le trou noir comme complètement terminé pour éviter les re-déclenchements
+        if (this.blackHole) {
+          this.blackHole.markResetComplete();
+        }
+      }, RESET_DURATION * 16.67 + 2000);
+    }
+  }
+
   private draw(): void {
     // Effacer le canvas - toujours noir
     this.ctx.fillStyle = '#000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Si on est dans l'état void, ne rien dessiner du tout
-    if (this.blackHole && this.blackHole.isInVoidState()) {
-      return; // Page complètement noire, rien ne revient jamais
-    }
+    // Gérer le reset si nécessaire
+    this.handleReset();
 
     // Vérifier temps d'inactivité et augmenter exponentiellement le radius
     const now = Date.now();
@@ -797,15 +901,15 @@ class BackgroundStarfield {
       }
     }
 
-    // Appliquer l'attraction normale si pas en mode collapse
-    if (!this.blackHole || !this.blackHole.shouldCollapseStars()) {
+    // Appliquer l'attraction normale si pas en mode collapse ou reset
+    if (!this.blackHole || (!this.blackHole.shouldCollapseStars() && !this.blackHole.shouldReset())) {
       this.attractStars();
     }
 
     // Démarrer l'effondrement des étoiles du background si demandé
     if (this.blackHole && this.blackHole.shouldCollapseStars()) {
       this.stars.forEach((star) => {
-        if (!star.isCollapsingToBlackHole) {
+        if (!star.isCollapsingToBlackHole && !star.isResetting) {
           // Ajouter un délai basé sur la distance au trou noir pour un effet de vague
           const dx = star.x - this.blackHole!.x;
           const dy = star.y - this.blackHole!.y;
@@ -823,13 +927,13 @@ class BackgroundStarfield {
       star.draw(this.ctx);
     });
 
-    // Gérer les étoiles filantes - ne plus en créer si le trou noir est en collapse
-    if (!this.blackHole || (!this.blackHole.shouldCollapseShootingStars() && !this.blackHole.isInVoidState())) {
+    // Gérer les étoiles filantes - ne plus en créer si le trou noir est en collapse ou reset
+    if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
       this.spawnShootingStar();
     }
     this.updateShootingStars();
     
-    // Mettre à jour et dessiner le trou noir
+    // Mettre à jour et dessiner le trou noir (s'il est visible)
     if (this.blackHole) {
       this.blackHole.update();
       this.blackHole.draw(this.ctx);

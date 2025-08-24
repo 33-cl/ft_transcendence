@@ -1,6 +1,6 @@
 export function settingsHTML() {
-    const username = window.currentUser?.username || 'error';
-    const email = window.currentUser?.email || 'error';
+    const username = window.currentUser?.username || 'user666';
+    const email = window.currentUser?.email || 'unknown@gmail.com';
 
     return /*html*/ `
     <h1>USER SETTINGS</h1>
@@ -11,7 +11,10 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">AVATAR</span>
-            <span id="change-pp">[Change]</span>
+            <div class="avatar-change-container">
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                <span id="change-pp">[Change]</span>
+            </div>
         </div>
         <div class="settings-row">
             <span class="settings-label">EMAIL</span>
