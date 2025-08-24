@@ -23,6 +23,8 @@ declare global
 			email: string;
 			username: string;
 			avatar_url: string | null;
+			wins?: number;
+			losses?: number;
 			created_at: string;
 			updated_at: string;
 		} | null;

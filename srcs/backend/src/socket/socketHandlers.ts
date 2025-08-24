@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/22 12:09:21 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/08/24 17:59:07 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -362,9 +362,19 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         if (!isLocalGame) {
             let user = getSocketUser(socket.id);
             
-            // Always try to re-authenticate from cookies if no user cached or force re-auth
-            if (!user) {
-                user = authenticateSocket(socket, fastify);
+            // Always try to re-authenticate from cookies to check for concurrent connections
+            const freshUser = authenticateSocket(socket, fastify);
+            if (freshUser && typeof freshUser === 'object') {
+                user = freshUser;
+            } else if (freshUser === 'USER_ALREADY_CONNECTED') {
+                // User already connected elsewhere, reject this connection
+                socket.emit('error', { 
+                    error: 'User is already connected on another browser/tab. Please close the other connection first.',
+                    code: 'USER_ALREADY_CONNECTED' 
+                });
+                removePlayerFromRoom(socket.id);
+                socket.leave(roomName);
+                return;
             }
             
             if (user) {
@@ -657,12 +667,21 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
         
         // Authentifier le socket à la connexion
         const user = authenticateSocket(socket, fastify);
-        if (user) {
+        if (user && typeof user === 'object') {
             fastify.log.info(`Socket ${socket.id} authentifié pour l'utilisateur ${user.username} (${user.id})`);
+        } else if (user === 'USER_ALREADY_CONNECTED') {
+            // Utilisateur déjà connecté ailleurs
+            socket.emit('error', { 
+                error: 'User is already connected on another browser/tab. Please close other connections first.', 
+                code: 'USER_ALREADY_CONNECTED' 
+            });
+            socket.disconnect(true);
+            return;
         } else {
-            fastify.log.warn(`Socket ${socket.id} non authentifié`);
+            // Pour les connexions non authentifiées, permettre quand même la connexion (jeux locaux)
+            fastify.log.warn(`Socket ${socket.id} non authentifié - connexion autorisée pour jeux locaux`);
         }
-
+        
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
         socket.on('message', (msg: string) => handleSocketMessage(socket, msg));

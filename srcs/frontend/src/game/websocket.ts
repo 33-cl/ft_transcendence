@@ -101,6 +101,15 @@ function setupGlobalSocketListeners() {
                 return;
             }
             
+            // Handle user already connected error - just ignore silently
+            if (data && data.code === 'USER_ALREADY_CONNECTED') {
+                // Don't show popup, don't reload, just silently ignore
+                console.log('User already connected elsewhere, ignoring connection attempt');
+                return;
+            }
+            
+            // Note: BROWSER_ALREADY_CONNECTED errors are handled by auth forms, not here
+            
             // Handle other errors by showing them to the user
             if (data && data.error) {
                 console.error('Server error:', data.error);
