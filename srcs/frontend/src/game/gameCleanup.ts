@@ -84,13 +84,13 @@ export function cleanupGameState(): void {
 
 // Force la sortie de la room actuelle pour éviter les conflits
 function forceLeaveCurrentRoom(): void {
-    console.log('🧹 CLEANUP: Starting room cleanup process');
+    // console.log('🧹 CLEANUP: Starting room cleanup process');
     
     if ((window as any).socket && (window as any).socket.connected) {
-        console.log('📤 CLEANUP: Emitting leaveAllRooms event');
+        // console.log('📤 CLEANUP: Emitting leaveAllRooms event');
         (window as any).socket.emit('leaveAllRooms');
     } else {
-        console.log('🔌 CLEANUP: No socket connection available');
+        // console.log('🔌 CLEANUP: No socket connection available');
     }
 }
 

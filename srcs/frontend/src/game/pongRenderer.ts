@@ -48,7 +48,7 @@ export function draw(gameState: any)
     // console.log(`[DRAW-${drawId}] Canvas/ctx disponibles:`, !!canvas, !!ctx);
     
     if (!ctx || !canvas) {
-        console.error(`[DRAW] Pas de canvas/ctx - abandon du rendu`);
+        // console.error(`[DRAW] Pas de canvas/ctx - abandon du rendu`);
         return;
     }
     
@@ -62,8 +62,6 @@ export function draw(gameState: any)
     
     // Clear le canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // ...existing code...
 
     // --- DESSIN DU TERRAIN ---
     if (gameState.paddles && gameState.paddles.length === 4) {

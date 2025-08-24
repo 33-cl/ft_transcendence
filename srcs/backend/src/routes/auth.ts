@@ -291,4 +291,127 @@ export default async function authRoutes(fastify: FastifyInstance) {
     clearSessionCookie(reply);
     return reply.send({ ok: true });
   });
+
+  // Endpoint pour mettre à jour le profil utilisateur
+  fastify.put('/auth/profile', async (request, reply) => {
+    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+    const sid = cookies['sid'];
+
+    if (!sid) {
+      return reply.code(401).send({ error: 'Not authenticated' });
+    }
+
+    const sessionRow = db.prepare(`
+      SELECT s.user_id, u.email, u.username 
+      FROM sessions s 
+      JOIN users u ON u.id = s.user_id 
+      WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
+    `).get(sid) as { user_id: number; email: string; username: string } | undefined;
+
+    if (!sessionRow) {
+      return reply.code(401).send({ error: 'Invalid or expired session' });
+    }
+
+    const { username, email, currentPassword, newPassword } = (request.body as {
+      username?: string;
+      email?: string;
+      currentPassword?: string;
+      newPassword?: string;
+    }) || {};
+
+    // Validation des données
+    if (username !== undefined && !isValidUsername(username)) {
+      return reply.code(400).send({ error: 'Invalid username (3-20, alphanumeric and underscore)' });
+    }
+
+    if (email !== undefined && !isValidEmail(email)) {
+      return reply.code(400).send({ error: 'Invalid email format' });
+    }
+
+    if (newPassword !== undefined && !isValidPassword(newPassword)) {
+      return reply.code(400).send({ error: 'New password too short (min 8 characters)' });
+    }
+
+    try {
+      // Si on veut changer le mot de passe, vérifier l'ancien
+      if (newPassword && currentPassword) {
+        const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(sessionRow.user_id) as { password_hash: string } | undefined;
+        
+        if (!user) {
+          return reply.code(404).send({ error: 'User not found' });
+        }
+
+        if (!verifyPassword(currentPassword, user.password_hash)) {
+          return reply.code(400).send({ error: 'Current password is incorrect' });
+        }
+      } else if (newPassword && !currentPassword) {
+        return reply.code(400).send({ error: 'Current password is required to change password' });
+      }
+
+      // Vérifier l'unicité de l'email si changé
+      if (email && email !== sessionRow.email) {
+        const existingEmailUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, sessionRow.user_id);
+        if (existingEmailUser) {
+          return reply.code(409).send({ error: 'Email already taken' });
+        }
+      }
+
+      // Vérifier l'unicité du username si changé
+      if (username && username !== sessionRow.username) {
+        const existingUsernameUser = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, sessionRow.user_id);
+        if (existingUsernameUser) {
+          return reply.code(409).send({ error: 'Username already taken' });
+        }
+      }
+
+      // Construire la requête de mise à jour dynamiquement
+      const updates: string[] = [];
+      const values: any[] = [];
+
+      if (username) {
+        updates.push('username = ?');
+        values.push(username);
+      }
+
+      if (email) {
+        updates.push('email = ?');
+        values.push(email);
+      }
+
+      if (newPassword) {
+        const passwordHash = hashPassword(newPassword);
+        updates.push('password_hash = ?');
+        values.push(passwordHash);
+      }
+
+      updates.push('updated_at = ?');
+      values.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
+
+      if (updates.length === 1) { // Seulement updated_at
+        return reply.code(400).send({ error: 'No changes provided' });
+      }
+
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+      values.push(sessionRow.user_id); // Add user_id at the end for WHERE clause
+      
+      console.log('Profile update query:', query);
+      console.log('Profile update values:', values);
+      
+      db.prepare(query).run(...values);
+
+      return reply.send({ 
+        ok: true, 
+        message: 'Profile updated successfully',
+        updated: {
+          username: username || sessionRow.username,
+          email: email || sessionRow.email,
+          passwordChanged: !!newPassword
+        }
+      });
+
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return reply.code(500).send({ error: 'Internal server error' });
+    }
+  });
 }

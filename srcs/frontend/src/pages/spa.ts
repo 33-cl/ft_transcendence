@@ -1,6 +1,7 @@
 import { show, load , hideAllPages, hide } from './utils.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
+import { initSettingsHandlers } from './settings.js';
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
@@ -15,6 +16,9 @@ declare global {
 
 function initializeComponents(): void
 {
+    // Initialize settings handlers
+    initSettingsHandlers();
+    
     // Password masking removed - using simple validation on submit instead
     
     // Affiche la page d'accueil au chargement
