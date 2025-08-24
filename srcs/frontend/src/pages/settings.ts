@@ -65,97 +65,267 @@ function validateInput(username: string, email: string, newPassword?: string): {
     return { valid: true };
 }
 
+// Reset du champ password
+function resetPasswordField(passwordInput: HTMLInputElement): void {
+    passwordInput.value = '';
+    passwordInput.placeholder = 'Current password';
+    passwordInput.style.borderColor = '';
+    // Reset des variables stockées
+    (passwordInput as any).getCurrentPassword = () => '';
+    (passwordInput as any).getNewPassword = () => '';
+    (passwordInput as any).getPasswordState = () => 'current';
+}
+
+// Configuration spéciale pour le champ password avec états multiples
+function setupPasswordField(passwordInput: HTMLInputElement): void {
+    let passwordState = 'current'; // 'current' -> 'new' -> 'confirm'
+    let currentPassword = '';
+    let newPassword = '';
+
+    passwordInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            if (passwordState === 'current') {
+                currentPassword = passwordInput.value;
+                passwordInput.value = '';
+                passwordInput.placeholder = 'New password';
+                passwordState = 'new';
+            } else if (passwordState === 'new') {
+                newPassword = passwordInput.value;
+                passwordInput.value = '';
+                passwordInput.placeholder = 'Confirm password';
+                passwordState = 'confirm';
+            } else if (passwordState === 'confirm') {
+                const confirmPassword = passwordInput.value;
+                if (confirmPassword === newPassword) {
+                    // Mots de passe correspondent, sauvegarder automatiquement
+                    passwordInput.style.borderColor = '#22c55e';
+                    
+                    // Validation nouveau mot de passe
+                    const passwordValidation = validateInput('', '', newPassword);
+                    if (!passwordValidation.valid) {
+                        showMessage(passwordValidation.error!, true);
+                        resetPasswordField(passwordInput);
+                        passwordState = 'current';
+                        currentPassword = '';
+                        newPassword = '';
+                        return;
+                    }
+                    
+                    // Sauvegarder le mot de passe automatiquement
+                    await savePasswordDirectly(currentPassword, newPassword);
+                    
+                } else {
+                    // Mots de passe ne correspondent pas, recommencer
+                    showMessage('Passwords do not match, please try again', true);
+                    resetPasswordField(passwordInput);
+                    passwordState = 'current';
+                    currentPassword = '';
+                    newPassword = '';
+                }
+            }
+        }
+    });
+
+    // Stocker les données dans l'élément pour les récupérer plus tard
+    (passwordInput as any).getCurrentPassword = () => currentPassword;
+    (passwordInput as any).getNewPassword = () => passwordState === 'confirm' ? newPassword : '';
+    (passwordInput as any).getPasswordState = () => passwordState;
+    (passwordInput as any).resetPasswordField = () => {
+        resetPasswordField(passwordInput);
+        passwordState = 'current';
+        currentPassword = '';
+        newPassword = '';
+    };
+}
+
+// Fonction pour configurer le comportement des champs de saisie
+function setupInputBehavior(): void {
+    const usernameInput = document.getElementById('username') as HTMLInputElement;
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
+
+    if (usernameInput) {
+        // Stocker la valeur originale
+        const originalUsername = window.currentUser?.username || 'user666';
+        
+        // Quand on clique sur le champ, le vider s'il contient encore la valeur par défaut
+        usernameInput.addEventListener('focus', () => {
+            if (usernameInput.value === originalUsername) {
+                usernameInput.value = '';
+            }
+        });
+
+        // Si on quitte le champ et qu'il est vide, remettre la valeur par défaut
+        usernameInput.addEventListener('blur', () => {
+            if (usernameInput.value.trim() === '') {
+                usernameInput.value = originalUsername;
+            }
+        });
+    }
+
+    if (emailInput) {
+        // Stocker la valeur originale
+        const originalEmail = window.currentUser?.email || 'unknown@gmail.com';
+        
+        // Quand on clique sur le champ, le vider s'il contient encore la valeur par défaut
+        emailInput.addEventListener('focus', () => {
+            if (emailInput.value === originalEmail) {
+                emailInput.value = '';
+            }
+        });
+
+        // Si on quitte le champ et qu'il est vide, remettre la valeur par défaut
+        emailInput.addEventListener('blur', () => {
+            if (emailInput.value.trim() === '') {
+                emailInput.value = originalEmail;
+            }
+        });
+    }
+
+    if (passwordInput) {
+        setupPasswordField(passwordInput);
+    }
+}
+
+// Fonction pour sauvegarder le mot de passe directement
+async function savePasswordDirectly(currentPassword: string, newPassword: string): Promise<void> {
+    const profileData = {
+        currentPassword: currentPassword,
+        newPassword: newPassword
+    };
+
+    try {
+        const result = await updateProfile(profileData);
+        
+        if (result.ok) {
+            showMessage(result.message || 'Password updated successfully');
+            
+            // Refresh les données utilisateur
+            if ((window as any).refreshUserStats) {
+                await (window as any).refreshUserStats();
+            }
+
+            // Recharger la page après un court délai
+            setTimeout(() => {
+                load('settings');
+            }, 1500);
+            
+        } else {
+            showMessage(result.error || 'Password update failed', true);
+            const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
+            if (passwordInput && (passwordInput as any).resetPasswordField) {
+                (passwordInput as any).resetPasswordField();
+            }
+        }
+    } catch (error) {
+        showMessage('Network error occurred', true);
+        const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
+        if (passwordInput && (passwordInput as any).resetPasswordField) {
+            (passwordInput as any).resetPasswordField();
+        }
+    }
+}
+
+// Fonction pour détecter les changements et sauvegarder uniquement ce qui a été modifié
+async function saveChangedFields(): Promise<void> {
+    const usernameInput = document.getElementById('username') as HTMLInputElement;
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+
+    if (!usernameInput || !emailInput) {
+        showMessage('Form elements not found', true);
+        return;
+    }
+
+    const username = usernameInput.value.trim();
+    const email = emailInput.value.trim();
+
+    // Vérifier les changements
+    const currentUser = window.currentUser;
+    const hasUsernameChanged = username !== currentUser?.username && username !== '';
+    const hasEmailChanged = email !== currentUser?.email && email !== '';
+
+    if (!hasUsernameChanged && !hasEmailChanged) {
+        showMessage('No changes to save', true);
+        return;
+    }
+
+    // Construire les données à envoyer uniquement pour les champs modifiés
+    const profileData: any = {};
+    
+    if (hasUsernameChanged) {
+        // Validation username
+        const usernameValidation = validateInput(username, '', '');
+        if (!usernameValidation.valid) {
+            showMessage(usernameValidation.error!, true);
+            return;
+        }
+        profileData.username = username;
+    }
+
+    if (hasEmailChanged) {
+        // Validation email
+        const emailValidation = validateInput('', email, '');
+        if (!emailValidation.valid) {
+            showMessage(emailValidation.error!, true);
+            return;
+        }
+        profileData.email = email;
+    }
+
+    // Désactiver le bouton pendant la requête
+    const saveButton = document.getElementById('saveBtn') as HTMLButtonElement;
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.textContent = '[SAVING...]';
+    }
+
+    try {
+        const result = await updateProfile(profileData);
+        
+        if (result.ok) {
+            const fields = [];
+            if (hasUsernameChanged) fields.push('username');
+            if (hasEmailChanged) fields.push('email');
+            
+            showMessage(result.message || `${fields.join(' and ')} updated successfully`);
+            
+            // Refresh les données utilisateur
+            if ((window as any).refreshUserStats) {
+                await (window as any).refreshUserStats();
+            }
+
+            // Recharger la page après un court délai
+            setTimeout(() => {
+                load('settings');
+            }, 1500);
+            
+        } else {
+            showMessage(result.error || 'Update failed', true);
+        }
+    } catch (error) {
+        showMessage('Network error occurred', true);
+    } finally {
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = '[SAVE]';
+        }
+    }
+}
+
 // Gestionnaire d'événements pour les paramètres
 export function initSettingsHandlers(): void {
     document.addEventListener('componentsReady', () => {
+        // Configurer le comportement des champs de saisie
+        setupInputBehavior();
+
         const saveBtn = document.getElementById('saveBtn');
         const goToMainBtn = document.getElementById('goToMain');
 
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
-                const usernameInput = document.getElementById('username') as HTMLInputElement;
-                const emailInput = document.getElementById('email') as HTMLInputElement;
-                const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
-                const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
-
-                if (!usernameInput || !emailInput || !currentPasswordInput || !newPasswordInput) {
-                    showMessage('Form elements not found', true);
-                    return;
-                }
-
-                const username = usernameInput.value.trim();
-                const email = emailInput.value.trim();
-                const currentPassword = currentPasswordInput.value;
-                const newPassword = newPasswordInput.value;
-
-                // Validation côté client
-                const validation = validateInput(username, email, newPassword);
-                if (!validation.valid) {
-                    showMessage(validation.error!, true);
-                    return;
-                }
-
-                // Vérifier si des changements ont été effectués
-                const currentUser = window.currentUser;
-                const hasUsernameChanged = username !== currentUser?.username;
-                const hasEmailChanged = email !== currentUser?.email;
-                const hasNewPassword = newPassword.length > 0;
-
-                if (!hasUsernameChanged && !hasEmailChanged && !hasNewPassword) {
-                    showMessage('No changes to save', true);
-                    return;
-                }
-
-                // Si on veut changer le mot de passe, le mot de passe actuel est requis
-                if (hasNewPassword && !currentPassword) {
-                    showMessage('Current password is required to change password', true);
-                    return;
-                }
-
-                // Construire les données à envoyer
-                const profileData: any = {};
-                
-                if (hasUsernameChanged) profileData.username = username;
-                if (hasEmailChanged) profileData.email = email;
-                if (hasNewPassword) {
-                    profileData.currentPassword = currentPassword;
-                    profileData.newPassword = newPassword;
-                }
-
-                // Désactiver le bouton pendant la requête
-                const saveButton = saveBtn as HTMLButtonElement;
-                saveButton.disabled = true;
-                saveButton.textContent = '[SAVING...]';
-
-                try {
-                    const result = await updateProfile(profileData);
-                    
-                    if (result.ok) {
-                        showMessage(result.message || 'Profile updated successfully');
-                        
-                        // Refresh les données utilisateur
-                        if ((window as any).refreshUserStats) {
-                            await (window as any).refreshUserStats();
-                        }
-
-                        // Vider les champs de mot de passe
-                        currentPasswordInput.value = '';
-                        newPasswordInput.value = '';
-                        
-                        // Mettre à jour les placeholders avec les nouvelles valeurs
-                        usernameInput.value = window.currentUser?.username || username;
-                        emailInput.value = window.currentUser?.email || email;
-                        
-                    } else {
-                        showMessage(result.error || 'Update failed', true);
-                    }
-                } catch (error) {
-                    showMessage('Network error occurred', true);
-                } finally {
-                    const saveButton = saveBtn as HTMLButtonElement;
-                    saveButton.disabled = false;
-                    saveButton.textContent = '[SAVE]';
-                }
+                await saveChangedFields();
             });
         }
 

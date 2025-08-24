@@ -7,7 +7,7 @@ export function settingsHTML() {
     <div id="settings-form">
         <div class="settings-row">
             <span class="settings-label">USERNAME</span>
-            <input type="text" id="username" placeholder="${username}" value="${username}">
+            <input type="text" id="username" placeholder="${username}">
         </div>
         <div class="settings-row">
             <span class="settings-label">AVATAR</span>
@@ -18,15 +18,11 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">EMAIL</span>
-            <input type="email" id="email" placeholder="${email}" value="${email}">
+            <input type="email" id="email" placeholder="${email}">
         </div>
         <div class="settings-row">
-            <span class="settings-label">CURRENT PASSWORD</span>
-            <input type="password" id="currentPassword" placeholder="Enter current password">
-        </div>
-        <div class="settings-row">
-            <span class="settings-label">NEW PASSWORD</span>
-            <input type="password" id="newPassword" placeholder="Enter new password (optional)">
+            <span class="settings-label">PASSWORD</span>
+            <input type="password" id="passwordField" placeholder="Current password">
         </div>
     </div>
     <div id="settings-buttons">
