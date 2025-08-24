@@ -15,6 +15,7 @@ declare global
 		setIsLocalGame: (isLocal: boolean) => void;
 		_pongControlsRoomJoinedListener: boolean;
 		sendKeyEvent: (type: 'keydown' | 'keyup', player: 'left' | 'right' | 'A' | 'B' | 'C', direction: 'up' | 'down') => void;
+		temporaryAvatarFile?: File;
 
 		// Auth/session
 		currentUser?: {
