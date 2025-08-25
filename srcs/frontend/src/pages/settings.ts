@@ -87,43 +87,50 @@ function setupPasswordField(passwordInput: HTMLInputElement): void {
             e.preventDefault();
             
             if (passwordState === 'current') {
-                currentPassword = passwordInput.value;
+                const currentPasswordValue = passwordInput.value.trim();
+                
+                // Validation : vérifier que le mot de passe actuel n'est pas vide
+                if (!currentPasswordValue) {
+                    showMessage('Current password cannot be empty', true);
+                    return;
+                }
+                
+                // Si validé, passer à l'étape suivante
+                currentPassword = currentPasswordValue;
                 passwordInput.value = '';
                 passwordInput.placeholder = 'New password';
                 passwordState = 'new';
+                passwordInput.blur();
+                
             } else if (passwordState === 'new') {
-                newPassword = passwordInput.value;
+                const newPasswordValue = passwordInput.value.trim();
+                
+                // Validation du nouveau mot de passe
+                const passwordValidation = validateInput('', '', newPasswordValue);
+                if (!passwordValidation.valid) {
+                    showMessage(passwordValidation.error!, true);
+                    return;
+                }
+                
+                // Si validé, passer à l'étape suivante
+                newPassword = newPasswordValue;
                 passwordInput.value = '';
                 passwordInput.placeholder = 'Confirm password';
                 passwordState = 'confirm';
+                passwordInput.blur();
+                
             } else if (passwordState === 'confirm') {
-                const confirmPassword = passwordInput.value;
-                if (confirmPassword === newPassword) {
-                    // Mots de passe correspondent, sauvegarder automatiquement
-                    passwordInput.style.borderColor = '#22c55e';
-                    
-                    // Validation nouveau mot de passe
-                    const passwordValidation = validateInput('', '', newPassword);
-                    if (!passwordValidation.valid) {
-                        showMessage(passwordValidation.error!, true);
-                        resetPasswordField(passwordInput);
-                        passwordState = 'current';
-                        currentPassword = '';
-                        newPassword = '';
-                        return;
-                    }
-                    
-                    // Sauvegarder le mot de passe automatiquement
-                    await savePasswordDirectly(currentPassword, newPassword);
-                    
-                } else {
-                    // Mots de passe ne correspondent pas, recommencer
+                const confirmPassword = passwordInput.value.trim();
+                
+                // Validation : vérifier que la confirmation correspond
+                if (confirmPassword !== newPassword) {
                     showMessage('Passwords do not match, please try again', true);
-                    resetPasswordField(passwordInput);
-                    passwordState = 'current';
-                    currentPassword = '';
-                    newPassword = '';
+                    return;
                 }
+                
+                // Si validé, sauvegarder
+                passwordInput.style.borderColor = '#22c55e';
+                await savePasswordDirectly(currentPassword, newPassword);
             }
         }
     });
@@ -163,6 +170,14 @@ function setupInputBehavior(): void {
                 usernameInput.value = originalUsername;
             }
         });
+
+        // Ajouter l'événement Enter pour sauvegarder
+        usernameInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                await saveChangedFields();
+            }
+        });
     }
 
     if (emailInput) {
@@ -180,6 +195,14 @@ function setupInputBehavior(): void {
         emailInput.addEventListener('blur', () => {
             if (emailInput.value.trim() === '') {
                 emailInput.value = originalEmail;
+            }
+        });
+
+        // Ajouter l'événement Enter pour sauvegarder
+        emailInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                await saveChangedFields();
             }
         });
     }
