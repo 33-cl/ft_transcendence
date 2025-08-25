@@ -96,7 +96,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         ballRadius:     20,
         ballSpeedX:     3,
         ballSpeedY:     3,
-        win:            4,
+        win:            3,
         running:        false,
         ballCountdown:  3, // Délai de 3 secondes avant que la balle commence
     };
