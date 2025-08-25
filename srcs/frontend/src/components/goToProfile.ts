@@ -1,5 +1,5 @@
 export function goToProfileHTML() {
-    const username = window.currentUser?.username || 'user';
+    const username = window.currentUser?.username || 'a';
     return /*html*/ `
         <div id="goToProfile-component">
             <img src="./img/default-pp.jpg" alt="Profile Icon" />

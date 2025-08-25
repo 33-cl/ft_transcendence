@@ -120,6 +120,10 @@ function initializeComponents(): void
             
             // Vider le cache et réinitialiser l'état de l'application
             window.currentUser = null;
+
+            // Reinitialiser l'historique pour éviter de revenir en arrière
+            window.history.replaceState(null, '', '/');
+
             
             // Vider le cache du navigateur pour cette application
             if ('caches' in window) {
@@ -292,10 +296,10 @@ if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', async () =>
     {
         await checkSessionOnce();
-        if (window.currentUser)
-            load('mainMenu');
-        else
+        if (!window.currentUser || !window.currentUser.username)
             load('signIn');
+        else
+            load('mainMenu');
         initializeComponents();
         setupRoomJoinedHandler();
     });
@@ -304,10 +308,10 @@ else
 {
     (async () => {
         await checkSessionOnce();
-        if (window.currentUser)
-            load('mainMenu');
-        else
+        if (!window.currentUser || !window.currentUser.username)
             load('signIn');
+        else
+            load('mainMenu');
         initializeComponents();
         setupRoomJoinedHandler();
     })();

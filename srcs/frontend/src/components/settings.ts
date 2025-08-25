@@ -1,5 +1,5 @@
 export function settingsHTML() {
-    const username = window.currentUser?.username || 'user666';
+    const username = window.currentUser?.username || 'a';
     const email = window.currentUser?.email || 'unknown@gmail.com';
 
     return /*html*/ `
