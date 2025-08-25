@@ -241,9 +241,9 @@ export class PongGame {
             if (!this.pointScored) {
                 // Si la moitié de la balle sort par le côté gauche - joueur A éliminé
                 if (this.state.ballX + ballRadius/2 <= 0) {
-                    paddles[1].score++; // B gagne
-                    paddles[2].score++; // C gagne
-                    paddles[3].score++; // D gagne
+                    if (last_contact === 1) paddles[1].score++; // B gagne
+                    else if ( last_contact === 2) paddles[2].score++; // C gagne
+                    else if (last_contact === 3) paddles[3].score++; // D gagne
                     this.pointScored = true; // Marquer qu'un point a été attribué
                     console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
                 }
