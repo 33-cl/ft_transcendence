@@ -118,6 +118,7 @@ export class PongGame {
         if (this.state.paddles && this.state.paddles.length === 4) {
             const { canvasWidth, canvasHeight, ballRadius } = this.state;
             const paddles = this.state.paddles;
+            let last_contact: number = -1;
 
             // --- Détection de collision précise avec la circonférence complète de la balle ---
             
@@ -155,11 +156,13 @@ export class PongGame {
                         this.state.ballSpeedX = -this.state.ballSpeedX; // Inverser composante horizontale
                         this.state.ballX = paddleRight + ballRadius; // Repositionner à droite du paddle
                         this.accelerateBall(); // Accélération après contact
+                        last_contact = 0;
                         return true;
                     } else if (paddleIndex === 2 && this.state.ballSpeedX > 0) { // Paddle C (droite), balle vers droite
                         this.state.ballSpeedX = -this.state.ballSpeedX; // Inverser composante horizontale
                         this.state.ballX = paddleLeft - ballRadius; // Repositionner à gauche du paddle
                         this.accelerateBall(); // Accélération après contact
+                        last_contact = 2;
                         return true;
                     }
                 }
@@ -170,11 +173,14 @@ export class PongGame {
                         this.state.ballSpeedY = -this.state.ballSpeedY; // Inverser composante verticale
                         this.state.ballY = paddleTop - ballRadius; // Repositionner au-dessus du paddle
                         this.accelerateBall(); // Accélération après contact
+                        last_contact = 1;
+
                         return true;
                     } else if (paddleIndex === 3 && this.state.ballSpeedY < 0) { // Paddle D (haut), balle vers haut
                         this.state.ballSpeedY = -this.state.ballSpeedY; // Inverser composante verticale
                         this.state.ballY = paddleBottom + ballRadius; // Repositionner en-dessous du paddle
                         this.accelerateBall(); // Accélération après contact
+                        last_contact = 3;
                         return true;
                     }
                 }
@@ -192,11 +198,13 @@ export class PongGame {
                             this.state.ballSpeedX = -this.state.ballSpeedX;
                             this.state.ballX = paddleRight + ballRadius;
                             this.accelerateBall(); // Accélération après contact
+                            last_contact = 1;
                             return true;
                         } else if (paddleIndex === 2 && this.state.ballSpeedX > 0) {
                             this.state.ballSpeedX = -this.state.ballSpeedX;
                             this.state.ballX = paddleLeft - ballRadius;
                             this.accelerateBall(); // Accélération après contact
+                            last_contact = 2;
                             return true;
                         }
                     } else {
@@ -205,11 +213,13 @@ export class PongGame {
                             this.state.ballSpeedY = -this.state.ballSpeedY;
                             this.state.ballY = paddleTop - ballRadius;
                             this.accelerateBall(); // Accélération après contact
+                            last_contact = 1;
                             return true;
                         } else if (paddleIndex === 3 && this.state.ballSpeedY < 0) {
                             this.state.ballSpeedY = -this.state.ballSpeedY;
                             this.state.ballY = paddleBottom + ballRadius;
                             this.accelerateBall(); // Accélération après contact
+                            last_contact = 3;
                             return true;
                         }
                     }
@@ -247,9 +257,9 @@ export class PongGame {
                 }
                 // Si la moitié de la balle sort par le bas - joueur B éliminé
                 else if (this.state.ballY - ballRadius/2 >= canvasHeight) {
-                    paddles[0].score++; // A gagne
-                    paddles[2].score++; // C gagne
-                    paddles[3].score++; // D gagne
+                    if (last_contact === 0) paddles[0].score++; // B gagne
+                    else if ( last_contact === 2) paddles[2].score++; // C gagne
+                    else if (last_contact === 3) paddles[3].score++; // D gagne
                     this.pointScored = true; // Marquer qu'un point a été attribué
                     console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
                 }
