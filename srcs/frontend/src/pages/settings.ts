@@ -1,4 +1,5 @@
 import { load } from '../pages/utils.js';
+import { isValidEmail, isValidUsername, isValidPassword } from '../utils/validation.js';
 
 // Fonction pour mettre à jour le profil utilisateur
 async function updateProfile(profileData: {
@@ -45,26 +46,6 @@ function showMessage(message: string, isError: boolean = false): void {
     }
 }
 
-// Validation côté client
-function validateInput(username: string, email: string, newPassword?: string): { valid: boolean; error?: string } {
-    // Validation username
-    if (username && !/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-        return { valid: false, error: 'Username must be 3-20 characters (letters, numbers, underscore only)' };
-    }
-
-    // Validation email
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return { valid: false, error: 'Invalid email format' };
-    }
-
-    // Validation nouveau mot de passe
-    if (newPassword && newPassword.length < 8) {
-        return { valid: false, error: 'New password must be at least 8 characters' };
-    }
-
-    return { valid: true };
-}
-
 // Reset du champ password
 function resetPasswordField(passwordInput: HTMLInputElement): void {
     passwordInput.value = '';
@@ -105,10 +86,9 @@ function setupPasswordField(passwordInput: HTMLInputElement): void {
             } else if (passwordState === 'new') {
                 const newPasswordValue = passwordInput.value.trim();
                 
-                // Validation du nouveau mot de passe
-                const passwordValidation = validateInput('', '', newPasswordValue);
-                if (!passwordValidation.valid) {
-                    showMessage(passwordValidation.error!, true);
+                // Validation du nouveau mot de passe avec la fonction spécifique
+                if (!isValidPassword(newPasswordValue)) {
+                    showMessage('Password must be at least 8 characters', true);
                     return;
                 }
                 
@@ -124,7 +104,7 @@ function setupPasswordField(passwordInput: HTMLInputElement): void {
                 
                 // Validation : vérifier que la confirmation correspond
                 if (confirmPassword !== newPassword) {
-                    showMessage('Passwords do not match, please try again', true);
+                    showMessage('Passwords do not match', true);
                     return;
                 }
                 
@@ -278,20 +258,18 @@ async function saveChangedFields(): Promise<void> {
     const profileData: any = {};
     
     if (hasUsernameChanged) {
-        // Validation username
-        const usernameValidation = validateInput(username, '', '');
-        if (!usernameValidation.valid) {
-            showMessage(usernameValidation.error!, true);
+        // Validation username avec la fonction spécifique
+        if (!isValidUsername(username)) {
+            showMessage('Username must be 3-20 characters (letters, numbers, underscore only)', true);
             return;
         }
         profileData.username = username;
     }
 
     if (hasEmailChanged) {
-        // Validation email
-        const emailValidation = validateInput('', email, '');
-        if (!emailValidation.valid) {
-            showMessage(emailValidation.error!, true);
+        // Validation email avec la fonction spécifique
+        if (!isValidEmail(email)) {
+            showMessage('Invalid email format', true);
             return;
         }
         profileData.email = email;
