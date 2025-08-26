@@ -121,10 +121,6 @@ function initializeComponents(): void
             // Vider le cache et réinitialiser l'état de l'application
             window.currentUser = null;
 
-            // Reinitialiser l'historique pour éviter de revenir en arrière
-            window.history.replaceState(null, '', '/');
-
-            
             // Vider le cache du navigateur pour cette application
             if ('caches' in window) {
                 try {
@@ -136,12 +132,21 @@ function initializeComponents(): void
                     console.warn('Failed to clear cache:', e);
                 }
             }
-            
+
             // Vider le localStorage et sessionStorage
             localStorage.clear();
             sessionStorage.clear();
             
-            // Rediriger vers la page de connexion sans rafraîchir
+            // When logout, prevent back navigation to protected pages
+            window.history.replaceState(null, '', '/signin');
+            window.history.pushState(null, '', '/signin');
+            window.addEventListener('popstate', function preventBack() {
+                if (!window.currentUser) {
+                    // Forcer le retour à signin
+                    window.history.pushState(null, '', '/signin');
+                    load('signIn');
+                }
+            });
             load('signIn');
         }
 
@@ -280,13 +285,14 @@ function setupRoomJoinedHandler()
 
 
 window.addEventListener('popstate', function(event) {
-    if (event.state?.page) {
-        // Charge la page sans mettre à jour l'historique
-        load(event.state.page, false);
-    } else {
-        // Page par défaut si aucun état n'est sauvegarde
-        load('signIn', false);
+    let targetPage = event.state?.page || 'signIn';
+    
+    // Protection: si connecté et tentative d'accès aux pages d'auth → rediriger
+    if (window.currentUser && (targetPage === 'signIn' || targetPage === 'signUp')) {
+        targetPage = 'mainMenu';
     }
+    
+    load(targetPage, false);
 });
 
 // // top level statemetn ( s'execute des que le fichier est importe)
