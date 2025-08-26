@@ -137,14 +137,9 @@ function initializeComponents(): void
             localStorage.clear();
             sessionStorage.clear();
             
-            // Rediriger vers la page de connexion sans rafraîchir
-            // 1. Remplacer l'état actuel
+            // When logout, prevent back navigation to protected pages
             window.history.replaceState(null, '', '/signin');
-            
-            // 2. Ajouter un "mur" dans l'historique
             window.history.pushState(null, '', '/signin');
-            
-            // 3. Intercepter TOUS les retours arrière
             window.addEventListener('popstate', function preventBack() {
                 if (!window.currentUser) {
                     // Forcer le retour à signin
@@ -152,8 +147,6 @@ function initializeComponents(): void
                     load('signIn');
                 }
             });
-            
-            // 4. Naviguer vers signin
             load('signIn');
         }
 
@@ -292,13 +285,14 @@ function setupRoomJoinedHandler()
 
 
 window.addEventListener('popstate', function(event) {
-    if (event.state?.page) {
-        // Charge la page sans mettre à jour l'historique
-        load(event.state.page, false);
-    } else {
-        // Page par défaut si aucun état n'est sauvegarde
-        load('signIn', false);
+    let targetPage = event.state?.page || 'signIn';
+    
+    // Protection: si connecté et tentative d'accès aux pages d'auth → rediriger
+    if (window.currentUser && (targetPage === 'signIn' || targetPage === 'signUp')) {
+        targetPage = 'mainMenu';
     }
+    
+    load(targetPage, false);
 });
 
 // // top level statemetn ( s'execute des que le fichier est importe)
