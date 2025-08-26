@@ -121,10 +121,6 @@ function initializeComponents(): void
             // Vider le cache et réinitialiser l'état de l'application
             window.currentUser = null;
 
-            // Reinitialiser l'historique pour éviter de revenir en arrière
-            window.history.replaceState(null, '', '/');
-
-            
             // Vider le cache du navigateur pour cette application
             if ('caches' in window) {
                 try {
@@ -136,12 +132,28 @@ function initializeComponents(): void
                     console.warn('Failed to clear cache:', e);
                 }
             }
-            
+
             // Vider le localStorage et sessionStorage
             localStorage.clear();
             sessionStorage.clear();
             
             // Rediriger vers la page de connexion sans rafraîchir
+            // 1. Remplacer l'état actuel
+            window.history.replaceState(null, '', '/signin');
+            
+            // 2. Ajouter un "mur" dans l'historique
+            window.history.pushState(null, '', '/signin');
+            
+            // 3. Intercepter TOUS les retours arrière
+            window.addEventListener('popstate', function preventBack() {
+                if (!window.currentUser) {
+                    // Forcer le retour à signin
+                    window.history.pushState(null, '', '/signin');
+                    load('signIn');
+                }
+            });
+            
+            // 4. Naviguer vers signin
             load('signIn');
         }
 
