@@ -85,5 +85,8 @@ const app = fastify({
   }
 })();
 
+// Pas de mise a jour du cache
+
+
 // Plus besoin de https.createServer ni de server.listen
 // (Fastify gère tout, y compris le HTTPS)
