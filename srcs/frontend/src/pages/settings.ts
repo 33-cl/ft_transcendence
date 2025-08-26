@@ -1,5 +1,9 @@
-import { load } from '../pages/utils.js';
+// import { load } from '../pages/utils.js';
 import { isValidEmail, isValidUsername, isValidPassword } from '../utils/validation.js';
+import { initAvatarHandlers } from '../utils/change_avatar.js';
+
+// Variable pour suivre si nous sommes toujours sur la page settings
+// let isOnSettingsPage = true;
 
 // Fonction pour mettre à jour le profil utilisateur
 async function updateProfile(profileData: {
@@ -41,7 +45,9 @@ function showMessage(message: string, isError: boolean = false): void {
         
         // Cacher le message après 5 secondes
         setTimeout(() => {
-            messageEl.style.display = 'none';
+            if (messageEl) {
+                messageEl.style.display = 'none';
+            }
         }, 5000);
     }
 }
@@ -210,10 +216,12 @@ async function savePasswordDirectly(currentPassword: string, newPassword: string
                 await (window as any).refreshUserStats();
             }
 
-            // Recharger la page après un court délai
-            setTimeout(() => {
-                load('settings');
-            }, 1500);
+            // Ne recharger la page que si on est toujours sur settings
+            // setTimeout(() => {
+            //     if (isOnSettingsPage) {
+            //         load('settings');
+            //     }
+            // }, 1500);
             
         } else {
             showMessage(result.error || 'Password update failed', true);
@@ -297,10 +305,12 @@ async function saveChangedFields(): Promise<void> {
                 await (window as any).refreshUserStats();
             }
 
-            // Recharger la page après un court délai
-            setTimeout(() => {
-                load('settings');
-            }, 1500);
+            // Ne recharger la page que si on est toujours sur settings
+            // setTimeout(() => {
+            //     if (isOnSettingsPage) {
+            //         load('settings');
+            //     }
+            // }, 1500);
             
         } else {
             showMessage(result.error || 'Update failed', true);
@@ -318,11 +328,15 @@ async function saveChangedFields(): Promise<void> {
 // Gestionnaire d'événements pour les paramètres
 export function initSettingsHandlers(): void {
     document.addEventListener('componentsReady', () => {
+        // Marquer qu'on est sur la page settings
+        // isOnSettingsPage = true;
+        
         // Configurer le comportement des champs de saisie
         setupInputBehavior();
+        initAvatarHandlers();
 
         const saveBtn = document.getElementById('saveBtn');
-        const goToMainBtn = document.getElementById('goToMain');
+        // const goToMainBtn = document.getElementById('goToMain');
 
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
@@ -330,10 +344,18 @@ export function initSettingsHandlers(): void {
             });
         }
 
-        if (goToMainBtn) {
-            goToMainBtn.addEventListener('click', () => {
-                load('mainMenu');
-            });
-        }
+        // if (goToMainBtn) {
+        //     goToMainBtn.addEventListener('click', () => {
+        //         // Marquer qu'on quitte la page settings
+        //         isOnSettingsPage = false;
+        //         load('mainMenu');
+        //     });
+        // }
     });
+}
+
+// Fonction à appeler quand on quitte la page settings
+export function cleanupSettingsHandlers(): void {
+    // isOnSettingsPage = false;
+    
 }
