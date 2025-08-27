@@ -340,9 +340,10 @@ export default async function authRoutes(fastify: FastifyInstance) {
         if (!verifyPassword(currentPassword, user.password_hash)) {
           return reply.code(400).send({ error: 'Current password is incorrect' });
         }
-      } else if (newPassword && !currentPassword) {
-        return reply.code(400).send({ error: 'Current password is required to change password' });
-      }
+      } 
+      // else if (newPassword && !currentPassword) {
+      //   return reply.code(400).send({ error: 'Current password is required to change password' });
+      // }
 
       // Vérifier l'unicité de l'email si changé
       if (email && email !== sessionRow.email) {

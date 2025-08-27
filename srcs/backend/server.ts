@@ -28,6 +28,12 @@ const app = fastify({
   https: {key, cert}  // Utilise la clé privée et certification SSL
 });
 
+// Ajoutez un hook pour désactiver le cache sur toutes les réponses
+app.addHook('onSend', (request, reply, payload, done) => {
+  reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
+  done();
+});
+
 // Fonction main asynchrone pour tout lancer
 (async () => {
   try {

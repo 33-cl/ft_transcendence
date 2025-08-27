@@ -22,7 +22,7 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>
-            <input type="password" id="passwordField" placeholder="Current password">
+            <input type="password" id="passwordField" placeholder="New password">
         </div>
     </div>
     <div id="settings-buttons">
