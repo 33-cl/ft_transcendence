@@ -52,17 +52,17 @@ function showMessage(message: string, isError: boolean = false): void {
 // Reset du champ password
 function resetPasswordField(passwordInput: HTMLInputElement): void {
     passwordInput.value = '';
-    passwordInput.placeholder = 'Current password';
+    passwordInput.placeholder = 'New password';
     passwordInput.style.borderColor = '';
     // Reset des variables stockées
     (passwordInput as any).getCurrentPassword = () => '';
     (passwordInput as any).getNewPassword = () => '';
-    (passwordInput as any).getPasswordState = () => 'current';
+    (passwordInput as any).getPasswordState = () => 'new';
 }
 
 // Configuration spéciale pour le champ password avec états multiples
 function setupPasswordField(passwordInput: HTMLInputElement): void {
-    let passwordState = 'current'; // 'current' -> 'new' -> 'confirm'
+    let passwordState = 'new'; // 'current' -> 'new' -> 'confirm'
     let currentPassword = '';
     let newPassword = '';
 
