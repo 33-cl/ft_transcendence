@@ -1,6 +1,6 @@
 export function settingsHTML() {
     const username = window.currentUser?.username || 'a';
-    const email = window.currentUser?.email || 'unknown@gmail.com';
+    const email = window.currentUser?.email;
 
     return /*html*/ `
     <h1>USER SETTINGS</h1>
