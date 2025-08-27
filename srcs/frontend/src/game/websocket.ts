@@ -20,6 +20,7 @@ let roomJoinedListenerSet = false;
 let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 let errorListenerSet = false;
+let gameFinishedListenerActive = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -315,6 +316,10 @@ function cleanupGameEventListeners() {
         socket.removeAllListeners('leftRoom');
         leftRoomListenerActive = false;
     }
+	if (gameFinishedListenerActive) {
+    socket.removeAllListeners('gameFinished');
+    gameFinishedListenerActive = false;
+	}
 }
 
 // Fonction pour configurer les event listeners du jeu (une seule fois)
@@ -346,6 +351,18 @@ function setupGameEventListeners() {
         });
         leftRoomListenerActive = true;
     }
+
+	if (!gameFinishedListenerActive) {
+    socket.on('gameFinished', (data: any) => {
+        gameFinishedListenerActive = true;
+        // Affiche la page de fin de partie avec les données reçues
+        if (data && data.winner) {
+            load('gameFinished', data);
+        } else {
+            load('gameFinished');
+        }
+    });
+	}
 }
 
 // Exposer les fonctions de cleanup globalement
