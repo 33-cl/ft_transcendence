@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 
 // Ouvre (ou crée) la base SQLite (même nom que déjà utilisé ailleurs pour cohérence)
-const db = new Database('pong.db');
+const db = new Database('/app/pong.db');
 
 // Schéma minimal pour user management (étape 1)
 db.exec(`
@@ -37,6 +37,14 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(winner_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY(loser_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS active_tokens (
+    user_id INTEGER NOT NULL,
+    token TEXT NOT NULL,
+    expires_at DATETIME,
+    PRIMARY KEY(user_id, token),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
 

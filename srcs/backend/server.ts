@@ -16,6 +16,7 @@ import matchesRoutes from './src/routes/matches.js'; // Route /matches (match re
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
 import { getUserById } from './src/user.js'; // Importe le getter getUserById
 
+import fastifyCookie from '@fastify/cookie'; // Plugin Cookie pour Fastify
 
 // Configuration SSL pour HTTPS sécurisé
 const key = fs.readFileSync('./key.pem');  // Clé privée SSL
@@ -34,6 +35,11 @@ const app = fastify({
     await app.register(fastifyCors, {
       origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
       credentials: true // Autorise les cookies/headers d'authentification
+    });
+
+    // Enregistre le plugin Cookie pour Fastify (nécessaire pour reply.setCookie)
+    await app.register(fastifyCookie, {
+      // options par défaut, peut être personnalisé si besoin
     });
 
     // Route GET très simple

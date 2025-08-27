@@ -15,6 +15,9 @@ RUN npm ci || npm install
 # Build better-sqlite3 from source to ensure correct native binding
 RUN npm rebuild better-sqlite3 --build-from-source
 
+# Install jsonwebtoken types for TypeScript
+RUN npm install --save-dev @types/jsonwebtoken
+
 # Copy backend sources (node_modules excluded via root .dockerignore)
 COPY ./srcs/backend/ ./
 
