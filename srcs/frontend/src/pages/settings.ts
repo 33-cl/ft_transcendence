@@ -2,10 +2,7 @@
 import { isValidEmail, isValidUsername, isValidPassword } from '../utils/validation.js';
 import { initAvatarHandlers } from '../utils/change_avatar.js';
 
-// Variable pour suivre si nous sommes toujours sur la page settings
-// let isOnSettingsPage = true;
-
-// Fonction pour mettre à jour le profil utilisateur
+// Mettre à jour le profil utilisateur
 async function updateProfile(profileData: {
     username?: string;
     email?: string;
@@ -48,7 +45,7 @@ function showMessage(message: string, isError: boolean = false): void {
             if (messageEl) {
                 messageEl.style.display = 'none';
             }
-        }, 5000);
+        }, 3000);
     }
 }
 
@@ -141,7 +138,7 @@ function setupInputBehavior(): void {
 
     if (usernameInput) {
         // Stocker la valeur originale
-        const originalUsername = window.currentUser?.username || 'user666';
+        const originalUsername = window.currentUser?.username || '';
         
         // Quand on clique sur le champ, le vider s'il contient encore la valeur par défaut
         usernameInput.addEventListener('focus', () => {
@@ -168,7 +165,7 @@ function setupInputBehavior(): void {
 
     if (emailInput) {
         // Stocker la valeur originale
-        const originalEmail = window.currentUser?.email || 'unknown@gmail.com';
+        const originalEmail = window.currentUser?.email || '';
         
         // Quand on clique sur le champ, le vider s'il contient encore la valeur par défaut
         emailInput.addEventListener('focus', () => {
@@ -357,5 +354,5 @@ export function initSettingsHandlers(): void {
 // Fonction à appeler quand on quitte la page settings
 export function cleanupSettingsHandlers(): void {
     // isOnSettingsPage = false;
-    
+
 }
