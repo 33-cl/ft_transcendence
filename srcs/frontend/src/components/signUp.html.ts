@@ -1,7 +1,7 @@
 export const signUpHTML = /*html*/`
     <h2>Sign up</h2>
     <input type="text" id="username" placeholder="Username">
-    <input type="email" id="email" placeholder="Email">
+    <input type="email" id="email" placeholder="Email" required>
     <input type="password" id="password" placeholder="Password">
     <input type="password" id="confirmPassword" placeholder="Confirm password">
     <button id="signUpSubmit" class="default-button">SIGN UP</button>
