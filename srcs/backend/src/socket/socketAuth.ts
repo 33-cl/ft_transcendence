@@ -2,6 +2,7 @@
 import db from '../db.js';
 import { Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
+import jwt from 'jsonwebtoken';
 
 interface SocketUser {
   id: number;
@@ -46,32 +47,49 @@ function parseCookiesFromSocket(socket: Socket): Record<string, string> {
   return cookies;
 }
 
-// Authenticate socket connection using session cookie
+// Authenticate socket connection using session cookie or JWT
 export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): SocketUser | null | 'USER_ALREADY_CONNECTED' {
   try {
     const cookies = parseCookiesFromSocket(socket);
     const sessionToken = cookies['sid'];
-    
+    const jwtToken = cookies['jwt'];
+
     if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} cookies: ${Object.keys(cookies).join(', ')}`);
-    if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} session token: ${sessionToken ? sessionToken.substring(0, 10) + '...' : 'none'}`);
-    
-    if (!sessionToken) {
-      if (fastify) fastify.log.warn(`[DEBUG] Socket ${socket.id} has no session token`);
-      return null;
+    if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} session token: ${sessionToken ? sessionToken.substring(0, 10) + '...' : 'none'}, jwt: ${jwtToken ? jwtToken.substring(0, 10) + '...' : 'none'}`);
+
+    let user: SocketUser | undefined;
+    if (sessionToken) {
+      // Query database to get user from session
+      const sessionQuery = db.prepare(`
+        SELECT u.id, u.username, u.email 
+        FROM sessions s 
+        JOIN users u ON u.id = s.user_id 
+        WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
+      `);
+      user = sessionQuery.get(sessionToken) as SocketUser | undefined;
+    } else if (jwtToken) {
+      // Try JWT authentication
+      try {
+        // Utilise l'import existant
+        const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
+        const payload = jwt.verify(jwtToken, JWT_SECRET);
+        if (payload && typeof payload === 'object' && 'userId' in payload) {
+          const userRow = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get((payload as any).userId) as { id: number, username: string, email: string } | undefined;
+          if (userRow) {
+            user = {
+              id: userRow.id,
+              username: userRow.username,
+              email: userRow.email
+            };
+          }
+        }
+      } catch (err) {
+        if (fastify) fastify.log.warn(`[DEBUG] Socket ${socket.id} JWT invalid: ${err}`);
+      }
     }
-    
-    // Query database to get user from session
-    const sessionQuery = db.prepare(`
-      SELECT u.id, u.username, u.email 
-      FROM sessions s 
-      JOIN users u ON u.id = s.user_id 
-      WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
-    `);
-    
-    const user = sessionQuery.get(sessionToken) as SocketUser | undefined;
-    
+
     if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} found user in DB: ${user ? `${user.username} (${user.id})` : 'null'}`);
-    
+
     if (user) {
       // Vérifier si cet utilisateur est déjà connecté ailleurs
       const existingSocketId = activeUsers.get(user.id);

@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify';
 import db from '../db.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { removeUserFromActiveList } from '../socket/socketAuth.js';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
 interface RegisterBody {
   email?: string;
@@ -115,28 +118,24 @@ function parseCookies(header?: string): Record<string, string> {
 }
 
 export default async function authRoutes(fastify: FastifyInstance) {
+  // Helper to get JWT from cookies
+  function getJwtFromRequest(request: any): string | undefined {
+    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+    return cookies['jwt'];
+  }
+
+  // Helper to get JWT expiry
+  function getJwtExpiry(token: string): number | null {
+    try {
+      const decoded = jwt.decode(token) as { exp?: number };
+      return decoded?.exp ? decoded.exp : null;
+    } catch {
+      return null;
+    }
+  }
+
   fastify.post('/auth/register', async (request, reply) => {
     const { email, username, password } = (request.body as RegisterBody) || {};
-
-    // Vérifier si ce navigateur a déjà une session active
-    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
-    const existingSessionToken = cookies['sid'];
-    
-    if (existingSessionToken) {
-      const existingSession = db.prepare(`
-        SELECT s.user_id, u.username FROM sessions s 
-        JOIN users u ON u.id = s.user_id 
-        WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
-      `).get(existingSessionToken) as { user_id: number; username: string } | undefined;
-      
-      if (existingSession) {
-        return reply.code(409).send({ 
-          error: `This browser already has an active session for user '${existingSession.username}'. Please logout first to create a new account.`,
-          code: 'BROWSER_ALREADY_CONNECTED',
-          currentUser: existingSession.username
-        });
-      }
-    }
 
     // Validations
     if (!email || !isValidEmail(email)) {
@@ -157,15 +156,30 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const info = stmt.run(email.trim().toLowerCase(), username.trim(), password_hash, null);
 
       const created = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
-      
-      // Créer automatiquement une session pour l'utilisateur nouvellement inscrit
-      const token = randomBytes(32).toString('hex');
-      const maxAge = 60 * 60 * 24 * 7; // 7 jours
-      const expiresAt = fmtSqliteDate(new Date(Date.now() + maxAge * 1000));
-      db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
-        .run(token, created.id, expiresAt);
 
-      setSessionCookie(reply, token, maxAge);
+      // Générer le JWT
+      const maxAge = 60 * 60 * 24 * 7; // 7 jours
+      const jwtToken = jwt.sign(
+        { userId: created.id, username: created.username, email: created.email },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+      // Invalidate previous tokens for user
+      db.prepare('DELETE FROM active_tokens WHERE user_id = ?').run(created.id);
+      // Store new token
+      const exp = getJwtExpiry(jwtToken);
+      db.prepare('INSERT INTO active_tokens (user_id, token, expires_at) VALUES (?, ?, ?)').run(
+        created.id,
+        jwtToken,
+        exp ? fmtSqliteDate(new Date(exp * 1000)) : null
+      );
+      reply.setCookie('jwt', jwtToken, {
+        httpOnly: true,
+        secure: true,
+        path: '/',
+        sameSite: 'strict',
+        maxAge: maxAge
+      });
 
       return reply.code(201).send({ user: created });
     } catch (e: any) {
@@ -181,33 +195,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /auth/login { login: string, password: string }
   fastify.post('/auth/login', async (request, reply) => {
     const body = (request.body as any) || {};
     const login: string = (body.login ?? body.username ?? body.email ?? '').toString().trim();
     const password: string = (body.password ?? '').toString();
 
     if (!login || !password) return reply.code(400).send({ error: 'Missing credentials.' });
-
-    // Vérifier si ce navigateur a déjà une session active (même si c'est un autre utilisateur)
-    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
-    const existingSessionToken = cookies['sid'];
-    
-    if (existingSessionToken) {
-      const existingSession = db.prepare(`
-        SELECT s.user_id, u.username FROM sessions s 
-        JOIN users u ON u.id = s.user_id 
-        WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
-      `).get(existingSessionToken) as { user_id: number; username: string } | undefined;
-      
-      if (existingSession) {
-        return reply.code(409).send({ 
-          error: `This browser already has an active session for user '${existingSession.username}'. Please logout first or use a different browser.`,
-          code: 'BROWSER_ALREADY_CONNECTED',
-          currentUser: existingSession.username
-        });
-      }
-    }
 
     // Récupérer l'utilisateur par email (lowercased) ou username
     const byEmail = isValidEmail(login);
@@ -219,14 +212,29 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(401).send({ error: 'Invalid credentials.' });
     }
 
-    // Créer une nouvelle session 7 jours (le navigateur n'a pas de session active)
-    const token = randomBytes(32).toString('hex');
+    // Générer le JWT
     const maxAge = 60 * 60 * 24 * 7;
-    const expiresAt = fmtSqliteDate(new Date(Date.now() + maxAge * 1000));
-    db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)')
-      .run(token, user.id, expiresAt);
-
-    setSessionCookie(reply, token, maxAge);
+    const jwtToken = jwt.sign(
+      { userId: user.id, username: user.username, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    // Invalidate previous tokens for user
+    db.prepare('DELETE FROM active_tokens WHERE user_id = ?').run(user.id);
+    // Store new token
+    const exp = getJwtExpiry(jwtToken);
+    db.prepare('INSERT INTO active_tokens (user_id, token, expires_at) VALUES (?, ?, ?)').run(
+      user.id,
+      jwtToken,
+      exp ? fmtSqliteDate(new Date(exp * 1000)) : null
+    );
+    reply.setCookie('jwt', jwtToken, {
+      httpOnly: true,
+      secure: true,
+      path: '/',
+      sameSite: 'strict',
+      maxAge: maxAge
+    });
 
     const safeUser = {
       id: user.id,
@@ -241,84 +249,72 @@ export default async function authRoutes(fastify: FastifyInstance) {
     return reply.send({ user: safeUser });
   });
 
-  // GET /auth/me -> utilisateur courant via cookie sid
+  // GET /auth/me -> utilisateur courant via cookie sid ou JWT
   fastify.get('/auth/me', async (request, reply) => {
-    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
-    const sid = cookies['sid'];
-    if (!sid) return reply.code(401).send({ error: 'No session.' });
-
-    const row = db.prepare('SELECT s.token, s.expires_at, u.id, u.email, u.username, u.avatar_url, u.wins, u.losses, u.created_at, u.updated_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?').get(sid) as SessionJoinRow | undefined;
-    if (!row) return reply.code(401).send({ error: 'Invalid session.' });
-
-    // Vérifier expiration
-    const now = new Date();
-    if (row.expires_at && new Date(row.expires_at).getTime() <= now.getTime()) {
-      db.prepare('DELETE FROM sessions WHERE token = ?').run(sid);
-      clearSessionCookie(reply);
-      return reply.code(401).send({ error: 'Session expired.' });
+    const jwtToken = getJwtFromRequest(request);
+    if (!jwtToken) return reply.code(401).send({ error: 'No JWT.' });
+    try {
+      const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number; username: string; email: string };
+      // Check token presence in active_tokens
+      const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+      if (!active) return reply.code(401).send({ error: 'Session expired or logged out.' });
+      const user = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at FROM users WHERE id = ?').get(payload.userId);
+      if (!user) return reply.code(401).send({ error: 'Utilisateur non trouvé.' });
+      return reply.send({ user });
+    } catch (err) {
+      return reply.code(401).send({ error: 'JWT invalide ou expiré.' });
     }
-
-    return reply.send({ user: {
-      id: row.id,
-      email: row.email,
-      username: row.username,
-      avatar_url: row.avatar_url ?? null,
-      wins: row.wins,
-      losses: row.losses,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    }});
   });
 
-  // POST /auth/logout -> supprime la session
+  // POST /auth/logout -> supprime la session/JWT
   fastify.post('/auth/logout', async (request, reply) => {
-    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
-    const sid = cookies['sid'];
-    
-    if (sid) {
-      // Get user ID from session before deleting it
-      const sessionRow = db.prepare('SELECT user_id FROM sessions WHERE token = ?').get(sid) as { user_id: number } | undefined;
-      
-      // Delete session from database
-      db.prepare('DELETE FROM sessions WHERE token = ?').run(sid);
-      
-      // Clean up user from active users list
-      if (sessionRow) {
-        removeUserFromActiveList(sessionRow.user_id);
-      }
+    const jwtToken = getJwtFromRequest(request);
+    if (jwtToken) {
+      // Remove token from active_tokens
+      db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);
     }
-    
-    clearSessionCookie(reply);
+    reply.setCookie('jwt', '', {
+      httpOnly: true,
+      secure: true,
+      path: '/',
+      sameSite: 'strict',
+      maxAge: 0
+    });
     return reply.send({ ok: true });
   });
 
   // Endpoint pour mettre à jour le profil utilisateur
   fastify.put('/auth/profile', async (request, reply) => {
-    const cookies = parseCookies(request.headers['cookie'] as string | undefined);
-    const sid = cookies['sid'];
-
-    if (!sid) {
+    const jwtToken = getJwtFromRequest(request);
+    let userId: number | undefined;
+    if (jwtToken) {
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        // Check token presence in active_tokens
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (!active) return reply.code(401).send({ error: 'Session expired or logged out' });
+        userId = payload.userId;
+      } catch (err) {
+        return reply.code(401).send({ error: 'JWT invalide ou expiré' });
+      }
+    }
+    // Si pas de JWT, refuse
+    if (!userId) {
       return reply.code(401).send({ error: 'Not authenticated' });
     }
-
+    // Récupérer l'utilisateur
     const sessionRow = db.prepare(`
-      SELECT s.user_id, u.email, u.username 
-      FROM sessions s 
-      JOIN users u ON u.id = s.user_id 
-      WHERE s.token = ? AND (s.expires_at IS NULL OR s.expires_at > datetime('now'))
-    `).get(sid) as { user_id: number; email: string; username: string } | undefined;
-
+      SELECT id, email, username FROM users WHERE id = ?
+    `).get(userId) as { id: number; email: string; username: string } | undefined;
     if (!sessionRow) {
-      return reply.code(401).send({ error: 'Invalid or expired session' });
+      return reply.code(401).send({ error: 'Invalid or expired session/JWT' });
     }
-
     const { username, email, currentPassword, newPassword } = (request.body as {
       username?: string;
       email?: string;
       currentPassword?: string;
       newPassword?: string;
     }) || {};
-
     // Validation des données
     if (username !== undefined && !isValidUsername(username)) {
       return reply.code(400).send({ error: 'Invalid username (3-20, alphanumeric and underscore)' });
@@ -335,7 +331,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     try {
       // Si on veut changer le mot de passe, vérifier l'ancien
       if (newPassword && currentPassword) {
-        const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(sessionRow.user_id) as { password_hash: string } | undefined;
+        const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(sessionRow.id) as { password_hash: string } | undefined;
         
         if (!user) {
           return reply.code(404).send({ error: 'User not found' });
@@ -350,7 +346,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
       // Vérifier l'unicité de l'email si changé
       if (email && email !== sessionRow.email) {
-        const existingEmailUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, sessionRow.user_id);
+        const existingEmailUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, sessionRow.id);
         if (existingEmailUser) {
           return reply.code(409).send({ error: 'Email already taken' });
         }
@@ -358,7 +354,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
       // Vérifier l'unicité du username si changé
       if (username && username !== sessionRow.username) {
-        const existingUsernameUser = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, sessionRow.user_id);
+        const existingUsernameUser = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, sessionRow.id);
         if (existingUsernameUser) {
           return reply.code(409).send({ error: 'Username already taken' });
         }
@@ -392,7 +388,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       }
 
       const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
-      values.push(sessionRow.user_id); // Add user_id at the end for WHERE clause
+      values.push(sessionRow.id); // Add user_id at the end for WHERE clause
       
       console.log('Profile update query:', query);
       console.log('Profile update values:', values);
