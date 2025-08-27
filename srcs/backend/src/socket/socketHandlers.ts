@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/24 17:59:07 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/08/27 04:23:36 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -401,7 +401,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         {
             // Create game end callback for online multiplayer games
             const gameEndCallback = !isLocalGame ? (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
-                handleGameEnd(roomName, room, winner, loser, fastify);
+                handleGameEnd(roomName, room, winner, loser, fastify, io);
             } : undefined;
             
             room.pongGame = new PongGame(room.maxPlayers, gameEndCallback);
@@ -434,7 +434,7 @@ function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean;
 }
 
 // Handle game end for online multiplayer games
-function handleGameEnd(roomName: string, room: RoomType, winner: { side: string; score: number }, loser: { side: string; score: number }, fastify: FastifyInstance) {
+function handleGameEnd(roomName: string, room: RoomType, winner: { side: string; score: number }, loser: { side: string; score: number }, fastify: FastifyInstance, io: Server) {
     // Only process win/loss for online games with authenticated players
     if (room.isLocalGame) {
         return;
@@ -501,6 +501,16 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
     } catch (error) {
         fastify.log.error(`Error recording match result: ${error}`);
     }
+
+    // Envoi de l'événement socket gameFinished à la room
+	if (room && room.players && room.players.length > 0 && typeof io !== 'undefined') {
+		io.to(roomName).emit('gameFinished', {
+			winner,
+			loser
+		});
+		fastify.log.info(`[SOCKET] gameFinished envoyé à la room ${roomName}`);
+	}
+	
 }
 
 // Tick global pour toutes les rooms avec un jeu en cours (adapté pour paddles dynamiques)
