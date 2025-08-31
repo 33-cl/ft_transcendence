@@ -1,59 +1,88 @@
+/**
+ * Types de côtés pour les raquettes dans le jeu Pong
+ * A = gauche, B = bas, C = droite, D = haut
+ */
 export type PaddleSide = 'A' | 'B' | 'C' | 'D';
 
+/**
+ * Interface définissant l'état complet d'une partie de Pong
+ * Contient toutes les informations nécessaires pour le rendu et la logique du jeu
+ */
 export interface GameState{
+    // Dimensions du canvas de jeu
     canvasHeight:   number;
     canvasWidth:    number;
 
-    paddleHeight:   number;
-    paddleWidth:    number;
-    paddleMargin:   number;
-    paddles: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        side: PaddleSide;
-        score: number;
+    // Propriétés des raquettes
+    paddleHeight:   number;    // Hauteur des raquettes verticales (A, C)
+    paddleWidth:    number;    // Largeur des raquettes verticales / hauteur des horizontales
+    paddleMargin:   number;    // Distance entre les raquettes et les bords du canvas
+    paddles: 
+    {
+        x: number;             // Position X de la raquette
+        y: number;             // Position Y de la raquette
+        width: number;         // Largeur de la raquette (varie selon orientation)
+        height: number;        // Hauteur de la raquette (varie selon orientation)
+        side: PaddleSide;      // Côté où se trouve la raquette (A, B, C, D)
+        score: number;         // Score actuel du joueur
     }[];
-    paddleSpeed:    number;
+    paddleSpeed:    number;    // Vitesse de déplacement des raquettes
 
-    ballX:          number;
-    ballY:          number;
-    ballRadius:     number;
-    ballSpeedX:     number;
-    ballSpeedY:     number;
+    // Propriétés de la balle
+    ballX:          number;    // Position X de la balle
+    ballY:          number;    // Position Y de la balle
+    ballRadius:     number;    // Rayon de la balle
+    ballSpeedX:     number;    // Vitesse horizontale de la balle
+    ballSpeedY:     number;    // Vitesse verticale de la balle
 
-    win:            number;
-    running:        boolean;
-    ballCountdown:  number; // Compte à rebours avant que la balle commence à bouger
+    // État de la partie
+    win:            number;    // Score à atteindre pour gagner
+    running:        boolean;   // Indique si la partie est en cours
+    ballCountdown:  number;    // Compte à rebours avant que la balle commence à bouger
 }
 
+/**
+ * Crée l'état initial d'une partie de Pong
+ * @param numPlayers Nombre de joueurs (2 pour 1v1, 4 pour battle royale)
+ * @returns L'état initial du jeu avec les raquettes positionnées correctement
+ */
 export function createInitialGameState(numPlayers: number = 2): GameState {
-    const canvasHeight  = 650;
-    const canvasWidth   = 850;
-    const paddleHeight  = 110;
-    const paddleWidth   = 10;
-    const paddleMargin  = 10;
-    const paddleY       = canvasHeight / 2 - paddleHeight / 2;
+    // Constantes de configuration du jeu
+    const canvasHeight  = 650;   // Hauteur du terrain de jeu
+    const canvasWidth   = 850;   // Largeur du terrain de jeu
+    const paddleHeight  = 110;   // Hauteur des raquettes verticales
+    const paddleWidth   = 10;    // Largeur des raquettes verticales
+    const paddleMargin  = 10;    // Marge entre raquettes et bords
+    const paddleY       = canvasHeight / 2 - paddleHeight / 2; // Position Y par défaut (centré)
 
+    // Ordre des côtés pour l'attribution des raquettes
     const paddleSides: PaddleSide[] = ['A', 'B', 'C', 'D'];
     const paddles: { x: number; y: number; width: number; height: number; side: PaddleSide; score: number }[] = [];
     
+    // Création et positionnement des raquettes selon le nombre de joueurs
     for (let i = 0; i < numPlayers; i++) {
         let side = paddleSides[i];
         let x = 0, y = paddleY, width = paddleWidth, height = paddleHeight;
         
-        if (numPlayers === 2) {
+        if (numPlayers === 2) 
+        {
             // Mode 1v1 : on veut A (gauche) et C (droite), pas B
-            if (i === 1) side = 'C' as PaddleSide; // Deuxième paddle = C au lieu de B
+            // Cela donne une disposition classique de Pong horizontal
+            if (i === 1) 
+                side = 'C' as PaddleSide; // Deuxième paddle = C au lieu de B
             
             if (side === 'A') {
-                x = paddleMargin;
+                // Raquette gauche
+                x = paddleMargin; 
             } else if (side === 'C') {
+                // Raquette droite
                 x = canvasWidth - paddleMargin - paddleWidth;
             }
-        } else if (numPlayers === 4) {
-            // Mode 1v1v1v1 : disposition carrée avec 4 paddles
+        } 
+        else if (numPlayers === 4) 
+        {
+            // Mode 1v1v1v1 : disposition carrée avec 4 paddles (battle royale)
+            // Chaque raquette est sur un côté différent du terrain
             if (side === 'A') {
                 // Paddle A : gauche (vertical)
                 x = paddleMargin;
@@ -64,8 +93,8 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
                 // Paddle B : bas (horizontal)
                 x = canvasWidth / 2 - paddleHeight / 2;
                 y = canvasHeight - paddleMargin - paddleWidth;
-                width = paddleHeight; // 110 pixels de largeur
-                height = paddleWidth; // 10 pixels de hauteur
+                width = paddleHeight; // 110 pixels de largeur (horizontale)
+                height = paddleWidth; // 10 pixels de hauteur (horizontale)
             } else if (side === 'C') {
                 // Paddle C : droite (vertical)
                 x = canvasWidth - paddleMargin - paddleWidth;
@@ -81,23 +110,32 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
             }
         }
         
+        // Ajouter la raquette configurée à la liste
         paddles.push({ x, y, width, height, side, score: 0 });
     }
+    // Retourner l'état initial complet du jeu
     return {
+        // Configuration du terrain
         canvasHeight:   canvasHeight,
         canvasWidth:    canvasWidth,
+        
+        // Configuration des raquettes
         paddleHeight:   paddleHeight,
         paddleWidth:    paddleWidth,
         paddleMargin:   paddleMargin,
         paddles:        paddles,
-        paddleSpeed:    7,
-        ballX:          canvasWidth / 2,
-        ballY:          canvasHeight / 2,
-        ballRadius:     15,
-        ballSpeedX:     3,
-        ballSpeedY:     3,
-        win:            3,
-        running:        false,
-        ballCountdown:  3, // Délai de 3 secondes avant que la balle commence
+        paddleSpeed:    7,              // Vitesse de déplacement des raquettes (pixels/frame)
+        
+        // Configuration de la balle
+        ballX:          canvasWidth / 2,  // Position initiale au centre X
+        ballY:          canvasHeight / 2, // Position initiale au centre Y
+        ballRadius:     15,               // Rayon de la balle (diminué pour meilleure jouabilité)
+        ballSpeedX:     3,                // Vitesse horizontale initiale
+        ballSpeedY:     3,                // Vitesse verticale initiale
+        
+        // Configuration de la partie
+        win:            3,                // Nombre de points pour gagner
+        running:        false,            // Partie non démarrée au début
+        ballCountdown:  3,                // Délai de 3 secondes avant que la balle commence
     };
 }
