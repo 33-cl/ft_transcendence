@@ -84,27 +84,27 @@ function fmtSqliteDate(d: Date): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
-function setSessionCookie(reply: any, token: string, maxAgeSec: number) {
-  const expires = new Date(Date.now() + maxAgeSec * 1000);
-  const cookie = [
-    `sid=${token}`,
-    'Path=/',
-    'HttpOnly',
-    'Secure',
-    'SameSite=Lax',
-    `Max-Age=${maxAgeSec}`,
-    `Expires=${expires.toUTCString()}`
-  ].join('; ');
+// function setSessionCookie(reply: any, token: string, maxAgeSec: number) {
+//   const expires = new Date(Date.now() + maxAgeSec * 1000);
+//   const cookie = [
+//     `sid=${token}`,
+//     'Path=/',
+//     'HttpOnly',
+//     'Secure',
+//     'SameSite=Lax',
+//     `Max-Age=${maxAgeSec}`,
+//     `Expires=${expires.toUTCString()}`
+//   ].join('; ');
   
-  // Pour permettre plusieurs sessions simultanées, on peut utiliser un approach plus flexible
-  // En utilisant des cookies avec des noms uniques par session
-  reply.header('Set-Cookie', cookie);
-}
+//   // Pour permettre plusieurs sessions simultanées, on peut utiliser un approach plus flexible
+//   // En utilisant des cookies avec des noms uniques par session
+//   reply.header('Set-Cookie', cookie);
+// }
 
-function clearSessionCookie(reply: any) {
-  const cookie = 'sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
-  reply.header('Set-Cookie', cookie);
-}
+// function clearSessionCookie(reply: any) {
+//   const cookie = 'sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+//   reply.header('Set-Cookie', cookie);
+// }
 
 function parseCookies(header?: string): Record<string, string> {
   const out: Record<string, string> = {};
