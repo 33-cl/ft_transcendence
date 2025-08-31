@@ -1,0 +1,89 @@
+
+STRUCTURE DU FRONTEND - ft_transcendence
+========================================
+
+frontend/
+├── index.html             → Point d'entrée HTML principal
+├── package.json           → Dépendances et scripts npm
+├── tsconfig.json          → Configuration TypeScript
+├── tailwind.config.js     → Configuration Tailwind CSS
+├── postcss.config.js      → Configuration PostCSS
+├── node_modules/          → Modules npm installés
+│
+├── src/                   → Code source principal
+│   ├── global.d.ts        → Déclarations de types globales
+│   │
+│   ├── components/        → Composants HTML/TypeScript
+│   │   ├── index.html.ts  → Composant principal d'index
+│   │   ├── landing.html.ts → Page d'accueil
+│   │   ├── mainMenu.html.ts → Menu principal
+│   │   ├── signIn.html.ts → Formulaire de connexion
+│   │   ├── signUp.html.ts → Formulaire d'inscription
+│   │   ├── profile.html.ts → Page de profil utilisateur
+│   │   ├── settings.html.ts → Paramètres utilisateur
+│   │   ├── friendList.html.ts → Liste d'amis
+│   │   ├── leaderboard.html.ts → Classement des joueurs
+│   │   ├── matchmaking.html.ts → File d'attente de matchmaking
+│   │   ├── game.html.ts   → Interface de jeu 2 joueurs
+│   │   ├── game4.html.ts  → Interface de jeu 4 joueurs
+│   │   ├── gameFinished.html.ts → Écran de fin de partie
+│   │   ├── contextMenu.html.ts → Menu contextuel
+│   │   ├── goToMain.html.ts → Navigation vers menu principal
+│   │   └── goToProfile.html.ts → Navigation vers profil
+│   │
+│   ├── pages/             → Logique des pages
+│   │   ├── spa.ts         → Single Page Application (routage)
+│   │   ├── auth.ts        → Gestion de l'authentification
+│   │   ├── profile.ts     → Logique de la page profil
+│   │   ├── settings.ts    → Logique des paramètres
+│   │   └── utils.ts       → Utilitaires pour les pages
+│   │
+│   ├── game/              → Client de jeu Pong
+│   │   ├── websocket.ts   → Connexion WebSocket avec le serveur
+│   │   ├── pongRenderer.ts → Rendu graphique du jeu
+│   │   ├── pongControls.ts → Gestion des contrôles clavier
+│   │   └── gameCleanup.ts → Nettoyage des ressources de jeu
+│   │
+│   ├── utils/             → Utilitaires généraux
+│   │   ├── user.ts        → Gestion des données utilisateur
+│   │   ├── validation.ts  → Validation des formulaires
+│   │   ├── change_avatar.ts → Changement d'avatar
+│   │   ├── passwordMasking.ts → Masquage des mots de passe
+│   │   ├── socketLoading.ts → États de chargement WebSocket
+│   │   ├── background.ts  → Gestion du fond d'écran
+│   │   └── background-optimised.ts → Version optimisée du fond
+│   │
+│   └── config/            → Configuration
+│       └── dev.ts         → Configuration de développement
+│
+├── styles/                → Styles CSS
+│   ├── input.css          → CSS d'entrée (Tailwind)
+│   └── output.css         → CSS compilé final
+│
+└── img/                   → Assets graphiques
+    ├── main-menu.png      → Image du menu principal
+    ├── default-pp.jpg     → Photo de profil par défaut
+    ├── crowns.png         → Icônes de couronnes
+    ├── gold-crown.png     → Couronne d'or (1ère place)
+    ├── silver-crown.png   → Couronne d'argent (2ème place)
+    ├── bronze-crown.png   → Couronne de bronze (3ème place)
+    └── [autres images]    → Images diverses (memes, avatars...)
+
+TECHNOLOGIES UTILISÉES
+=====================
+- TypeScript (langage principal)
+- HTML5 Canvas (rendu du jeu)
+- Tailwind CSS (framework CSS)
+- PostCSS (processing CSS)
+- WebSocket (communication temps réel)
+- Single Page Application (SPA)
+- Responsive Design
+
+ARCHITECTURE
+============
+- Architecture SPA avec routage côté client
+- Composants modulaires TypeScript
+- Communication WebSocket avec le backend
+- Rendu Canvas pour le jeu Pong
+- Design responsive avec Tailwind CSS
+- Gestion d'état locale pour l'authentification
