@@ -1,9 +1,44 @@
+
+STRUCTURE DU BACKEND - ft_transcendence
+=====================================
+
 backend/
-├── server.js              → point d’entrée
-└── src/
-    ├── routes/
-    │   └── ping.js        → une première route
-    └── plugins/
-        └── db.js          → plus tard, pour la base de données
+├── server.ts              → Point d'entrée principal (TypeScript)
+├── package.json           → Dépendances et scripts npm
+├── tsconfig.json          → Configuration TypeScript
+├── .dockerignore          → Fichiers ignorés par Docker
+├── node_modules/          → Modules npm installés
+│
+├── src/                   → Code source principal
+│   ├── db.ts              → Configuration et connexion base de données
+│   ├── user.ts            → Modèle et logique utilisateur
+│   ├── types.ts           → Types TypeScript partagés
+│   ├── types.d.ts         → Déclarations de types
+│   │
+│   ├── routes/            → Routes API REST
+│   │   ├── auth.ts        → Authentification (login, register, logout)
+│   │   ├── users.ts       → Gestion des utilisateurs
+│   │   ├── profile.ts     → Profils utilisateurs
+│   │   ├── matches.ts     → Historique des matchs
+│   │   └── rooms.ts       → Gestion des salles de jeu
+│   │
+│   └── socket/            → Gestion WebSocket en temps réel
+│       ├── socketAuth.ts  → Authentification WebSocket
+│       ├── socketHandlers.ts → Gestionnaires d'événements socket
+│       └── roomManager.ts → Gestion des salles multijoueur
+│
+└── game/                  → Logique du jeu Pong
+    ├── index.ts           → Point d'entrée du moteur de jeu
+    ├── PongGame.ts        → Classe principale du jeu Pong
+    ├── gameState.ts       → État du jeu (positions, vitesses...)
+    ├── ball.ts            → Logique de la balle
+    ├── paddle.ts          → Logique des raquettes
+    └── score.ts           → Système de score
 
-
+TECHNOLOGIES UTILISÉES
+=====================
+- Node.js + TypeScript
+- Express.js (API REST)
+- Socket.IO (WebSocket temps réel)
+- Base de données (à définir)
+- Docker (containerisation)
