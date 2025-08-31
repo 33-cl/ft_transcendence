@@ -3,7 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { rooms, roomExists, addPlayerToRoom, Room, getNextRoomName } from '../socket/roomManager.js';
-import { createInitialGameState } from '../../Rayan/gameState.js';
+import { createInitialGameState } from '../../game/gameState.js';
 
 // Supprime le compteur local, on utilise le compteur global partagé
 

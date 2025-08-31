@@ -1,5 +1,5 @@
-import { GameState, createInitialGameState, PaddleSide } from '../../Rayan/gameState.js';
-import { PongGame } from '../../Rayan/pong.js';
+import { GameState, createInitialGameState, PaddleSide } from '../../game/gameState.js';
+import { PongGame } from '../../game/PongGame.js';
 
 // src/socket/roomManager.ts
 
