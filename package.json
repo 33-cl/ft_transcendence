@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
-    "blerg": "^0.0.3"
+    "blerg": "^0.0.3",
+    "fastify-multipart": "^5.3.1"
   }
 }

@@ -33,7 +33,7 @@ frontend-build:
 
 # Convenience: DB inspection
 users:
-	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select id,email,username,wins,losses,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select id,email,username,avatar_url,wins,losses,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
 
 users-count:
 	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const row=db.prepare("select count(*) as n from users").get(); console.log(row.n);'

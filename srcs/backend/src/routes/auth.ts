@@ -411,4 +411,52 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Internal server error' });
     }
   });
+
+  // POST /auth/avatar -> upload avatar image
+  fastify.post('/auth/avatar', async (request, reply) => {
+    const jwtToken = getJwtFromRequest(request);
+    let userId: number | undefined;
+    if (jwtToken) {
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (!active) return reply.code(401).send({ error: 'Session expired or logged out' });
+        userId = payload.userId;
+      } catch (err) {
+        return reply.code(401).send({ error: 'JWT invalide ou expiré' });
+      }
+    }
+    if (!userId) {
+      return reply.code(401).send({ error: 'Not authenticated' });
+    }
+
+    // Récupérer le fichier avatar
+    const avatarFile = await request.file();
+    if (!avatarFile) {
+      return reply.code(400).send({ error: 'No avatar file uploaded' });
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(avatarFile.mimetype)) {
+      return reply.code(400).send({ error: 'Invalid file type (jpg, png, webp only)' });
+    }
+    // Limite de taille (2MB)
+    if (avatarFile.file.truncated) {
+      return reply.code(400).send({ error: 'File too large (max 2MB)' });
+    }
+    // Générer un nom de fichier unique
+    const ext = avatarFile.filename.split('.').pop();
+    const filename = `avatar_${userId}_${Date.now()}.${ext}`;
+    const fs = await import('fs');
+    const path = await import('path');
+    const savePath = path.join(process.cwd(), 'public', 'avatars', filename);
+    await new Promise((resolve, reject) => {
+      const writeStream = fs.createWriteStream(savePath);
+      avatarFile.file.pipe(writeStream);
+      avatarFile.file.on('end', resolve);
+      avatarFile.file.on('error', reject);
+    });
+    // Mettre à jour l'URL dans la base
+    const avatarUrl = `/avatars/${filename}`;
+    db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(avatarUrl, new Date().toISOString().slice(0, 19).replace('T', ' '), userId);
+    return reply.send({ ok: true, message: 'Avatar updated successfully', avatar_url: avatarUrl });
+  });
 }
