@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+   html, body {
+       @apply w-full h-full m-0;                         /* Page taking the whole screen */
+       @apply font-press-start text-white text-center; /* Text */
+       @apply flex flex-col items-center min-h-screen;   /* Elements centered */
+   }
+
+   h1 {
+       @apply text-2xl my-[2vh]; /* Text size and margins */
+       @apply drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]; /* Brillance on the text */
+    }
+
+   h2 {
+       @apply text-2xl my-[2vh]; /* Text size and margins */
+   }
+
+   a {
+       @apply text-blue-700; /* Link color */
+   }
+
+   a:hover {
+       @apply text-purple-800; /* Link hover color */
+   }
+}

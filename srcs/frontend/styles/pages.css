@@ -1,0 +1,112 @@
+@layer components {
+    /* Profile Page */
+    .profile-container {
+        @apply flex flex-col items-center justify-start w-full h-full pt-16;
+    }
+
+    .username-title {
+        @apply text-5xl mb-12;
+    }
+
+    .profile-stats {
+        @apply flex flex-row items-start justify-center gap-16;
+    }
+
+    .avatar-container {
+        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden;
+    }
+
+    .avatar-container img {
+        @apply w-full h-full object-cover;
+    }
+
+    .stats-container {
+        @apply flex flex-col items-start text-left;
+    }
+
+    .stat-row {
+        @apply text-4xl flex flex-row items-center justify-between w-full mb-6;
+    }
+
+    .stat-label {
+        @apply my-0 mr-16;
+    }
+
+    .title-value {
+        @apply text-amber-500;
+    }
+
+    .match-history {
+        @apply mt-24 w-full max-w-2xl;
+    }
+
+    .match-history h2 {
+        @apply text-3xl mb-6;
+    }
+
+    #match-list {
+        @apply list-none p-0;
+    }
+
+    .match-item {
+        @apply text-xl py-2;
+    }
+
+    .match-item.win {
+        @apply text-green-500;
+    }
+
+    .match-item.loss {
+        @apply text-red-500;
+    }
+
+    /* Matchmaking Page */
+    #matchmaking-page {
+        @apply w-[100vw];
+    }
+
+    #matchmaking h1 {
+        @apply text-4xl;
+    }
+
+    #matchmaking button {
+        @apply text-xl pt-2;
+    }
+
+    #searchingText {
+        @apply text-2xl pb-4; /* Search status text styling */
+    }
+
+    #tips {
+        @apply text-gray-400 w-[60vw] mx-[20vw];     /* Full width and margin */
+        @apply fixed bottom-0 left-0;                 /* Positioning */
+    } 
+
+    #tipText {
+        @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
+    }
+    
+    #map {
+        @apply border-2 border-white rounded-md; /* Map borders and corners */
+    }
+
+    /* Crown Elements */
+    .crown {
+        @apply absolute z-10 top-[-2.7vh] left-[-2vh] !important;     /* Crown positioning */
+        @apply w-[130px] h-[65px] object-fill !important;             /* Crown size and fit */
+        @apply rotate-[-10deg] !important;                            /* Crown rotation */
+    }
+
+    .profile-pic {
+        @apply relative z-0; /* Profile picture layering */
+    }
+
+    /* Settings Page */
+    .avatar-change-container {
+        @apply flex flex-row items-center gap-2;
+    }
+
+    #delete-pp {
+        @apply text-gray-400 cursor-pointer hover:text-gray-200 transition-colors;
+    }
+}

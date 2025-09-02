@@ -1,8 +1,18 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import db from '../db.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { removeUserFromActiveList } from '../socket/socketAuth.js';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import fs from 'fs';
+
+// Extend FastifyRequest to include user property and cookies
+declare module 'fastify' {
+  interface FastifyRequest {
+    user?: { userId: number };
+    cookies: { [key: string]: string };
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -445,8 +455,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
     // Générer un nom de fichier unique avec prefix "temp_"
     const ext = avatarFile.filename.split('.').pop();
     const filename = `temp_avatar_${userId}_${Date.now()}.${ext}`;
-    const fs = await import('fs');
-    const path = await import('path');
     const savePath = path.join(process.cwd(), 'public', 'avatars', filename);
     await new Promise((resolve, reject) => {
       const writeStream = fs.createWriteStream(savePath);
@@ -482,9 +490,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'No temporary avatar URL provided' });
     }
 
-    const fs = await import('fs');
-    const path = await import('path');
-    
     // Vérifier que le fichier temporaire existe
     const tempFilename = temp_avatar_url.split('/').pop();
     if (!tempFilename || !tempFilename.startsWith('temp_')) {
@@ -511,5 +516,47 @@ export default async function authRoutes(fastify: FastifyInstance) {
     db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(finalAvatarUrl, new Date().toISOString().slice(0, 19).replace('T', ' '), userId);
     
     return reply.send({ ok: true, message: 'Avatar saved successfully', avatar_url: finalAvatarUrl });
+  });
+
+  // POST /auth/avatar/reset -> réinitialiser l'avatar à la valeur par défaut
+  fastify.post('/auth/avatar/reset', async (request, reply) => {
+    // Vérification JWT comme les autres routes
+    const jwtToken = request.cookies.jwt;
+    let userId: number | undefined;
+    
+    try {
+      const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+      const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+      if (active) {
+        userId = payload.userId;
+      }
+    } catch (error) {
+      // Invalid token
+    }
+
+    if (!userId) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+
+    try {
+      // Récupérer l'ancienne URL de l'avatar
+      const user = db.prepare('SELECT avatar_url FROM users WHERE id = ?').get(userId) as { avatar_url: string | null };
+      
+      // Mettre à jour l'URL de l'avatar dans la base de données avec l'avatar par défaut
+      const defaultAvatarUrl = '/img/default-pp.jpg';
+      db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(
+        defaultAvatarUrl, 
+        new Date().toISOString().slice(0, 19).replace('T', ' '), 
+        userId
+      );
+
+      return reply.send({ 
+        message: 'Avatar reset successfully',
+        avatar_url: defaultAvatarUrl
+      });
+    } catch (error) {
+      console.error('Error resetting avatar:', error);
+      return reply.code(500).send({ error: 'Failed to reset avatar' });
+    }
   });
 }

@@ -69,9 +69,31 @@ export async function saveAvatar(): Promise<{ ok: boolean; error?: string; messa
     }
 }
 
+// Fonction pour supprimer l'avatar et remettre l'avatar par défaut
+async function resetAvatar(): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }> {
+    try {
+        const response = await fetch('/auth/avatar/reset', {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { ok: false, error: data.error || 'Avatar reset failed' };
+        }
+
+        return { ok: true, message: data.message || 'Avatar reset successfully', avatar_url: data.avatar_url };
+    } catch (error) {
+        console.error('Avatar reset error:', error);
+        return { ok: false, error: 'Network error' };
+    }
+}
+
 // Fonction pour initialiser les handlers du changement d’avatar
 export function initAvatarHandlers(): void {
     const changeBtn = document.getElementById('change-pp');
+    const deleteBtn = document.getElementById('delete-pp');
     const fileInput = document.getElementById('avatarUpload') as HTMLInputElement;
 
     if (!changeBtn || !fileInput) return;
@@ -112,4 +134,29 @@ export function initAvatarHandlers(): void {
         // Reset input pour pouvoir reuploader la même image plus tard si besoin
         fileInput.value = '';
     });
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            const result = await resetAvatar();
+            
+            const messageEl = document.getElementById('settings-message');
+            if (messageEl) {
+                messageEl.style.display = 'block';
+                if (result.ok) {
+                    messageEl.style.color = '#22c55e';
+                    messageEl.textContent = 'Avatar reset to default';
+                    if (result.avatar_url && window.currentUser) {
+                        window.currentUser.avatar_url = result.avatar_url;
+                    }
+                    // Force refresh des composants qui utilisent l'avatar
+                    if ((window as any).refreshUserStats) {
+                        (window as any).refreshUserStats();
+                    }
+                } else {
+                    messageEl.style.color = '#ef4444';
+                    messageEl.textContent = result.error!;
+                }
+            }
+        });
+    }
 }
