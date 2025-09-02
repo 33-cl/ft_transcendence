@@ -4,6 +4,7 @@ import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
  // Importe le framework Fastify (serveur HTTP)
 import fastifyCors from '@fastify/cors'; // Plugin CORS pour Fastify
 import fs from 'fs'; // Pour lire les fichiers SSL (clé/certificat)
+import path from 'path'; // Pour gérer les chemins de fichiers
 import { Server as SocketIOServer } from 'socket.io';
 // Importe la classe Server du module socket.io 
 // (renomee en SocketIOServer) pour le temps réel (WebSocket)
@@ -29,6 +30,17 @@ const app = fastify({
   https: {key, cert}  // Utilise la clé privée et certification SSL
 });
 
+// Function to ensure avatar directory exists
+function ensureAvatarDirectory() {
+  const avatarDir = path.join(process.cwd(), 'public', 'avatars');
+  if (!fs.existsSync(avatarDir)) {
+    fs.mkdirSync(avatarDir, { recursive: true });
+    app.log.info(`📁 Avatar directory created: ${avatarDir}`);
+  } else {
+    app.log.info(`📁 Avatar directory exists: ${avatarDir}`);
+  }
+}
+
 // Ajoutez un hook pour désactiver le cache sur toutes les réponses
 app.addHook('onSend', (request, reply, payload, done) => {
   reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -38,6 +50,9 @@ app.addHook('onSend', (request, reply, payload, done) => {
 // Fonction main asynchrone pour tout lancer
 (async () => {
   try {
+    // Ensure avatar directory exists before starting the server
+    ensureAvatarDirectory();
+
     // Enregistre le plugin CORS pour Fastify
     await app.register(fastifyCors, {
       origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
@@ -55,6 +70,9 @@ app.addHook('onSend', (request, reply, payload, done) => {
         fileSize: 2 * 1024 * 1024 // 2MB
       }
     });
+
+    // Ensure avatar directory exists
+    ensureAvatarDirectory();
 
     // Route GET très simple
     app.get('/', async (request, reply) => {
