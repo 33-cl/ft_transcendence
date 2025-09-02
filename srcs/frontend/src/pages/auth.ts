@@ -133,7 +133,7 @@ document.addEventListener('componentsReady', () => {
                     (window as any).reconnectWebSocket();
                 }
                 
-                load('mainMenu');
+                await load('mainMenu');
             } else {
                 const data = await res.json().catch(() => ({} as any));
                 msg.textContent = data?.error || 'Registration error.';
@@ -211,7 +211,7 @@ document.addEventListener('componentsReady', () => {
                     (window as any).reconnectWebSocket();
                 }
                 
-                load('mainMenu'); // laisser le caller gérer la navigation si besoin
+                await load('mainMenu'); // laisser le caller gérer la navigation si besoin
             } else {
                 msg.textContent = data?.error || 'Login failed.';
                 msg.style.color = 'orange';

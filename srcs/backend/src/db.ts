@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 
-// Ouvre (ou crée) la base SQLite (même nom que déjà utilisé ailleurs pour cohérence)
-const db = new Database('/app/pong.db');
+// Ouvre (ou crée) la base SQLite dans le volume persistant
+const db = new Database('/app/db/pong.db');
 
 // Schéma minimal pour user management (étape 1)
 db.exec(`

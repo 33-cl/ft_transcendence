@@ -1,9 +1,34 @@
-export function goToProfileHTML() {
+export async function goToProfileHTML() {
     const username = window.currentUser?.username || 'a';
     const avatarUrl = window.currentUser?.avatar_url || './img/default-pp.jpg';
+    
+    // Vérifier si l'utilisateur est premier du leaderboard
+    let crown = '';
+    try {
+        const response = await fetch('/users/leaderboard', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const leaderboard = data.leaderboard || [];
+            
+            // Si l'utilisateur actuel est premier du leaderboard
+            if (leaderboard.length > 0 && leaderboard[0].username === username) {
+                crown = '<img src="./img/gold-crown.png" alt="Gold Crown" class="crown" />';
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to fetch leaderboard for crown check:', error);
+    }
+    
     return /*html*/ `
         <div id="goToProfile-component">
-            <img src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/default-pp.jpg';" />
+            <div class="profile-pic" style="display: inline-block;">
+                ${crown}
+                <img id="goToProfile" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/default-pp.jpg';" style="cursor: pointer;" />
+            </div>
             <div class="goToProfile-info">
                 <div class="goToProfile-username">${username}</div>
                 <button class="goToProfile-logout default-button" id="logOutBtn">Log out</button>

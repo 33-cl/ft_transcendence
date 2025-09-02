@@ -20,16 +20,22 @@ const components = {
 
 };
 
-function show(pageName: keyof typeof components)
+async function show(pageName: keyof typeof components)
 {
     // Show the requested component
     const component = components[pageName];
     const element = document.getElementById(component.id);
     if (element) {
-        if (typeof component.html === 'function')
-            element.innerHTML = component.html();
-        else
+        if (typeof component.html === 'function') {
+            const htmlResult = component.html();
+            if (htmlResult instanceof Promise) {
+                element.innerHTML = await htmlResult;
+            } else {
+                element.innerHTML = htmlResult;
+            }
+        } else {
             element.innerHTML = component.html;
+        }
     }
 
     // Notifies each element is ready
@@ -40,59 +46,59 @@ function show(pageName: keyof typeof components)
     }, 0);
 }
 
-function load(pageName: string, updateHistory: boolean = true)
+async function load(pageName: string, updateHistory: boolean = true)
 {
     hideAllPages();
     if (pageName === 'landing')
-        show('landing');
+        await show('landing');
     else if (pageName === 'mainMenu')
     {
         // Refresh user stats BEFORE showing components to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then((statsChanged: boolean) => {
+            (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
                 if (statsChanged) {
                     console.log('📊 User stats refreshed before main menu display');
                 }
                 // Show components after stats are refreshed
-                show('mainMenu');
-                show('friendList');
-                show('leaderboard');
-                show('goToProfile');
-            }).catch((error: any) => {
+                await show('mainMenu');
+                await show('friendList');
+                await show('leaderboard');
+                await show('goToProfile');
+            }).catch(async (error: any) => {
                 console.warn('Failed to refresh user stats before main menu:', error);
                 // Still show components even if refresh fails
-                show('mainMenu');
-                show('friendList');
-                show('leaderboard');
-                show('goToProfile');
+                await show('mainMenu');
+                await show('friendList');
+                await show('leaderboard');
+                await show('goToProfile');
             });
         } else {
             // No user or refresh function available, show components directly
-            show('mainMenu');
-            show('friendList');
-            show('leaderboard');
-            show('goToProfile');
+            await show('mainMenu');
+            await show('friendList');
+            await show('leaderboard');
+            await show('goToProfile');
         }
     }
     else if (pageName === 'settings')
-        show('settings');
+        await show('settings');
     else if (pageName === 'signIn')
     {
-        show('signIn');
+        await show('signIn');
         // show('goToMain');
     }
     else if (pageName === 'signUp')
     {
-        show('signUp');
+        await show('signUp');
         // show('goToMain');
     }
     else if (pageName === 'game')
-        show('game');
+        await show('game');
     else if (pageName === 'game4')
-        show('game4');
+        await show('game4');
     else if (pageName === 'matchmaking')
     {
-        show('matchmaking');
+        await show('matchmaking');
         animateDots();
         switchTips();
     }
@@ -100,27 +106,27 @@ function load(pageName: string, updateHistory: boolean = true)
     {
         // Refresh user stats BEFORE showing profile to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then((statsChanged: boolean) => {
+            (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
                 if (statsChanged) {
                     console.log('📊 User stats refreshed before profile display');
                 }
                 // Show components after stats are refreshed
-                show('profile');
-                show('goToMain');
-            }).catch((error: any) => {
+                await show('profile');
+                await show('goToMain');
+            }).catch(async (error: any) => {
                 console.warn('Failed to refresh user stats before profile:', error);
                 // Still show components even if refresh fails
-                show('profile');
-                show('goToMain');
+                await show('profile');
+                await show('goToMain');
             });
         } else {
             // No user or refresh function available, show components directly
-            show('profile');
-            show('goToMain');
+            await show('profile');
+            await show('goToMain');
         }
     }
     else if (pageName === 'gameFinished')
-        show('gameFinished');
+        await show('gameFinished');
     else
         console.warn(`Page ${pageName} not found`);
 

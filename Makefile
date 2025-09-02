@@ -21,7 +21,10 @@ clean: down
 	docker system prune -af
 
 fclean: clean
-	docker volume prune -f
+
+rm-data: down
+	docker volume rm ft_transcendence_db_storage 2>/dev/null || true
+	docker volume rm ft_transcendence_avatar_storage 2>/dev/null || true
 
 re: fclean build up
 
@@ -33,19 +36,19 @@ frontend-build:
 
 # Convenience: DB inspection
 users:
-	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select id,email,username,avatar_url,wins,losses,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("/app/db/pong.db"); const rows=db.prepare("select id,email,username,avatar_url,wins,losses,created_at from users order by id").all(); console.log(JSON.stringify(rows,null,2));'
 
 users-count:
-	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const row=db.prepare("select count(*) as n from users").get(); console.log(row.n);'
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("/app/db/pong.db"); const row=db.prepare("select count(*) as n from users").get(); console.log(row.n);'
 
 matches:
-	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("pong.db"); const rows=db.prepare("select m.id, winner.username as winner, loser.username as loser, m.winner_score, m.loser_score, m.match_type, m.created_at from matches m join users winner on m.winner_id = winner.id join users loser on m.loser_id = loser.id order by m.created_at desc").all(); console.log(JSON.stringify(rows,null,2));'
+	docker compose exec backend node -e 'const Database=require("better-sqlite3"); const db=new Database("/app/db/pong.db"); const rows=db.prepare("select m.id, winner.username as winner, loser.username as loser, m.winner_score, m.loser_score, m.match_type, m.created_at from matches m join users winner on m.winner_id = winner.id join users loser on m.loser_id = loser.id order by m.created_at desc").all(); console.log(JSON.stringify(rows,null,2));'
 
 db-copy:
-	docker compose cp backend:/app/pong.db ./pong.db
+	docker compose cp backend:/app/db/pong.db ./pong.db
 
 # Optional (requires sqlite3 on host):
 users-sql: db-copy
 	sqlite3 ./pong.db 'SELECT id,email,username,created_at FROM users ORDER BY id;'
 
-.PHONY: all up down build rebuild logs clean fclean re backend-build frontend-build users users-count db-copy users-sql
+.PHONY: all up down build rebuild logs clean fclean rm-data re backend-build frontend-build users users-count db-copy users-sql

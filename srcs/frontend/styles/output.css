@@ -784,6 +784,26 @@ a:hover{
   /* Hover effects */
 }
 
+.friend-info{
+  display: flex;
+  flex-direction: column;
+}
+
+.friend-name{
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+}
+
+.friend-stats{
+  margin: 0px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  --tw-text-opacity: 1;
+  color: rgb(156 163 175 / var(--tw-text-opacity, 1));
+}
+
 .crown{
   position: absolute;
   top: -2.7vh;
@@ -2100,6 +2120,16 @@ a:hover{
 
 .text-\[42px\]{
   font-size: 42px;
+}
+
+.text-base{
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-sm{
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 .text-xl{
