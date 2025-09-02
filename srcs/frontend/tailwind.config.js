@@ -4,6 +4,7 @@ module.exports = {
     "./**/*.html",
     "./*.html",
     "./src/**/*.ts",
+    "./styles/**/*.css"
   ],
   theme: {
     extend: {
@@ -16,4 +17,4 @@ module.exports = {
     'font-press-start'
   ],
   plugins: [],
-} 
+}

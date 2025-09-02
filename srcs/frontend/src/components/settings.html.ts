@@ -13,7 +13,7 @@ export function settingsHTML() {
             <span class="settings-label">AVATAR</span>
             <div class="avatar-change-container">
                 <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
-                <span id="change-pp">[Change]</span>
+                <span id="avatar-buttons"><span id="delete-pp">x</span><span id="change-pp">[Change]</span></span>
             </div>
         </div>
         <div class="settings-row">
