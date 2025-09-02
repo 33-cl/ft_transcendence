@@ -17,6 +17,7 @@ import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction
 import { getUserById } from './src/user.js'; // Importe le getter getUserById
 
 import fastifyCookie from '@fastify/cookie'; // Plugin Cookie pour Fastify
+import fastifyMultipart from '@fastify/multipart'; // Plugin Multipart pour Fastify
 
 // Configuration SSL pour HTTPS sécurisé
 const key = fs.readFileSync('./key.pem');  // Clé privée SSL
@@ -46,6 +47,13 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Enregistre le plugin Cookie pour Fastify (nécessaire pour reply.setCookie)
     await app.register(fastifyCookie, {
       // options par défaut, peut être personnalisé si besoin
+    });
+
+    // Enregistre le plugin multipart pour l'upload d'avatar
+    await app.register(fastifyMultipart, {
+      limits: {
+        fileSize: 2 * 1024 * 1024 // 2MB
+      }
     });
 
     // Route GET très simple
