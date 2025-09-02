@@ -1,8 +1,9 @@
 export function goToProfileHTML() {
     const username = window.currentUser?.username || 'a';
+    const avatarUrl = window.currentUser?.avatar_url || './img/default-pp.jpg';
     return /*html*/ `
         <div id="goToProfile-component">
-            <img src="./img/default-pp.jpg" alt="Profile Icon" />
+            <img src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/default-pp.jpg';" />
             <div class="goToProfile-info">
                 <div class="goToProfile-username">${username}</div>
                 <button class="goToProfile-logout default-button" id="logOutBtn">Log out</button>
