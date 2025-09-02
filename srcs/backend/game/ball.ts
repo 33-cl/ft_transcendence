@@ -2,6 +2,34 @@
 
 import { GameState, createInitialGameState } from './gameState.js';
 
+/**
+ * Calcule l'angle de rebond en fonction de la zone d'impact sur le paddle (mode 1v1)
+ * Le paddle est divisé en 8 zones égales avec des angles prédéfinis
+ * @param ballY Position Y de la balle au moment du contact
+ * @param paddleTop Position Y du haut du paddle
+ * @param paddleHeight Hauteur totale du paddle
+ * @returns Angle de rebond en radians
+ */
+function calculateBounceAngleFromZone(ballY: number, paddleTop: number, paddleHeight: number): number {
+    // Angles prédéfinis pour chaque zone (en degrés)
+    // Zones 3 et 4 = 0° pour un centre élargi
+    const angles = [-45, -30, -15, 0, 0, 15, 30, 45];
+    
+    // Calculer la position relative de l'impact sur le paddle [0, 1]
+    const impactRatio = (ballY - paddleTop) / paddleHeight;
+    
+    // Déterminer la zone (0-7), avec protection contre les débordements
+    const zoneIndex = Math.max(0, Math.min(7, Math.floor(impactRatio * 8)));
+    
+    // Convertir l'angle en radians
+    const angleInRadians = angles[zoneIndex] * Math.PI / 180;
+    
+    // Log pour debugging (à retirer plus tard)
+    console.log(`🎯 REBOND ANGULAIRE: ballY=${ballY.toFixed(1)}, paddleTop=${paddleTop.toFixed(1)}, height=${paddleHeight}, ratio=${impactRatio.toFixed(3)}, zone=${zoneIndex}, angle=${angles[zoneIndex]}°`);
+    
+    return angleInRadians;
+}
+
 export interface BallState {
     accelerationCount: number;
     pointScored: boolean;
