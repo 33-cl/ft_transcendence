@@ -83,13 +83,13 @@ function initializeComponents(): void
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            load('mainMenu');
+            await load('mainMenu');
         }
         if (target.id === 'goToProfile')
-            load('profile');
+            await load('profile');
         if (target.id === 'settingsBtn' || isSettingsBtn)
         {
-            load('settings');
+            await load('settings');
         }
         if (target.id === 'local2p')
         {
@@ -105,11 +105,11 @@ function initializeComponents(): void
             // Ne pas appeler load('game4') ici !
         }
         if (target.id === 'signInBtn')
-            load('signIn');
+            await load('signIn');
         if (target.id === 'signUpBtn')        
-            load('signUp');
+            await load('signUp');
         if (target.id === 'profileBtn' || isProfileBtn)
-            load('profile');
+            await load('profile');
         if (target.id === 'logOutBtn') {
             // Appeler le logout côté serveur
             try {
@@ -147,7 +147,7 @@ function initializeComponents(): void
                     load('signIn');
                 }
             });
-            load('signIn');
+            await load('signIn');
         }
 
         // MULTIPLAYER
@@ -187,13 +187,13 @@ function initializeComponents(): void
                 window.socket.emit('leaveAllRooms');
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
-            load('mainMenu');
+            await load('mainMenu');
         }
 
         // TEST
         if (target.id === 'tournamentJoinBtn')
         {
-            load('matchmaking');
+            await load('matchmaking');
         }
     });
     
@@ -255,14 +255,14 @@ function setupRoomJoinedHandler()
     if (window._roomJoinedHandlerSet)
         return;
     window._roomJoinedHandlerSet = true;
-    window.socket.on('roomJoined', (data: any) =>
+    window.socket.on('roomJoined', async (data: any) =>
     {
         // Si mode local, on affiche directement la page de jeu
         if (window.isLocalGame) {
             if (data.maxPlayers === 4) {
-                load('game4');
+                await load('game4');
             } else {
-                load('game');
+                await load('game');
             }
             return;
         }
@@ -270,13 +270,13 @@ function setupRoomJoinedHandler()
         if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
         {
             if (data.players < data.maxPlayers)
-                load('matchmaking');
+                await load('matchmaking');
             else
             {
                 if (data.maxPlayers === 4) {
-                    load('game4');
+                    await load('game4');
                 } else {
-                    load('game');
+                    await load('game');
                 }
             }
         }
@@ -284,7 +284,7 @@ function setupRoomJoinedHandler()
 }
 
 
-window.addEventListener('popstate', function(event) {
+window.addEventListener('popstate', async function(event) {
     let targetPage = event.state?.page || 'signIn';
     
     // Protection: si connecté et tentative d'accès aux pages d'auth → rediriger
@@ -292,7 +292,7 @@ window.addEventListener('popstate', function(event) {
         targetPage = 'mainMenu';
     }
     
-    load(targetPage, false);
+    await load(targetPage, false);
 });
 
 // // top level statemetn ( s'execute des que le fichier est importe)

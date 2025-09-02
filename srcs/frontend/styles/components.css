@@ -53,10 +53,43 @@
         @apply hover:bg-gray-600 transition-colors;        /* Hover effects */
     }
 
+    .friend-info {
+        @apply flex flex-col;
+    }
+
+    /* Leaderboard specific styles */
+    #leaderboard .friend {
+        @apply flex items-center justify-center relative;
+    }
+
+    #leaderboard .position-number {
+        @apply absolute left-0 w-[25px];
+    }
+
+    #leaderboard .friend-info {
+        @apply flex flex-col items-center text-center w-full;
+    }
+
+    #leaderboard .friend-name {
+        @apply text-lg mb-1;
+    }
+
+    #leaderboard .friend-stats {
+        @apply text-sm text-gray-400 m-0;
+    }
+
+    .friend-name {
+        @apply text-base font-bold mb-1;
+    }
+
+    .friend-stats {
+        @apply text-sm text-gray-400 m-0;
+    }
+
     .crown {
-        @apply absolute z-10 top-[-2.7vh] left-[-2vh];     /* Crown positioning */
-        @apply w-[130px] h-[65px] object-fill;             /* Crown size and fit */
-        @apply rotate-[-10deg];                            /* Crown rotation */
+        @apply absolute z-10 top-[-2.7vh] left-[-2vh] !important;     /* Crown positioning */
+        @apply w-[130px] h-[65px] object-fill !important;             /* Crown size and fit */
+        @apply rotate-[-10deg] !important;                            /* Crown rotation */
     }
 
     .profile-pic {
@@ -100,7 +133,7 @@
     }
 
     #goToProfile img {
-        @apply w-[75px] h-[75px] rounded-md mr-4; /* Photo à gauche, taille et arrondi */
+        @apply w-[75px] h-[75px] rounded-md mr-4 relative; /* Photo à gauche, taille et arrondi, position relative pour la couronne */
     }
 
     .goToProfile-info {

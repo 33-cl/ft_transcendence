@@ -21,8 +21,11 @@ services:
     volumes:
       - ./srcs/backend/src:/app/src
       - avatar_storage:/app/public/avatars
+      - db_storage:/app/db
     restart: unless-stopped
 
 volumes:
   avatar_storage:
+    driver: local
+  db_storage:
     driver: local
