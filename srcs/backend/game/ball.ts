@@ -10,7 +10,7 @@ import { GameState, createInitialGameState } from './gameState.js';
  * @param paddleHeight Hauteur totale du paddle
  * @returns Angle de rebond en radians
  */
-function calculateBounceAngleFromZone(ballY: number, paddleTop: number, paddleHeight: number): number {
+export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, paddleHeight: number): number {
     // Angles prédéfinis pour chaque zone (en degrés)
     // Zones 3 et 4 = 0° pour un centre élargi
     const angles = [-45, -30, -15, 0, 0, 15, 30, 45];
@@ -251,7 +251,7 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
     }
     
     // Fonction helper pour collision cercle-rectangle précise (mode 1v1)
-    const checkCircleRectangleCollision1v1 = (paddle: any, isLeftPaddle: boolean) => {
+    const checkCircleCollision1v1 = (paddle: any, isLeftPaddle: boolean) => {
         const ballCenterX = state.ballX;
         const ballCenterY = state.ballY;
         
@@ -306,10 +306,10 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
     };
     
     // Vérifier collision avec paddle gauche (index 0)
-    checkCircleRectangleCollision1v1(paddles[0], true);
+    checkCircleCollision1v1(paddles[0], true);
     
     // Vérifier collision avec paddle droit (index 1)
-    checkCircleRectangleCollision1v1(paddles[1], false);
+    checkCircleCollision1v1(paddles[1], false);
 }
 
 export function shouldResetBall(state: GameState): boolean {
