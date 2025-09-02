@@ -9,7 +9,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./public/avatars:/app/avatars
+      - avatar_storage:/app/avatars
     restart: unless-stopped
 
   backend:
@@ -20,5 +20,9 @@ services:
       - "8080:8080"
     volumes:
       - ./srcs/backend/src:/app/src
-      - ./public/avatars:/app/public/avatars
+      - avatar_storage:/app/public/avatars
     restart: unless-stopped
+
+volumes:
+  avatar_storage:
+    driver: local
