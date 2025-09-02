@@ -130,8 +130,8 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         ballX:          canvasWidth / 2,  // Position initiale au centre X
         ballY:          canvasHeight / 2, // Position initiale au centre Y
         ballRadius:     15,               // Rayon de la balle (diminué pour meilleure jouabilité)
-        ballSpeedX:     3,                // Vitesse horizontale initiale
-        ballSpeedY:     3,                // Vitesse verticale initiale
+        ballSpeedX:     4,                // Vitesse horizontale initiale
+        ballSpeedY:     4,                // Vitesse verticale initiale
         
         // Configuration de la partie
         win:            3,                // Nombre de points pour gagner
