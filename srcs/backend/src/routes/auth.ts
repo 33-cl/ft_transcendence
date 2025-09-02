@@ -412,8 +412,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /auth/avatar -> upload avatar image
-  fastify.post('/auth/avatar', async (request, reply) => {
+  // POST /auth/avatar/upload -> upload avatar temporairement (staging)
+  fastify.post('/auth/avatar/upload', async (request, reply) => {
     const jwtToken = getJwtFromRequest(request);
     let userId: number | undefined;
     if (jwtToken) {
@@ -442,9 +442,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
     if (avatarFile.file.truncated) {
       return reply.code(400).send({ error: 'File too large (max 2MB)' });
     }
-    // Générer un nom de fichier unique
+    // Générer un nom de fichier unique avec prefix "temp_"
     const ext = avatarFile.filename.split('.').pop();
-    const filename = `avatar_${userId}_${Date.now()}.${ext}`;
+    const filename = `temp_avatar_${userId}_${Date.now()}.${ext}`;
     const fs = await import('fs');
     const path = await import('path');
     const savePath = path.join(process.cwd(), 'public', 'avatars', filename);
@@ -454,9 +454,62 @@ export default async function authRoutes(fastify: FastifyInstance) {
       avatarFile.file.on('end', resolve);
       avatarFile.file.on('error', reject);
     });
+    // Ne pas mettre à jour la base, juste retourner l'URL temporaire
+    const tempAvatarUrl = `/avatars/${filename}`;
+    return reply.send({ ok: true, message: 'Avatar uploaded, click Save to confirm', temp_avatar_url: tempAvatarUrl });
+  });
+
+  // POST /auth/avatar/save -> appliquer l'avatar temporaire
+  fastify.post('/auth/avatar/save', async (request, reply) => {
+    const jwtToken = getJwtFromRequest(request);
+    let userId: number | undefined;
+    if (jwtToken) {
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (!active) return reply.code(401).send({ error: 'Session expired or logged out' });
+        userId = payload.userId;
+      } catch (err) {
+        return reply.code(401).send({ error: 'JWT invalide ou expiré' });
+      }
+    }
+    if (!userId) {
+      return reply.code(401).send({ error: 'Not authenticated' });
+    }
+
+    const { temp_avatar_url } = (request.body as { temp_avatar_url?: string }) || {};
+    if (!temp_avatar_url) {
+      return reply.code(400).send({ error: 'No temporary avatar URL provided' });
+    }
+
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    // Vérifier que le fichier temporaire existe
+    const tempFilename = temp_avatar_url.split('/').pop();
+    if (!tempFilename || !tempFilename.startsWith('temp_')) {
+      return reply.code(400).send({ error: 'Invalid temporary avatar URL' });
+    }
+
+    const tempPath = path.join(process.cwd(), 'public', 'avatars', tempFilename);
+    if (!fs.existsSync(tempPath)) {
+      return reply.code(400).send({ error: 'Temporary avatar file not found' });
+    }
+
+    // Renommer le fichier (enlever le prefix "temp_")
+    const finalFilename = tempFilename.replace('temp_', '');
+    const finalPath = path.join(process.cwd(), 'public', 'avatars', finalFilename);
+    
+    try {
+      fs.renameSync(tempPath, finalPath);
+    } catch (error) {
+      return reply.code(500).send({ error: 'Failed to save avatar' });
+    }
+
     // Mettre à jour l'URL dans la base
-    const avatarUrl = `/avatars/${filename}`;
-    db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(avatarUrl, new Date().toISOString().slice(0, 19).replace('T', ' '), userId);
-    return reply.send({ ok: true, message: 'Avatar updated successfully', avatar_url: avatarUrl });
+    const finalAvatarUrl = `/avatars/${finalFilename}`;
+    db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(finalAvatarUrl, new Date().toISOString().slice(0, 19).replace('T', ' '), userId);
+    
+    return reply.send({ ok: true, message: 'Avatar saved successfully', avatar_url: finalAvatarUrl });
   });
 }

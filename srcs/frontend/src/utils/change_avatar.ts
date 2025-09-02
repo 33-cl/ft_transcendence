@@ -1,14 +1,21 @@
 // change_avatar.ts
 
-import { load } from '../pages/utils.js';
+// Extend window interface to include temporary avatar URL
+declare global {
+    interface Window {
+        tempAvatarUrl?: string;
+        temporaryAvatarFile?: File;
+        hasPendingAvatar?: boolean;
+    }
+}
 
-// Fonction pour uploader l'avatar
-async function uploadAvatar(file: File): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }> {
+// Fonction pour uploader temporairement l'avatar
+async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: string; message?: string; temp_avatar_url?: string }> {
     const formData = new FormData();
     formData.append('avatar', file);
 
     try {
-        const response = await fetch('/auth/avatar', {
+        const response = await fetch('/auth/avatar/upload', {
             method: 'POST',
             credentials: 'include',
             body: formData
@@ -17,12 +24,47 @@ async function uploadAvatar(file: File): Promise<{ ok: boolean; error?: string; 
         const data = await response.json();
 
         if (!response.ok) {
-            return { ok: false, error: data.error || 'Avatar update failed' };
+            return { ok: false, error: data.error || 'Avatar upload failed' };
         }
 
-        return { ok: true, message: data.message || 'Avatar updated successfully', avatar_url: data.avatar_url };
+        return { ok: true, message: data.message || 'Avatar uploaded', temp_avatar_url: data.temp_avatar_url };
     } catch (error) {
         console.error('Avatar upload error:', error);
+        return { ok: false, error: 'Network error' };
+    }
+}
+
+// Fonction pour confirmer et sauvegarder l'avatar
+export async function saveAvatar(): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }> {
+    const tempAvatarUrl = window.tempAvatarUrl;
+    
+    if (!tempAvatarUrl) {
+        return { ok: false, error: 'No temporary avatar to save' };
+    }
+
+    try {
+        const response = await fetch('/auth/avatar/save', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ temp_avatar_url: tempAvatarUrl })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { ok: false, error: data.error || 'Avatar save failed' };
+        }
+
+        // Clear temporary avatar data on successful save
+        delete window.tempAvatarUrl;
+        window.hasPendingAvatar = false;
+
+        return { ok: true, message: data.message || 'Avatar saved successfully', avatar_url: data.avatar_url };
+    } catch (error) {
+        console.error('Avatar save error:', error);
         return { ok: false, error: 'Network error' };
     }
 }
@@ -46,26 +88,25 @@ export function initAvatarHandlers(): void {
 
         window.temporaryAvatarFile = file;
 
-        // Envoyer directement au serveur
-        const result = await uploadAvatar(file);
+        // Upload temporairement au serveur
+        const result = await uploadTempAvatar(file);
 
         const messageEl = document.getElementById('settings-message');
         if (messageEl) {
             messageEl.style.display = 'block';
-            messageEl.style.color = result.ok ? '#22c55e' : '#ef4444';
-            messageEl.textContent = result.ok ? result.message! : result.error!;
-        }
-
-        if (result.ok && result.avatar_url) {
-            // Mettre à jour l'utilisateur global
-            if (window.currentUser) {
-                window.currentUser.avatar_url = result.avatar_url;
+            if (result.ok) {
+                messageEl.style.color = '#22c55e';
+                messageEl.textContent = 'Photo uploaded, click Save to confirm';
+                // Store temporary avatar URL for later confirmation
+                if (result.temp_avatar_url) {
+                    window.tempAvatarUrl = result.temp_avatar_url;
+                    window.hasPendingAvatar = true;
+                }
+            } else {
+                messageEl.style.color = '#ef4444';
+                messageEl.textContent = result.error!;
+                window.hasPendingAvatar = false;
             }
-
-            // Recharger la page settings après 1s pour afficher le nouvel avatar
-            setTimeout(() => {
-                load('settings');
-            }, 1000);
         }
 
         // Reset input pour pouvoir reuploader la même image plus tard si besoin
