@@ -278,16 +278,29 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
         if (isLeftPaddle && state.ballSpeedX > 0) return false; // Balle s'éloigne du paddle gauche
         if (!isLeftPaddle && state.ballSpeedX < 0) return false; // Balle s'éloigne du paddle droit
         
-        // Pour les paddles verticaux en mode 1v1, rebond toujours sur l'axe horizontal
+        // NOUVEAU : Rebond angulaire basé sur la zone d'impact (mode 1v1)
+        // Calculer la vitesse actuelle pour conservation d'énergie
+        const currentSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
+        
+        // Calculer l'angle de rebond selon la zone d'impact
+        const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
+        
+        // Déterminer la direction horizontale (gauche = +1, droite = -1)
+        const direction = isLeftPaddle ? 1 : -1;
+        
+        // Appliquer le nouveau vecteur vitesse avec conservation de la norme
+        state.ballSpeedX = currentSpeed * Math.cos(bounceAngle) * direction;
+        state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
+        
+        // Repositionner la balle pour éviter la pénétration
         if (isLeftPaddle) { // Paddle gauche
-            state.ballSpeedX = -state.ballSpeedX; // Inverser composante horizontale
             state.ballX = paddleRight + ballRadius; // Repositionner à droite du paddle
-            accelerateBall(state, ballState); // Accélération après contact avec paddle
         } else { // Paddle droit
-            state.ballSpeedX = -state.ballSpeedX; // Inverser composante horizontale
             state.ballX = paddleLeft - ballRadius; // Repositionner à gauche du paddle
-            accelerateBall(state, ballState); // Accélération après contact avec paddle
         }
+        
+        // Appliquer l'accélération après le rebond
+        accelerateBall(state, ballState);
         
         return true;
     };
