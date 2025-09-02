@@ -70,7 +70,7 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
 
 export function accelerateBall(state: GameState, ballState: BallState): void {
     const accelerationFactor = 1.15; // Augmentation de 15% de la vitesse (plus visible)
-    const maxSpeed = 10; // Vitesse maximale réduite pour garder le jeu jouable
+    const maxSpeed = 15; // Vitesse maximale réduite pour garder le jeu jouable
     
     // Calculer la vitesse actuelle AVANT accélération
     const currentSpeedBefore = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
