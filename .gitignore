@@ -1,2 +1,10 @@
 srcs/backend/node_modules
-srcs/frontend/node_modulessrcs/backend/dist/
+srcs/frontend/node_modules
+srcs/backend/dist/
+
+# Avatar uploads (user-generated content)
+public/avatars/
+*.jpeg
+*.jpg
+*.png
+*.gif
