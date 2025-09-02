@@ -10,7 +10,9 @@ export const DEV_CONFIG = {
         id: 999,
         email: 'dev@test.com',
         username: 'DevUser',
-        avatar_url: null,
+        avatar_url: '/avatars/avatar_1_1756652941263.jpeg',
+        wins: 5,
+        losses: 3,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
     }

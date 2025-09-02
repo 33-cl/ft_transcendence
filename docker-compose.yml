@@ -8,6 +8,8 @@ services:
       - "8081:80"
     depends_on:
       - backend
+    volumes:
+      - ./public/avatars:/app/avatars
     restart: unless-stopped
 
   backend:
@@ -18,4 +20,5 @@ services:
       - "8080:8080"
     volumes:
       - ./srcs/backend/src:/app/src
+      - ./public/avatars:/app/public/avatars
     restart: unless-stopped
