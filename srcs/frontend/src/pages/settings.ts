@@ -1,6 +1,6 @@
 // import { load } from '../pages/utils.js';
 import { isValidEmail, isValidUsername, isValidPassword } from '../utils/validation.js';
-import { initAvatarHandlers } from '../utils/change_avatar.js';
+import { initAvatarHandlers, saveAvatar } from '../utils/change_avatar.js';
 
 // Mettre à jour le profil utilisateur
 async function updateProfile(profileData: {
@@ -253,31 +253,11 @@ async function saveChangedFields(): Promise<void> {
     const currentUser = window.currentUser;
     const hasUsernameChanged = username !== currentUser?.username && username !== '';
     const hasEmailChanged = email !== currentUser?.email && email !== '';
+    const hasPendingAvatar = window.hasPendingAvatar;
 
-    if (!hasUsernameChanged && !hasEmailChanged) {
+    if (!hasUsernameChanged && !hasEmailChanged && !hasPendingAvatar) {
         showMessage('No changes to save', true);
         return;
-    }
-
-    // Construire les données à envoyer uniquement pour les champs modifiés
-    const profileData: any = {};
-    
-    if (hasUsernameChanged) {
-        // Validation username avec la fonction spécifique
-        if (!isValidUsername(username)) {
-            showMessage('Username must be 3-20 characters (letters, numbers, underscore only)', true);
-            return;
-        }
-        profileData.username = username;
-    }
-
-    if (hasEmailChanged) {
-        // Validation email avec la fonction spécifique
-        if (!isValidEmail(email)) {
-            showMessage('Invalid email format', true);
-            return;
-        }
-        profileData.email = email;
     }
 
     // Désactiver le bouton pendant la requête
@@ -288,30 +268,74 @@ async function saveChangedFields(): Promise<void> {
     }
 
     try {
-        const result = await updateProfile(profileData);
+        let avatarSaveResult: { ok: boolean; error?: string; message?: string; avatar_url?: string } = { ok: true };
         
-        if (result.ok) {
+        // Sauvegarder l'avatar en premier si nécessaire
+        if (hasPendingAvatar) {
+            avatarSaveResult = await saveAvatar();
+            if (!avatarSaveResult.ok) {
+                showMessage(avatarSaveResult.error || 'Avatar save failed', true);
+                return;
+            }
+        }
+
+        // Construire les données à envoyer uniquement pour les champs modifiés
+        const profileData: any = {};
+        
+        if (hasUsernameChanged) {
+            // Validation username avec la fonction spécifique
+            if (!isValidUsername(username)) {
+                showMessage('Username must be 3-20 characters (letters, numbers, underscore only)', true);
+                return;
+            }
+            profileData.username = username;
+        }
+
+        if (hasEmailChanged) {
+            // Validation email avec la fonction spécifique
+            if (!isValidEmail(email)) {
+                showMessage('Invalid email format', true);
+                return;
+            }
+            profileData.email = email;
+        }
+
+        // Sauvegarder le profil si des changements existent
+        let profileSaveResult: { ok: boolean; error?: string; message?: string } = { ok: true };
+        if (hasUsernameChanged || hasEmailChanged) {
+            profileSaveResult = await updateProfile(profileData);
+            if (!profileSaveResult.ok) {
+                showMessage(profileSaveResult.error || 'Update failed', true);
+                return;
+            }
+        }
+
+        // Construire le message de succès
+        const successMessages = [];
+        if (avatarSaveResult.ok && hasPendingAvatar) {
+            successMessages.push('Avatar');
+        }
+        if (profileSaveResult.ok && (hasUsernameChanged || hasEmailChanged)) {
             const fields = [];
-            if (hasUsernameChanged) fields.push('username');
-            if (hasEmailChanged) fields.push('email');
+            if (hasUsernameChanged) fields.push('Username');
+            if (hasEmailChanged) fields.push('Email');
+            successMessages.push(...fields);
+        }
+
+        if (successMessages.length > 0) {
+            showMessage(`${successMessages.join(' and ')} updated successfully`);
             
-            showMessage(result.message || `${fields.join(' and ')} updated successfully`);
+            // Mettre à jour l'utilisateur global si l'avatar a été sauvegardé
+            if (avatarSaveResult.avatar_url && window.currentUser) {
+                window.currentUser.avatar_url = avatarSaveResult.avatar_url;
+            }
             
             // Refresh les données utilisateur
             if ((window as any).refreshUserStats) {
                 await (window as any).refreshUserStats();
             }
-
-            // Ne recharger la page que si on est toujours sur settings
-            // setTimeout(() => {
-            //     if (isOnSettingsPage) {
-            //         load('settings');
-            //     }
-            // }, 1500);
-            
-        } else {
-            showMessage(result.error || 'Update failed', true);
         }
+            
     } catch (error) {
         showMessage('Network error occurred', true);
     } finally {
