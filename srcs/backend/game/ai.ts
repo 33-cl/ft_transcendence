@@ -44,3 +44,31 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         isMoving: false                   // Pas en mouvement au début
     };
 }
+
+/**
+ * Prédit où la balle va atterrir sur le côté gauche (paddle IA)
+ * Utilise une prédiction linéaire simple sans tenir compte des rebonds de paddles
+ * @param state État actuel du jeu
+ * @returns Position Y prédite où la balle touchera le côté gauche
+ */
+export function predictBallLanding(state: GameState): number {
+    // Si la balle va vers la droite, pas besoin de prédire
+    if (state.ballSpeedX >= 0)
+        return state.ballY; // Retourner position actuelle
+    
+    // Calculer le temps pour atteindre le paddle gauche (x = paddleMargin + paddleWidth)
+    const paddleLeftEdge = state.paddleMargin + state.paddleWidth;
+    const timeToReachPaddle = (state.ballX - paddleLeftEdge) / Math.abs(state.ballSpeedX);
+    
+    // Prédire la position Y
+    let predictedY = state.ballY + (state.ballSpeedY * timeToReachPaddle);
+
+    // Gérer les rebonds sur les bords haut/bas du terrain
+    while (predictedY < 0 || predictedY > state.canvasHeight) {
+        if (predictedY < 0)
+            predictedY = Math.abs(predictedY); // Rebond sur le haut
+        if (predictedY > state.canvasHeight)
+            predictedY = state.canvasHeight - (predictedY - state.canvasHeight); // Rebond sur le bas
+    }
+    return predictedY;
+}
