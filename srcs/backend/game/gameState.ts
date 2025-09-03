@@ -57,6 +57,9 @@ export interface GameState{
     win:            number;    // Score à atteindre pour gagner
     running:        boolean;   // Indique si la partie est en cours
     ballCountdown:  number;    // Compte à rebours avant que la balle commence à bouger
+    
+    // Configuration IA (pour le 1v1, undefined pour les autre mode)
+    aiConfig: AIConfig | undefined;
 }
 
 /**
