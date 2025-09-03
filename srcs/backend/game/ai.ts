@@ -25,3 +25,22 @@ const DIFFICULTY_SETTINGS = {
     }
 };
 
+/**
+ * Crée une configuration IA selon le niveau de difficulté choisi
+ * @param difficulty Niveau de difficulté (easy/medium/hard)
+ * @returns Configuration IA complète et prête à utiliser
+ */
+export function createAIConfig(difficulty: AIDifficulty): AIConfig {
+    const settings = DIFFICULTY_SETTINGS[difficulty];
+    
+    return {
+        enabled: true,
+        difficulty: difficulty,
+        reactionTime: settings.reactionTime,
+        errorMargin: settings.errorMargin,
+        lastUpdate: 0,                    // Pas encore de mise à jour
+        targetY: 325,                     // Position centrale par défaut (milieu du canvas 650/2)
+        currentY: 325,                    // Position actuelle (sera mise à jour)
+        isMoving: false                   // Pas en mouvement au début
+    };
+}
