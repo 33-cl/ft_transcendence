@@ -4,6 +4,24 @@
  */
 export type PaddleSide = 'A' | 'B' | 'C' | 'D';
 
+/* Niveaux de difficulté disponibles pour l'IA */
+export type AIDifficulty = 'easy' | 'medium' | 'hard';
+
+/**
+ * Configuration de l'Intelligence Artificielle pour le mode 1 joueur
+ * Contrôle le comportement du paddle automatique (paddle gauche en mode 1v1)
+ */
+export interface AIConfig {
+    enabled: boolean;          // Active/désactive l'IA (false = mode 2 joueurs humains)
+    difficulty: AIDifficulty;  // Niveau de difficulté (easy/medium/hard)
+    reactionTime: number;      // Délai de réaction en millisecondes (300-700ms)
+    errorMargin: number;       // Marge d'erreur en pixels pour les erreurs aléatoires (5-15px)
+    lastUpdate: number;        // Timestamp de la dernière mise à jour des calculs IA
+    targetY: number;           // Position Y cible calculée par l'IA
+    currentY: number;          // Position Y actuelle (interpolée) du paddle IA
+    isMoving: boolean;         // Indique si le paddle IA est en mouvement
+}
+
 /**
  * Interface définissant l'état complet d'une partie de Pong
  * Contient toutes les informations nécessaires pour le rendu et la logique du jeu
@@ -70,14 +88,10 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
             // Cela donne une disposition classique de Pong horizontal
             if (i === 1) 
                 side = 'C' as PaddleSide; // Deuxième paddle = C au lieu de B
-            
-            if (side === 'A') {
-                // Raquette gauche
-                x = paddleMargin; 
-            } else if (side === 'C') {
-                // Raquette droite
-                x = canvasWidth - paddleMargin - paddleWidth;
-            }
+            if (side === 'A')
+                x = paddleMargin;                               // Raquette gauche
+            else if (side === 'C')
+                x = canvasWidth - paddleMargin - paddleWidth;   // Raquette droite
         } 
         else if (numPlayers === 4) 
         {
