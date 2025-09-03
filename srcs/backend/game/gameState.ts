@@ -154,5 +154,8 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         win:            3,                // Nombre de points pour gagner
         running:        false,            // Partie non démarrée au début
         ballCountdown:  3,                // Délai de 3 secondes avant que la balle commence
+        
+        // Configuration IA (désactivée par défaut)
+        aiConfig:       undefined,        // Pas d'IA par défaut (mode 2 joueurs humains)
     };
 }
