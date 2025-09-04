@@ -107,3 +107,28 @@ export function updateAITarget(state: GameState): void {
     console.log(`🤖 IA UPDATE: predicted=${predictedY.toFixed(1)}, target=${targetY.toFixed(1)}, current=${state.aiConfig.currentY.toFixed(1)}, moving=${state.aiConfig.isMoving}`);
 }
 
+/**
+ * Déplace le paddle IA de manière fluide vers sa cible (appelé chaque frame)
+ * Utilise une interpolation linéaire (lerp) pour des mouvements naturels
+ * @param state État actuel du jeu
+ */
+export function movePaddleWithLerp(state: GameState): void {
+    if (!state.aiConfig || !state.aiConfig.enabled) return;
+    
+    const ai = state.aiConfig;
+    const settings = DIFFICULTY_SETTINGS[ai.difficulty];
+    
+    // Interpolation linéaire vers la cible
+    const difference = ai.targetY - ai.currentY;
+    ai.currentY += difference * settings.moveSpeed;
+    
+    // Appliquer la position au paddle gauche (index 0 -> A en mode 1v1)
+    if (state.paddles && state.paddles.length >= 1) //Verification d'existance d'un paddle
+    {
+        const paddleLeft = state.paddles[0]; // Paddle A (gauche)
+        paddleLeft.y = ai.currentY;
+        
+        // Synchroniser la position pour cohérence
+        ai.currentY = paddleLeft.y;
+    }
+}
