@@ -70,5 +70,40 @@ export function predictBallLanding(state: GameState): number {
         if (predictedY > state.canvasHeight)
             predictedY = state.canvasHeight - (predictedY - state.canvasHeight); // Rebond sur le bas
     }
+    
     return predictedY;
 }
+
+/**
+ * Met à jour la cible de l'IA (appelé maximum 1 fois par seconde)
+ * Applique les délais de réaction et les erreurs selon la difficulté
+ * @param state État actuel du jeu
+ */
+export function updateAITarget(state: GameState): void {
+    if (!state.aiConfig) return;
+    
+    const now = Date.now();
+    
+    // Vérifier si c'est le moment de mettre à jour (1 fois par seconde max)
+    if (now - state.aiConfig.lastUpdate < 1000) return;
+    
+    // Prédire où la balle va atterrir
+    const predictedY = predictBallLanding(state);
+    
+    // Appliquer une erreur aléatoire (10% de chances de se tromper significativement)
+    let targetY = predictedY;
+    if (Math.random() < 0.1) {
+        // Erreur importante : décalage aléatoire
+        const errorOffset = (Math.random() - 0.5) * state.aiConfig.errorMargin * 2;
+        targetY += errorOffset;
+    }
+    
+    // Mettre à jour la configuration IA
+    state.aiConfig.targetY = targetY;
+    state.aiConfig.lastUpdate = now;
+    state.aiConfig.isMoving = Math.abs(targetY - state.aiConfig.currentY) > 5; // Seuil de mouvement
+    
+    // Log de debug pour visualiser les décisions de l'IA
+    console.log(`🤖 IA UPDATE: predicted=${predictedY.toFixed(1)}, target=${targetY.toFixed(1)}, current=${state.aiConfig.currentY.toFixed(1)}, moving=${state.aiConfig.isMoving}`);
+}
+
