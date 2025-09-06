@@ -11,6 +11,19 @@ declare global {
 
 // Fonction pour uploader temporairement l'avatar
 async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: string; message?: string; temp_avatar_url?: string }> {
+    // Check file size on client side (10MB limit)
+    const maxSizeInMB = 10;
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+        return { ok: false, error: `File size too large. Maximum allowed: ${maxSizeInMB}MB` };
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        return { ok: false, error: 'Invalid file type. Only JPEG, PNG and GIF are allowed.' };
+    }
+
     const formData = new FormData();
     formData.append('avatar', file);
 
@@ -24,13 +37,17 @@ async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: stri
         const data = await response.json();
 
         if (!response.ok) {
+            // Better error handling based on status code
+            if (response.status === 413) {
+                return { ok: false, error: 'File too large (maximum 10MB allowed)' };
+            }
             return { ok: false, error: data.error || 'Avatar upload failed' };
         }
 
         return { ok: true, message: data.message || 'Avatar uploaded', temp_avatar_url: data.temp_avatar_url };
     } catch (error) {
         console.error('Avatar upload error:', error);
-        return { ok: false, error: 'Network error' };
+        return { ok: false, error: 'Network error. Please check your connection and try again.' };
     }
 }
 

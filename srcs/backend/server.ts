@@ -67,7 +67,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Enregistre le plugin multipart pour l'upload d'avatar
     await app.register(fastifyMultipart, {
       limits: {
-        fileSize: 2 * 1024 * 1024 // 2MB
+        fileSize: 10 * 1024 * 1024 // 10MB au lieu de 2MB
       }
     });
 
