@@ -6,6 +6,29 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
 
+// Function to clean up old temporary avatar files (older than 1 hour)
+function cleanupTempAvatars() {
+  const avatarDir = path.join(process.cwd(), 'public', 'avatars');
+  const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+  try {
+    const files = fs.readdirSync(avatarDir);
+    files.filter(file => file.startsWith('temp_')).forEach(file => {
+      const filePath = path.join(avatarDir, file);
+      const stats = fs.statSync(filePath);
+      if (stats.mtime.getTime() < oneHourAgo) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️  Cleaned up old temp avatar: ${file}`);
+      }
+    });
+  } catch (error) {
+    console.error('Cleanup error:', error);
+  }
+}
+
+// Cleanup only at server startup
+cleanupTempAvatars();
+
 // Extend FastifyRequest to include user property and cookies
 declare module 'fastify' {
   interface FastifyRequest {
@@ -445,12 +468,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
     if (!avatarFile) {
       return reply.code(400).send({ error: 'No avatar file uploaded' });
     }
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(avatarFile.mimetype)) {
-      return reply.code(400).send({ error: 'Invalid file type (jpg, png, webp only)' });
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(avatarFile.mimetype)) {
+      return reply.code(400).send({ error: 'Invalid file type (jpg, png, gif, webp only)' });
     }
-    // Limite de taille (2MB)
+    // Limite de taille (10MB)
     if (avatarFile.file.truncated) {
-      return reply.code(400).send({ error: 'File too large (max 2MB)' });
+      return reply.code(400).send({ error: 'File too large (max 10MB)' });
     }
     // Générer un nom de fichier unique avec prefix "temp_"
     const ext = avatarFile.filename.split('.').pop();
