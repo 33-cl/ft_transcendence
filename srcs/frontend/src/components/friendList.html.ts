@@ -4,22 +4,16 @@ export const friendListHTML = /*html*/`
         <hr>
         <div id="profileBtn" class="friend">
        <!-- <img src="./img/bronze-crown.png" alt="Crown" class="crown"> -->
-            <img src="./img/tung-tung-tung-sahur.jpeg" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">tung_sahur92i</p>
+            <img src="./img/face.gif" alt="Friend Avatar" class="profile-pic">
+            <p class="friend-name">tung_sahur</p>
         </div>
         <div id="profileBtn" class="friend">
-            <img src="./img/brr-brr-patapim.jpg" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">BRR Patapim</p>
-        </div>
-        <div id="profileBtn" class="friend">
-       <!-- <img src="./img/silver-crown.png" alt="Crown" class="crown"> -->
             <img src="./img/bombardilo-crocodilo.jpg" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">bombardilolo</p>
+            <p class="friend-name">kroko69</p>
         </div>
         <div id="profileBtn" class="friend">
-            <img src="./img/gold-crown.png" alt="Crown" class="crown" id="gold-crown">
-            <img src="./img/tralalero-tralala.png" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">tralalero</p>
+            <img src="./img/night.gif" alt="Friend Avatar" class="profile-pic">
+            <p class="friend-name">wawawo</p>
         </div>
     </div>
 `;

@@ -12,7 +12,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       const leaderboard = db.prepare(`
         SELECT id, username, avatar_url, wins, losses 
         FROM users 
-        WHERE wins > 0 
         ORDER BY wins DESC, losses ASC 
         LIMIT 10
       `).all();
