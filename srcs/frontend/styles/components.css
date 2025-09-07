@@ -45,7 +45,7 @@
     }
 
     .user-list img {
-        @apply w-20 h-20 rounded-md object-cover; /* User avatar styling */
+        @apply w-[75px] h-[75px] rounded-md; /* User avatar styling - same as main menu avatar */
     }
 
     .friend {
@@ -64,6 +64,10 @@
 
     #leaderboard .position-number {
         @apply absolute left-0 w-[25px];
+    }
+
+    #leaderboard img {
+        @apply ml-8; /* Décalage vers la droite pour éviter le chevauchement avec le numéro */
     }
 
     #leaderboard .friend-info {

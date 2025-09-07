@@ -3,7 +3,19 @@ import db from '../db.js';
 
 export default async function usersRoutes(fastify: FastifyInstance) {
   fastify.get('/users', async (request, reply) => {
-    return { users: [] };
+    try {
+      const users = db.prepare(`
+        SELECT id, username, avatar_url, wins, losses, created_at 
+        FROM users 
+        ORDER BY created_at DESC 
+        LIMIT 5
+      `).all();
+      
+      return { users };
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return reply.status(500).send({ error: 'Failed to fetch users' });
+    }
   });
 
   // Endpoint pour le leaderboard
