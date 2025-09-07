@@ -251,7 +251,7 @@
     }
 
     .avatar-container img {
-        @apply w-full h-full object-cover;
+        @apply w-64 h-64 rounded-md relative;
     }
 
     .stats-container {
