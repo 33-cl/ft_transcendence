@@ -12,13 +12,7 @@
         @apply flex flex-row items-start justify-center gap-16;
     }
 
-    .avatar-container {
-        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden;
-    }
-
-    .avatar-container img {
-        @apply w-full h-full object-cover;
-    }
+    /* Avatar container et img définis dans components.css */
 
     .stats-container {
         @apply flex flex-col items-start text-left;
