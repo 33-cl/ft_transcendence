@@ -1,19 +1,51 @@
-export const friendListHTML = /*html*/`
-    <div id="friendList" class="user-list">
-        <h2>Friends</h2>
-        <hr>
-        <div id="profileBtn" class="friend">
-       <!-- <img src="./img/bronze-crown.png" alt="Crown" class="crown"> -->
-            <img src="./img/face.gif" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">tung_sahur</p>
-        </div>
-        <div id="profileBtn" class="friend">
-            <img src="./img/bombardilo-crocodilo.jpg" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">kroko69</p>
-        </div>
-        <div id="profileBtn" class="friend">
-            <img src="./img/night.gif" alt="Friend Avatar" class="profile-pic">
-            <p class="friend-name">wawawo</p>
-        </div>
-    </div>
-`;
+export async function friendListHTML() {
+    try {
+        const response = await fetch('/users', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
+        }
+        
+        const data = await response.json();
+        const users = data.users || [];
+        
+        let userItems = '';
+        
+        users.forEach((user: any) => {
+            const avatarUrl = user.avatar_url || './img/default-pp.jpg';
+            
+            userItems += `
+                <div id="profileBtn" class="friend">
+                    <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
+                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                    <p class="friend-name">${user.username}</p>
+                </div>
+            `;
+        });
+        
+        if (userItems === '') {
+            userItems = '<p style="text-align: center; color: #ccc; margin-top: 20px;">No users yet...</p>';
+        }
+        
+        return /*html*/`
+            <div id="friendList" class="user-list">
+                <h2>Recent Users</h2>
+                <hr>
+                ${userItems}
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading users:', error);
+        return /*html*/`
+            <div id="friendList" class="user-list">
+                <h2>Recent Users</h2>
+                <hr>
+                <p style="text-align: center; color: #f00; margin-top: 20px;">Error loading users</p>
+            </div>
+        `;
+    }
+}

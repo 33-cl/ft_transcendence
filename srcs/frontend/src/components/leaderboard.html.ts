@@ -16,10 +16,13 @@ export async function leaderboardHTML() {
         
         leaderboard.forEach((user: any, index: number) => {
             const position = index + 1;
+            const avatarUrl = user.avatar_url || './img/default-pp.jpg';
             
             leaderboardItems += `
                 <div class="friend">
                     <div class="position-number">${position}.</div>
+                    <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
+                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
                     <div class="friend-info">
                         <p class="friend-name">${user.username}</p>
                         <p class="friend-stats">${user.wins}W - ${user.losses}L</p>
