@@ -252,6 +252,8 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
     {
         const maxPlayers = data?.maxPlayers;
         const isLocalGame = data?.isLocalGame === true;
+        const enableAI = data?.enableAI === true;
+        const aiDifficulty = data?.aiDifficulty || 'medium';
         const previousRoom = getPlayerRoom(socket.id);
         
         if (previousRoom) {
@@ -394,6 +396,13 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         // --- Ajout : en local, on démarre la partie immédiatement ---
         if (isLocalGame && !room.pongGame) {
             room.pongGame = new PongGame(room.maxPlayers);
+            
+            // Activer l'IA si demandé (mode Solo IA)
+            if (enableAI && room.maxPlayers === 2) {
+                room.pongGame.enableAI(aiDifficulty as 'easy' | 'medium' | 'hard');
+                console.log(`🤖 IA activée en mode ${aiDifficulty} pour la room ${roomName}`);
+            }
+            
             room.pongGame.start();
         }
         // --- Sinon, comportement normal ---
