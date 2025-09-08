@@ -41,7 +41,9 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         lastUpdate: 0,                    // Pas encore de mise à jour
         targetY: 325,                     // Position centrale par défaut (milieu du canvas 650/2)
         currentY: 325,                    // Position actuelle (sera mise à jour)
-        isMoving: false                   // Pas en mouvement au début
+        isMoving: false,                  // Pas en mouvement au début
+        reactionStartTime: 0,             // Initialisé à 0 (aucun délai en cours)
+        paddleSpeed: difficulty === 'easy' ? 5 : difficulty === 'medium' ? 8 : 12 // Valeurs par défaut selon la difficulté
     };
 }
 
