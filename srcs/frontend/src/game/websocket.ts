@@ -227,7 +227,19 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
         };
         // On n'utilise plus 'once' sur roomJoined pour ne pas consommer l'event
         socket.once('error', failure);
-        socket.emit('joinRoom', { maxPlayers, isLocalGame }); // <-- Ajout du flag
+        
+        // Préparer les données à envoyer au serveur
+        const roomData: any = { maxPlayers, isLocalGame };
+        
+        // Ajouter les informations IA si le mode IA est activé
+        if ((window as any).aiMode) {
+            roomData.enableAI = true;
+            roomData.aiDifficulty = (window as any).aiDifficulty || 'medium';
+            // Reset du flag après utilisation
+            (window as any).aiMode = false;
+        }
+        
+        socket.emit('joinRoom', roomData);
         // On considère la promesse résolue dès qu'on a émis la demande (le handler UX gère la suite)
         cleanup();
         resolve();
