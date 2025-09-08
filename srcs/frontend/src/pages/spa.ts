@@ -104,6 +104,13 @@ function initializeComponents(): void
             await window.joinOrCreateRoom(4, true);
             // Ne pas appeler load('game4') ici !
         }
+        if (target.id === 'soloAI')
+        {
+            // Mode Solo contre IA : création d'une partie locale 1v1 avec IA activée
+            (window as any).aiMode = true; // Flag pour indiquer que l'IA doit être activée
+            await window.joinOrCreateRoom(2, true);
+            // L'IA sera activée côté game après le roomJoined
+        }
         if (target.id === 'signInBtn')
             await load('signIn');
         if (target.id === 'signUpBtn')        
