@@ -5,7 +5,7 @@ import { GameState, createInitialGameState } from './gameState.js';
 import { movePaddle } from './paddle.js';
 import { resetBall, BallState, checkBallCollisions4Players, checkBallCollisions2Players, shouldResetBall } from './ball.js';
 import { checkScoring4Players, checkScoring2Players, checkGameEnd4Players, checkGameEnd2Players, GameEndInfo } from './score.js';
-import { updateAITarget, movePaddleWithLerp } from './ai.js';
+import { updateAITarget, movePaddleWithLerp, createAIConfig } from './ai.js';
 
 export class PongGame {
     public state: GameState;
@@ -135,6 +135,28 @@ export class PongGame {
         if (this.isFirstLaunch) {
             this.ballStartTime = Date.now();
         }
+    }
+
+    /**
+     * Active l'IA pour le paddle gauche (côté A) en mode 1v1
+     * @param difficulty Niveau de difficulté (easy/medium/hard)
+     */
+    enableAI(difficulty: 'easy' | 'medium' | 'hard') {
+        if (this.state.paddles.length !== 2) {
+            console.warn('IA disponible uniquement en mode 1v1 (2 paddles)');
+            return;
+        }
+        
+        this.state.aiConfig = createAIConfig(difficulty);
+        console.log(`🤖 IA activée en mode ${difficulty}`);
+    }
+
+    /**
+     * Désactive l'IA (mode 2 joueurs humains)
+     */
+    disableAI() {
+        this.state.aiConfig = undefined;
+        console.log('🤖 IA désactivée');
     }
 }
 
