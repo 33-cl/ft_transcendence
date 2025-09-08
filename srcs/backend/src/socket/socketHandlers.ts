@@ -665,11 +665,11 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
 // Fonction principale qui enregistre tous les handlers socket.io
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
-    // Tick rate à 60 FPS pour un gameplay fluide
+    // Tick rate à 120 FPS pour un gameplay fluide
     setInterval(() =>
 	{
         handleGameTick(io, fastify);
-    }, 1000 / 120);
+    }, 1000 / 60);
 
     io.on('connection', (socket: Socket) =>
 	{
