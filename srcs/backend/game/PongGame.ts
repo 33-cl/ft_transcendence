@@ -5,6 +5,7 @@ import { GameState, createInitialGameState } from './gameState.js';
 import { movePaddle } from './paddle.js';
 import { resetBall, BallState, checkBallCollisions4Players, checkBallCollisions2Players, shouldResetBall } from './ball.js';
 import { checkScoring4Players, checkScoring2Players, checkGameEnd4Players, checkGameEnd2Players, GameEndInfo } from './score.js';
+import { updateAITarget, movePaddleWithLerp } from './ai.js';
 
 export class PongGame {
     public state: GameState;
