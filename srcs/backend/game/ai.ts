@@ -116,21 +116,32 @@ export function updateAITarget(state: GameState): void {
  */
 export function movePaddleWithLerp(state: GameState): void {
     if (!state.aiConfig || !state.aiConfig.enabled) return;
-    
     const ai = state.aiConfig;
+    const now = Date.now();
+
+    // Si le paddle doit bouger mais que le délai de réaction n'a pas commencé, on l'initialise
+    if (ai.isMoving && ai.reactionStartTime === 0) {
+        ai.reactionStartTime = now;
+        console.log(`🤖 IA: Début du délai de réaction (${ai.reactionTime}ms)`);
+        return; // On attend le délai avant de bouger
+    }
+    // Si le délai de réaction n'est pas écoulé, on ne bouge pas
+    if (ai.isMoving && now - ai.reactionStartTime < ai.reactionTime) {
+        const reste = ai.reactionTime - (now - ai.reactionStartTime);
+        console.log(`🤖 IA: Attente du délai, reste ${reste}ms`);
+        return;
+    }
+    // Si on n'est pas censé bouger, on reset le délai
+    if (!ai.isMoving) {
+        ai.reactionStartTime = 0;
+    }
+
     const settings = DIFFICULTY_SETTINGS[ai.difficulty];
-    
-    // Interpolation linéaire vers la cible
     const difference = ai.targetY - ai.currentY;
     ai.currentY += difference * settings.moveSpeed;
-    
-    // Appliquer la position au paddle gauche (index 0 -> A en mode 1v1)
-    if (state.paddles && state.paddles.length >= 1) //Verification d'existance d'un paddle
-    {
-        const paddleLeft = state.paddles[0]; // Paddle A (gauche)
+    if (state.paddles && state.paddles.length >= 1) {
+        const paddleLeft = state.paddles[0];
         paddleLeft.y = ai.currentY;
-        
-        // Synchroniser la position pour cohérence
         ai.currentY = paddleLeft.y;
     }
 }
