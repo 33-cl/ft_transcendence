@@ -30,9 +30,11 @@ function updatePaddleKeyBindings() {
         if (Array.isArray(paddles)) {
             keyToMove = {};
             // 1v1 local : left/right (patch appliqué)
-            if (paddles.includes('left')) {
-                keyToMove['w'] = { player: 'left', direction: 'up' };
-                keyToMove['s'] = { player: 'left', direction: 'down' };
+            if (!(window as any).aiMode){
+                if (paddles.includes('left')) {
+                    keyToMove['w'] = { player: 'left', direction: 'up' };
+                    keyToMove['s'] = { player: 'left', direction: 'down' };
+                }
             }
             if (paddles.includes('right')) {
                 keyToMove['ArrowUp'] = { player: 'right', direction: 'up' };
@@ -57,7 +59,8 @@ function updatePaddleKeyBindings() {
                 keyToMove['v'] = { player: 'D', direction: 'up' }; // up = gauche pour paddle horizontal
                 keyToMove['b'] = { player: 'D', direction: 'down' }; // down = droite pour paddle horizontal
             }
-        } else if (['A', 'B', 'C', 'D'].includes(paddle)) {
+        } 
+        else if (['A', 'B', 'C', 'D'].includes(paddle)) {
             // Cas fallback (jamais utilisé normalement)
             keyToMove = {
                 w: { player: 'A', direction: 'up' },
@@ -68,14 +71,6 @@ function updatePaddleKeyBindings() {
                 ArrowDown: { player: 'C', direction: 'down' },
                 v: { player: 'D', direction: 'up' }, // up = gauche pour paddle D horizontal
                 b: { player: 'D', direction: 'down' } // down = droite pour paddle D horizontal
-            };
-        } else {
-            // 1v1 local : left = W/S, right = flèches
-            keyToMove = {
-                w: { player: 'left', direction: 'up' },
-                s: { player: 'left', direction: 'down' },
-                ArrowUp: { player: 'right', direction: 'up' },
-                ArrowDown: { player: 'right', direction: 'down' }
             };
         }
     }

@@ -32,7 +32,11 @@ console.log('Prédiction Y:', predictBallLanding(state));
     for (let frame = 0; frame < 120; frame++) { // 2 secondes à 60 FPS
         if (frame % 60 === 0) updateAITarget(state); // 1x/seconde
         movePaddleWithLerp(state);
-        console.log(`Frame ${frame}: paddleY=${state.paddles[0].y.toFixed(2)}, targetY=${state.aiConfig.targetY.toFixed(2)}, isMoving=${state.aiConfig.isMoving}`);
+        if (state.aiConfig) {
+            console.log(`Frame ${frame}: paddleY=${state.paddles[0].y.toFixed(2)}, targetY=${state.aiConfig.targetY.toFixed(2)}, isMoving=${state.aiConfig.isMoving}`);
+        } else {
+            console.log(`Frame ${frame}: paddleY=${state.paddles[0].y.toFixed(2)}, aiConfig=undefined`);
+        }
         // Simule un déplacement de la balle pour voir l'adaptation
         state.ballX -= 5;
         state.ballY += 2;

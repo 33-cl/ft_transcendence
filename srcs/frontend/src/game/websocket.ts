@@ -236,7 +236,7 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
             roomData.enableAI = true;
             roomData.aiDifficulty = (window as any).aiDifficulty || 'medium';
             // Reset du flag après utilisation
-            (window as any).aiMode = false;
+            //(window as any).aiMode = false; retirer car cela empeche le blocage de W/S en mode IA
         }
         
         socket.emit('joinRoom', roomData);
@@ -367,6 +367,7 @@ function setupGameEventListeners() {
 	if (!gameFinishedListenerActive) {
     socket.on('gameFinished', (data: any) => {
         gameFinishedListenerActive = true;
+
         // Affiche la page de fin de partie avec les données reçues
         if (data && data.winner) {
             load('gameFinished', data);
