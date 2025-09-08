@@ -20,6 +20,8 @@ export interface AIConfig {
     targetY: number;           // Position Y cible calculée par l'IA
     currentY: number;          // Position Y actuelle (interpolée) du paddle IA
     isMoving: boolean;         // Indique si le paddle IA est en mouvement
+    reactionStartTime: number; // Timestamp du début du délai de réaction
+    paddleSpeed: number;       // Vitesse de déplacement du paddle IA (pixels/frame)
 }
 
 /**
