@@ -100,6 +100,11 @@ export class PongGame {
 
         // Mode 1v1 (2 paddles)
         if (this.state.paddles && this.state.paddles.length === 2) {
+            // Mise à jour IA (si activée)
+            if (this.state.aiConfig && this.state.aiConfig.enabled) {
+                updateAITarget(this.state);      // 1x/seconde
+                movePaddleWithLerp(this.state);  // Chaque frame
+            }
             // Vérifier les collisions avec les paddles et les bords
             checkBallCollisions2Players(this.state, this.ballState);
             
