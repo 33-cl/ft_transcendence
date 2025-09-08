@@ -47,12 +47,14 @@ async function show(pageName: keyof typeof components)
 }
 
 async function load(pageName: string, updateHistory: boolean = true)
-{
+{   
     hideAllPages();
     if (pageName === 'landing')
         await show('landing');
     else if (pageName === 'mainMenu')
     {
+         if ((window as any).aiMode)
+            (window as any).aiMode = false; //Retour au menu - reset du flag IA 🤖 
         // Refresh user stats BEFORE showing components to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
             (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
