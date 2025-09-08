@@ -100,6 +100,12 @@ export function updateAITarget(state: GameState): void {
         targetY += errorOffset;
     }
     
+    // S'assurer que la cible reste dans les limites du canvas
+    const paddleHeight = state.paddles[0]?.height || state.paddleHeight;
+    const minY = paddleHeight / 2; // Centre du paddle au minimum
+    const maxY = state.canvasHeight - paddleHeight / 2; // Centre du paddle au maximum
+    targetY = Math.max(minY, Math.min(maxY, targetY));
+    
     // Mettre à jour la configuration IA
     state.aiConfig.targetY = targetY;
     state.aiConfig.lastUpdate = now;
@@ -139,8 +145,15 @@ export function movePaddleWithLerp(state: GameState): void {
     const settings = DIFFICULTY_SETTINGS[ai.difficulty];
     const difference = ai.targetY - ai.currentY;
     ai.currentY += difference * settings.moveSpeed;
+    
     if (state.paddles && state.paddles.length >= 1) {
         const paddleLeft = state.paddles[0];
+        
+        // Appliquer les limites du canvas pour empêcher le paddle de sortir
+        const minY = 0;
+        const maxY = state.canvasHeight - paddleLeft.height;
+        ai.currentY = Math.max(minY, Math.min(maxY, ai.currentY));
+        
         paddleLeft.y = ai.currentY;
         ai.currentY = paddleLeft.y;
     }
