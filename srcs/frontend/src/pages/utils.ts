@@ -53,8 +53,10 @@ async function load(pageName: string, updateHistory: boolean = true)
         await show('landing');
     else if (pageName === 'mainMenu')
     {
-         if ((window as any).aiMode)
+         if ((window as any).aiMode) {
             (window as any).aiMode = false; //Retour au menu - reset du flag IA 🤖 
+            console.log('🏠 Retour au menu principal - Mode IA désactivé, contrôles W/S réactivés');
+         } 
         // Refresh user stats BEFORE showing components to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
             (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
