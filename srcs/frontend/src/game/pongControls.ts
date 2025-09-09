@@ -176,6 +176,13 @@ function showIaModeBanner(enabled: boolean) {
         banner.style.top = '20px';
         banner.style.left = '50%';
         banner.style.transform = 'translateX(-50%)';
+        banner.style.background = enabled ? '#1e90ff' : '#444';
+        banner.style.color = '#fff';
+        banner.style.padding = '8px 24px';
+        banner.style.borderRadius = '8px';
+        banner.style.zIndex = '9999';
+        banner.style.fontSize = '1.1em';
+        document.body.appendChild(banner);
     }
     banner.textContent = enabled ? 'Mode IA activé 🤖' : 'Mode IA désactivé';
     banner.style.display = 'block';
