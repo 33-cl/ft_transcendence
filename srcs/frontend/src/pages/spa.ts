@@ -95,21 +95,52 @@ function initializeComponents(): void
         {
             // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
             // Cela évite un double chargement qui cause le bug des paddles
+            (window as any).lastGameType = 'local2p'; // Sauvegarder le type de jeu pour restart
             await window.joinOrCreateRoom(2, true);
             // Ne pas appeler load('game') ici ! Le handler roomJoined s'en occupe
         }
         if (target.id === 'local4p')
         {
             // Même principe pour le jeu 4 joueurs
+            (window as any).lastGameType = 'local4p'; // Sauvegarder le type de jeu pour restart
             await window.joinOrCreateRoom(4, true);
             // Ne pas appeler load('game4') ici !
         }
         if (target.id === 'soloAI')
         {
             // Mode Solo contre IA : création d'une partie locale 1v1 avec IA activée
+            (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
             (window as any).aiMode = true; // Flag pour indiquer que l'IA doit être activée
             await window.joinOrCreateRoom(2, true);
             // L'IA sera activée côté game après le roomJoined
+        }
+        if (target.id === 'localGameBtn')
+        {
+            // Relancer le même type de jeu qui vient de se terminer
+            const lastGameType = (window as any).lastGameType;
+            if (lastGameType === 'soloAI') {
+                // Relancer un jeu vs IA
+                (window as any).aiMode = true;
+                await window.joinOrCreateRoom(2, true);
+            } else if (lastGameType === 'local4p') {
+                // Relancer un jeu local 4 joueurs
+                await window.joinOrCreateRoom(4, true);
+            } else if (lastGameType === 'ranked1v1') {
+                // Pour les jeux multiplayer, aller au matchmaking au lieu de restart direct
+                await load('matchmaking');
+                // Démarrer automatiquement la recherche d'un nouveau jeu
+                try {
+                    await window.joinOrCreateRoom(2);
+                } catch (error) {
+                    console.error('Error in joinOrCreateRoom(2):', error);
+                    if (window.socket) {
+                        window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                    }
+                }
+            } else {
+                // Par défaut, relancer un jeu local 2 joueurs
+                await window.joinOrCreateRoom(2, true);
+            }
         }
         if (target.id === 'signInBtn')
             await load('signIn');
@@ -159,6 +190,9 @@ function initializeComponents(): void
 
         // MULTIPLAYER
         if (target.id === 'ranked1v1Btn') {
+            // Sauvegarder le type de jeu pour restart
+            (window as any).lastGameType = 'ranked1v1';
+            
             // Ensure any previous room is cleaned up first
             if (window.socket && (window as any).leaveCurrentRoomAsync) {
                 try {
