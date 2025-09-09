@@ -395,7 +395,17 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         
         // --- Ajout : en local, on démarre la partie immédiatement ---
         if (isLocalGame && !room.pongGame) {
-            room.pongGame = new PongGame(room.maxPlayers);
+            // Create game end callback for local games (no stats, just show end screen)
+            const localGameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+                // Send gameFinished event to show end screen for local/AI games
+                io.to(roomName).emit('gameFinished', {
+                    winner,
+                    loser
+                });
+                fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu local/IA room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
+            };
+            
+            room.pongGame = new PongGame(room.maxPlayers, localGameEndCallback);
             
             // Activer l'IA si demandé (mode Solo IA)
             if (enableAI && room.maxPlayers === 2) {
@@ -444,8 +454,16 @@ function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean;
 
 // Handle game end for online multiplayer games
 function handleGameEnd(roomName: string, room: RoomType, winner: { side: string; score: number }, loser: { side: string; score: number }, fastify: FastifyInstance, io: Server) {
-    // Only process win/loss for online games with authenticated players
+    // For local games, just send the gameFinished event without processing stats
     if (room.isLocalGame) {
+        // Send gameFinished event to show end screen for local/AI games
+        if (room && room.players && room.players.length > 0 && typeof io !== 'undefined') {
+            io.to(roomName).emit('gameFinished', {
+                winner,
+                loser
+            });
+            fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu local/IA room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
+        }
         return;
     }
     
