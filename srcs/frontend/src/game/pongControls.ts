@@ -165,3 +165,35 @@ document.addEventListener("keyup", function (e) {
 });
 
 (window as any).sendKeyEvent = sendKeyEvent;
+
+// Affiche un message temporaire en haut de l'écran
+function showIaModeBanner(enabled: boolean) {
+    let banner = document.getElementById('ia-mode-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'ia-mode-banner';
+        banner.style.position = 'fixed';
+        banner.style.top = '20px';
+        banner.style.left = '50%';
+        banner.style.transform = 'translateX(-50%)';
+    }
+    banner.textContent = enabled ? 'Mode IA activé 🤖' : 'Mode IA désactivé';
+    banner.style.display = 'block';
+    setTimeout(() => {
+        if (banner) banner.style.display = 'none';
+    }, 1200);
+}
+
+// Patch global pour afficher le feedback lors du changement de mode IA
+Object.defineProperty(window, 'aiMode', {
+    set: function (val) {
+        this._aiMode = val;
+        showIaModeBanner(val);
+    },
+    get: function () {
+        return this._aiMode;
+    },
+    configurable: true
+});
+// Valeur initiale
+window._aiMode = false;
