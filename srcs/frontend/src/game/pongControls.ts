@@ -139,16 +139,6 @@ export function cleanupPongControls(): void {
 (window as any).cleanupPongControls = cleanupPongControls;
 
 document.addEventListener("keydown", function (e) {
-    // Raccourci F5 pour rafraîchir le mapping des touches (debug)
-    if (e.key === "F5") {
-        e.preventDefault();
-        if ((window as any).updatePaddleKeyBindings) {
-            (window as any).updatePaddleKeyBindings();
-            console.log("🔄 Mapping des touches rafraîchi (F5)");
-        }
-        return;
-    }
-    
     const move = keyToMove[e.key as string];
     if (move && !pressedKeys[e.key]) {
         sendKeyEvent('keydown', move.player, move.direction);
@@ -194,13 +184,13 @@ function showIaModeBanner(enabled: boolean) {
 // Patch global pour afficher le feedback lors du changement de mode IA
 Object.defineProperty(window, 'aiMode', {
     set: function (val) {
-        this._aiMode = val;
+        (this as any)._aiMode = val;
         showIaModeBanner(val);
     },
     get: function () {
-        return this._aiMode;
+        return (this as any)._aiMode;
     },
     configurable: true
 });
 // Valeur initiale
-window._aiMode = false;
+(window as any)._aiMode = false;
