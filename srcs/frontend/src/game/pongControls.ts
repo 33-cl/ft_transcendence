@@ -266,3 +266,33 @@ function setAIDifficulty(difficulty: AIDifficulty) {
     
     console.log(`🎯 Difficulté IA changée : ${difficulty}`);
 }
+
+// Fonction pour afficher une bannière de difficulté IA
+function showAIDifficultyBanner(difficulty: AIDifficulty) {
+    // Supprimer toute bannière existante
+    const existingBanner = document.querySelector('.ai-difficulty-banner');
+    if (existingBanner) {
+        existingBanner.remove();
+    }
+
+    // Créer la nouvelle bannière
+    const banner = document.createElement('div');
+    banner.className = 'ai-difficulty-banner';
+    banner.innerHTML = `
+        <div class="ai-difficulty-content">
+            <span class="ai-difficulty-icon">🤖</span>
+            <span class="ai-difficulty-text">Difficulté IA : ${difficulty.toUpperCase()}</span>
+        </div>
+    `;
+
+    // Ajouter la bannière au DOM
+    const gameContainer = document.querySelector('.game-container') || document.body;
+    gameContainer.appendChild(banner);
+
+    // Retirer la bannière après 3 secondes
+    setTimeout(() => {
+        if (banner && banner.parentNode) {
+            banner.remove();
+        }
+    }, 3000);
+}
