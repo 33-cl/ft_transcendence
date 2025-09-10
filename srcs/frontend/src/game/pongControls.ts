@@ -223,3 +223,24 @@ function updateDifficultySelector() {
         }
     }
 }
+
+// Fonction pour initialiser le sélecteur de difficulté
+function initAIDifficultySelector() {
+    const select = document.getElementById('ai-difficulty') as HTMLSelectElement;
+    if (!select) return;
+
+    // Charger la difficulté sauvegardée depuis localStorage
+    const savedDifficulty = localStorage.getItem('aiDifficulty') as AIDifficulty;
+    if (savedDifficulty && ['easy', 'medium', 'hard'].includes(savedDifficulty)) {
+        currentAIDifficulty = savedDifficulty;
+        select.value = savedDifficulty;
+    }
+
+    // Gérer les changements de difficulté
+    select.addEventListener('change', (event) => {
+        const newDifficulty = (event.target as HTMLSelectElement).value as AIDifficulty;
+        setAIDifficulty(newDifficulty);
+    });
+
+    console.log(`🎮 Sélecteur de difficulté IA initialisé : ${currentAIDifficulty}`);
+}
