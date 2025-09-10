@@ -307,4 +307,24 @@
         @apply px-4 py-2;
     }
 
+    .ai-difficulty-label {
+        @apply text-white text-sm font-medium;
+        @apply whitespace-nowrap;
+    }
+
+    .ai-difficulty-select {
+        @apply bg-gray-800 text-white;
+        @apply border border-gray-600 rounded;
+        @apply px-2 py-1 text-sm;
+        @apply focus:outline-none focus:border-blue-400;
+        @apply cursor-pointer;
+    }
+
+    .ai-difficulty-select:hover {
+        @apply bg-gray-700;
+    }
+
+    .ai-difficulty-select option {
+        @apply bg-gray-800 text-white;
+    }
 }
