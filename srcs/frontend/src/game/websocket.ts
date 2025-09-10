@@ -305,6 +305,11 @@ document.addEventListener('componentsReady', () => {
         if (mapCanvas) {
             setupPongCanvas();
             setupGameEventListeners();
+            
+            // Initialiser le sélecteur de difficulté IA
+            if (typeof (window as any).initAIDifficultySelector === 'function') {
+                (window as any).initAIDifficultySelector();
+            }
         }
     }, 100);
 });
