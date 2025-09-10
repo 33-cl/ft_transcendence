@@ -296,3 +296,13 @@ function showAIDifficultyBanner(difficulty: AIDifficulty) {
         }
     }, 3000);
 }
+
+// Getter pour la difficulté IA actuelle
+function getAIDifficulty(): AIDifficulty {
+    return currentAIDifficulty;
+}
+
+// Exposer les fonctions globalement
+(window as any).initAIDifficultySelector = initAIDifficultySelector;
+(window as any).setAIDifficulty = setAIDifficulty;
+(window as any).getAIDifficulty = getAIDifficulty;
