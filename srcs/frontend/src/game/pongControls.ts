@@ -114,6 +114,8 @@ if (!(window as any)._pongControlsRoomJoinedListener) {
 (window as any).setIsLocalGame = (isLocal: boolean) => {
     (window as any).isLocalGame = isLocal;
     updatePaddleKeyBindings();
+    // Mettre à jour l'affichage du sélecteur de difficulté
+    setTimeout(updateDifficultySelector, 100); // Petit délai pour s'assurer que le DOM est prêt
 };
 
 updatePaddleKeyBindings(); // Initial
@@ -186,6 +188,7 @@ Object.defineProperty(window, 'aiMode', {
     set: function (val) {
         (this as any)._aiMode = val;
         showIaModeBanner(val);
+        updateDifficultySelector(); // Met à jour l'affichage du sélecteur de difficulté
     },
     get: function () {
         return (this as any)._aiMode;
@@ -194,3 +197,14 @@ Object.defineProperty(window, 'aiMode', {
 });
 // Valeur initiale
 (window as any)._aiMode = false;
+
+// =============================================================================
+// SYSTÈME DE DIFFICULTÉ IA
+// =============================================================================
+
+// Types de difficulté disponibles
+type AIDifficulty = 'easy' | 'medium' | 'hard';
+
+// Difficulté par défaut
+let currentAIDifficulty: AIDifficulty = 'medium';
+

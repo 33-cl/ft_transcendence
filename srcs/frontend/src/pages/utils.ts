@@ -60,9 +60,8 @@ async function load(pageName: string, updateHistory: boolean = true)
         // Refresh user stats BEFORE showing components to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
             (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
-                if (statsChanged) {
+                if (statsChanged)
                     console.log('📊 User stats refreshed before main menu display');
-                }
                 // Show components after stats are refreshed
                 await show('mainMenu');
                 await show('friendList');
