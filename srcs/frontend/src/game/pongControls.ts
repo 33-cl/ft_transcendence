@@ -244,3 +244,25 @@ function initAIDifficultySelector() {
 
     console.log(`🎮 Sélecteur de difficulté IA initialisé : ${currentAIDifficulty}`);
 }
+
+// Fonction pour changer la difficulté IA
+function setAIDifficulty(difficulty: AIDifficulty) {
+    currentAIDifficulty = difficulty;
+    
+    // Sauvegarder dans localStorage
+    localStorage.setItem('aiDifficulty', difficulty);
+    
+    // Mettre à jour le sélecteur visuel
+    const select = document.getElementById('ai-difficulty') as HTMLSelectElement;
+    if (select) {
+        select.value = difficulty;
+    }
+    
+    // Afficher une bannière de confirmation
+    showAIDifficultyBanner(difficulty);
+    
+    // Exposer la difficulté globalement pour le backend
+    (window as any).aiDifficulty = difficulty;
+    
+    console.log(`🎯 Difficulté IA changée : ${difficulty}`);
+}
