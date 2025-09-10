@@ -208,3 +208,18 @@ type AIDifficulty = 'easy' | 'medium' | 'hard';
 // Difficulté par défaut
 let currentAIDifficulty: AIDifficulty = 'medium';
 
+// Fonction pour afficher/masquer le sélecteur de difficulté selon le mode de jeu
+function updateDifficultySelector() {
+    const selector = document.getElementById('ai-difficulty-selector');
+    const isLocalGame = (window as any).isLocalGame;
+    const aiModeActive = (window as any).aiMode;
+    
+    if (selector) {
+        // Afficher le sélecteur uniquement en mode jeu local avec IA activée
+        if (isLocalGame && aiModeActive) {
+            selector.style.display = 'flex';
+        } else {
+            selector.style.display = 'none';
+        }
+    }
+}
