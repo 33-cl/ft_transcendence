@@ -205,6 +205,31 @@ Object.defineProperty(window, 'aiMode', {
 // Types de difficulté disponibles
 type AIDifficulty = 'easy' | 'medium' | 'hard';
 
+// Fonction pour détecter automatiquement la difficulté basée sur les paramètres
+function detectDifficultyFromParams(reactionTime: number, errorMargin: number, paddleSpeed: number): AIDifficulty {
+    const presets = {
+        easy: { reactionTime: 700, errorMargin: 15, paddleSpeed: 5 },
+        medium: { reactionTime: 500, errorMargin: 10, paddleSpeed: 8 },
+        hard: { reactionTime: 300, errorMargin: 5, paddleSpeed: 12 }
+    };
+    
+    // Calculer la distance pour chaque preset
+    let closestDifficulty: AIDifficulty = 'medium';
+    let minDistance = Infinity;
+    
+    for (const [difficulty, preset] of Object.entries(presets)) {
+        const distance = Math.abs(reactionTime - preset.reactionTime) + 
+                        Math.abs(errorMargin - preset.errorMargin) + 
+                        Math.abs(paddleSpeed - preset.paddleSpeed);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestDifficulty = difficulty as AIDifficulty;
+        }
+    }
+    
+    return closestDifficulty;
+}
+
 // Difficulté par défaut
 let currentAIDifficulty: AIDifficulty = 'medium';
 
@@ -306,3 +331,4 @@ function getAIDifficulty(): AIDifficulty {
 (window as any).initAIDifficultySelector = initAIDifficultySelector;
 (window as any).setAIDifficulty = setAIDifficulty;
 (window as any).getAIDifficulty = getAIDifficulty;
+(window as any).detectDifficultyFromParams = detectDifficultyFromParams;
