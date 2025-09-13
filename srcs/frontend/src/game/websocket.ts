@@ -282,10 +282,7 @@ window.joinOrCreateRoom = joinOrCreateRoom;
 // Expose reconnectWebSocket globally for auth-triggered reconnections
 (window as any).reconnectWebSocket = reconnectWebSocket;
 
-// Fonction pour définir le mode local
-(window as any).setIsLocalGame = (isLocal: boolean) => {
-    (window as any).isLocalGame = isLocal;
-};
+// Note: setIsLocalGame is defined in pongControls.ts and includes updateDifficultySelector() call
 
 // Expose reconnectWebSocket globally for auth-triggered reconnections
 (window as any).reconnectWebSocket = reconnectWebSocket;
