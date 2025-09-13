@@ -12,5 +12,6 @@ export const gameHTML = /*html*/`
             <option value="medium" selected>🟡 Moyen</option>
             <option value="hard">🔴 Difficile</option>
         </select>
+        <button id="ai-customize-btn" class="ai-customize-btn">⚙️ Personnaliser</button>
     </div>
 `; 
