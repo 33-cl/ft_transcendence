@@ -267,6 +267,10 @@ function initAIDifficultySelector() {
         setAIDifficulty(newDifficulty);
     });
 
+    // Gérer le bouton Personnaliser
+    const customizeBtn = document.getElementById('ai-customize-btn');
+    if (customizeBtn) customizeBtn.addEventListener('click', () => console.log('🎛️ Personnalisation cliquée'));
+
     console.log(`🎮 Sélecteur de difficulté IA initialisé : ${currentAIDifficulty}`);
 }
 
