@@ -14,4 +14,12 @@ export const gameHTML = /*html*/`
         </select>
         <button id="ai-customize-btn" class="ai-customize-btn">⚙️ Personnaliser</button>
     </div>
+
+    <!-- Modal de personnalisation IA -->
+    <div id="ai-custom-modal" class="ai-custom-modal" style="display: none;">
+        <div class="ai-custom-modal-content">
+            <h3>🎛️ Personnaliser l'IA</h3>
+            <button id="ai-custom-close" class="ai-custom-close">✕</button>
+        </div>
+    </div>
 `; 
