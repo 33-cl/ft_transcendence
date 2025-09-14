@@ -18,7 +18,7 @@ export async function friendListHTML() {
             const avatarUrl = user.avatar_url || './img/default-pp.jpg';
             
             userItems += `
-                <div id="profileBtn" class="friend">
+                <div id="profileBtn" class="friend" data-username="${user.username}">
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
                     <p class="friend-name">${user.username}</p>

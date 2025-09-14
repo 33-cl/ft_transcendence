@@ -27,7 +27,18 @@ async function show(pageName: keyof typeof components)
     const element = document.getElementById(component.id);
     if (element) {
         if (typeof component.html === 'function') {
-            const htmlResult = component.html();
+            let htmlResult;
+            
+            // Cas spécial pour le profil - passer l'utilisateur sélectionné
+            if (pageName === 'profile') {
+                const selectedUser = (window as any).selectedProfileUser;
+                htmlResult = component.html(selectedUser);
+                // Nettoyer après utilisation
+                (window as any).selectedProfileUser = null;
+            } else {
+                htmlResult = component.html();
+            }
+            
             if (htmlResult instanceof Promise) {
                 element.innerHTML = await htmlResult;
             } else {

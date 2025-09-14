@@ -81,7 +81,7 @@ export function getMatchHistory(userId: string, limit: number = 10) {
       LEFT JOIN users winner ON winner.id = m.winner_id
       LEFT JOIN users loser ON loser.id = m.loser_id
       WHERE m.winner_id = ? OR m.loser_id = ?
-      ORDER BY m.played_at DESC
+      ORDER BY m.created_at DESC
       LIMIT ?
     `).all(userId, userId, limit);
 
