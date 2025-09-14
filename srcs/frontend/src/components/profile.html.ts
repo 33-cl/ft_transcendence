@@ -1,8 +1,41 @@
-export function profileHTML() {
-    const username = window.currentUser?.username || 'user';
-    const wins = window.currentUser?.wins || 0;
-    const losses = window.currentUser?.losses || 0;
-    const avatarUrl = window.currentUser?.avatar_url || './img/default-pp.jpg';
+export async function fetchUserMatches(userId: string) {
+    try {
+        const response = await fetch(`/matches/history/${userId}?limit=5`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.matches || [];
+        }
+    } catch (error) {
+        console.error('Error fetching user matches:', error);
+    }
+    return [];
+}
+
+export async function profileHTML(targetUser?: any) {
+    // Si un utilisateur cible est spécifié, l'afficher, sinon afficher l'utilisateur actuel
+    const user = targetUser || window.currentUser;
+    const username = user?.username || 'user';
+    const wins = user?.wins || 0;
+    const losses = user?.losses || 0;
+    const avatarUrl = user?.avatar_url || './img/default-pp.jpg';
+    
+    // Récupérer les vrais matchs de l'utilisateur
+    const matches = user?.id ? await fetchUserMatches(user.id) : [];
+    
+    // Générer le HTML des matchs
+    const matchesHTML = matches.length > 0 
+        ? matches.map((match: any) => {
+            const isWinner = match.winner_id === user?.id;
+            const opponent = isWinner ? match.loser_username : match.winner_username;
+            const userScore = isWinner ? match.winner_score : match.loser_score;
+            const opponentScore = isWinner ? match.loser_score : match.winner_score;
+            const result = isWinner ? 'Win' : 'Loss';
+            const matchClass = isWinner ? 'win' : 'loss';
+            
+            return `<li class="match-item ${matchClass}">${result} vs. ${opponent} (${userScore}-${opponentScore})</li>`;
+        }).join('')
+        : '<li class="match-item">No matches played yet</li>';
+    
     return /*html*/ `
     <div class="profile-container">
         <h1 class="username-title">${username}</h1>
@@ -33,9 +66,7 @@ export function profileHTML() {
         <div class="match-history">
             <h2>Recent Matches</h2>
             <ul id="match-list">
-                <li class="match-item win">Win vs. Player2 (10-8)</li>
-                <li class="match-item loss">Loss vs. Player3 (7-10)</li>
-                <li class="match-item win">Win vs. Player4 (10-5)</li>
+                ${matchesHTML}
             </ul>
         </div>
     </div>

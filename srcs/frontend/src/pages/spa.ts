@@ -13,6 +13,45 @@ declare global {
     }
 }
 
+// Fonction pour récupérer les informations d'un utilisateur par son nom
+async function fetchUserByUsername(username: string) {
+    try {
+        const response = await fetch(`/users`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
+        }
+        
+        const data = await response.json();
+        const users = data.users || [];
+        
+        // Rechercher l'utilisateur par nom
+        const user = users.find((u: any) => u.username === username);
+        
+        // Si on ne trouve pas dans users, essayer le leaderboard
+        if (!user) {
+            const leaderboardResponse = await fetch('/users/leaderboard', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            
+            if (leaderboardResponse.ok) {
+                const leaderboardData = await leaderboardResponse.json();
+                const leaderboard = leaderboardData.leaderboard || [];
+                return leaderboard.find((u: any) => u.username === username);
+            }
+        }
+        
+        return user;
+    } catch (error) {
+        console.error('Error fetching user by username:', error);
+        return null;
+    }
+}
+
 
 function initializeComponents(): void
 {
@@ -146,8 +185,29 @@ function initializeComponents(): void
             await load('signIn');
         if (target.id === 'signUpBtn')        
             await load('signUp');
-        if (target.id === 'profileBtn' || isProfileBtn)
+        if (target.id === 'profileBtn' || isProfileBtn) {
+            // Récupérer les informations de l'utilisateur cliqué
+            let selectedUser = null;
+            if (currentElement && currentElement.dataset && currentElement.dataset.username) {
+                // Utilisateur du leaderboard avec data-username
+                const username = currentElement.dataset.username;
+                selectedUser = await fetchUserByUsername(username);
+            } else if (target.closest('.friend')) {
+                // Utilisateur de la friend list - récupérer depuis le nom affiché
+                const friendElement = target.closest('.friend');
+                const nameElement = friendElement?.querySelector('.friend-name');
+                if (nameElement) {
+                    const username = nameElement.textContent?.trim();
+                    if (username) {
+                        selectedUser = await fetchUserByUsername(username);
+                    }
+                }
+            }
+            
+            // Stocker l'utilisateur sélectionné globalement
+            (window as any).selectedProfileUser = selectedUser;
             await load('profile');
+        }
         if (target.id === 'logOutBtn') {
             // Appeler le logout côté serveur
             try {

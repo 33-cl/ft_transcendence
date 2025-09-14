@@ -19,7 +19,7 @@ export async function leaderboardHTML() {
             const avatarUrl = user.avatar_url || './img/default-pp.jpg';
             
             leaderboardItems += `
-                <div class="friend">
+                <div id="profileBtn" class="friend" data-username="${user.username}">
                     <div class="position-number">${position}.</div>
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
