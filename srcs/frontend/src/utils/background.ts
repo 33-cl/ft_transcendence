@@ -1,5 +1,6 @@
 // Configuration globale
-const STAR_COUNT = 2000;
+const BASE_STAR_COUNT = 2000; // Nombre de référence pour une fenêtre de taille standard
+const REFERENCE_SCREEN_AREA = 1920 * 1080; // Taille de référence (Full HD)
 const STAR_SIZE_RANGE: [number, number] = [0.5, 3];
 const STAR_OPACITY_RANGE: [number, number] = [0.1, 2];
 
@@ -49,6 +50,23 @@ const RESET_DURATION = 100; // Durée de la régénération des étoiles (frames
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
+
+// Fonction pour calculer le nombre d'étoiles adaptatif
+function calculateStarCount(canvasWidth: number, canvasHeight: number): number {
+  const currentArea = canvasWidth * canvasHeight;
+  const scaleFactor = currentArea / REFERENCE_SCREEN_AREA;
+  
+  // Utiliser une racine carrée pour éviter des variations trop drastiques
+  const adjustedScaleFactor = Math.sqrt(scaleFactor);
+  
+  // Appliquer un minimum et maximum pour éviter les extrêmes
+  const minStars = Math.max(500, BASE_STAR_COUNT * 0.25);
+  const maxStars = BASE_STAR_COUNT * 2;
+  
+  const calculatedStars = Math.round(BASE_STAR_COUNT * adjustedScaleFactor);
+  
+  return Math.max(minStars, Math.min(maxStars, calculatedStars));
+}
 
 // États modifiés pour inclure le reset
 enum CollapseState {
@@ -730,6 +748,7 @@ class BackgroundStarfield {
   private blackHole: BlackHole | null = null;
   private animationFrameId: number | null = null;
   private hasResetStarted: boolean = false; // Pour s'assurer que le reset ne se lance qu'une fois
+  private currentStarCount: number = 0; // Suivre le nombre actuel d'étoiles
 
   constructor(canvasId: string) {
     const canvasElement = document.getElementById(canvasId);
@@ -765,8 +784,12 @@ class BackgroundStarfield {
   private resizeCanvas(): void {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    // Recréer les étoiles seulement si on n'est pas en cours de reset
-    if (!this.blackHole || (!this.blackHole.shouldReset() && !this.hasResetStarted)) {
+    
+    const newStarCount = calculateStarCount(this.canvas.width, this.canvas.height);
+    
+    // Recréer les étoiles seulement si le nombre a changé et qu'on n'est pas en cours de reset
+    if (newStarCount !== this.currentStarCount && 
+        (!this.blackHole || (!this.blackHole.shouldReset() && !this.hasResetStarted))) {
       this.createStars();
     }
   }
@@ -774,8 +797,10 @@ class BackgroundStarfield {
   private createStars(): void {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
+    
+    this.currentStarCount = calculateStarCount(this.canvas.width, this.canvas.height);
 
-    this.stars = Array.from({ length: STAR_COUNT }, () =>
+    this.stars = Array.from({ length: this.currentStarCount }, () =>
       new Star(centerX, centerY)
     );
     
