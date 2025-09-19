@@ -3,7 +3,7 @@ export const contextMenuHTML = /*html*/ `
         <ul>
             <li id="profileBtn">Profile</li>
             <li id="challengeBtn">Invite</li>
-            <li>Remove friend</li>
+            <li id="removeFriendBtn">Remove friend</li>
             <li>Block</li>
         </ul>
     </div>
