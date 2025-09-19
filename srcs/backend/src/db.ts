@@ -46,6 +46,34 @@ db.exec(`
     PRIMARY KEY(user_id, token),
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
+
+  CREATE TABLE IF NOT EXISTS friendships (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    friend_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(friend_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, friend_id)
+  );
 `);
+
+// Créer l'utilisateur "pastel" par défaut s'il n'existe pas
+const pastelUser = db.prepare('SELECT id FROM users WHERE username = ?').get('pastel');
+if (!pastelUser) {
+  const insertPastel = db.prepare(`
+    INSERT INTO users (email, username, password_hash, avatar_url) 
+    VALUES (?, ?, ?, ?)
+  `);
+  insertPastel.run(
+    'pastel@ft-transcendence.com', 
+    'pastel', 
+    'dummy_hash', // On met un hash bidon car cet utilisateur ne se connectera jamais
+    './img/default-pp.jpg'
+  );
+  console.log('✅ Utilisateur pastel créé');
+}
+
+console.log('✅ Base de données initialisée');
 
 export default db;
