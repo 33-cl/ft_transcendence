@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 
 const components = {
@@ -76,6 +76,7 @@ async function load(pageName: string, updateHistory: boolean = true)
                 // Show components after stats are refreshed
                 await show('mainMenu');
                 await show('friendList');
+                initializeFriendSearch(); // Initialiser la recherche d'amis
                 await show('leaderboard');
                 await show('goToProfile');
             }).catch(async (error: any) => {
@@ -83,6 +84,7 @@ async function load(pageName: string, updateHistory: boolean = true)
                 // Still show components even if refresh fails
                 await show('mainMenu');
                 await show('friendList');
+                initializeFriendSearch(); // Initialiser la recherche d'amis
                 await show('leaderboard');
                 await show('goToProfile');
             });
@@ -90,6 +92,7 @@ async function load(pageName: string, updateHistory: boolean = true)
             // No user or refresh function available, show components directly
             await show('mainMenu');
             await show('friendList');
+            initializeFriendSearch(); // Initialiser la recherche d'amis
             await show('leaderboard');
             await show('goToProfile');
         }
