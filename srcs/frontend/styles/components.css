@@ -32,11 +32,11 @@
     }
 
     #leaderboard {
-        @apply left-[2%]; /* Left panel positioning */
+        @apply left-[2%]; /* Right panel positioning - INVERSÉ */
     }
 
     #friendList {
-        @apply right-[2%]; /* Right panel positioning */
+        @apply right-[2%]; /* Right panel positioning - INVERSÉ */
     }
 
     .user-list {

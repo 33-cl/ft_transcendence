@@ -45,24 +45,24 @@ export async function friendListHTML() {
         });
         
         if (userItems === '') {
-            userItems = '<p style="text-align: center; color: #ccc; margin-top: 20px;">No users yet...</p>';
+            userItems = '<p style="text-align: center; color: #ccc; margin-top: 20px;">No friends yet...</p>';
         }
         
         return /*html*/`
             <div id="friendList" class="user-list">
-                <h2>Recent Users</h2>
+                <h2>Friends</h2>
                 <hr>
                 ${userItems}
             </div>
         `;
         
     } catch (error) {
-        console.error('Error loading users:', error);
+        console.error('Error loading friends:', error);
         return /*html*/`
             <div id="friendList" class="user-list">
-                <h2>Recent Users</h2>
+                <h2>Friends</h2>
                 <hr>
-                <p style="text-align: center; color: #f00; margin-top: 20px;">Error loading users</p>
+                <p style="text-align: center; color: #f00; margin-top: 20px;">Error loading friends</p>
             </div>
         `;
     }
