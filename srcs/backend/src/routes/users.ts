@@ -97,6 +97,125 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Endpoint pour rechercher des utilisateurs
+  fastify.get('/users/search', async (request, reply) => {
+    try {
+      console.log('[SEARCH] === START /users/search request ===');
+      
+      // Récupérer le JWT depuis les cookies
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        console.log('[SEARCH] No JWT token found');
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      const query = (request.query as any)?.q || '';
+      if (!query || query.length < 2) {
+        return { users: [] };
+      }
+
+      console.log(`[SEARCH] Searching for users with query: ${query}`);
+
+      // Chercher des utilisateurs qui ne sont pas déjà amis et qui ne sont pas l'utilisateur actuel
+      const searchResults = db.prepare(`
+        SELECT DISTINCT u.id, u.username, u.avatar_url, u.wins, u.losses
+        FROM users u
+        WHERE u.id != ? 
+          AND LOWER(u.username) LIKE LOWER(?)
+          AND u.id NOT IN (
+            SELECT f.friend_id 
+            FROM friendships f 
+            WHERE f.user_id = ?
+          )
+        ORDER BY u.username
+        LIMIT 10
+      `).all(currentUserId, `%${query}%`, currentUserId);
+
+      console.log(`[SEARCH] Found ${searchResults.length} users:`, searchResults.map((u: any) => u.username));
+      console.log('[SEARCH] === END /users/search request ===');
+
+      return { users: searchResults };
+    } catch (error) {
+      console.error('Error searching users:', error);
+      return reply.status(500).send({ error: 'Failed to search users' });
+    }
+  });
+
+  // Endpoint pour ajouter un ami
+  fastify.post('/users/:id/friend', async (request, reply) => {
+    try {
+      console.log('[ADD_FRIEND] === START add friend request ===');
+      
+      // Récupérer le JWT depuis les cookies
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      const friendId = parseInt((request.params as any).id);
+      if (!friendId || friendId === currentUserId) {
+        return reply.status(400).send({ error: 'Invalid friend ID' });
+      }
+
+      // Vérifier que l'utilisateur existe
+      const friendExists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(friendId);
+      if (!friendExists) {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      // Vérifier que la relation d'amitié n'existe pas déjà
+      const existingFriendship = db.prepare('SELECT 1 FROM friendships WHERE user_id = ? AND friend_id = ?').get(currentUserId, friendId);
+      if (existingFriendship) {
+        return reply.status(400).send({ error: 'Already friends' });
+      }
+
+      // Ajouter la relation d'amitié
+      db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendId);
+      
+      console.log(`[ADD_FRIEND] Added friendship between ${currentUserId} and ${friendId}`);
+      console.log('[ADD_FRIEND] === END add friend request ===');
+
+      return { success: true, message: 'Friend added successfully' };
+    } catch (error) {
+      console.error('Error adding friend:', error);
+      return reply.status(500).send({ error: 'Failed to add friend' });
+    }
+  });
+
   // Endpoint pour le leaderboard
   fastify.get('/users/leaderboard', async (request, reply) => {
     try {
