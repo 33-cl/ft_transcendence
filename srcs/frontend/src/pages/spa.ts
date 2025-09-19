@@ -52,6 +52,36 @@ async function fetchUserByUsername(username: string) {
     }
 }
 
+// Fonction pour supprimer un ami
+async function removeFriend(userId: number, username: string) {
+    try {
+        const response = await fetch(`/users/${userId}/friend`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to remove friend');
+        }
+
+        console.log(`Friend ${username} removed successfully`);
+        
+        // Recharger la liste d'amis
+        const friendListContainer = document.getElementById('friendList');
+        if (friendListContainer) {
+            const { friendListHTML, initializeFriendSearch } = await import('../components/index.html.js');
+            friendListContainer.innerHTML = await friendListHTML();
+            initializeFriendSearch(); // Réinitialiser la recherche
+        }
+
+    } catch (error) {
+        console.error('Error removing friend:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        alert('Error removing friend: ' + errorMessage);
+    }
+}
+
 
 function initializeComponents(): void
 {
@@ -320,6 +350,13 @@ function initializeComponents(): void
         
         // Exemple: action spécifique pour le clic droit sur un profil
         if (isProfileBtn) {
+            // Stocker les informations de l'utilisateur sélectionné
+            const username = currentElement?.getAttribute('data-username');
+            const userId = currentElement?.getAttribute('data-user-id');
+            
+            if (username && userId) {
+                (window as any).selectedContextUser = { username, userId: parseInt(userId) };
+            }
 
             const menu = document.getElementById('contextMenu');
             if (menu)
@@ -339,8 +376,22 @@ function initializeComponents(): void
         // Si le menu n'est pas affiché, rien à faire
         if (!menu.innerHTML.trim()) return;
     
-        // Si le clic est à l'intérieur du menu, ne rien faire
-        if (menu.contains(e.target as Node)) return;
+        const target = e.target as HTMLElement;
+        
+        // Gérer les clics sur les boutons du menu contextuel
+        if (menu.contains(target)) {
+            if (target.id === 'removeFriendBtn') {
+                // Gérer la suppression d'ami
+                const selectedUser = (window as any).selectedContextUser;
+                if (selectedUser && selectedUser.userId) {
+                    removeFriend(selectedUser.userId, selectedUser.username);
+                }
+                hide('contextMenu');
+                return;
+            }
+            // Les autres boutons peuvent être gérés ici
+            return;
+        }
     
         // Sinon, masquer le menu contextuel
         hide('contextMenu');

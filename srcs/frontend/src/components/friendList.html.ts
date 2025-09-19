@@ -35,7 +35,7 @@ export async function friendListHTML() {
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
             
             userItems += `
-                <div id="profileBtn" class="friend" data-username="${user.username}" style="position: relative;">
+                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" style="position: relative;">
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
                     <p class="friend-name">${user.username}</p>

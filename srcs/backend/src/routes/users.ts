@@ -216,6 +216,58 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Endpoint pour supprimer un ami
+  fastify.delete('/users/:id/friend', async (request, reply) => {
+    try {
+      console.log('[REMOVE_FRIEND] === START remove friend request ===');
+      
+      // Récupérer le JWT depuis les cookies
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      const friendId = parseInt((request.params as any).id);
+      if (!friendId || friendId === currentUserId) {
+        return reply.status(400).send({ error: 'Invalid friend ID' });
+      }
+
+      // Vérifier que la relation d'amitié existe
+      const existingFriendship = db.prepare('SELECT 1 FROM friendships WHERE user_id = ? AND friend_id = ?').get(currentUserId, friendId);
+      if (!existingFriendship) {
+        return reply.status(404).send({ error: 'Friendship not found' });
+      }
+
+      // Supprimer la relation d'amitié
+      db.prepare('DELETE FROM friendships WHERE user_id = ? AND friend_id = ?').run(currentUserId, friendId);
+      
+      console.log(`[REMOVE_FRIEND] Removed friendship between ${currentUserId} and ${friendId}`);
+      console.log('[REMOVE_FRIEND] === END remove friend request ===');
+
+      return { success: true, message: 'Friend removed successfully' };
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      return reply.status(500).send({ error: 'Failed to remove friend' });
+    }
+  });
+
   // Endpoint pour le leaderboard
   fastify.get('/users/leaderboard', async (request, reply) => {
     try {
