@@ -16,7 +16,14 @@ export const aiConfigHTML = /*html*/`
                     <span class="difficulty-name">MOYEN</span>
                     <span class="difficulty-desc">IA équilibrée</span>
                 </button>
-         
+                <button id="ai-hard" class="difficulty-button hard-button">
+                    <span class="difficulty-icon">🔴</span>
+                    <span class="difficulty-name">DIFFICILE</span>
+                    <span class="difficulty-desc">IA rapide et précise</span>
+                </button>
+            </div>
+        </div>
+        
     </div>
 </div>
 `;
