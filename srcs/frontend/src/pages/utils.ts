@@ -171,3 +171,5 @@ function hideAllPages(): void
 }
 
 export { show, load, hideAllPages, hide };
+// Exposer load globalement pour les autres modules
+(window as any).load = load; 
