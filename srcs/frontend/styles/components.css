@@ -350,4 +350,81 @@
         @apply text-white text-lg font-bold;
         @apply tracking-wide;
     }
+
+    /* Configuration IA Page */
+    .ai-config-container {
+        @apply flex flex-col items-center justify-center min-h-screen;
+        @apply p-8 text-center;
+    }
+
+    .ai-config-container h1 {
+        @apply text-5xl mb-12 text-white;
+    }
+
+    .ai-config-content {
+        @apply max-w-4xl w-full;
+    }
+
+    .difficulty-section h2 {
+        @apply text-2xl mb-8 text-white;
+    }
+
+    .difficulty-options {
+        @apply grid grid-cols-1 md:grid-cols-3 gap-6 mb-20;
+    }
+
+    .difficulty-button {
+        @apply flex flex-col items-center justify-center;
+        @apply p-6 rounded-lg border-2 transition-all duration-300;
+        @apply bg-gray-900 border-gray-600 text-white;
+        @apply hover:scale-105 hover:shadow-lg;
+        @apply cursor-pointer min-h-[150px];
+    }
+
+    .difficulty-button:hover {
+        @apply bg-gray-800 border-white;
+    }
+
+    .difficulty-button.selected {
+        @apply border-blue-400 bg-blue-900 shadow-lg shadow-blue-400/30;
+        @apply scale-105;
+    }
+
+    .difficulty-button.easy-button.selected {
+        @apply border-green-400 bg-green-900 shadow-green-400/30;
+    }
+
+    .difficulty-button.medium-button.selected {
+        @apply border-yellow-400 bg-yellow-900 shadow-yellow-400/30;
+    }
+
+    .difficulty-button.hard-button.selected {
+        @apply border-red-400 bg-red-900 shadow-red-400/30;
+    }
+
+    .difficulty-icon {
+        @apply text-4xl mb-3;
+    }
+
+    .difficulty-name {
+        @apply text-xl font-bold mb-2;
+    }
+
+    .difficulty-desc {
+        @apply text-sm text-gray-300;
+    }
+
+    .action-buttons {
+        @apply flex flex-col sm:flex-row gap-4 justify-center items-center;
+    }
+
+    .start-button {
+        @apply bg-green-600 hover:bg-green-700 text-white font-bold;
+        @apply py-4 px-8 text-lg;
+    }
+
+    .back-button {
+        @apply bg-gray-600 hover:bg-gray-700 text-white;
+        @apply py-4 px-8;
+    }
 }

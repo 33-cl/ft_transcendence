@@ -2,6 +2,7 @@ import { show, load , hideAllPages, hide } from './utils.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
+import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
@@ -176,13 +177,7 @@ function initializeComponents(): void
             // Ne pas appeler load('game4') ici !
         }
         if (target.id === 'soloAI')
-        {
-            // Mode Solo contre IA : création d'une partie locale 1v1 avec IA activée
-            (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
-            (window as any).aiMode = true; // Flag pour indiquer que l'IA doit être activée
-            await window.joinOrCreateRoom(2, true);
-            // L'IA sera activée côté game après le roomJoined
-        }
+            await load('aiConfig'); // Rediriger vers la page de configuration de l'IA avant de détecter le jeu
         if (target.id === 'localGameBtn')
         {
             // Relancer le même type de jeu qui vient de se terminer
