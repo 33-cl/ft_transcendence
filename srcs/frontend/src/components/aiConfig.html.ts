@@ -23,7 +23,10 @@ export const aiConfigHTML = /*html*/`
                 </button>
             </div>
         </div>
-        
+        <div class="action-buttons">
+            <button id="startAIGame" class="cefout-button start-button">COMMENCER LA PARTIE</button>
+            <button id="backToMainMenu" class="cefout-button back-button">Retour au menu principal</button>
+        </div>
     </div>
 </div>
 `;
