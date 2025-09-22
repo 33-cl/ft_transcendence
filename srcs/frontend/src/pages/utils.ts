@@ -142,6 +142,13 @@ async function load(pageName: string, updateHistory: boolean = true)
             await show('goToMain');
         }
     }
+    else if (pageName === 'aiConfig') 
+    {
+        await show('aiConfig');
+        setTimeout(() => {
+            if ((window as any).initAIConfigManagers) (window as any).initAIConfigManagers();
+        }, 100);
+    }
     else if (pageName === 'gameFinished')
         await show('gameFinished');
     else
