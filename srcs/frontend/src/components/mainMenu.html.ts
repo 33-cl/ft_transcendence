@@ -3,8 +3,7 @@ export const mainMenuHTML = /*html*/`
         <div class="menu-section">
             <h1>Local</h1>
             <div class="button-group">
-                <button id="soloAI" class="default-button">Solo (IA)</button>
-                <button id="local2p" class="default-button">2 Player</button>
+                <button id="soloAi" class="default-button">2 Player</button>
                 <button id="local4p" class="default-button">4 Player</button>
             </div>
         </div>

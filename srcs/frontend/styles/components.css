@@ -373,7 +373,7 @@
         @apply grid grid-cols-1 md:grid-cols-3 gap-6 mb-20;
     }
 
-    .difficulty-button {
+    .game-config-button {
         @apply flex flex-col items-center justify-center;
         @apply p-6 rounded-lg border-2 transition-all duration-300;
         @apply bg-gray-900 border-gray-600 text-white;
@@ -381,24 +381,40 @@
         @apply cursor-pointer min-h-[150px];
     }
 
-    .difficulty-button:hover {
+    .game-config-button:hover {
         @apply bg-gray-800 border-white;
     }
 
-    .difficulty-button.selected {
+    /* Hover spécifique pour les boutons de difficulté */
+    .game-config-button.easy-button:hover {
+        @apply border-green-400 bg-green-900 shadow-lg shadow-green-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.medium-button:hover {
+        @apply border-yellow-400 bg-yellow-900 shadow-lg shadow-yellow-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.hard-button:hover {
+        @apply border-red-400 bg-red-900 shadow-lg shadow-red-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.selected {
         @apply border-blue-400 bg-blue-900 shadow-lg shadow-blue-400/30;
         @apply scale-105;
     }
 
-    .difficulty-button.easy-button.selected {
+    .game-config-button.easy-button.selected {
         @apply border-green-400 bg-green-900 shadow-green-400/30;
     }
 
-    .difficulty-button.medium-button.selected {
+    .game-config-button.medium-button.selected {
         @apply border-yellow-400 bg-yellow-900 shadow-yellow-400/30;
     }
 
-    .difficulty-button.hard-button.selected {
+    .game-config-button.hard-button.selected {
         @apply border-red-400 bg-red-900 shadow-red-400/30;
     }
 
