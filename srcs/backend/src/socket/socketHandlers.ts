@@ -256,6 +256,11 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         const aiDifficulty = data?.aiDifficulty || 'medium';
         const previousRoom = getPlayerRoom(socket.id);
         
+        // Debug log pour vérifier la réception des données IA
+        if (enableAI) {
+            console.log(`🤖 [BACKEND] IA demandée avec difficulté: ${aiDifficulty}`);
+        }
+        
         if (previousRoom) {
             // Get the room object and clean up paddle assignments
             const oldRoom = rooms[previousRoom];
@@ -410,7 +415,8 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             // Activer l'IA si demandé (mode Solo IA)
             if (enableAI && room.maxPlayers === 2) {
                 room.pongGame.enableAI(aiDifficulty as 'easy' | 'medium' | 'hard');
-                console.log(`🤖 IA activée en mode ${aiDifficulty} pour la room ${roomName}`);
+                console.log(`🤖 [BACKEND] IA activée en mode ${aiDifficulty} pour la room ${roomName}`);
+                console.log(`🎯 [BACKEND] Configuration IA appliquée:`, room.pongGame.gameState.aiConfig);
             }
             
             room.pongGame.start();
