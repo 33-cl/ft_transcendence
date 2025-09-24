@@ -44,12 +44,22 @@ export function initAIConfigManagers(): void {
     // Event listener pour démarrer le jeu IA
     if (startBtn) {
         startBtn.addEventListener('click', async () => {
-            console.log(`Démarrage du jeu IA avec difficulté: ${selectedDifficulty}`);
+            console.log(`🤖 Démarrage du jeu IA avec difficulté: ${selectedDifficulty}`);
             
-            // Activer le mode IA
+            // Activer le mode IA et s'assurer que la difficulté est bien définie
             (window as any).aiMode = true;
             (window as any).aiDifficulty = selectedDifficulty;
             (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
+            
+            // Sauvegarder aussi dans localStorage pour cohérence
+            localStorage.setItem('aiDifficulty', selectedDifficulty);
+            
+            // Log de debug pour vérifier la transmission
+            console.log(`🎮 Variables IA définies:`, {
+                aiMode: (window as any).aiMode,
+                aiDifficulty: (window as any).aiDifficulty,
+                selectedDifficulty: selectedDifficulty
+            });
             
             try {
                 // Rejoindre une room en mode local avec IA
