@@ -114,8 +114,6 @@ if (!(window as any)._pongControlsRoomJoinedListener) {
 (window as any).setIsLocalGame = (isLocal: boolean) => {
     (window as any).isLocalGame = isLocal;
     updatePaddleKeyBindings();
-    // Mettre à jour l'affichage du sélecteur de difficulté
-    setTimeout(updateDifficultySelector, 100); // Petit délai pour s'assurer que le DOM est prêt
 };
 
 updatePaddleKeyBindings(); // Initial
@@ -158,37 +156,11 @@ document.addEventListener("keyup", function (e) {
 
 (window as any).sendKeyEvent = sendKeyEvent;
 
-// Affiche un message temporaire en haut de l'écran
-function showIaModeBanner(enabled: boolean) {
-    let banner = document.getElementById('ia-mode-banner');
-    if (!banner) {
-        banner = document.createElement('div');
-        banner.id = 'ia-mode-banner';
-        banner.style.position = 'fixed';
-        banner.style.top = '20px';
-        banner.style.left = '50%';
-        banner.style.transform = 'translateX(-50%)';
-        banner.style.background = enabled ? '#1e90ff' : '#444';
-        banner.style.color = '#fff';
-        banner.style.padding = '8px 24px';
-        banner.style.borderRadius = '8px';
-        banner.style.zIndex = '9999';
-        banner.style.fontSize = '1.1em';
-        document.body.appendChild(banner);
-    }
-    banner.textContent = enabled ? 'Mode IA activé 🤖' : 'Mode IA désactivé';
-    banner.style.display = 'block';
-    setTimeout(() => {
-        if (banner) banner.style.display = 'none';
-    }, 1200);
-}
-
-// Patch global pour afficher le feedback lors du changement de mode IA
+// Patch global pour gérer le mode IA sans notifications
 Object.defineProperty(window, 'aiMode', {
     set: function (val) {
         (this as any)._aiMode = val;
-        showIaModeBanner(val);
-        updateDifficultySelector(); // Met à jour l'affichage du sélecteur de difficulté
+        // La difficulté est maintenant gérée dans aiConfig.ts
     },
     get: function () {
         return (this as any)._aiMode;
@@ -199,110 +171,8 @@ Object.defineProperty(window, 'aiMode', {
 (window as any)._aiMode = false;
 
 // =============================================================================
-// SYSTÈME DE DIFFICULTÉ IA
+// SYSTÈME DE DIFFICULTÉ IA (SIMPLIFIÉ)
 // =============================================================================
 
-// Types de difficulté disponibles
-type AIDifficulty = 'easy' | 'medium' | 'hard';
-
-// Difficulté par défaut
-let currentAIDifficulty: AIDifficulty = 'medium';
-
-// Fonction pour afficher/masquer le sélecteur de difficulté selon le mode de jeu
-function updateDifficultySelector() {
-    const selector = document.getElementById('ai-difficulty-selector');
-    const isLocalGame = (window as any).isLocalGame;
-    const aiModeActive = (window as any).aiMode;
-    
-    if (selector) {
-        // Afficher le sélecteur uniquement en mode jeu local avec IA activée
-        if (isLocalGame && aiModeActive) {
-            selector.style.display = 'flex';
-        } else {
-            selector.style.display = 'none';
-        }
-    }
-}
-
-// Fonction pour initialiser le sélecteur de difficulté
-function initAIDifficultySelector() {
-    const select = document.getElementById('ai-difficulty') as HTMLSelectElement;
-    if (!select) return;
-
-    // Charger la difficulté sauvegardée depuis localStorage
-    const savedDifficulty = localStorage.getItem('aiDifficulty') as AIDifficulty;
-    if (savedDifficulty && ['easy', 'medium', 'hard'].includes(savedDifficulty)) {
-        currentAIDifficulty = savedDifficulty;
-        select.value = savedDifficulty;
-    }
-
-    // Gérer les changements de difficulté
-    select.addEventListener('change', (event) => {
-        const newDifficulty = (event.target as HTMLSelectElement).value as AIDifficulty;
-        setAIDifficulty(newDifficulty);
-    });
-
-    console.log(`🎮 Sélecteur de difficulté IA initialisé : ${currentAIDifficulty}`);
-}
-
-// Fonction pour changer la difficulté IA
-function setAIDifficulty(difficulty: AIDifficulty) {
-    currentAIDifficulty = difficulty;
-    
-    // Sauvegarder dans localStorage
-    localStorage.setItem('aiDifficulty', difficulty);
-    
-    // Mettre à jour le sélecteur visuel
-    const select = document.getElementById('ai-difficulty') as HTMLSelectElement;
-    if (select) {
-        select.value = difficulty;
-    }
-    
-    // Afficher une bannière de confirmation
-    showAIDifficultyBanner(difficulty);
-    
-    // Exposer la difficulté globalement pour le backend
-    (window as any).aiDifficulty = difficulty;
-    
-    console.log(`🎯 Difficulté IA changée : ${difficulty}`);
-}
-
-// Fonction pour afficher une bannière de difficulté IA
-function showAIDifficultyBanner(difficulty: AIDifficulty) {
-    // Supprimer toute bannière existante
-    const existingBanner = document.querySelector('.ai-difficulty-banner');
-    if (existingBanner) {
-        existingBanner.remove();
-    }
-
-    // Créer la nouvelle bannière
-    const banner = document.createElement('div');
-    banner.className = 'ai-difficulty-banner';
-    banner.innerHTML = `
-        <div class="ai-difficulty-content">
-            <span class="ai-difficulty-icon">🤖</span>
-            <span class="ai-difficulty-text">Difficulté IA : ${difficulty.toUpperCase()}</span>
-        </div>
-    `;
-
-    // Ajouter la bannière au DOM
-    const gameContainer = document.querySelector('.game-container') || document.body;
-    gameContainer.appendChild(banner);
-
-    // Retirer la bannière après 3 secondes
-    setTimeout(() => {
-        if (banner && banner.parentNode) {
-            banner.remove();
-        }
-    }, 3000);
-}
-
-// Getter pour la difficulté IA actuelle
-function getAIDifficulty(): AIDifficulty {
-    return currentAIDifficulty;
-}
-
-// Exposer les fonctions globalement
-(window as any).initAIDifficultySelector = initAIDifficultySelector;
-(window as any).setAIDifficulty = setAIDifficulty;
-(window as any).getAIDifficulty = getAIDifficulty;
+// La difficulté est maintenant gérée directement dans aiConfig.ts
+// On garde juste les fonctions minimales nécessaires

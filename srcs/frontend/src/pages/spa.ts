@@ -176,7 +176,7 @@ function initializeComponents(): void
             await window.joinOrCreateRoom(4, true);
             // Ne pas appeler load('game4') ici !
         }
-        if (target.id === 'soloAI')
+        if (target.id === 'soloAi')
             await load('aiConfig'); // Rediriger vers la page de configuration de l'IA avant de détecter le jeu
         if (target.id === 'localGameBtn')
         {

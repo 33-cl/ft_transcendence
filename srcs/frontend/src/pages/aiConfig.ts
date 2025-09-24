@@ -1,82 +1,87 @@
-import { load } from './utils.js';
+// import { load } from './utils.js'; // Non utilisé maintenant que goToMain gère la navigation
 
-// Variables globales pour la configuration de l'IA
-let selectedDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
+// Variables globales pour la configuration de l'IA (plus nécessaire car on lance directement)
 
 // Fonction pour initialiser les gestionnaires d'événements de la page aiConfig
 export function initAIConfigManagers(): void {
+    // Sélecteurs de mode de jeu
+    const vsAiBtn = document.getElementById('vs-ai');
+    const vsPlayerBtn = document.getElementById('vs-player');
+    
+    // Sections
+    const gameModeSection = document.querySelector('.game-mode-section') as HTMLElement;
+    const difficultySection = document.getElementById('difficulty-section');
+    const mainActions = document.getElementById('main-actions');
+    
     // Sélecteurs de difficulté
     const easyBtn = document.getElementById('ai-easy');
     const mediumBtn = document.getElementById('ai-medium');
     const hardBtn = document.getElementById('ai-hard');
     
-    // Boutons d'action
-    const startBtn = document.getElementById('startAIGame');
-    const backBtn = document.getElementById('backToMainMenu');
-    
-    // Gestion de la sélection de difficulté
-    function selectDifficulty(difficulty: 'easy' | 'medium' | 'hard', button: HTMLElement) {
-        // Supprimer la classe 'selected' de tous les boutons
-        [easyBtn, mediumBtn, hardBtn].forEach(btn => {
-            if (btn) btn.classList.remove('selected');
+    // Gestion des modes de jeu
+    if (vsAiBtn) {
+        vsAiBtn.addEventListener('click', () => {
+            // Cacher les options de mode de jeu et afficher les options de difficulté
+            gameModeSection.style.display = 'none';
+            if (difficultySection) difficultySection.style.display = 'block';
+            if (mainActions) mainActions.style.display = 'none';
         });
-        
-        // Ajouter la classe 'selected' au bouton choisi
-        button.classList.add('selected');
-        selectedDifficulty = difficulty;
-        
-        console.log(`Difficulté sélectionnée: ${difficulty}`);
     }
     
-    // Event listeners pour les boutons de difficulté
-    if (easyBtn) {
-        easyBtn.addEventListener('click', () => selectDifficulty('easy', easyBtn));
-    }
-    
-    if (mediumBtn) {
-        mediumBtn.addEventListener('click', () => selectDifficulty('medium', mediumBtn));
-    }
-    
-    if (hardBtn) {
-        hardBtn.addEventListener('click', () => selectDifficulty('hard', hardBtn));
-    }
-    
-    // Event listener pour démarrer le jeu IA
-    if (startBtn) {
-        startBtn.addEventListener('click', async () => {
-            console.log(`🤖 Démarrage du jeu IA avec difficulté: ${selectedDifficulty}`);
-            
-            // Activer le mode IA et s'assurer que la difficulté est bien définie
-            (window as any).aiMode = true;
-            (window as any).aiDifficulty = selectedDifficulty;
-            (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
-            
-            // Sauvegarder aussi dans localStorage pour cohérence
-            localStorage.setItem('aiDifficulty', selectedDifficulty);
-            
-            // Log de debug pour vérifier la transmission
-            console.log(`🎮 Variables IA définies:`, {
-                aiMode: (window as any).aiMode,
-                aiDifficulty: (window as any).aiDifficulty,
-                selectedDifficulty: selectedDifficulty
-            });
+    if (vsPlayerBtn) {
+        vsPlayerBtn.addEventListener('click', async () => {
+            // Désactiver le mode IA
+            (window as any).aiMode = false;
+            (window as any).lastGameType = 'local2P';
             
             try {
-                // Rejoindre une room en mode local avec IA
+                // Rejoindre une room en mode local
                 await (window as any).joinOrCreateRoom(2, true);
-                // La navigation vers la page de jeu sera gérée par le handler roomJoined
             } catch (error) {
-                console.error('Erreur lors du démarrage du jeu IA:', error);
+                console.error('Erreur lors du démarrage du jeu local:', error);
                 alert('Erreur lors du démarrage du jeu. Veuillez réessayer.');
             }
         });
     }
     
-    // Event listener pour retourner au menu principal
-    if (backBtn) {
-        backBtn.addEventListener('click', async () => {
-            await load('mainMenu');
+    // Fonction pour lancer un jeu IA avec une difficulté donnée
+    async function startAIGame(difficulty: 'easy' | 'medium' | 'hard') {
+        // Activer le mode IA et s'assurer que la difficulté est bien définie
+        (window as any).aiMode = true;
+        (window as any).aiDifficulty = difficulty;
+        (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
+        
+        // Sauvegarder aussi dans localStorage pour cohérence
+        localStorage.setItem('aiDifficulty', difficulty);
+        
+        // Log de debug pour vérifier la transmission
+        console.log(`🎮 Variables IA définies:`, {
+            aiMode: (window as any).aiMode,
+            aiDifficulty: (window as any).aiDifficulty,
+            selectedDifficulty: difficulty
         });
+        
+        try {
+            // Rejoindre une room en mode local avec IA
+            await (window as any).joinOrCreateRoom(2, true);
+            // La navigation vers la page de jeu sera gérée par le handler roomJoined
+        } catch (error) {
+            console.error('Erreur lors du démarrage du jeu IA:', error);
+            alert('Erreur lors du démarrage du jeu. Veuillez réessayer.');
+        }
+    }
+    
+    // Event listeners pour les boutons de difficulté - lancent directement le jeu
+    if (easyBtn) {
+        easyBtn.addEventListener('click', () => startAIGame('easy'));
+    }
+    
+    if (mediumBtn) {
+        mediumBtn.addEventListener('click', () => startAIGame('medium'));
+    }
+    
+    if (hardBtn) {
+        hardBtn.addEventListener('click', () => startAIGame('hard'));
     }
 }
 

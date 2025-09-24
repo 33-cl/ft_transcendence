@@ -145,6 +145,7 @@ async function load(pageName: string, updateHistory: boolean = true)
     else if (pageName === 'aiConfig') 
     {
         await show('aiConfig');
+        await show('goToMain');
         setTimeout(() => {
             if ((window as any).initAIConfigManagers) (window as any).initAIConfigManagers();
         }, 100);
