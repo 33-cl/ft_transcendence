@@ -51,7 +51,15 @@ export function initAIConfigManagers(): void {
             (window as any).aiDifficulty = selectedDifficulty;
             (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
             
-         
+            // Sauvegarder aussi dans localStorage pour cohérence
+            localStorage.setItem('aiDifficulty', selectedDifficulty);
+            
+            // Log de debug pour vérifier la transmission
+            console.log(`🎮 Variables IA définies:`, {
+                aiMode: (window as any).aiMode,
+                aiDifficulty: (window as any).aiDifficulty,
+                selectedDifficulty: selectedDifficulty
+            });
             
             try {
                 // Rejoindre une room en mode local avec IA
