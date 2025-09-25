@@ -28,12 +28,12 @@ export async function friendListHTML() {
         }
         
         let userItems = '';
-        
+
         users.forEach((user: any) => {
             const avatarUrl = user.avatar_url || './img/default-pp.jpg';
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
-            
+
             userItems += `
                 <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" style="position: relative;">
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
@@ -43,11 +43,11 @@ export async function friendListHTML() {
                 </div>
             `;
         });
-        
+
         if (userItems === '') {
             userItems = '<p style="text-align: center; color: #ccc; margin-top: 20px;">No friends yet...</p>';
         }
-        
+
         return /*html*/`
             <div id="friendList" class="user-list">
                 <h2>Friends</h2>
