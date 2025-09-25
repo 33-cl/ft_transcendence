@@ -58,21 +58,7 @@ db.exec(`
   );
 `);
 
-// Créer l'utilisateur "pastel" par défaut s'il n'existe pas
-const pastelUser = db.prepare('SELECT id FROM users WHERE username = ?').get('pastel');
-if (!pastelUser) {
-  const insertPastel = db.prepare(`
-    INSERT INTO users (email, username, password_hash, avatar_url) 
-    VALUES (?, ?, ?, ?)
-  `);
-  insertPastel.run(
-    'pastel@ft-transcendence.com', 
-    'pastel', 
-    'dummy_hash', // On met un hash bidon car cet utilisateur ne se connectera jamais
-    './img/default-pp.jpg'
-  );
-  console.log('✅ Utilisateur pastel créé');
-}
+
 
 console.log('✅ Base de données initialisée');
 

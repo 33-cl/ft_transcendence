@@ -61,20 +61,7 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       const friendsCount = db.prepare('SELECT COUNT(*) as count FROM friendships WHERE user_id = ?').get(currentUserId) as { count: number };
       console.log(`[FRIENDS] Current friends count: ${friendsCount.count}`);
       
-      // Si pas d'amis, ajouter pastel comme ami
-      if (friendsCount.count === 0) {
-        console.log('[FRIENDS] No friends found, searching for pastel user...');
-        const pastelUser = db.prepare('SELECT id FROM users WHERE username = ?').get('pastel') as { id: number } | undefined;
-        
-        if (pastelUser) {
-          console.log(`[FRIENDS] Found pastel user with ID: ${pastelUser.id}`);
-          console.log('[FRIENDS] Adding friendship...');
-          db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, pastelUser.id);
-          console.log('[FRIENDS] Friendship added!');
-        } else {
-          console.log('[FRIENDS] PASTEL USER NOT FOUND!');
-        }
-      }
+
 
       // Récupérer tous les amis
       console.log('[FRIENDS] Fetching friends...');
