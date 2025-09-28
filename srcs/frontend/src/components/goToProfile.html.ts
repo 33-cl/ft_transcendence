@@ -26,7 +26,7 @@ export async function goToProfileHTML() {
     return /*html*/ `
         <div id="goToProfile-component">
             <div class="profile-pic" style="display: inline-block;">
-                ${crown}
+                <!-- ${crown} -->
                 <img id="goToProfile" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/default-pp.jpg';" style="cursor: pointer;" />
             </div>
             <div class="goToProfile-info">
