@@ -45,6 +45,13 @@ function setupGlobalSocketListeners() {
                 (window as any).maxPlayers = data.maxPlayers;
             }
             
+            // Store spectator status
+            if (data && typeof data.spectator === 'boolean') {
+                (window as any).isSpectator = data.spectator;
+            } else {
+                (window as any).isSpectator = false;
+            }
+            
             // Update paddle key bindings immediately after setting controlledPaddle
             if ((window as any).updatePaddleKeyBindings) {
                 (window as any).updatePaddleKeyBindings();
@@ -58,6 +65,33 @@ function setupGlobalSocketListeners() {
                 } else {
                     load('game');
                 }
+                return;
+            }
+            
+            // Si c'est un spectateur, aller directement à la page de jeu
+            if ((window as any).isSpectator) {
+                console.log('👁️ Spectator joining game page directly');
+                if (data.maxPlayers === 3) {
+                    load('game3');
+                } else {
+                    load('game');
+                }
+                // Force setup of game event listeners after navigation for spectators
+                setTimeout(() => {
+                    console.log('👁️ [SPECTATOR] Setting up game event listeners after navigation');
+                    const mapCanvas = document.getElementById('map');
+                    if (mapCanvas) {
+                        console.log('👁️ [SPECTATOR] Canvas found, setting up');
+                        if (typeof (window as any).setupGameEventListeners === 'function') {
+                            (window as any).setupGameEventListeners();
+                        }
+                        if (typeof (window as any).initPongRenderer === 'function') {
+                            (window as any).initPongRenderer('map');
+                        }
+                    } else {
+                        console.log('👁️ [SPECTATOR] Canvas not found yet');
+                    }
+                }, 200);
                 return;
             }
             
@@ -315,6 +349,7 @@ document.addEventListener('componentsReady', () => {
 let gameStateListenerActive = false;
 let disconnectListenerActive = false;
 let leftRoomListenerActive = false;
+let spectatorGameFinishedListenerActive = false;
 
 // Fonction pour nettoyer les event listeners du jeu
 function cleanupGameEventListeners() {
@@ -331,8 +366,12 @@ function cleanupGameEventListeners() {
         leftRoomListenerActive = false;
     }
 	if (gameFinishedListenerActive) {
-    socket.removeAllListeners('gameFinished');
-    gameFinishedListenerActive = false;
+        socket.removeAllListeners('gameFinished');
+        gameFinishedListenerActive = false;
+	}
+	if (spectatorGameFinishedListenerActive) {
+        socket.removeAllListeners('spectatorGameFinished');
+        spectatorGameFinishedListenerActive = false;
 	}
 }
 
@@ -344,6 +383,12 @@ function setupGameEventListeners() {
     // Event listener pour les états de jeu
     if (!gameStateListenerActive) {
         socket.on('gameState', (state: any) => {
+            console.log('🎮 [FRONTEND] Received gameState:', { 
+                ball: state.ball ? { x: state.ball.x, y: state.ball.y } : 'null',
+                paddleA: state.paddleA ? { x: state.paddleA.x, y: state.paddleA.y } : 'null',
+                paddleC: state.paddleC ? { x: state.paddleC.x, y: state.paddleC.y } : 'null',
+                isSpectator: (window as any).isSpectator
+            });
             draw(state);
         });
         gameStateListenerActive = true;
@@ -367,17 +412,34 @@ function setupGameEventListeners() {
     }
 
 	if (!gameFinishedListenerActive) {
-    socket.on('gameFinished', (data: any) => {
-        gameFinishedListenerActive = true;
+        socket.on('gameFinished', (data: any) => {
+            gameFinishedListenerActive = true;
 
-        // Affiche la page de fin de partie avec les données reçues
-        if (data && data.winner) {
-            load('gameFinished', data);
-        } else {
-            load('gameFinished');
-        }
-    });
+            // Affiche la page de fin de partie avec les données reçues
+            if (data && data.winner) {
+                load('gameFinished', data);
+            } else {
+                load('gameFinished');
+            }
+        });
 	}
+    
+    // Event listener spécial pour les spectateurs
+    if (!spectatorGameFinishedListenerActive) {
+        socket.on('spectatorGameFinished', (data: any) => {
+            spectatorGameFinishedListenerActive = true;
+            
+            console.log('👁️ [SPECTATOR] Game finished, showing spectator end screen', data);
+            
+            // Arrêter le jeu et nettoyer l'état
+            cleanupGameState();
+            
+            // Afficher l'écran de fin SPA pour spectateur avec les vraies données
+            setTimeout(() => {
+                load('spectatorGameFinished', data);
+            }, 100); // Délai réduit pour affichage plus rapide
+        });
+    }
 }
 
 // Exposer les fonctions de cleanup globalement

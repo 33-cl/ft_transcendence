@@ -5,6 +5,19 @@ import { removeUserFromActiveList } from '../socket/socketAuth.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+import { fileTypeFromBuffer } from 'file-type';//detecte le vrai type d un fichier en analisant ses octets
+import sharp from 'sharp';//lib de traitement d img securise (resize, reencode, strip metadata))
+import { v4 as uuidv4 } from 'uuid';//genere des id unique pour les noms de fichier securises
+import { pipeline } from 'stream/promises';
+
+// Utilitaire pour convertir un stream en buffer
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
 
 // Function to clean up old temporary avatar files (older than 1 hour)
 function cleanupTempAvatars() {
@@ -12,6 +25,7 @@ function cleanupTempAvatars() {
   const oneHourAgo = Date.now() - (60 * 60 * 1000);
 
   try {
+    // Nettoyer les fichiers temporaires sur le disque
     const files = fs.readdirSync(avatarDir);
     files.filter(file => file.startsWith('temp_')).forEach(file => {
       const filePath = path.join(avatarDir, file);
@@ -151,6 +165,7 @@ function parseCookies(header?: string): Record<string, string> {
 }
 
 export default async function authRoutes(fastify: FastifyInstance) {
+
   // Helper to get JWT from cookies
   function getJwtFromRequest(request: any): string | undefined {
     const cookies = parseCookies(request.headers['cookie'] as string | undefined);
@@ -445,7 +460,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /auth/avatar/upload -> upload avatar temporairement (staging)
+  // POST /auth/avatar/upload -> upload avatar sécurisé avec validation
   fastify.post('/auth/avatar/upload', async (request, reply) => {
     const jwtToken = getJwtFromRequest(request);
     let userId: number | undefined;
@@ -463,34 +478,114 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(401).send({ error: 'Not authenticated' });
     }
 
-    // Récupérer le fichier avatar
-    const avatarFile = await request.file();
-    if (!avatarFile) {
-      return reply.code(400).send({ error: 'No avatar file uploaded' });
+    try {
+      // Récupérer le fichier avatar
+      const avatarFile = await request.file();
+      if (!avatarFile) {
+        return reply.code(400).send({ error: 'No avatar file uploaded' });
+      }
+
+      // Convertir le stream en buffer pour analyse
+      const fileBuffer = await streamToBuffer(avatarFile.file);
+      
+      // Vérifications de sécurité
+      
+      // 1. Taille maximum (5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (fileBuffer.length > maxSize) {
+        return reply.code(400).send({ error: 'File too large (max 5MB)' });
+      }
+
+      // 2. Détection du type réel du fichier (pas le mimetype client)
+      const detectedType = await fileTypeFromBuffer(fileBuffer);
+      if (!detectedType) {
+        return reply.code(400).send({ error: 'Unable to detect file type' });
+      }
+
+      // 3. Types autorisés 
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(detectedType.mime)) {
+        return reply.code(400).send({ 
+          error: `Invalid file type. Allowed: ${allowedTypes.join(', ')}. Detected: ${detectedType.mime}` 
+        });
+      }
+
+      // 4. Traitement sécurisé avec Sharp (decode + reencode seulement, pas de resize)
+      let processedBuffer: Buffer;
+      try {
+        // Créer un pipeline Sharp de base - seulement pour re-encoder (sécurité)
+        const sharpPipeline = sharp(fileBuffer, detectedType.mime === 'image/gif' ? { animated: true } : {});
+        
+        if (detectedType.mime === 'image/gif') {
+          // Pour les GIFs: réencoder avec animation préservée
+          processedBuffer = await sharpPipeline
+            .gif({
+              effort: 7 // Compression optimale
+            })
+            .toBuffer();
+        } else if (detectedType.mime === 'image/png') {
+          // Pour PNG: réencoder en PNG (préserve transparence)
+          processedBuffer = await sharpPipeline
+            .png({ 
+              quality: 90,
+              progressive: true
+            })
+            .toBuffer();
+        } else if (detectedType.mime === 'image/webp') {
+          // Pour WebP: réencoder en WebP
+          processedBuffer = await sharpPipeline
+            .webp({ 
+              quality: 90
+            })
+            .toBuffer();
+        } else {
+          // Pour JPEG: réencoder en JPEG
+          processedBuffer = await sharpPipeline
+            .jpeg({ 
+              quality: 90,
+              mozjpeg: true
+            })
+            .toBuffer();
+        }
+      } catch (sharpError) {
+        console.error('Sharp processing error:', sharpError);
+        return reply.code(400).send({ error: 'Invalid or corrupted image file' });
+      }
+
+      // 5. Génération nom de fichier sécurisé avec extension correcte
+      const extension = detectedType.mime === 'image/gif' ? 'gif' : 
+                       detectedType.mime === 'image/png' ? 'png' :
+                       detectedType.mime === 'image/webp' ? 'webp' : 'jpg';
+      const secureFilename = `temp_${userId}_${uuidv4()}.${extension}`;
+      const tempPath = path.join(process.cwd(), 'public', 'avatars', secureFilename);
+
+      // 6. Sauvegarder le fichier traité
+      await fs.promises.writeFile(tempPath, processedBuffer);
+
+      // 7. Réponse avec URL temporaire
+      const tempAvatarUrl = `/avatars/${secureFilename}`;
+      
+      console.log(`✅ Avatar uploaded securely for user ${userId}: ${secureFilename} (${detectedType.mime} -> ${extension.toUpperCase()}, ${fileBuffer.length} -> ${processedBuffer.length} bytes)`);
+      
+      return reply.send({ 
+        ok: true, 
+        message: 'Avatar uploaded securely and processed, click Save to confirm', 
+        temp_avatar_url: tempAvatarUrl,
+        info: {
+          originalType: detectedType.mime,
+          originalSize: fileBuffer.length,
+          processedSize: processedBuffer.length,
+          format: extension.toUpperCase(),
+          animated: detectedType.mime === 'image/gif'
+        }
+      });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      return reply.code(500).send({ error: 'Internal server error during upload' });
     }
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(avatarFile.mimetype)) {
-      return reply.code(400).send({ error: 'Invalid file type (jpg, png, gif, webp only)' });
-    }
-    // Limite de taille (10MB)
-    if (avatarFile.file.truncated) {
-      return reply.code(400).send({ error: 'File too large (max 10MB)' });
-    }
-    // Générer un nom de fichier unique avec prefix "temp_"
-    const ext = avatarFile.filename.split('.').pop();
-    const filename = `temp_avatar_${userId}_${Date.now()}.${ext}`;
-    const savePath = path.join(process.cwd(), 'public', 'avatars', filename);
-    await new Promise((resolve, reject) => {
-      const writeStream = fs.createWriteStream(savePath);
-      avatarFile.file.pipe(writeStream);
-      avatarFile.file.on('end', resolve);
-      avatarFile.file.on('error', reject);
-    });
-    // Ne pas mettre à jour la base, juste retourner l'URL temporaire
-    const tempAvatarUrl = `/avatars/${filename}`;
-    return reply.send({ ok: true, message: 'Avatar uploaded, click Save to confirm', temp_avatar_url: tempAvatarUrl });
   });
 
-  // POST /auth/avatar/save -> appliquer l'avatar temporaire
+  // POST /auth/avatar/save -> appliquer l'avatar temporaire sécurisé
   fastify.post('/auth/avatar/save', async (request, reply) => {
     const jwtToken = getJwtFromRequest(request);
     let userId: number | undefined;
@@ -513,32 +608,44 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'No temporary avatar URL provided' });
     }
 
-    // Vérifier que le fichier temporaire existe
-    const tempFilename = temp_avatar_url.split('/').pop();
-    if (!tempFilename || !tempFilename.startsWith('temp_')) {
-      return reply.code(400).send({ error: 'Invalid temporary avatar URL' });
-    }
-
-    const tempPath = path.join(process.cwd(), 'public', 'avatars', tempFilename);
-    if (!fs.existsSync(tempPath)) {
-      return reply.code(400).send({ error: 'Temporary avatar file not found' });
-    }
-
-    // Renommer le fichier (enlever le prefix "temp_")
-    const finalFilename = tempFilename.replace('temp_', '');
-    const finalPath = path.join(process.cwd(), 'public', 'avatars', finalFilename);
-    
     try {
-      fs.renameSync(tempPath, finalPath);
-    } catch (error) {
-      return reply.code(500).send({ error: 'Failed to save avatar' });
-    }
+      // Extraire le nom de fichier temporaire et vérifier ownership
+      const tempFilename = temp_avatar_url.split('/').pop();
+      if (!tempFilename || !tempFilename.startsWith(`temp_${userId}_`)) {
+        return reply.code(400).send({ error: 'Invalid temporary avatar URL or not owned by user' });
+      }
 
-    // Mettre à jour l'URL dans la base
-    const finalAvatarUrl = `/avatars/${finalFilename}`;
-    db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(finalAvatarUrl, new Date().toISOString().slice(0, 19).replace('T', ' '), userId);
-    
-    return reply.send({ ok: true, message: 'Avatar saved successfully', avatar_url: finalAvatarUrl });
+      // Vérifier que le fichier temp existe
+      const tempPath = path.join(process.cwd(), 'public', 'avatars', tempFilename);
+      if (!fs.existsSync(tempPath)) {
+        return reply.code(404).send({ error: 'Temporary avatar file not found' });
+      }
+
+      // Renommer le fichier (enlever le prefix "temp_userId_")
+      const finalFilename = tempFilename.replace(`temp_${userId}_`, '');
+      const finalPath = path.join(process.cwd(), 'public', 'avatars', finalFilename);
+      
+      fs.renameSync(tempPath, finalPath);
+
+      // Mettre à jour l'URL dans la base
+      const finalAvatarUrl = `/avatars/${finalFilename}`;
+      db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(
+        finalAvatarUrl, 
+        new Date().toISOString().slice(0, 19).replace('T', ' '), 
+        userId
+      );
+      
+      console.log(`✅ Avatar saved for user ${userId}: ${finalFilename}`);
+      
+      return reply.send({ 
+        ok: true, 
+        message: 'Avatar saved successfully', 
+        avatar_url: finalAvatarUrl 
+      });
+    } catch (error) {
+      console.error('Avatar save error:', error);
+      return reply.code(500).send({ error: 'Internal server error during save' });
+    }
   });
 
   // POST /auth/avatar/reset -> réinitialiser l'avatar à la valeur par défaut

@@ -243,11 +243,16 @@
     }
 
     .avatar-container {
-        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden;
+        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden bg-gray-800;
     }
 
     .avatar-container img {
         @apply w-64 h-64 rounded-md relative;
+    }
+    
+    /* GIFs rectangulaires : utiliser object-cover pour éviter la déformation */
+    .avatar-container img[src*=".gif"] {
+        @apply object-cover;
     }
 
     .stats-container {
@@ -434,5 +439,14 @@
     .back-button {
         @apply bg-gray-600 hover:bg-gray-700 text-white;
         @apply py-4 px-8;
+    }
+
+    /* Boutons désactivés */
+    button:disabled {
+        @apply opacity-50 cursor-not-allowed;
+    }
+    
+    button:disabled:hover {
+        @apply bg-black text-white; /* Annule les effets de hover quand désactivé */
     }
 }

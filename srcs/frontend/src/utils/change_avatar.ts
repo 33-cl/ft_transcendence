@@ -127,10 +127,33 @@ export function initAvatarHandlers(): void {
 
         window.temporaryAvatarFile = file;
 
+        // Afficher le message de chargement
+        const messageEl = document.getElementById('settings-message');
+        const saveButton = document.querySelector('#settings-buttons button:first-child') as HTMLButtonElement;
+        
+        if (messageEl) {
+            messageEl.style.display = 'block';
+            messageEl.style.color = '#fbbf24'; // couleur ambre pour le chargement
+            messageEl.textContent = 'Uploading avatar... Please wait';
+        }
+        
+        // Désactiver le bouton Save pendant l'upload
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.style.opacity = '0.5';
+            saveButton.style.cursor = 'not-allowed';
+        }
+
         // Upload temporairement au serveur
         const result = await uploadTempAvatar(file);
 
-        const messageEl = document.getElementById('settings-message');
+        // Réactiver le bouton Save
+        if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.style.opacity = '1';
+            saveButton.style.cursor = 'pointer';
+        }
+
         if (messageEl) {
             messageEl.style.display = 'block';
             if (result.ok) {
