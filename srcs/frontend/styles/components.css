@@ -249,11 +249,16 @@
     }
 
     .avatar-container {
-        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden;
+        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden bg-gray-800;
     }
 
     .avatar-container img {
         @apply w-64 h-64 rounded-md relative;
+    }
+    
+    /* GIFs rectangulaires : utiliser object-cover pour éviter la déformation */
+    .avatar-container img[src*=".gif"] {
+        @apply object-cover;
     }
 
     .stats-container {

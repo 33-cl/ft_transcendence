@@ -510,31 +510,40 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // 4. Traitement sécurisé avec Sharp (decode + reencode + resize)
+      // 4. Traitement sécurisé avec Sharp (decode + reencode seulement, pas de resize)
       let processedBuffer: Buffer;
       try {
+        // Créer un pipeline Sharp de base - seulement pour re-encoder (sécurité)
+        const sharpPipeline = sharp(fileBuffer, detectedType.mime === 'image/gif' ? { animated: true } : {});
+        
         if (detectedType.mime === 'image/gif') {
-          // Pour les GIFs: traitement spécial pour conserver l'animation
-          processedBuffer = await sharp(fileBuffer, { animated: true })
-            .resize(256, 256, { 
-              fit: 'cover', 
-              position: 'center' 
-            })
+          // Pour les GIFs: réencoder avec animation préservée
+          processedBuffer = await sharpPipeline
             .gif({
               effort: 7 // Compression optimale
             })
             .toBuffer();
-        } else {
-          // Pour les autres formats: conversion en PNG
-          processedBuffer = await sharp(fileBuffer)
-            .resize(256, 256, { 
-              fit: 'cover', 
-              position: 'center' 
-            })
+        } else if (detectedType.mime === 'image/png') {
+          // Pour PNG: réencoder en PNG (préserve transparence)
+          processedBuffer = await sharpPipeline
             .png({ 
               quality: 90,
-              progressive: true,
-              force: true
+              progressive: true
+            })
+            .toBuffer();
+        } else if (detectedType.mime === 'image/webp') {
+          // Pour WebP: réencoder en WebP
+          processedBuffer = await sharpPipeline
+            .webp({ 
+              quality: 90
+            })
+            .toBuffer();
+        } else {
+          // Pour JPEG: réencoder en JPEG
+          processedBuffer = await sharpPipeline
+            .jpeg({ 
+              quality: 90,
+              mozjpeg: true
             })
             .toBuffer();
         }
@@ -544,7 +553,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
       }
 
       // 5. Génération nom de fichier sécurisé avec extension correcte
-      const extension = detectedType.mime === 'image/gif' ? 'gif' : 'png';
+      const extension = detectedType.mime === 'image/gif' ? 'gif' : 
+                       detectedType.mime === 'image/png' ? 'png' :
+                       detectedType.mime === 'image/webp' ? 'webp' : 'jpg';
       const secureFilename = `temp_${userId}_${uuidv4()}.${extension}`;
       const tempPath = path.join(process.cwd(), 'public', 'avatars', secureFilename);
 
