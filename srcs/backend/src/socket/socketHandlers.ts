@@ -254,11 +254,17 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         const isLocalGame = data?.isLocalGame === true;
         const enableAI = data?.enableAI === true;
         const aiDifficulty = data?.aiDifficulty || 'medium';
+        const isSpectator = data?.spectator === true;
         const previousRoom = getPlayerRoom(socket.id);
         
         // Debug log pour vérifier la réception des données IA
         if (enableAI) {
             console.log(`🤖 [BACKEND] IA demandée avec difficulté: ${aiDifficulty}`);
+        }
+        
+        // Debug log pour les spectateurs
+        if (isSpectator) {
+            console.log(`👁️ [BACKEND] Spectator joining room: ${data?.roomName}`);
         }
         
         if (previousRoom) {
@@ -343,6 +349,43 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         // Ajout : stocke le flag isLocalGame dans la room
         // IMPORTANT: On set le flag à la valeur actuelle, pas seulement si true
         room.isLocalGame = isLocalGame;
+        
+        // Gestion des spectateurs AVANT la vérification de room pleine
+        // Les spectateurs peuvent rejoindre même si la room est pleine
+        if (isSpectator && roomName && rooms[roomName]) {
+            const room = rooms[roomName];
+            
+            // Empêcher le spectate sur les jeux locaux
+            if (room.isLocalGame) {
+                console.log(`👁️ [BACKEND] Spectator rejected: ${roomName} is a local game`);
+                socket.emit('error', { error: 'Cannot spectate local games' });
+                return;
+            }
+            
+            console.log(`👁️ [BACKEND] Adding spectator to room ${roomName}`);
+            console.log(`👁️ [BACKEND] Room state: players=${room.players.length}/${room.maxPlayers}, hasGame=${!!room.pongGame}, gameRunning=${room.pongGame?.state?.running}`);
+            
+            socket.join(roomName);
+            
+            // Envoyer les données de la room au spectateur sans paddle
+            socket.emit('roomJoined', {
+                room: roomName,
+                players: room.players.length,
+                maxPlayers: room.maxPlayers,
+                paddle: null, // Pas de paddle pour les spectateurs
+                spectator: true
+            });
+            
+            // Si le jeu est en cours, envoyer immédiatement l'état du jeu
+            if (room.pongGame && room.pongGame.state.running) {
+                console.log(`👁️ [BACKEND] Sending current game state to spectator`);
+                socket.emit('gameState', room.pongGame.state);
+            } else {
+                console.log(`👁️ [BACKEND] No active game in room for spectator`);
+            }
+            
+            return; // Ne pas continuer avec la logique normale de joueur
+        }
         
         if (handleRoomFull(socket, room, fastify))
             return;
@@ -478,6 +521,9 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
         return;
     }
 
+    let displayWinnerUsername = winner.side; // Fallback to side if no username found
+    let displayLoserUsername = loser.side;   // Fallback to side if no username found
+
     try {
         fastify.log.info(`Game ended in room ${roomName}: Winner side=${winner.side} score=${winner.score}, Loser side=${loser.side} score=${loser.score}`);
         fastify.log.info(`PaddleBySocket mapping:`, room.paddleBySocket);
@@ -503,6 +549,10 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
         // Get usernames for winner and loser
         const winnerUsername = winnerSocketId ? room.playerUsernames[winnerSocketId] : null;
         const loserUsername = loserSocketId ? room.playerUsernames[loserSocketId] : null;
+
+        // Update display names if we have real usernames
+        if (winnerUsername) displayWinnerUsername = winnerUsername;
+        if (loserUsername) displayLoserUsername = loserUsername;
 
         if (winnerUsername && loserUsername) {
             // Check if same user is playing against themselves (same cookies/session)
@@ -537,11 +587,41 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
 
     // Envoi de l'événement socket gameFinished à la room
 	if (room && room.players && room.players.length > 0 && typeof io !== 'undefined') {
-		io.to(roomName).emit('gameFinished', {
-			winner,
-			loser
-		});
-		fastify.log.info(`[SOCKET] gameFinished envoyé à la room ${roomName}`);
+		// Obtenir tous les sockets dans la room
+		const connectedSockets = Array.from(io.sockets.adapter.rooms.get(roomName) || []) as string[];
+		const spectators = connectedSockets.filter(socketId => !room.players.includes(socketId));
+		
+		// Envoyer gameFinished aux joueurs (avec boutons rejouer/quitter)
+		for (const socketId of room.players) {
+			const playerSocket = io.sockets.sockets.get(socketId);
+			if (playerSocket) {
+				playerSocket.emit('gameFinished', {
+					winner,
+					loser,
+					isPlayer: true
+				});
+			}
+		}
+		
+		// Envoyer spectatorGameFinished aux spectateurs (avec seulement bouton quit)
+		for (const socketId of spectators) {
+			const spectatorSocket = io.sockets.sockets.get(socketId);
+			if (spectatorSocket) {
+				spectatorSocket.emit('spectatorGameFinished', {
+					winner: {
+						...winner,
+						username: displayWinnerUsername
+					},
+					loser: {
+						...loser,
+						username: displayLoserUsername
+					},
+					isSpectator: true
+				});
+			}
+		}
+		
+		fastify.log.info(`[SOCKET] gameFinished envoyé à ${room.players.length} joueurs et spectatorGameFinished à ${spectators.length} spectateurs dans room ${roomName}`);
 	}
 	
 }
@@ -578,6 +658,18 @@ function handleGameTick(io: any, fastify: FastifyInstance)
                         paddle.y = Math.min(typedRoom.pongGame.state.canvasHeight - paddle.height, paddle.y + speed);
                 }
             }
+            
+            // Log pour debug spectateurs - seulement de temps en temps pour éviter le spam
+            const now = Date.now();
+            if (!(typedRoom as any)._lastSpectatorLog || now - (typedRoom as any)._lastSpectatorLog > 5000) {
+                const connectedSockets = Array.from(io.sockets.adapter.rooms.get(roomName) || []) as string[];
+                const spectators = connectedSockets.filter(socketId => !typedRoom.players.includes(socketId));
+                if (spectators.length > 0) {
+                    console.log(`👁️ [BACKEND] Room ${roomName}: ${typedRoom.players.length} players, ${spectators.length} spectators, emitting gameState`);
+                }
+                (typedRoom as any)._lastSpectatorLog = now;
+            }
+            
             io.to(roomName).emit('gameState', typedRoom.pongGame.state);
         }
         if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)

@@ -71,9 +71,10 @@ async function removeFriend(userId: number, username: string) {
         // Recharger la liste d'amis
         const friendListContainer = document.getElementById('friendList');
         if (friendListContainer) {
-            const { friendListHTML, initializeFriendSearch } = await import('../components/index.html.js');
+            const { friendListHTML, initializeFriendSearch, initializeSpectateButtons } = await import('../components/index.html.js');
             friendListContainer.innerHTML = await friendListHTML();
             initializeFriendSearch(); // Réinitialiser la recherche
+            initializeSpectateButtons(); // Réinitialiser les boutons spectate
         }
 
     } catch (error) {
