@@ -90,12 +90,6 @@
         @apply text-sm text-gray-400 m-0;
     }
 
-    .crown {
-        @apply absolute z-10 top-[-2.7vh] left-[-2vh] !important;     /* Crown positioning */
-        @apply w-[130px] h-[65px] object-fill !important;             /* Crown size and fit */
-        @apply rotate-[-10deg] !important;                            /* Crown rotation */
-    }
-
     .profile-pic {
         @apply relative z-0; /* Profile picture layering */
     }
@@ -136,7 +130,7 @@
         @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 pr-12 z-[100] min-w-fit; /* Position, border, arrondi, fond, layout - s'adapte à la longueur du contenu */
     }
 
-    #goToProfile img {
+    #goToProfile .profile-pic {
         @apply w-[75px] h-[75px] rounded-md mr-4 relative flex-shrink-0; /* Photo à gauche, taille et arrondi, position relative pour la couronne, ne se réduit pas */
     }
 

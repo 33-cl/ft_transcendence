@@ -39,7 +39,7 @@ export async function friendListHTML() {
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
                     <p class="friend-name">${user.username}</p>
-                    ${crownIcon}
+                    <!--${crownIcon} -->
                 </div>
             `;
         });
