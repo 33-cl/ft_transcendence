@@ -1,4 +1,5 @@
 import { show, load , hideAllPages, hide } from './utils.js';
+import { spectateFreind } from '../components/index.html.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
@@ -71,10 +72,9 @@ async function removeFriend(userId: number, username: string) {
         // Recharger la liste d'amis
         const friendListContainer = document.getElementById('friendList');
         if (friendListContainer) {
-            const { friendListHTML, initializeFriendSearch, initializeSpectateButtons } = await import('../components/index.html.js');
+            const { friendListHTML, initializeFriendSearch } = await import('../components/index.html.js');
             friendListContainer.innerHTML = await friendListHTML();
             initializeFriendSearch(); // Réinitialiser la recherche
-            initializeSpectateButtons(); // Réinitialiser les boutons spectate
         }
 
     } catch (error) {
@@ -346,17 +346,31 @@ function initializeComponents(): void
         
         // Exemple: action spécifique pour le clic droit sur un profil
         if (isProfileBtn) {
+            // Vérifier si l'élément profileBtn est dans le leaderboard
+            const leaderboardContainer = document.getElementById('leaderboard');
+            if (leaderboardContainer && leaderboardContainer.contains(currentElement)) {
+                // Ne pas afficher le menu contextuel pour les éléments du leaderboard
+                return;
+            }
+            
             // Stocker les informations de l'utilisateur sélectionné
             const username = currentElement?.getAttribute('data-username');
             const userId = currentElement?.getAttribute('data-user-id');
+            const isInGame = currentElement?.getAttribute('data-is-in-game') === 'true';
             
             if (username && userId) {
-                (window as any).selectedContextUser = { username, userId: parseInt(userId) };
+                (window as any).selectedContextUser = { username, userId: parseInt(userId), isInGame };
             }
 
             const menu = document.getElementById('contextMenu');
             if (menu)
             {
+                // Afficher/masquer le bouton spectate selon si l'utilisateur est en jeu
+                const spectateBtn = menu.querySelector('#spectateBtn') as HTMLElement;
+                if (spectateBtn) {
+                    spectateBtn.style.display = isInGame ? 'block' : 'none';
+                }
+
                 show('contextMenu');
 
                 menu.style.left = `${e.clientX}px`;
@@ -381,6 +395,15 @@ function initializeComponents(): void
                 const selectedUser = (window as any).selectedContextUser;
                 if (selectedUser && selectedUser.userId) {
                     removeFriend(selectedUser.userId, selectedUser.username);
+                }
+                hide('contextMenu');
+                return;
+            }
+            if (target.id === 'spectateBtn') {
+                // Gérer le spectate
+                const selectedUser = (window as any).selectedContextUser;
+                if (selectedUser && selectedUser.username && selectedUser.isInGame) {
+                    spectateFreind(selectedUser.username);
                 }
                 hide('contextMenu');
                 return;

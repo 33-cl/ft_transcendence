@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, initializeSpectateButtons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 
 const components = {
@@ -83,7 +83,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('mainMenu');
                 await show('friendList');
                 initializeFriendSearch(); // Initialiser la recherche d'amis
-                initializeSpectateButtons(); // Initialiser les boutons spectate
                 await show('leaderboard');
                 await show('goToProfile');
             }).catch(async (error: any) => {
@@ -92,7 +91,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('mainMenu');
                 await show('friendList');
                 initializeFriendSearch(); // Initialiser la recherche d'amis
-                initializeSpectateButtons(); // Initialiser les boutons spectate
                 await show('leaderboard');
                 await show('goToProfile');
             });
@@ -101,7 +99,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             await show('mainMenu');
             await show('friendList');
             initializeFriendSearch(); // Initialiser la recherche d'amis
-            initializeSpectateButtons(); // Initialiser les boutons spectate
             await show('leaderboard');
             await show('goToProfile');
         }
