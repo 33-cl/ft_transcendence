@@ -83,33 +83,12 @@ export async function friendListHTML() {
             // Vérifier si l'utilisateur est en jeu
             const isInGame = activeUsers.has(user.username);
             console.log(`User ${user.username}: isInGame=${isInGame}`);
-            
-            const spectateButton = isInGame ? `
-                <button class="spectate-btn" data-username="${user.username}" style="
-                    position: absolute; 
-                    right: 5px; 
-                    top: 50%; 
-                    transform: translateY(-50%);
-                    padding: 5px 10px;
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 12px;
-                ">Spectate</button>
-            ` : '';
-
-            if (isInGame) {
-                console.log(`Creating spectate button for ${user.username}`);
-            }
 
             userItems += `
-                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" style="position: relative;">
+                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-is-in-game="${isInGame}" style="position: relative;">
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
                     <p class="friend-name">${user.username}</p>
-                    ${spectateButton}
                     <!--${crownIcon}-->
                 </div>
             `;
@@ -184,7 +163,6 @@ async function addFriend(userId: number) {
         if (friendListContainer) {
             friendListContainer.innerHTML = await friendListHTML();
             initializeFriendSearch(); // Réinitialiser la recherche
-            initializeSpectateButtons(); // Réinitialiser les boutons spectate
         }
 
         // Cacher les résultats de recherche
@@ -206,24 +184,7 @@ async function addFriend(userId: number) {
     }
 }
 
-// Fonction pour initialiser les boutons "Spectate"
-export function initializeSpectateButtons() {
-    const spectateButtons = document.querySelectorAll('.spectate-btn');
-    console.log(`Initializing ${spectateButtons.length} spectate buttons`);
-    
-    spectateButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const username = (e.target as HTMLElement).dataset.username;
-            if (!username) return;
 
-            console.log(`Attempting to spectate user: ${username}`);
-            await spectateFreind(username);
-        });
-    });
-}
 
 // Fonction pour gérer la recherche d'amis
 export function initializeFriendSearch() {
@@ -326,7 +287,7 @@ export function initializeFriendSearch() {
 }
 
 // Fonction pour spectater un ami
-async function spectateFreind(username: string) {
+export async function spectateFreind(username: string) {
     try {
         console.log(`🔍 [SPECTATE] Starting spectate for ${username}`);
         console.log(`🔍 [SPECTATE] Socket status:`, {
@@ -344,7 +305,9 @@ async function spectateFreind(username: string) {
         if (!response.ok) {
             const error = await response.json();
             if (response.status === 404) {
-                alert(`${username} is not in any active game right now.`);
+                // Joueur pas en jeu - ne rien faire silencieusement
+                console.log(`🔍 [SPECTATE] ${username} is not in any active game right now.`);
+                return;
             } else if (response.status === 403) {
                 alert('You can only spectate friends.');
             } else if (response.status === 401) {
@@ -360,7 +323,7 @@ async function spectateFreind(username: string) {
         
         // Vérifier que la room existe vraiment
         if (!roomData.roomName) {
-            alert(`No active room found for ${username}`);
+            console.log(`🔍 [SPECTATE] No active room found for ${username}`);
             return;
         }
         
