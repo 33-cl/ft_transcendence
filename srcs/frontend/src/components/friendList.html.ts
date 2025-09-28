@@ -1,4 +1,5 @@
 export async function friendListHTML() {
+    console.log('🔥 friendListHTML called - VERSION 2.0 - WITH SPECTATE SIMULATION');
     try {
         // Récupérer les utilisateurs récents
         const usersResponse = await fetch('/users', {
@@ -26,6 +27,51 @@ export async function friendListHTML() {
                 firstRankUserId = leaderboardData.leaderboard[0].id;
             }
         }
+
+        // Récupérer les rooms actives pour savoir qui est en jeu
+        let activeUsers = new Set<string>();
+        try {
+            const roomsResponse = await fetch('/rooms', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (roomsResponse.ok) {
+                const roomsData = await roomsResponse.json();
+                console.log('Rooms data received:', roomsData);
+                const rooms = roomsData.rooms || {};
+                console.log('Rooms object keys:', Object.keys(rooms));
+                // rooms est un objet avec des clés (noms de rooms), pas un tableau
+                Object.values(rooms).forEach((room: any) => {
+                    console.log('Processing room:', room);
+                    if (room.players && Array.isArray(room.players)) {
+                        room.players.forEach((player: any) => {
+                            if (player.username) {
+                                console.log('Found active player:', player.username);
+                                activeUsers.add(player.username);
+                            }
+                        });
+                    }
+                });
+                console.log('Active users in game:', Array.from(activeUsers));
+            } else {
+                console.warn('Failed to fetch rooms:', roomsResponse.status, roomsResponse.statusText);
+            }
+        } catch (error) {
+            // Si on ne peut pas récupérer les rooms, on continue sans les boutons spectate
+            console.warn('Could not fetch rooms for spectate buttons:', error);
+            activeUsers = new Set<string>();
+        }
+
+        console.log('Users fetched:', users.length);
+        console.log('Active users in game before simulation:', Array.from(activeUsers));
+
+        // TEMPORAIRE: Pour tester, simulons que tous les amis sont en jeu
+        // TODO: Enlever cette ligne une fois que l'API /rooms fonctionne
+        console.log('TEMP: Simulating all friends are in game for testing');
+        users.forEach((user: any) => activeUsers.add(user.username));
+        
+        console.log('Active users in game after simulation:', Array.from(activeUsers));
         
         let userItems = '';
 
@@ -33,13 +79,40 @@ export async function friendListHTML() {
             const avatarUrl = user.avatar_url || './img/default-pp.jpg';
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
+            
+            // Vérifier si l'utilisateur est en jeu
+            const isInGame = activeUsers.has(user.username);
+            console.log(`User ${user.username}: isInGame=${isInGame}`);
+            
+            const spectateButton = isInGame ? `
+                <button class="spectate-btn" data-username="${user.username}" style="
+                    position: absolute; 
+                    right: 5px; 
+                    top: 50%; 
+                    transform: translateY(-50%);
+                    padding: 5px 10px;
+                    background: #4CAF50;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                ">Spectate</button>
+            ` : '';
+
+            if (isInGame) {
+                console.log(`Creating spectate button for ${user.username}`);
+            }
 
             userItems += `
-                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" style="position: relative;">
-                    <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
-                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                    <p class="friend-name">${user.username}</p>
-                    ${crownIcon}
+                <div class="friend-container" style="position: relative; margin-bottom: 10px;">
+                    <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" style="position: relative; display: inline-block; width: ${isInGame ? 'calc(100% - 80px)' : '100%'};">
+                        <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
+                             onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                        <p class="friend-name">${user.username}</p>
+                        ${crownIcon}
+                    </div>
+                    ${spectateButton}
                 </div>
             `;
         });
@@ -113,6 +186,7 @@ async function addFriend(userId: number) {
         if (friendListContainer) {
             friendListContainer.innerHTML = await friendListHTML();
             initializeFriendSearch(); // Réinitialiser la recherche
+            initializeSpectateButtons(); // Réinitialiser les boutons spectate
         }
 
         // Cacher les résultats de recherche
@@ -132,6 +206,25 @@ async function addFriend(userId: number) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         alert('Error adding friend: ' + errorMessage);
     }
+}
+
+// Fonction pour initialiser les boutons "Spectate"
+export function initializeSpectateButtons() {
+    const spectateButtons = document.querySelectorAll('.spectate-btn');
+    console.log(`Initializing ${spectateButtons.length} spectate buttons`);
+    
+    spectateButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const username = (e.target as HTMLElement).dataset.username;
+            if (!username) return;
+
+            console.log(`Attempting to spectate user: ${username}`);
+            await spectateFreind(username);
+        });
+    });
 }
 
 // Fonction pour gérer la recherche d'amis
@@ -231,5 +324,78 @@ export function initializeFriendSearch() {
                 searchResults.style.display = 'none';
             }
         });
+    }
+}
+
+// Fonction pour spectater un ami
+async function spectateFreind(username: string) {
+    try {
+        console.log(`🔍 [SPECTATE] Starting spectate for ${username}`);
+        console.log(`🔍 [SPECTATE] Socket status:`, {
+            exists: !!window.socket,
+            connected: window.socket ? window.socket.connected : false,
+            id: window.socket ? window.socket.id : 'none'
+        });
+        
+        // Chercher la room de l'ami (utilise les cookies automatiquement)
+        const response = await fetch(`/rooms/friend/${username}`, {
+            method: 'GET',
+            credentials: 'include' // Important : inclure les cookies
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            if (response.status === 404) {
+                alert(`${username} is not in any active game right now.`);
+            } else if (response.status === 403) {
+                alert('You can only spectate friends.');
+            } else if (response.status === 401) {
+                alert('Authentication required. Please log in.');
+            } else {
+                alert('Error finding game: ' + (error.error || 'Unknown error'));
+            }
+            return;
+        }
+
+        const roomData = await response.json();
+        console.log('🔍 [SPECTATE] Room data for spectating:', roomData);
+        
+        // Vérifier que la room existe vraiment
+        if (!roomData.roomName) {
+            alert(`No active room found for ${username}`);
+            return;
+        }
+        
+        // Rejoindre la room en tant que spectateur
+        if (window.socket && window.socket.connected) {
+            console.log(`🔍 [SPECTATE] Emitting joinRoom for ${roomData.roomName} as spectator`);
+            console.log(`🔍 [SPECTATE] Event data:`, { 
+                roomName: roomData.roomName,
+                spectator: true 
+            });
+            
+            window.socket.emit('joinRoom', { 
+                roomName: roomData.roomName,
+                spectator: true 
+            });
+            
+            console.log(`🔍 [SPECTATE] joinRoom event emitted successfully`);
+            
+            // Naviguer vers la page de jeu - utiliser la méthode standard du SPA
+            const { load } = await import('../pages/utils.js');
+            await load('game');
+            
+            console.log(`🔍 [SPECTATE] Navigation to game page complete for ${username}'s game in room ${roomData.roomName}!`);
+        } else {
+            console.error(`🔍 [SPECTATE] WebSocket connection not available:`, {
+                exists: !!window.socket,
+                connected: window.socket ? window.socket.connected : false
+            });
+            alert('WebSocket connection not available');
+        }
+
+    } catch (error: any) {
+        console.error('🔍 [SPECTATE] Error spectating friend:', error);
+        alert('Failed to spectate friend: ' + (error.message || 'Unknown error'));
     }
 }

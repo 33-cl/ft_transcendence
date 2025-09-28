@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, initializeSpectateButtons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 
 const components = {
@@ -14,13 +14,14 @@ const components = {
     signIn: {id: 'signIn', html: signInHTML},
     signUp: {id: 'signUp', html: signUpHTML},
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
+    spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
     settings: {id: 'settings', html: settingsHTML},
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
 };
 
-async function show(pageName: keyof typeof components)
+async function show(pageName: keyof typeof components, data?: any)
 {
     // Show the requested component
     const component = components[pageName];
@@ -35,7 +36,12 @@ async function show(pageName: keyof typeof components)
                 htmlResult = component.html(selectedUser);
                 // Nettoyer après utilisation
                 (window as any).selectedProfileUser = null;
-            } else {
+            } 
+            // Cas spécial pour spectatorGameFinished - passer les données de fin de jeu
+            else if (pageName === 'spectatorGameFinished') {
+                htmlResult = component.html(data);
+            }
+            else {
                 htmlResult = component.html();
             }
             
@@ -57,7 +63,7 @@ async function show(pageName: keyof typeof components)
     }, 0);
 }
 
-async function load(pageName: string, updateHistory: boolean = true)
+async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
     hideAllPages();
     if (pageName === 'landing')
@@ -77,6 +83,7 @@ async function load(pageName: string, updateHistory: boolean = true)
                 await show('mainMenu');
                 await show('friendList');
                 initializeFriendSearch(); // Initialiser la recherche d'amis
+                initializeSpectateButtons(); // Initialiser les boutons spectate
                 await show('leaderboard');
                 await show('goToProfile');
             }).catch(async (error: any) => {
@@ -85,6 +92,7 @@ async function load(pageName: string, updateHistory: boolean = true)
                 await show('mainMenu');
                 await show('friendList');
                 initializeFriendSearch(); // Initialiser la recherche d'amis
+                initializeSpectateButtons(); // Initialiser les boutons spectate
                 await show('leaderboard');
                 await show('goToProfile');
             });
@@ -93,6 +101,7 @@ async function load(pageName: string, updateHistory: boolean = true)
             await show('mainMenu');
             await show('friendList');
             initializeFriendSearch(); // Initialiser la recherche d'amis
+            initializeSpectateButtons(); // Initialiser les boutons spectate
             await show('leaderboard');
             await show('goToProfile');
         }
@@ -152,6 +161,8 @@ async function load(pageName: string, updateHistory: boolean = true)
     }
     else if (pageName === 'gameFinished')
         await show('gameFinished');
+    else if (pageName === 'spectatorGameFinished')
+        await show('spectatorGameFinished', data);
     else
         console.warn(`Page ${pageName} not found`);
 
