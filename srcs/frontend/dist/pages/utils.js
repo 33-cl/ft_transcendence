@@ -1,42 +1,38 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML, friendListHTML, initializeFriendSearch, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
-
 const components = {
-    landing: {id: 'landing', html: landingHTML},
-    mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-    goToMain: {id: 'goToMain', html: goToMainHTML},
-    goToProfile: {id: 'goToProfile', html: goToProfileHTML}, // stocke la fonction
-    leaderboard: {id: 'leaderboard', html: leaderboardHTML},
-    friendList: {id: 'friendList', html: friendListHTML},
-    matchmaking: {id: 'matchmaking', html: matchmakingHTML},
-    game: {id: 'game', html: gameHTML},
-    game4: {id: 'game4', html: game4HTML},
-    signIn: {id: 'signIn', html: signInHTML},
-    signUp: {id: 'signUp', html: signUpHTML},
-    gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
-    spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
-    profile: {id: 'profile', html: profileHTML},
-    contextMenu: {id: 'contextMenu', html: contextMenuHTML},
-    settings: {id: 'settings', html: settingsHTML},
-    aiConfig: {id: 'aiConfig', html: aiConfigHTML},
+    landing: { id: 'landing', html: landingHTML },
+    mainMenu: { id: 'mainMenu', html: mainMenuHTML },
+    goToMain: { id: 'goToMain', html: goToMainHTML },
+    goToProfile: { id: 'goToProfile', html: goToProfileHTML }, // stocke la fonction
+    leaderboard: { id: 'leaderboard', html: leaderboardHTML },
+    friendList: { id: 'friendList', html: friendListHTML },
+    matchmaking: { id: 'matchmaking', html: matchmakingHTML },
+    game: { id: 'game', html: gameHTML },
+    game4: { id: 'game4', html: game4HTML },
+    signIn: { id: 'signIn', html: signInHTML },
+    signUp: { id: 'signUp', html: signUpHTML },
+    gameFinished: { id: 'gameFinished', html: gameFinishedHTML },
+    spectatorGameFinished: { id: 'spectatorGameFinished', html: spectatorGameFinishedHTML },
+    profile: { id: 'profile', html: profileHTML },
+    contextMenu: { id: 'contextMenu', html: contextMenuHTML },
+    settings: { id: 'settings', html: settingsHTML },
+    aiConfig: { id: 'aiConfig', html: aiConfigHTML },
 };
-
-async function show(pageName: keyof typeof components, data?: any)
-{
+async function show(pageName, data) {
     // Show the requested component
     const component = components[pageName];
     const element = document.getElementById(component.id);
     if (element) {
         if (typeof component.html === 'function') {
             let htmlResult;
-            
             // Cas spécial pour le profil - passer l'utilisateur sélectionné
             if (pageName === 'profile') {
-                const selectedUser = (window as any).selectedProfileUser;
+                const selectedUser = window.selectedProfileUser;
                 htmlResult = component.html(selectedUser);
                 // Nettoyer après utilisation
-                (window as any).selectedProfileUser = null;
-            } 
+                window.selectedProfileUser = null;
+            }
             // Cas spécial pour spectatorGameFinished - passer les données de fin de jeu
             else if (pageName === 'spectatorGameFinished') {
                 htmlResult = component.html(data);
@@ -44,39 +40,35 @@ async function show(pageName: keyof typeof components, data?: any)
             else {
                 htmlResult = component.html();
             }
-            
             if (htmlResult instanceof Promise) {
                 element.innerHTML = await htmlResult;
-            } else {
+            }
+            else {
                 element.innerHTML = htmlResult;
             }
-        } else {
+        }
+        else {
             element.innerHTML = component.html;
         }
     }
-
     // Notifies each element is ready
-    setTimeout(() =>
-    {
+    setTimeout(() => {
         const event = new CustomEvent('componentsReady');
         document.dispatchEvent(event);
     }, 0);
 }
-
-async function load(pageName: string, data?: any, updateHistory: boolean = true)
-{   
+async function load(pageName, data, updateHistory = true) {
     hideAllPages();
     if (pageName === 'landing')
         await show('landing');
-    else if (pageName === 'mainMenu')
-    {
-         if ((window as any).aiMode) {
-            (window as any).aiMode = false; //Retour au menu - reset du flag IA 🤖 
+    else if (pageName === 'mainMenu') {
+        if (window.aiMode) {
+            window.aiMode = false; //Retour au menu - reset du flag IA 🤖 
             console.log('🏠 Retour au menu principal - Mode IA désactivé, contrôles W/S réactivés');
-         } 
+        }
         // Refresh user stats BEFORE showing components to ensure displayed data is current
-        if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
+        if (window.currentUser && window.refreshUserStats) {
+            window.refreshUserStats().then(async (statsChanged) => {
                 if (statsChanged)
                     console.log('📊 User stats refreshed before main menu display');
                 // Show components after stats are refreshed
@@ -86,7 +78,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 initLoadingIcons(); // Initialiser les icônes de chargement
                 await show('leaderboard');
                 await show('goToProfile');
-            }).catch(async (error: any) => {
+            }).catch(async (error) => {
                 console.warn('Failed to refresh user stats before main menu:', error);
                 // Still show components even if refresh fails
                 await show('mainMenu');
@@ -96,7 +88,8 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('leaderboard');
                 await show('goToProfile');
             });
-        } else {
+        }
+        else {
             // No user or refresh function available, show components directly
             await show('mainMenu');
             await show('friendList');
@@ -108,13 +101,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'settings')
         await show('settings');
-    else if (pageName === 'signIn')
-    {
+    else if (pageName === 'signIn') {
         await show('signIn');
         // show('goToMain');
     }
-    else if (pageName === 'signUp')
-    {
+    else if (pageName === 'signUp') {
         await show('signUp');
         // show('goToMain');
     }
@@ -122,41 +113,40 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('game');
     else if (pageName === 'game4')
         await show('game4');
-    else if (pageName === 'matchmaking')
-    {
+    else if (pageName === 'matchmaking') {
         await show('matchmaking');
         animateDots();
         switchTips();
     }
-    else if (pageName === 'profile')
-    {
+    else if (pageName === 'profile') {
         // Refresh user stats BEFORE showing profile to ensure displayed data is current
-        if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
+        if (window.currentUser && window.refreshUserStats) {
+            window.refreshUserStats().then(async (statsChanged) => {
                 if (statsChanged) {
                     console.log('📊 User stats refreshed before profile display');
                 }
                 // Show components after stats are refreshed
                 await show('profile');
                 await show('goToMain');
-            }).catch(async (error: any) => {
+            }).catch(async (error) => {
                 console.warn('Failed to refresh user stats before profile:', error);
                 // Still show components even if refresh fails
                 await show('profile');
                 await show('goToMain');
             });
-        } else {
+        }
+        else {
             // No user or refresh function available, show components directly
             await show('profile');
             await show('goToMain');
         }
     }
-    else if (pageName === 'aiConfig') 
-    {
+    else if (pageName === 'aiConfig') {
         await show('aiConfig');
         await show('goToMain');
         setTimeout(() => {
-            if ((window as any).initAIConfigManagers) (window as any).initAIConfigManagers();
+            if (window.initAIConfigManagers)
+                window.initAIConfigManagers();
         }, 100);
     }
     else if (pageName === 'gameFinished')
@@ -165,23 +155,19 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('spectatorGameFinished', data);
     else
         console.warn(`Page ${pageName} not found`);
-
     if (updateHistory)
         window.history.pushState({ page: pageName }, '', `/${pageName}`);
 }
-
-function hide(pageName: keyof typeof components)
-{
+function hide(pageName) {
     const component = components[pageName];
     const element = document.getElementById(component.id);
-    if (element) element.innerHTML = '';
+    if (element)
+        element.innerHTML = '';
 }
-
-function hideAllPages(): void
-{
-    Object.keys(components).forEach(key => hide(key as keyof typeof components));
+function hideAllPages() {
+    Object.keys(components).forEach(key => hide(key));
 }
-
 export { show, load, hideAllPages, hide };
 // Exposer load globalement pour les autres modules
-(window as any).load = load; 
+window.load = load;
+//# sourceMappingURL=utils.js.map

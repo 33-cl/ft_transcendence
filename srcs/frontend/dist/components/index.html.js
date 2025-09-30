@@ -6,7 +6,7 @@ export { leaderboardHTML } from './leaderboard.html.js';
 export { friendListHTML, initializeFriendSearch, spectateFreind, initLoadingIcons, destroyLoadingIcons } from './friendList.html.js';
 export { contextMenuHTML } from './contextMenu.html.js';
 export { mainMenuHTML } from './mainMenu.html.js';
-export { matchmakingHTML } from './matchmaking.html.js'
+export { matchmakingHTML } from './matchmaking.html.js';
 export { gameHTML } from './game.html.js';
 export { game4HTML } from './game4.html.js';
 export { gameFinishedHTML } from './gameFinished.html.js';
@@ -15,3 +15,4 @@ export { goToProfileHTML } from './goToProfile.html.js';
 export { settingsHTML } from './settings.html.js';
 export { aiConfigHTML } from './aiConfig.html.js';
 export { spectatorGameFinishedHTML } from './spectatorGameFinished.html.js';
+//# sourceMappingURL=index.html.js.map
