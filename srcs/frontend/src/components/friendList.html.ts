@@ -1,6 +1,7 @@
 // Icône de chargement intégrée directement dans le HTML
 
 export async function friendListHTML() {
+    console.log('🔥 friendListHTML called - VERSION 3.0 - WITH REAL-TIME STATUS');
     try {
         // Récupérer les utilisateurs récents
         const usersResponse = await fetch('/users', {
@@ -14,6 +15,29 @@ export async function friendListHTML() {
         
         const usersData = await usersResponse.json();
         const users = usersData.users || [];
+
+        // Récupérer le statut en temps réel des amis
+        let friendsStatus = new Map<string, any>();
+        try {
+            const statusResponse = await fetch('/users/status', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                console.log('Friends status received:', statusData);
+                const statuses = statusData.friendsStatus || [];
+                statuses.forEach((friend: any) => {
+                    friendsStatus.set(friend.username, friend);
+                });
+                console.log('Friends status map:', friendsStatus);
+            } else {
+                console.warn('Failed to fetch friends status:', statusResponse.status, statusResponse.statusText);
+            }
+        } catch (error) {
+            console.warn('Could not fetch friends status:', error);
+        }
 
         // Récupérer le leaderboard pour identifier le premier
         const leaderboardResponse = await fetch('/users/leaderboard?limit=1', {
@@ -29,50 +53,7 @@ export async function friendListHTML() {
             }
         }
 
-        // Récupérer les rooms actives pour savoir qui est en jeu
-        let activeUsers = new Set<string>();
-        try {
-            const roomsResponse = await fetch('/rooms', {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (roomsResponse.ok) {
-                const roomsData = await roomsResponse.json();
-                console.log('Rooms data received:', roomsData);
-                const rooms = roomsData.rooms || {};
-                console.log('Rooms object keys:', Object.keys(rooms));
-                // rooms est un objet avec des clés (noms de rooms), pas un tableau
-                Object.values(rooms).forEach((room: any) => {
-                    console.log('Processing room:', room);
-                    if (room.players && Array.isArray(room.players)) {
-                        room.players.forEach((player: any) => {
-                            if (player.username) {
-                                console.log('Found active player:', player.username);
-                                activeUsers.add(player.username);
-                            }
-                        });
-                    }
-                });
-                console.log('Active users in game:', Array.from(activeUsers));
-            } else {
-                console.warn('Failed to fetch rooms:', roomsResponse.status, roomsResponse.statusText);
-            }
-        } catch (error) {
-            // Si on ne peut pas récupérer les rooms, on continue sans les boutons spectate
-            console.warn('Could not fetch rooms for spectate buttons:', error);
-            activeUsers = new Set<string>();
-        }
-
         console.log('Users fetched:', users.length);
-        console.log('Active users in game before simulation:', Array.from(activeUsers));
-
-        // TEMPORAIRE: Pour tester, simulons que tous les amis sont en jeu
-        // TODO: Enlever cette ligne une fois que l'API /rooms fonctionne
-        console.log('TEMP: Simulating all friends are in game for testing');
-        users.forEach((user: any) => activeUsers.add(user.username));
-        
-        console.log('Active users in game after simulation:', Array.from(activeUsers));
         
         let userItems = '';
 
@@ -81,11 +62,43 @@ export async function friendListHTML() {
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
             
-            // Vérifier si l'utilisateur est en jeu
-            const isInGame = activeUsers.has(user.username);
-            console.log(`User ${user.username}: isInGame=${isInGame}`);
+            // Récupérer le statut de l'ami
+            const friendStatus = friendsStatus.get(user.username) || { status: 'offline', isInGame: false, isOnline: false };
+            const { status, isInGame } = friendStatus;
+            
+            console.log(`User ${user.username}: status=${status}, isInGame=${isInGame}`);
+
+            // Définir la couleur du point de statut
+            let statusColor = '#666'; // offline (gris)
+            let statusText = 'Offline';
+            if (status === 'online') {
+                statusColor = '#4CAF50'; // online (vert)
+                statusText = 'Online';
+            } else if (status === 'in-game') {
+                statusColor = '#FF9800'; // in-game (orange)
+                statusText = 'In Game';
+            }
+
+            // Bouton spectate seulement si en jeu
+            const spectateButton = isInGame ? `
+                <button class="spectate-btn" 
+                        data-username="${user.username}" 
+                        style="
+                            background: #2196F3; 
+                            color: white; 
+                            border: none; 
+                            padding: 4px 8px; 
+                            border-radius: 3px; 
+                            cursor: pointer;
+                            font-size: 11px;
+                            margin-top: 4px;
+                        ">
+                    👁 Spectate
+                </button>
+            ` : '';
 
             userItems += `
+<<<<<<< HEAD
                 <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-is-in-game="${isInGame}" style="position: relative;">
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
@@ -105,6 +118,30 @@ export async function friendListHTML() {
                         }
                         </style>
                     </p>
+=======
+                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" style="position: relative;">
+                    <div style="position: relative; display: inline-block;">
+                        <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
+                             onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                        <div class="status-indicator" 
+                             style="
+                                 position: absolute; 
+                                 bottom: 2px; 
+                                 right: 2px; 
+                                 width: 12px; 
+                                 height: 12px; 
+                                 border-radius: 50%; 
+                                 background-color: ${statusColor}; 
+                                 border: 2px solid #1a1a1a; 
+                                 z-index: 10;
+                             " 
+                             title="${statusText}">
+                        </div>
+                    </div>
+                    <p class="friend-name">${user.username}</p>
+                    <p class="friend-status" style="font-size: 11px; color: ${statusColor}; margin: 2px 0;">${statusText}</p>
+                    ${spectateButton}
+>>>>>>> aa69620 (need to work on spectate again but online dot working)
                     <!--${crownIcon}-->
                 </div>
             `;
@@ -197,6 +234,149 @@ async function addFriend(userId: number) {
         console.error('Error adding friend:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         alert('Error adding friend: ' + errorMessage);
+    }
+}
+
+// Fonction pour initialiser les event listeners de la liste d'amis
+export function initializeFriendListEventListeners() {
+    // Event listeners pour les boutons spectate
+    const spectateButtons = document.querySelectorAll('.spectate-btn');
+    spectateButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const username = (e.target as HTMLElement).dataset.username;
+            if (username) {
+                await spectateFreind(username);
+            }
+        });
+    });
+}
+
+// Fonction pour rafraîchir le statut des amis
+export async function refreshFriendListStatus() {
+    try {
+        const friendsList = document.getElementById('friendsList');
+        if (!friendsList) return;
+
+        // Récupérer le statut en temps réel des amis
+        const statusResponse = await fetch('/users/status', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!statusResponse.ok) {
+            console.warn('Failed to refresh friends status');
+            return;
+        }
+
+        const statusData = await statusResponse.json();
+        const friendsStatus = statusData.friendsStatus || [];
+        console.log('🔄 Refreshing friend status:', friendsStatus);
+
+        // Mettre à jour chaque ami dans la liste
+        friendsStatus.forEach((friend: any) => {
+            // Sélectionner spécifiquement dans la friendList, pas dans le leaderboard
+            const friendElement = document.querySelector(`#friendsList [data-username="${friend.username}"]`);
+            console.log(`🔍 Looking for friend element: ${friend.username}`, friendElement);
+            
+            if (friendElement) {
+                const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
+                const statusText = friendElement.querySelector('.friend-status') as HTMLElement;
+                const existingSpectateBtn = friendElement.querySelector('.spectate-btn');
+
+                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator, statusText });
+
+                if (statusIndicator && statusText) {
+                    // Mettre à jour la couleur du point de statut
+                    let statusColor = '#666'; // offline (gris)
+                    let statusTextContent = 'Offline';
+                    if (friend.status === 'online') {
+                        statusColor = '#4CAF50'; // online (vert)
+                        statusTextContent = 'Online';
+                    } else if (friend.status === 'in-game') {
+                        statusColor = '#FF9800'; // in-game (orange)
+                        statusTextContent = 'In Game';
+                    }
+
+                    console.log(`🎨 Updating ${friend.username}: ${friend.status} -> ${statusTextContent} (${statusColor})`);
+
+                    statusIndicator.style.backgroundColor = statusColor;
+                    statusIndicator.title = statusTextContent;
+                    statusText.textContent = statusTextContent;
+                    statusText.style.color = statusColor;
+
+                    // Ajouter/retirer le bouton spectate selon le statut
+                    if (friend.isInGame && !existingSpectateBtn) {
+                        // Ajouter le bouton spectate
+                        const spectateButton = document.createElement('button');
+                        spectateButton.className = 'spectate-btn';
+                        spectateButton.dataset.username = friend.username;
+                        spectateButton.innerHTML = '👁 Spectate';
+                        spectateButton.style.cssText = `
+                            background: #2196F3; 
+                            color: white; 
+                            border: none; 
+                            padding: 4px 8px; 
+                            border-radius: 3px; 
+                            cursor: pointer;
+                            font-size: 11px;
+                            margin-top: 4px;
+                        `;
+                        spectateButton.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            await spectateFreind(friend.username);
+                        });
+                        friendElement.appendChild(spectateButton);
+                    } else if (!friend.isInGame && existingSpectateBtn) {
+                        // Retirer le bouton spectate
+                        existingSpectateBtn.remove();
+                    }
+
+                    // Mettre à jour l'attribut data-status
+                    friendElement.setAttribute('data-status', friend.status);
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error refreshing friend list status:', error);
+    }
+}
+
+// Make refresh function available globally for other components
+(window as any).refreshFriendList = refreshFriendListStatus;
+
+// Variable pour stocker l'intervalle de rafraîchissement
+let friendListRefreshInterval: number | null = null;
+
+// Fonction pour démarrer le rafraîchissement automatique
+export function startFriendListAutoRefresh() {
+    // Arrêter l'ancien intervalle s'il existe
+    if (friendListRefreshInterval) {
+        clearInterval(friendListRefreshInterval);
+    }
+    
+    console.log('🔄 Starting friend list auto-refresh...');
+    
+    // Faire un premier rafraîchissement immédiatement
+    setTimeout(() => {
+        console.log('🔄 First automatic refresh trigger');
+        refreshFriendListStatus();
+    }, 1000);
+    
+    // Démarrer un nouveau rafraîchissement toutes les 3 secondes (plus rapide pour tester)
+    friendListRefreshInterval = window.setInterval(() => {
+        console.log('🔄 Auto-refresh interval triggered');
+        refreshFriendListStatus();
+    }, 3000);
+    console.log('🔄 Started friend list auto-refresh with interval:', friendListRefreshInterval);
+}
+
+// Fonction pour arrêter le rafraîchissement automatique
+export function stopFriendListAutoRefresh() {
+    if (friendListRefreshInterval) {
+        clearInterval(friendListRefreshInterval);
+        friendListRefreshInterval = null;
+        console.log('🔄 Stopped friend list auto-refresh');
     }
 }
 

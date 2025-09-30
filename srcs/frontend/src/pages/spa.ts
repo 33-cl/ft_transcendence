@@ -1,5 +1,5 @@
 import { show, load , hideAllPages, hide } from './utils.js';
-import { spectateFreind } from '../components/index.html.js';
+import { spectateFreind } from '../components/friendList.html.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
