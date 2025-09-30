@@ -91,13 +91,19 @@ export async function friendListHTML() {
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
                     <p class="friend-name flex items-center justify-start">
                         ${user.username}
-                        <div class="inline-block ml-2 w-6 h-4 animate-spin" style="animation-duration: 3s;">
+                        <div class="inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
                             <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
-                                <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2 animate-pulse"></div>
-                                <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2 animate-pulse"></div>
-                                <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2 animate-bounce" style="left: 50%; animation-duration: 1s;"></div>
+                                <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
                             </div>
                         </div>
+                        <style>
+                        @keyframes ballMove {
+                            0% { left: 2px; }
+                            100% { left: calc(100% - 6px); }
+                        }
+                        </style>
                     </p>
                     <!--${crownIcon}-->
                 </div>
@@ -193,8 +199,6 @@ async function addFriend(userId: number) {
         alert('Error adding friend: ' + errorMessage);
     }
 }
-
-
 
 // Fonction pour gérer la recherche d'amis
 export function initializeFriendSearch() {
