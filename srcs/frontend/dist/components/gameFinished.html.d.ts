@@ -1,2 +1,0 @@
-export declare const gameFinishedHTML = "\n    <button id=\"localGameBtn\" class=\"default-button\">Restart</button>\n    <button id=\"mainMenuBtn\" class=\"default-button\">Back to main menu</button>\n";
-//# sourceMappingURL=gameFinished.html.d.ts.map

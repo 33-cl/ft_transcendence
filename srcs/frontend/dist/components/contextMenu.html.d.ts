@@ -1,2 +1,0 @@
-export declare const contextMenuHTML = "\n    <div id=\"context-menu\" class=\"context-menu\">\n        <ul>\n            <li id=\"profileBtn\">Profile</li>\n            <li id=\"spectateBtn\">Spectate</li>\n            <li id=\"challengeBtn\">Invite</li>\n            <li id=\"removeFriendBtn\">Remove friend</li>\n            <li>Block</li>\n        </ul>\n    </div>\n";
-//# sourceMappingURL=contextMenu.html.d.ts.map
