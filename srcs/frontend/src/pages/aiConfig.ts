@@ -1,4 +1,5 @@
 // import { load } from './utils.js'; // Non utilisé maintenant que goToMain gère la navigation
+import { setStarsHoverColor, getColorRgb } from '../utils/background.js';
 
 // Variables globales pour la configuration de l'IA (plus nécessaire car on lance directement)
 
@@ -74,14 +75,35 @@ export function initAIConfigManagers(): void {
     // Event listeners pour les boutons de difficulté - lancent directement le jeu
     if (easyBtn) {
         easyBtn.addEventListener('click', () => startAIGame('easy'));
+        
+        easyBtn.addEventListener('mouseenter', () => {
+            setStarsHoverColor(getColorRgb('easy'));
+        });
+        easyBtn.addEventListener('mouseleave', () => {
+            setStarsHoverColor(null);
+        });
     }
     
     if (mediumBtn) {
         mediumBtn.addEventListener('click', () => startAIGame('medium'));
+        
+        mediumBtn.addEventListener('mouseenter', () => {
+            setStarsHoverColor(getColorRgb('medium'));
+        });
+        mediumBtn.addEventListener('mouseleave', () => {
+            setStarsHoverColor(null);
+        });
     }
     
     if (hardBtn) {
         hardBtn.addEventListener('click', () => startAIGame('hard'));
+        
+        hardBtn.addEventListener('mouseenter', () => {
+            setStarsHoverColor(getColorRgb('hard'));
+        });
+        hardBtn.addEventListener('mouseleave', () => {
+            setStarsHoverColor(null);
+        });
     }
 }
 

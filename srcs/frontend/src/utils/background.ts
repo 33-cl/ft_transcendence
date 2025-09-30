@@ -6,6 +6,10 @@ const STAR_OPACITY_RANGE: [number, number] = [0.1, 2];
 
 const BACKGROUND_SCALE = 2;
 
+// Configuration pour la coloration des étoiles au hover
+let currentHoverColor: string | null = null;
+let coloredStarsRatio = 0.5; // Proportion d'étoiles qui changent de couleur
+
 let ATTRACTION_RADIUS = 25; // valeur dynamique
 const ATTRACTION_RADIUS_INITIAL = 50;
 const ATTRACTION_RADIUS_MAX = 4000;
@@ -101,6 +105,7 @@ class Star {
   resetStartY: number = 0;
   originalAngle: number;
   originalDistance: number;
+  shouldChangeColor: boolean; // Détermine si cette étoile doit changer de couleur
 
   constructor(private centerX: number, private centerY: number) {
     this.angle = Math.random() * Math.PI * 2;
@@ -113,6 +118,9 @@ class Star {
     // Sauvegarder les propriétés originales pour le reset
     this.originalAngle = this.angle;
     this.originalDistance = this.distance;
+    
+    // Déterminer aléatoirement si cette étoile doit changer de couleur
+    this.shouldChangeColor = Math.random() < coloredStarsRatio;
 
     // Initial position
     this.x = this.centerX + Math.cos(this.angle) * this.distance;
@@ -215,7 +223,14 @@ class Star {
     
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+    
+    // Utiliser la couleur du hover si applicable, sinon blanc
+    let color = '255, 255, 255';
+    if (currentHoverColor && this.shouldChangeColor) {
+      color = currentHoverColor;
+    }
+    
+    ctx.fillStyle = `rgba(${color}, ${this.opacity})`;
     ctx.fill();
   }
 }
@@ -987,3 +1002,21 @@ class BackgroundStarfield {
 window.addEventListener('DOMContentLoaded', () => {
   new BackgroundStarfield('background');
 });
+
+// Fonctions export pour contrôler la couleur des étoiles
+export function setStarsHoverColor(color: string | null): void {
+  currentHoverColor = color;
+}
+
+export function getColorRgb(difficulty: 'easy' | 'medium' | 'hard'): string {
+  switch (difficulty) {
+    case 'easy':
+      return '74, 222, 128'; // green-400
+    case 'medium':
+      return '251, 191, 36'; // yellow-400
+    case 'hard':
+      return '248, 113, 113'; // red-400
+    default:
+      return '255, 255, 255'; // white
+  }
+}
