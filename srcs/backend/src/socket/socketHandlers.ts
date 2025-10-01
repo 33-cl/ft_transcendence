@@ -459,7 +459,8 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             if (enableAI && room.maxPlayers === 2) {
                 room.pongGame.enableAI(aiDifficulty as 'easy' | 'medium' | 'hard');
                 console.log(`🤖 [BACKEND] IA activée en mode ${aiDifficulty} pour la room ${roomName}`);
-                console.log(`🎯 [BACKEND] Configuration IA appliquée:`, room.pongGame.gameState.aiConfig);
+                console.log(`🎯 [BACKEND] Configuration IA appliquée:`, room.pongGame.state.aiConfig);
+
             }
             
             room.pongGame.start();
