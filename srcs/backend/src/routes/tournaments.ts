@@ -40,7 +40,17 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             stmt.run(tournamentId, name.trim(), maxPlayers);
 
+            // Retourner le tournoi créé
+            const createdTournament = db.prepare(`
+                SELECT * FROM tournaments WHERE id = ?
+            `).get(tournamentId);
 
+            fastify.log.info(`Tournament created: ${name} (${tournamentId})`);
+
+            reply.status(201).send({
+                success: true,
+                tournament: createdTournament
+            });
         } catch (error) {
             fastify.log.error('Error creating tournament:', error);
             reply.status(500).send({ error: 'Internal server error' });
