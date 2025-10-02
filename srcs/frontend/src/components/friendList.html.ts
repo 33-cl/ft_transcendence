@@ -79,9 +79,6 @@ export async function friendListHTML() {
                 statusText = 'In Game';
             }
 
-            // Plus de bouton spectate - on utilise le context menu à la place
-            const spectateButton = '';
-
             userItems += `
                 <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}" style="position: relative;">
                     <div style="position: relative; display: inline-block;">
@@ -105,23 +102,7 @@ export async function friendListHTML() {
                     <div class="friend-info">
                         <p class="friend-name flex items-center justify-start">
                             ${user.username}
-                            ${isInGame ? `
-                                <div class="mini-pong-animation inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
-                                    <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
-                                        <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                        <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                        <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
-                                    </div>
-                                </div>
-                                <style>
-                                @keyframes ballMove {
-                                    0% { left: 2px; }
-                                    100% { left: calc(100% - 6px); }
-                                }
-                                </style>
-                            ` : ''}
                         </p>
-                        ${spectateButton}
                     </div>
                     <!--${crownIcon}-->
                 </div>
@@ -328,6 +309,7 @@ export async function refreshFriendListStatus() {
                         console.log(`🎮 Removed mini-pong animation for ${friend.username}`);
                     }
                 }
+
             }
         });
     } catch (error) {
