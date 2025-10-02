@@ -56,6 +56,17 @@ db.exec(`
     FOREIGN KEY(friend_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, friend_id)
   );
+
+  CREATE TABLE IF NOT EXISTS tournaments (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('registration', 'active', 'completed', 'cancelled')),
+    max_players INTEGER NOT NULL DEFAULT 8,
+    current_players INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    started_at DATETIME,
+    completed_at DATETIME
+  );
 `);
 
 
