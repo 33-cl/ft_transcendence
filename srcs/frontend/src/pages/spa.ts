@@ -366,10 +366,10 @@ function initializeComponents(): void
             const menu = document.getElementById('contextMenu');
             if (menu)
             {
-                // Afficher/masquer le bouton spectate selon si l'utilisateur est en jeu
+                // Afficher le bouton spectate (la fonction spectateFreind gère les cas où l'utilisateur n'est pas en jeu)
                 const spectateBtn = menu.querySelector('#spectateBtn') as HTMLElement;
                 if (spectateBtn) {
-                    spectateBtn.style.display = isInGame ? 'block' : 'none';
+                    spectateBtn.style.display = 'block'; // Toujours afficher, laisser spectateFreind gérer
                 }
 
                 show('contextMenu');
@@ -403,7 +403,7 @@ function initializeComponents(): void
             if (target.id === 'spectateBtn') {
                 // Gérer le spectate
                 const selectedUser = (window as any).selectedContextUser;
-                if (selectedUser && selectedUser.username && selectedUser.isInGame) {
+                if (selectedUser && selectedUser.username) {
                     spectateFreind(selectedUser.username);
                 }
                 hide('contextMenu');
