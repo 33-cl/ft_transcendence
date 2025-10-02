@@ -79,23 +79,8 @@ export async function friendListHTML() {
                 statusText = 'In Game';
             }
 
-            // Bouton spectate seulement si en jeu
-            const spectateButton = isInGame ? `
-                <button class="spectate-btn" 
-                        data-username="${user.username}" 
-                        style="
-                            background: #2196F3; 
-                            color: white; 
-                            border: none; 
-                            padding: 4px 8px; 
-                            border-radius: 3px; 
-                            cursor: pointer;
-                            font-size: 11px;
-                            margin-top: 4px;
-                        ">
-                    👁 Spectate
-                </button>
-            ` : '';
+            // Plus de bouton spectate - on utilise le context menu à la place
+            const spectateButton = '';
 
             userItems += `
                 <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}" style="position: relative;">
@@ -121,7 +106,7 @@ export async function friendListHTML() {
                         <p class="friend-name flex items-center justify-start">
                             ${user.username}
                             ${isInGame ? `
-                                <div class="inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
+                                <div class="mini-pong-animation inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
                                     <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
                                         <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
                                         <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
@@ -277,9 +262,9 @@ export async function refreshFriendListStatus() {
             
             if (friendElement) {
                 const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
-                const existingSpectateBtn = friendElement.querySelector('.spectate-btn');
+                const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
 
-                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator });
+                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator, friendNameElement });
 
                 if (statusIndicator) {
                     // Mettre à jour la couleur du point de statut
@@ -298,35 +283,50 @@ export async function refreshFriendListStatus() {
                     statusIndicator.style.backgroundColor = statusColor;
                     statusIndicator.title = statusTextContent;
 
-                    // Ajouter/retirer le bouton spectate selon le statut
-                    if (friend.isInGame && !existingSpectateBtn) {
-                        // Ajouter le bouton spectate
-                        const spectateButton = document.createElement('button');
-                        spectateButton.className = 'spectate-btn';
-                        spectateButton.dataset.username = friend.username;
-                        spectateButton.innerHTML = '👁 Spectate';
-                        spectateButton.style.cssText = `
-                            background: #2196F3; 
-                            color: white; 
-                            border: none; 
-                            padding: 4px 8px; 
-                            border-radius: 3px; 
-                            cursor: pointer;
-                            font-size: 11px;
-                            margin-top: 4px;
-                        `;
-                        spectateButton.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            await spectateFreind(friend.username);
-                        });
-                        friendElement.appendChild(spectateButton);
-                    } else if (!friend.isInGame && existingSpectateBtn) {
-                        // Retirer le bouton spectate
-                        existingSpectateBtn.remove();
-                    }
-
                     // Mettre à jour l'attribut data-status
                     friendElement.setAttribute('data-status', friend.status);
+                    friendElement.setAttribute('data-is-in-game', friend.isInGame ? 'true' : 'false');
+                }
+
+                // Gérer l'animation mini-pong en temps réel
+                if (friendNameElement) {
+                    const currentAnimation = friendNameElement.querySelector('.mini-pong-animation');
+                    const shouldShowAnimation = friend.status === 'in-game' && friend.isInGame;
+
+                    console.log(`🎮 Animation for ${friend.username}: shouldShow=${shouldShowAnimation}, currentExists=${!!currentAnimation}`);
+
+                    if (shouldShowAnimation && !currentAnimation) {
+                        // Ajouter l'animation mini-pong
+                        const miniPongHTML = `
+                            <div class="mini-pong-animation inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
+                                <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
+                                    <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                    <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                    <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
+                                </div>
+                            </div>
+                        `;
+                        friendNameElement.insertAdjacentHTML('beforeend', miniPongHTML);
+                        
+                        // Ajouter le style keyframes s'il n'existe pas déjà
+                        if (!document.querySelector('#ballMoveStyle')) {
+                            const style = document.createElement('style');
+                            style.id = 'ballMoveStyle';
+                            style.textContent = `
+                                @keyframes ballMove {
+                                    0% { left: 2px; }
+                                    100% { left: calc(100% - 6px); }
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                        
+                        console.log(`🎮 Added mini-pong animation for ${friend.username}`);
+                    } else if (!shouldShowAnimation && currentAnimation) {
+                        // Retirer l'animation mini-pong
+                        currentAnimation.remove();
+                        console.log(`🎮 Removed mini-pong animation for ${friend.username}`);
+                    }
                 }
             }
         });
