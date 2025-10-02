@@ -155,8 +155,19 @@ export function initializeAddFriendsButton() {
     const addFriendsBtn = document.getElementById('addFriendsBtn');
     if (addFriendsBtn) {
         addFriendsBtn.addEventListener('click', async () => {
-            const { load } = await import('../pages/utils.js');
-            await load('addFriends');
+            const { show, hide } = await import('../pages/utils.js');
+            const { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } = await import('./addFriends.html.js');
+            
+            // Cacher friendList et afficher addFriends
+            hide('friendList');
+            await show('addFriends');
+            
+            // Initialiser les fonctionnalités de addFriends
+            setTimeout(() => {
+                initializeAddFriendSearch();
+                initializeBackToFriendsButton();
+                initializeFriendRequestListeners();
+            }, 100);
         });
     }
 }

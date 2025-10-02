@@ -16,6 +16,10 @@
         @apply right-[2%]; /* Right panel positioning */
     }
 
+    #addFriends {
+        @apply right-[2%]; /* Right panel positioning */
+    }
+
     .user-list {
         @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
         @apply overflow-y-auto p-[1vh];            /* Scroll and padding */

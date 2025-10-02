@@ -1,23 +1,66 @@
 export async function addFriendsHTML() {
     console.log('🔍 addFriendsHTML called');
     
+    // Récupérer les demandes d'amis reçues
+    let friendRequests: any[] = [];
+    try {
+        const response = await fetch('/users/friend-requests/received', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            friendRequests = data.requests || [];
+        }
+    } catch (error) {
+        console.error('Error fetching friend requests:', error);
+    }
+    
+    let requestsHTML = '';
+    if (friendRequests.length > 0) {
+        requestsHTML = friendRequests.map((request: any) => `
+            <div class="flex items-center p-2 border-b border-gray-700 gap-2">
+                <img src="${request.avatar_url || './img/default-pp.jpg'}" 
+                     alt="${request.username}" 
+                     class="w-10 h-10 rounded-full"
+                     onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                <span class="flex-1 text-sm">${request.username}</span>
+                <button class="accept-request-btn bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700" 
+                        data-request-id="${request.request_id}">
+                    ✓
+                </button>
+                <button class="reject-request-btn bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700" 
+                        data-request-id="${request.request_id}">
+                    ✗
+                </button>
+            </div>
+        `).join('');
+    } else {
+        requestsHTML = '<p class="text-center text-gray-400 text-sm mt-2">No friend requests</p>';
+    }
+    
     return /*html*/`
         <div id="addFriends" class="user-list">
-            <h2>Add Friends</h2>
+            <div class="relative">
+                <h2 class="m-0">Add Friends</h2>
+                <button id="backToFriendsBtn" class="absolute top-0 right-0 w-8 h-8 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded flex items-center justify-center transition-colors text-white" title="Back to Friends">
+                    ←
+                </button>
+            </div>
             <div class="search-container my-2.5">
                 <input 
                     type="text" 
                     id="friendSearch" 
-                    placeholder="Search users to add..." 
+                    placeholder="Search users..." 
                     class="search-input w-full px-2 py-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
                 >
                 <div id="searchResults" class="search-results max-h-48 overflow-y-auto mt-1.5 bg-gray-900 rounded hidden"></div>
             </div>
             <hr>
-            <div class="text-center mt-5">
-                <button id="backToFriendsBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
-                    Back to Friends
-                </button>
+            <h3 class="text-sm font-bold mt-3 mb-2">Friend Requests</h3>
+            <div id="friendRequestsList" class="max-h-64 overflow-y-auto">
+                ${requestsHTML}
             </div>
         </div>
     `;
@@ -36,8 +79,6 @@ async function addFriend(userId: number) {
             throw new Error(errorData.error || 'Failed to add friend');
         }
 
-        // Afficher un message de succès
-        alert('Friend added successfully!');
 
         // Cacher les résultats de recherche
         const searchResults = document.getElementById('searchResults');
@@ -53,8 +94,6 @@ async function addFriend(userId: number) {
 
     } catch (error) {
         console.error('Error adding friend:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        alert('Error adding friend: ' + errorMessage);
     }
 }
 
@@ -148,8 +187,141 @@ export function initializeBackToFriendsButton() {
     const backBtn = document.getElementById('backToFriendsBtn');
     if (backBtn) {
         backBtn.addEventListener('click', async () => {
-            const { load } = await import('../pages/utils.js');
-            await load('friendList');
+            const { show, hide } = await import('../pages/utils.js');
+            const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListAutoRefresh } = await import('./friendList.html.js');
+            
+            // Cacher addFriends et afficher friendList
+            hide('addFriends');
+            await show('friendList');
+            
+            // Réinitialiser les fonctionnalités de friendList
+            setTimeout(() => {
+                initializeAddFriendsButton();
+                initializeFriendListEventListeners();
+                startFriendListAutoRefresh();
+            }, 100);
         });
     }
+}
+
+// Fonction pour accepter une demande d'ami
+async function acceptFriendRequest(requestId: number) {
+    try {
+        const response = await fetch(`/users/friend-requests/${requestId}/accept`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to accept friend request');
+        }
+
+        console.log('Friend request accepted');
+        
+        // Rafraîchir la liste des demandes d'amis
+        await refreshFriendRequests();
+
+    } catch (error) {
+        console.error('Error accepting friend request:', error);
+    }
+}
+
+// Fonction pour rejeter une demande d'ami
+async function rejectFriendRequest(requestId: number) {
+    try {
+        const response = await fetch(`/users/friend-requests/${requestId}/reject`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to reject friend request');
+        }
+
+        console.log('Friend request rejected');
+        
+        // Rafraîchir la liste des demandes d'amis
+        await refreshFriendRequests();
+
+    } catch (error) {
+        console.error('Error rejecting friend request:', error);
+    }
+}
+
+// Fonction pour rafraîchir la liste des demandes d'amis
+async function refreshFriendRequests() {
+    try {
+        const response = await fetch('/users/friend-requests/received', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch friend requests');
+        }
+
+        const data = await response.json();
+        const friendRequests = data.requests || [];
+
+        const requestsList = document.getElementById('friendRequestsList');
+        if (!requestsList) return;
+
+        let requestsHTML = '';
+        if (friendRequests.length > 0) {
+            requestsHTML = friendRequests.map((request: any) => `
+                <div class="flex items-center p-2 border-b border-gray-700 gap-2">
+                    <img src="${request.avatar_url || './img/default-pp.jpg'}" 
+                         alt="${request.username}" 
+                         class="w-10 h-10 rounded-full"
+                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                    <span class="flex-1 text-sm">${request.username}</span>
+                    <button class="accept-request-btn bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700" 
+                            data-request-id="${request.request_id}">
+                        ✓
+                    </button>
+                    <button class="reject-request-btn bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700" 
+                            data-request-id="${request.request_id}">
+                        ✗
+                    </button>
+                </div>
+            `).join('');
+        } else {
+            requestsHTML = '<p class="text-center text-gray-400 text-sm mt-2">No friend requests</p>';
+        }
+
+        requestsList.innerHTML = requestsHTML;
+
+        // Réinitialiser les event listeners
+        initializeFriendRequestListeners();
+
+    } catch (error) {
+        console.error('Error refreshing friend requests:', error);
+    }
+}
+
+// Fonction pour initialiser les event listeners des demandes d'amis
+export function initializeFriendRequestListeners() {
+    // Event listeners pour les boutons d'acceptation
+    const acceptButtons = document.querySelectorAll('.accept-request-btn');
+    acceptButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const requestId = parseInt((e.target as HTMLElement).dataset.requestId || '0');
+            if (requestId) {
+                await acceptFriendRequest(requestId);
+            }
+        });
+    });
+
+    // Event listeners pour les boutons de rejet
+    const rejectButtons = document.querySelectorAll('.reject-request-btn');
+    rejectButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const requestId = parseInt((e.target as HTMLElement).dataset.requestId || '0');
+            if (requestId) {
+                await rejectFriendRequest(requestId);
+            }
+        });
+    });
 }
