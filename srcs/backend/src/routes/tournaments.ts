@@ -21,7 +21,14 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Tournament name is required' });
             }
 
-           
+            if (name.trim().length > 50) {
+                return reply.status(400).send({ error: 'Tournament name too long (max 50 characters)' });
+            }
+
+            if (![4, 6, 8].includes(maxPlayers)) {
+                return reply.status(400).send({ error: 'Max players must be 4, 6, or 8' });
+            }
+
 
         } catch (error) {
             fastify.log.error('Error creating tournament:', error);
