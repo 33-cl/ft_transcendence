@@ -85,26 +85,30 @@ export async function friendListHTML() {
             const isInGame = activeUsers.has(user.username);
             console.log(`User ${user.username}: isInGame=${isInGame}`);
 
-            userItems += `
+            userItems += /*html*/`
                 <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-is-in-game="${isInGame}" style="position: relative;">
                     <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                    <p class="friend-name flex items-center justify-start">
+                    <p class="friend-name">
                         ${user.username}
-                        <div class="inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
-                            <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
-                                <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
-                            </div>
-                        </div>
-                        <style>
-                        @keyframes ballMove {
-                            0% { left: 2px; }
-                            100% { left: calc(100% - 6px); }
-                        }
-                        </style>
                     </p>
+                    <div class="absolute right-2 top-1/2 w-8 h-5" style="transform: translateY(-50%) rotate(0deg); animation: spin 3s linear infinite;">
+                        <div class="relative w-full h-full rounded-sm overflow-hidden">
+                            <div class="absolute w-0.5 h-3 bg-white -translate-y-1/2" style="left: 4px; top: 50%;"></div>
+                            <div class="absolute w-0.5 h-3 bg-white -translate-y-1/2" style="right: 4px; top: 50%;"></div>
+                            <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
+                        </div>
+                    </div>
+                    <style>
+                    @keyframes ballMove {
+                        0% { left: 6px; }
+                        100% { left: calc(100% - 10px); }
+                    }
+                    @keyframes spin {
+                        0% { transform: translateY(-50%) rotate(0deg); }
+                        100% { transform: translateY(-50%) rotate(360deg); }
+                    }
+                    </style>
                     <!--${crownIcon}-->
                 </div>
             `;
