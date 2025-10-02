@@ -4,7 +4,7 @@ import RankingSystem from '../ranking.js';
 import jwt from 'jsonwebtoken';
 // Add import for socket authentication utilities
 import { getSocketIdForUser } from '../socket/socketAuth.js';
-import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
+import { getPlayerRoom } from '../socket/roomManager.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
