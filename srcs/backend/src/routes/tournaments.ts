@@ -29,6 +29,17 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Max players must be 4, 6, or 8' });
             }
 
+            // Générer un ID unique
+            const tournamentId = uuidv4();
+
+            // Insérer en base de données
+            const stmt = db.prepare(`
+                INSERT INTO tournaments (id, name, status, max_players, current_players)
+                VALUES (?, ?, 'registration', ?, 0)
+            `);
+
+            stmt.run(tournamentId, name.trim(), maxPlayers);
+
 
         } catch (error) {
             fastify.log.error('Error creating tournament:', error);
