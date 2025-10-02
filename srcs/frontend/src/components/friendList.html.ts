@@ -98,28 +98,7 @@ export async function friendListHTML() {
             ` : '';
 
             userItems += `
-<<<<<<< HEAD
-                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-is-in-game="${isInGame}" style="position: relative;">
-                    <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
-                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                    <p class="friend-name flex items-center justify-start">
-                        ${user.username}
-                        <div class="inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
-                            <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
-                                <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
-                            </div>
-                        </div>
-                        <style>
-                        @keyframes ballMove {
-                            0% { left: 2px; }
-                            100% { left: calc(100% - 6px); }
-                        }
-                        </style>
-                    </p>
-=======
-                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" style="position: relative;">
+                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}" style="position: relative;">
                     <div style="position: relative; display: inline-block;">
                         <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
                              onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
@@ -138,10 +117,28 @@ export async function friendListHTML() {
                              title="${statusText}">
                         </div>
                     </div>
-                    <p class="friend-name">${user.username}</p>
-                    <p class="friend-status" style="font-size: 11px; color: ${statusColor}; margin: 2px 0;">${statusText}</p>
-                    ${spectateButton}
->>>>>>> aa69620 (need to work on spectate again but online dot working)
+                    <div class="friend-info">
+                        <p class="friend-name flex items-center justify-start">
+                            ${user.username}
+                            ${isInGame ? `
+                                <div class="inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
+                                    <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
+                                        <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                        <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                        <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
+                                    </div>
+                                </div>
+                                <style>
+                                @keyframes ballMove {
+                                    0% { left: 2px; }
+                                    100% { left: calc(100% - 6px); }
+                                }
+                                </style>
+                            ` : ''}
+                        </p>
+                        <p class="friend-status" style="font-size: 11px; color: ${statusColor}; margin: 2px 0;">${statusText}</p>
+                        ${spectateButton}
+                    </div>
                     <!--${crownIcon}-->
                 </div>
             `;
