@@ -3,6 +3,7 @@ import { spectateFreind } from '../components/index.html.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
+import { setStarsHoverColor } from '../utils/background.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -141,6 +142,7 @@ function initializeComponents(): void
             // Nettoyage complet avant de retourner au menu principal
             // Cela résout le bug des paddles qui ne s'affichent plus au 2ème jeu local
             cleanupGameState();
+            setStarsHoverColor(null);
             
             // Wait for proper room cleanup before proceeding
             if (window.socket && (window as any).leaveCurrentRoomAsync) {
