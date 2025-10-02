@@ -8,3 +8,4 @@ public/avatars/
 *.jpg
 *.png
 *.gif
+.history/

@@ -3,7 +3,7 @@ export { signInHTML } from './signIn.html.js';
 export { signUpHTML } from './signUp.html.js';
 export { goToMainHTML } from './goToMain.html.js';
 export { leaderboardHTML } from './leaderboard.html.js';
-export { friendListHTML, initializeFriendSearch, spectateFreind, initLoadingIcons, destroyLoadingIcons } from './friendList.html.js';
+export { friendListHTML, initializeFriendSearch, spectateFreind, initLoadingIcons, destroyLoadingIcons, initializeFriendListEventListeners, refreshFriendListStatus, startFriendListAutoRefresh, stopFriendListAutoRefresh } from './friendList.html.js';
 export { contextMenuHTML } from './contextMenu.html.js';
 export { mainMenuHTML } from './mainMenu.html.js';
 export { matchmakingHTML } from './matchmaking.html.js'

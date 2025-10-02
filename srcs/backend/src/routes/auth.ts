@@ -318,8 +318,22 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/logout', async (request, reply) => {
     const jwtToken = getJwtFromRequest(request);
     if (jwtToken) {
-      // Remove token from active_tokens
-      db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);
+      try {
+        // Get user ID before deleting token
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const userId = payload.userId;
+        
+        // Remove user from active list to mark as offline
+        removeUserFromActiveList(userId);
+        console.log(`[LOGOUT] User ${userId} marked as offline`);
+        
+        // Remove token from active_tokens
+        db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);
+      } catch (err) {
+        console.warn('[LOGOUT] Failed to verify JWT during logout:', err);
+        // Still remove token even if JWT verification fails
+        db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);
+      }
     }
     reply.setCookie('jwt', '', {
       httpOnly: true,

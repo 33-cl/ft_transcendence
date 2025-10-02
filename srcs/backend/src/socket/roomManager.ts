@@ -103,3 +103,31 @@ export function getRoomMaxPlayers(roomName: string): number | null
 export function getNextRoomName(): string {
   return `room${roomCounter++}`;
 }
+
+// Helper: vérifier si un utilisateur (par socketId) est en jeu
+export function isUserInGame(socketId: string): boolean {
+  const playerRoom = getPlayerRoom(socketId);
+  if (!playerRoom || !rooms[playerRoom]) {
+    return false;
+  }
+  
+  const room = rooms[playerRoom];
+  // L'utilisateur est en jeu s'il est dans une room avec au moins 2 joueurs
+  // et que le jeu a commencé (existence de pongGame)
+  return room.players.length >= 2 && !!room.pongGame;
+}
+
+// Helper: vérifier si un utilisateur (par username) est en jeu
+export function isUsernameInGame(username: string): boolean {
+  for (const roomName in rooms) {
+    const room = rooms[roomName];
+    if (room.playerUsernames) {
+      // Vérifier si ce username est dans cette room et si le jeu a commencé
+      const usernameInRoom = Object.values(room.playerUsernames).includes(username);
+      if (usernameInRoom && room.players.length >= 2 && !!room.pongGame) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
