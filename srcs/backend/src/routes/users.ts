@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify';
 import db from '../db.js';
 import RankingSystem from '../ranking.js';
 import jwt from 'jsonwebtoken';
+// Add import for socket authentication utilities
+import { getSocketIdForUser } from '../socket/socketAuth.js';
+import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -321,6 +324,68 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     } catch (error) {
       console.error('Error fetching leaderboard around rank:', error);
       return reply.status(500).send({ error: 'Failed to fetch leaderboard around rank' });
+    }
+  });
+
+  // Endpoint pour obtenir le statut en ligne des utilisateurs et amis
+  fastify.get('/users/status', async (request, reply) => {
+    try {
+      console.log('[STATUS] === START /users/status request ===');
+      
+      // Récupérer le JWT depuis les cookies
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        console.log('[STATUS] No JWT token found');
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      // Récupérer les amis de l'utilisateur avec leurs informations
+      const friends = db.prepare(`
+        SELECT u.id, u.username, f.friend_id 
+        FROM friendships f
+        JOIN users u ON f.friend_id = u.id
+        WHERE f.user_id = ?
+      `).all(currentUserId);
+
+      // Obtenir le statut en ligne des amis
+      const friendsStatus = await Promise.all(friends.map(async (friend: any) => {
+        const socketId = await getSocketIdForUser(friend.id);
+        const isOnline = !!socketId;
+        const isInGame = isOnline && isUsernameInGame(friend.username);
+        
+        return {
+          id: friend.id,
+          username: friend.username,
+          isOnline,
+          isInGame,
+          status: isInGame ? 'in-game' : (isOnline ? 'online' : 'offline')
+        };
+      }));
+      
+      console.log(`[STATUS] Found ${friendsStatus.length} friends with status information:`, friendsStatus.map((f: any) => `${f.username}:${f.status}`));
+      console.log('[STATUS] === END /users/status request ===');
+
+      return { friendsStatus };
+    } catch (error) {
+      console.error('Error fetching users status:', error);
+      return reply.status(500).send({ error: 'Failed to fetch users status' });
     }
   });
 }

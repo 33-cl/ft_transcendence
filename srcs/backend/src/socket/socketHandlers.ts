@@ -21,11 +21,70 @@ import { Buffer } from 'buffer';
 import { createInitialGameState } from '../../game/gameState.js';
 import { PaddleSide } from '../../game/gameState.js';
 import { RoomType } from '../types.js';
-import { authenticateSocket, getSocketUser, removeSocketUser, isSocketAuthenticated } from './socketAuth.js';
+import { authenticateSocket, getSocketUser, removeSocketUser, isSocketAuthenticated, getSocketIdForUser } from './socketAuth.js';
 import { updateUserStats, getUserByUsername, getUserById } from '../user.js';
+import db from '../db.js';
 
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
+
+// Fonction pour notifier les amis du changement de statut d'un utilisateur
+function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
+    try {
+        // Récupérer la liste des amis de cet utilisateur
+        const friends = db.prepare(`
+            SELECT f.friend_id, u.username 
+            FROM friendships f 
+            JOIN users u ON u.id = f.friend_id 
+            WHERE f.user_id = ?
+        `).all(userId);
+
+        // Récupérer le username de l'utilisateur qui change de statut
+        const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string } | undefined;
+        
+        if (!user) return;
+
+        // Pour chaque ami, vérifier s'il est connecté et lui envoyer la mise à jour
+        friends.forEach((friend: any) => {
+            const friendSocketId = getSocketIdForUser(friend.friend_id);
+            if (friendSocketId) {
+                const friendSocket = io.sockets.sockets.get(friendSocketId);
+                if (friendSocket) {
+                    friendSocket.emit('friendStatusChanged', {
+                        username: user.username,
+                        status: status,
+                        timestamp: Date.now()
+                    });
+                }
+            }
+        });
+
+        // Également notifier dans l'autre sens (ceux qui ont cet utilisateur comme ami)
+        const reverseAFriends = db.prepare(`
+            SELECT f.user_id, u.username 
+            FROM friendships f 
+            JOIN users u ON u.id = f.user_id 
+            WHERE f.friend_id = ?
+        `).all(userId);
+
+        reverseAFriends.forEach((friend: any) => {
+            const friendSocketId = getSocketIdForUser(friend.user_id);
+            if (friendSocketId) {
+                const friendSocket = io.sockets.sockets.get(friendSocketId);
+                if (friendSocket) {
+                    friendSocket.emit('friendStatusChanged', {
+                        username: user.username,
+                        status: status,
+                        timestamp: Date.now()
+                    });
+                }
+            }
+        });
+
+    } catch (error) {
+        fastify.log.error(`Error broadcasting user status change: ${error}`);
+    }
+}
 
 // Vérifie si le client peut rejoindre la room (nom valide et room existante)
 function canJoinRoom(socket: Socket, roomName: string): boolean {
@@ -431,6 +490,11 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                 if (!room.playerUsernames) room.playerUsernames = {};
                 room.playerUsernames[socket.id] = user.username;
                 fastify.log.info(`Socket ${socket.id} authenticated user ${user.username} added to room ${roomName}`);
+                
+                // Notifier les amis que l'utilisateur est maintenant en jeu
+                if (room.players.length === room.maxPlayers) {
+                    broadcastUserStatusChange(user.id, 'in-game', io, fastify);
+                }
             } else {
                 // Reject unauthenticated sockets from joining online games
                 fastify.log.warn(`Socket ${socket.id} failed authentication for online game`);
@@ -623,6 +687,18 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
 		}
 		
 		fastify.log.info(`[SOCKET] gameFinished envoyé à ${room.players.length} joueurs et spectatorGameFinished à ${spectators.length} spectateurs dans room ${roomName}`);
+		
+		// Notifier les amis que les joueurs ne sont plus en jeu
+		if (room.playerUsernames) {
+			for (const [socketId, username] of Object.entries(room.playerUsernames)) {
+				if (room.players.includes(socketId)) {
+					const user = getUserByUsername(username) as any;
+					if (user) {
+						broadcastUserStatusChange(user.id, 'online', io, fastify);
+					}
+				}
+			}
+		}
 	}
 	
 }
@@ -737,11 +813,19 @@ function handleSocketMessage(socket: Socket, msg: string)
 }
 
 // Handler pour la déconnexion du client
-function handleSocketDisconnect(socket: Socket)
+function handleSocketDisconnect(socket: Socket, io: Server, fastify: FastifyInstance)
 {
+    // Récupérer l'utilisateur avant de nettoyer
+    const user = getSocketUser(socket.id);
+    
     removePlayerFromRoom(socket.id);
     // Nettoyer l'authentification du socket
     removeSocketUser(socket.id);
+    
+    // Notifier les amis que l'utilisateur est maintenant offline
+    if (user) {
+        broadcastUserStatusChange(user.id, 'offline', io, fastify);
+    }
 }
 
 // Handler pour quitter toutes les rooms explicitement (SPA navigation)
@@ -821,7 +905,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
         socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
-        socket.on('disconnect', () => handleSocketDisconnect(socket));
+        socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));
         socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));
     });
 }

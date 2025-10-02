@@ -1,6 +1,7 @@
 // Icône de chargement intégrée directement dans le HTML
 
 export async function friendListHTML() {
+    console.log('🔥 friendListHTML called - VERSION 3.0 - WITH REAL-TIME STATUS');
     try {
         // Récupérer les utilisateurs récents
         const usersResponse = await fetch('/users', {
@@ -14,6 +15,29 @@ export async function friendListHTML() {
         
         const usersData = await usersResponse.json();
         const users = usersData.users || [];
+
+        // Récupérer le statut en temps réel des amis
+        let friendsStatus = new Map<string, any>();
+        try {
+            const statusResponse = await fetch('/users/status', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                console.log('Friends status received:', statusData);
+                const statuses = statusData.friendsStatus || [];
+                statuses.forEach((friend: any) => {
+                    friendsStatus.set(friend.username, friend);
+                });
+                console.log('Friends status map:', friendsStatus);
+            } else {
+                console.warn('Failed to fetch friends status:', statusResponse.status, statusResponse.statusText);
+            }
+        } catch (error) {
+            console.warn('Could not fetch friends status:', error);
+        }
 
         // Récupérer le leaderboard pour identifier le premier
         const leaderboardResponse = await fetch('/users/leaderboard?limit=1', {
@@ -29,50 +53,7 @@ export async function friendListHTML() {
             }
         }
 
-        // Récupérer les rooms actives pour savoir qui est en jeu
-        let activeUsers = new Set<string>();
-        try {
-            const roomsResponse = await fetch('/rooms', {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (roomsResponse.ok) {
-                const roomsData = await roomsResponse.json();
-                console.log('Rooms data received:', roomsData);
-                const rooms = roomsData.rooms || {};
-                console.log('Rooms object keys:', Object.keys(rooms));
-                // rooms est un objet avec des clés (noms de rooms), pas un tableau
-                Object.values(rooms).forEach((room: any) => {
-                    console.log('Processing room:', room);
-                    if (room.players && Array.isArray(room.players)) {
-                        room.players.forEach((player: any) => {
-                            if (player.username) {
-                                console.log('Found active player:', player.username);
-                                activeUsers.add(player.username);
-                            }
-                        });
-                    }
-                });
-                console.log('Active users in game:', Array.from(activeUsers));
-            } else {
-                console.warn('Failed to fetch rooms:', roomsResponse.status, roomsResponse.statusText);
-            }
-        } catch (error) {
-            // Si on ne peut pas récupérer les rooms, on continue sans les boutons spectate
-            console.warn('Could not fetch rooms for spectate buttons:', error);
-            activeUsers = new Set<string>();
-        }
-
         console.log('Users fetched:', users.length);
-        console.log('Active users in game before simulation:', Array.from(activeUsers));
-
-        // TEMPORAIRE: Pour tester, simulons que tous les amis sont en jeu
-        // TODO: Enlever cette ligne une fois que l'API /rooms fonctionne
-        console.log('TEMP: Simulating all friends are in game for testing');
-        users.forEach((user: any) => activeUsers.add(user.username));
-        
-        console.log('Active users in game after simulation:', Array.from(activeUsers));
         
         let userItems = '';
 
@@ -81,70 +62,56 @@ export async function friendListHTML() {
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
             
-            // Vérifier si l'utilisateur est en jeu
-            const isInGame = activeUsers.has(user.username);
-            console.log(`User ${user.username}: isInGame=${isInGame}`);
+            // Récupérer le statut de l'ami
+            const friendStatus = friendsStatus.get(user.username) || { status: 'offline', isInGame: false, isOnline: false };
+            const { status, isInGame } = friendStatus;
+            
+            console.log(`User ${user.username}: status=${status}, isInGame=${isInGame}`);
 
-            userItems += /*html*/`
-                <div id="profileBtn" class="friend" data-username="${user.username}" data-user-id="${user.id}" data-is-in-game="${isInGame}" style="position: relative;">
-                    <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
-                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                    <p class="friend-name">
-                        ${user.username}
-                    </p>
-                    <div class="absolute right-2 top-1/2 w-8 h-5" style="transform: translateY(-50%) rotate(0deg); animation: spin 3s linear infinite;">
-                        <div class="relative w-full h-full rounded-sm overflow-hidden">
-                            <div class="absolute w-0.5 h-3 bg-white -translate-y-1/2" style="left: 4px; top: 50%;"></div>
-                            <div class="absolute w-0.5 h-3 bg-white -translate-y-1/2" style="right: 4px; top: 50%;"></div>
-                            <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
+            // Définir la couleur du point de statut
+            let statusColor = '#666'; // offline (gris)
+            let statusText = 'Offline';
+            if (status === 'online') {
+                statusColor = '#4CAF50'; // online (vert)
+                statusText = 'Online';
+            } else if (status === 'in-game') {
+                statusColor = '#FF9800'; // in-game (orange)
+                statusText = 'In Game';
+            }
+
+            userItems += `
+                <div id="profileBtn" class="friend relative" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}">
+                    <div class="relative inline-block">
+                        <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
+                             onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                        <div class="status-indicator absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-gray-900 z-10" 
+                             style="background-color: ${statusColor};" 
+                             title="${statusText}">
                         </div>
                     </div>
-                    <style>
-                    @keyframes ballMove {
-                        0% { left: 6px; }
-                        100% { left: calc(100% - 10px); }
-                    }
-                    @keyframes spin {
-                        0% { transform: translateY(-50%) rotate(0deg); }
-                        100% { transform: translateY(-50%) rotate(360deg); }
-                    }
-                    </style>
+                    <p class="friend-name flex items-center justify-start">
+                        ${user.username}
+                    </p>
                     <!--${crownIcon}-->
                 </div>
             `;
         });
 
         if (userItems === '') {
-            userItems = '<p style="text-align: center; color: #ccc; margin-top: 20px;">No friends yet...</p>';
+            userItems = '<p class="text-center text-gray-400 mt-5">No friends yet...</p>';
         }
 
         return /*html*/`
             <div id="friendList" class="user-list">
                 <h2>Friends</h2>
-                <div class="search-container" style="margin: 10px 0;">
+                <div class="search-container my-2.5">
                     <input 
                         type="text" 
                         id="friendSearch" 
                         placeholder="Search users to add..." 
-                        class="search-input"
-                        style="
-                            width: 100%; 
-                            padding: 8px; 
-                            border: 1px solid #444; 
-                            border-radius: 4px; 
-                            background: #2a2a2a; 
-                            color: white; 
-                            font-size: 14px;
-                        "
+                        class="search-input w-full px-2 py-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
                     >
-                    <div id="searchResults" class="search-results" style="
-                        max-height: 200px; 
-                        overflow-y: auto; 
-                        margin-top: 5px;
-                        background: #1a1a1a;
-                        border-radius: 4px;
-                        display: none;
-                    "></div>
+                    <div id="searchResults" class="search-results max-h-48 overflow-y-auto mt-1.5 bg-gray-900 rounded hidden"></div>
                 </div>
                 <hr>
                 <div id="friendsList">
@@ -159,7 +126,7 @@ export async function friendListHTML() {
             <div id="friendList" class="user-list">
                 <h2>Friends</h2>
                 <hr>
-                <p style="text-align: center; color: #f00; margin-top: 20px;">Error loading friends</p>
+                <p class="text-center text-red-500 mt-5">Error loading friends</p>
             </div>
         `;
     }
@@ -188,7 +155,7 @@ async function addFriend(userId: number) {
         // Cacher les résultats de recherche
         const searchResults = document.getElementById('searchResults');
         if (searchResults) {
-            searchResults.style.display = 'none';
+            searchResults.classList.add('hidden');
         }
 
         // Effacer la recherche
@@ -201,6 +168,162 @@ async function addFriend(userId: number) {
         console.error('Error adding friend:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         alert('Error adding friend: ' + errorMessage);
+    }
+}
+
+// Fonction pour initialiser les event listeners de la liste d'amis
+export function initializeFriendListEventListeners() {
+    // Event listeners pour les boutons spectate
+    const spectateButtons = document.querySelectorAll('.spectate-btn');
+    spectateButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const username = (e.target as HTMLElement).dataset.username;
+            if (username) {
+                await spectateFreind(username);
+            }
+        });
+    });
+}
+
+// Fonction pour rafraîchir le statut des amis
+export async function refreshFriendListStatus() {
+    try {
+        const friendsList = document.getElementById('friendsList');
+        if (!friendsList) return;
+
+        // Récupérer le statut en temps réel des amis
+        const statusResponse = await fetch('/users/status', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!statusResponse.ok) {
+            console.warn('Failed to refresh friends status');
+            return;
+        }
+
+        const statusData = await statusResponse.json();
+        const friendsStatus = statusData.friendsStatus || [];
+        console.log('🔄 Refreshing friend status:', friendsStatus);
+
+        // Mettre à jour chaque ami dans la liste
+        friendsStatus.forEach((friend: any) => {
+            // Sélectionner spécifiquement dans la friendList, pas dans le leaderboard
+            const friendElement = document.querySelector(`#friendsList [data-username="${friend.username}"]`);
+            console.log(`🔍 Looking for friend element: ${friend.username}`, friendElement);
+            
+            if (friendElement) {
+                const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
+                const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
+
+                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator, friendNameElement });
+
+                if (statusIndicator) {
+                    // Mettre à jour la couleur du point de statut
+                    let statusColor = '#666'; // offline (gris)
+                    let statusTextContent = 'Offline';
+                    if (friend.status === 'online') {
+                        statusColor = '#4CAF50'; // online (vert)
+                        statusTextContent = 'Online';
+                    } else if (friend.status === 'in-game') {
+                        statusColor = '#FF9800'; // in-game (orange)
+                        statusTextContent = 'In Game';
+                    }
+
+                    console.log(`🎨 Updating ${friend.username}: ${friend.status} -> ${statusTextContent} (${statusColor})`);
+
+                    statusIndicator.style.backgroundColor = statusColor;
+                    statusIndicator.title = statusTextContent;
+
+                    // Mettre à jour l'attribut data-status
+                    friendElement.setAttribute('data-status', friend.status);
+                    friendElement.setAttribute('data-is-in-game', friend.isInGame ? 'true' : 'false');
+                }
+
+                // Gérer l'animation mini-pong en temps réel
+                if (friendNameElement) {
+                    const currentAnimation = friendNameElement.querySelector('.mini-pong-animation');
+                    const shouldShowAnimation = friend.status === 'in-game' && friend.isInGame;
+
+                    console.log(`🎮 Animation for ${friend.username}: shouldShow=${shouldShowAnimation}, currentExists=${!!currentAnimation}`);
+
+                    if (shouldShowAnimation && !currentAnimation) {
+                        // Ajouter l'animation mini-pong
+                        const miniPongHTML = `
+                            <div class="mini-pong-animation inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
+                                <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
+                                    <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                    <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                                    <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
+                                </div>
+                            </div>
+                        `;
+                        friendNameElement.insertAdjacentHTML('beforeend', miniPongHTML);
+                        
+                        // Ajouter le style keyframes s'il n'existe pas déjà
+                        if (!document.querySelector('#ballMoveStyle')) {
+                            const style = document.createElement('style');
+                            style.id = 'ballMoveStyle';
+                            style.textContent = `
+                                @keyframes ballMove {
+                                    0% { left: 2px; }
+                                    100% { left: calc(100% - 6px); }
+                                }
+                            `;
+                            document.head.appendChild(style);
+                        }
+                        
+                        console.log(`🎮 Added mini-pong animation for ${friend.username}`);
+                    } else if (!shouldShowAnimation && currentAnimation) {
+                        // Retirer l'animation mini-pong
+                        currentAnimation.remove();
+                        console.log(`🎮 Removed mini-pong animation for ${friend.username}`);
+                    }
+                }
+
+            }
+        });
+    } catch (error) {
+        console.error('Error refreshing friend list status:', error);
+    }
+}
+
+// Make refresh function available globally for other components
+(window as any).refreshFriendList = refreshFriendListStatus;
+
+// Variable pour stocker l'intervalle de rafraîchissement
+let friendListRefreshInterval: number | null = null;
+
+// Fonction pour démarrer le rafraîchissement automatique
+export function startFriendListAutoRefresh() {
+    // Arrêter l'ancien intervalle s'il existe
+    if (friendListRefreshInterval) {
+        clearInterval(friendListRefreshInterval);
+    }
+    
+    console.log('🔄 Starting friend list auto-refresh...');
+    
+    // Faire un premier rafraîchissement immédiatement
+    setTimeout(() => {
+        console.log('🔄 First automatic refresh trigger');
+        refreshFriendListStatus();
+    }, 1000);
+    
+    // Démarrer un nouveau rafraîchissement toutes les 3 secondes (plus rapide pour tester)
+    friendListRefreshInterval = window.setInterval(() => {
+        console.log('🔄 Auto-refresh interval triggered');
+        refreshFriendListStatus();
+    }, 3000);
+    console.log('🔄 Started friend list auto-refresh with interval:', friendListRefreshInterval);
+}
+
+// Fonction pour arrêter le rafraîchissement automatique
+export function stopFriendListAutoRefresh() {
+    if (friendListRefreshInterval) {
+        clearInterval(friendListRefreshInterval);
+        friendListRefreshInterval = null;
+        console.log('🔄 Stopped friend list auto-refresh');
     }
 }
 
@@ -220,7 +343,7 @@ export function initializeFriendSearch() {
             }
 
             if (query.length < 2) {
-                searchResults.style.display = 'none';
+                searchResults.classList.add('hidden');
                 return;
             }
 
@@ -240,31 +363,16 @@ export function initializeFriendSearch() {
                     const users = data.users || [];
 
                     if (users.length === 0) {
-                        searchResults.innerHTML = '<div style="padding: 10px; text-align: center; color: #ccc;">No users found</div>';
+                        searchResults.innerHTML = '<div class="p-2.5 text-center text-gray-400">No users found</div>';
                     } else {
                         searchResults.innerHTML = users.map((user: any) => `
-                            <div class="search-result-item" style="
-                                display: flex; 
-                                align-items: center; 
-                                padding: 8px; 
-                                border-bottom: 1px solid #333;
-                                cursor: pointer;
-                            " data-user-id="${user.id}" onmouseover="this.style.backgroundColor='#333'" onmouseout="this.style.backgroundColor='transparent'">
+                            <div class="search-result-item flex items-center p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700" data-user-id="${user.id}">
                                 <img src="${user.avatar_url || './img/default-pp.jpg'}" 
                                      alt="${user.username}" 
-                                     style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;"
+                                     class="w-7.5 h-7.5 rounded-full mr-2.5"
                                      onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                                <span style="flex: 1;">${user.username}</span>
-                                <button class="add-friend-btn" 
-                                        style="
-                                            background: #4CAF50; 
-                                            color: white; 
-                                            border: none; 
-                                            padding: 4px 8px; 
-                                            border-radius: 3px; 
-                                            cursor: pointer;
-                                            font-size: 12px;
-                                        " 
+                                <span class="flex-1">${user.username}</span>
+                                <button class="add-friend-btn bg-green-600 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-green-700" 
                                         data-user-id="${user.id}">
                                     Add
                                 </button>
@@ -284,12 +392,12 @@ export function initializeFriendSearch() {
                         });
                     }
 
-                    searchResults.style.display = 'block';
+                    searchResults.classList.remove('hidden');
 
                 } catch (error) {
                     console.error('Error searching users:', error);
-                    searchResults.innerHTML = '<div style="padding: 10px; text-align: center; color: #f00;">Error searching users</div>';
-                    searchResults.style.display = 'block';
+                    searchResults.innerHTML = '<div class="p-2.5 text-center text-red-500">Error searching users</div>';
+                    searchResults.classList.remove('hidden');
                 }
             }, 300);
         });
@@ -298,7 +406,7 @@ export function initializeFriendSearch() {
         document.addEventListener('click', (e) => {
             const target = e.target as HTMLElement;
             if (!searchInput.contains(target) && !searchResults.contains(target)) {
-                searchResults.style.display = 'none';
+                searchResults.classList.add('hidden');
             }
         });
     }

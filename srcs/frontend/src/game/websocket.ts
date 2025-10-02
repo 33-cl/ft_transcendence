@@ -6,6 +6,71 @@ declare var io: any;
 // Pre-import load to avoid dynamic imports in event handlers
 import { load } from '../pages/utils.js';
 
+// Fonction pour mettre à jour le statut d'un ami dans la friendlist
+function updateFriendStatus(username: string, status: 'online' | 'in-game' | 'offline') {
+    console.log(`👥 Updating friend status: ${username} -> ${status}`);
+    
+    // Trouver l'élément de l'ami dans la friendlist
+    const friendElement = document.querySelector(`[data-username="${username}"]`) as HTMLElement;
+    if (!friendElement) {
+        console.log(`👥 Friend element not found for ${username}`);
+        return;
+    }
+
+    // Supprimer les anciennes classes de statut
+    friendElement.classList.remove('friend-online', 'friend-in-game', 'friend-offline');
+    
+    // Ajouter la nouvelle classe de statut
+    switch (status) {
+        case 'online':
+            friendElement.classList.add('friend-online');
+            friendElement.setAttribute('data-is-in-game', 'false');
+            break;
+        case 'in-game':
+            friendElement.classList.add('friend-in-game');
+            friendElement.setAttribute('data-is-in-game', 'true');
+            break;
+        case 'offline':
+            friendElement.classList.add('friend-offline');
+            friendElement.setAttribute('data-is-in-game', 'false');
+            break;
+    }
+
+    // Mettre à jour l'indicateur visuel
+    updateFriendStatusIndicator(friendElement, status);
+}
+
+// Fonction pour mettre à jour l'indicateur visuel de statut
+function updateFriendStatusIndicator(friendElement: HTMLElement, status: 'online' | 'in-game' | 'offline') {
+    // Supprimer l'ancien indicateur s'il existe
+    const oldIndicator = friendElement.querySelector('.status-indicator');
+    if (oldIndicator) {
+        oldIndicator.remove();
+    }
+
+    // Créer le nouvel indicateur
+    const indicator = document.createElement('div');
+    indicator.className = 'status-indicator';
+    
+    switch (status) {
+        case 'online':
+            indicator.innerHTML = '<div class="status-dot status-online"></div>';
+            indicator.title = 'Online';
+            break;
+        case 'in-game':
+            indicator.innerHTML = '<div class="status-dot status-in-game"></div>';
+            indicator.title = 'In Game';
+            break;
+        case 'offline':
+            indicator.innerHTML = '<div class="status-dot status-offline"></div>';
+            indicator.title = 'Offline';
+            break;
+    }
+
+    // Ajouter l'indicateur à l'élément ami
+    friendElement.appendChild(indicator);
+}
+
 // Connexion socket.io sur le même domaine
 let socket = io('', { 
   transports: ["websocket"], 
@@ -21,6 +86,7 @@ let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 let errorListenerSet = false;
 let gameFinishedListenerActive = false;
+let friendStatusListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -152,6 +218,15 @@ function setupGlobalSocketListeners() {
             }
         });
         errorListenerSet = true;
+    }
+    
+    // Event listener for friend status changes (real-time friend list updates)
+    if (!friendStatusListenerSet) {
+        socket.on('friendStatusChanged', (data: any) => {
+            console.log('👥 Friend status changed:', data);
+            updateFriendStatus(data.username, data.status);
+        });
+        friendStatusListenerSet = true;
     }
 }
 

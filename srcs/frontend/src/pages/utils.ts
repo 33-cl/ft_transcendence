@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 
 const components = {
@@ -66,6 +66,12 @@ async function show(pageName: keyof typeof components, data?: any)
 async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
     hideAllPages();
+    
+    // Arrêter le rafraîchissement automatique si on quitte le menu principal
+    if (pageName !== 'mainMenu') {
+        stopFriendListAutoRefresh();
+    }
+    
     if (pageName === 'landing')
         await show('landing');
     else if (pageName === 'mainMenu')
@@ -79,11 +85,16 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
                 if (statsChanged)
                     console.log('📊 User stats refreshed before main menu display');
-                // Show components after stats are refreshed
+            // Show components after stats are refreshed
                 await show('mainMenu');
                 await show('friendList');
-                initializeFriendSearch(); // Initialiser la recherche d'amis
-                initLoadingIcons(); // Initialiser les icônes de chargement
+                // Attendre que l'HTML soit rendu avant d'initialiser
+                setTimeout(() => {
+                    initializeFriendSearch(); // Initialiser la recherche d'amis
+                    initializeFriendListEventListeners(); // Initialiser les event listeners
+                    startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
+                    initLoadingIcons(); // Initialiser les icônes de chargement
+                }, 100);
                 await show('leaderboard');
                 await show('goToProfile');
             }).catch(async (error: any) => {
@@ -91,8 +102,13 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 // Still show components even if refresh fails
                 await show('mainMenu');
                 await show('friendList');
-                initializeFriendSearch(); // Initialiser la recherche d'amis
-                initLoadingIcons(); // Initialiser les icônes de chargement
+                // Attendre que l'HTML soit rendu avant d'initialiser
+                setTimeout(() => {
+                    initializeFriendSearch(); // Initialiser la recherche d'amis
+                    initializeFriendListEventListeners(); // Initialiser les event listeners
+                    startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
+                    initLoadingIcons(); // Initialiser les icônes de chargement
+                }, 100);
                 await show('leaderboard');
                 await show('goToProfile');
             });
@@ -100,30 +116,44 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             // No user or refresh function available, show components directly
             await show('mainMenu');
             await show('friendList');
-            initializeFriendSearch(); // Initialiser la recherche d'amis
-            initLoadingIcons(); // Initialiser les icônes de chargement
+            // Attendre que l'HTML soit rendu avant d'initialiser
+            setTimeout(() => {
+                initializeFriendSearch(); // Initialiser la recherche d'amis
+                initializeFriendListEventListeners(); // Initialiser les event listeners
+                startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
+                initLoadingIcons(); // Initialiser les icônes de chargement
+            }, 100);
             await show('leaderboard');
             await show('goToProfile');
         }
     }
-    else if (pageName === 'settings')
+    else if (pageName === 'settings') {
+        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('settings');
+    }
     else if (pageName === 'signIn')
     {
+        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('signIn');
         // show('goToMain');
     }
     else if (pageName === 'signUp')
     {
+        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('signUp');
         // show('goToMain');
     }
-    else if (pageName === 'game')
+    else if (pageName === 'game') {
+        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('game');
-    else if (pageName === 'game4')
+    }
+    else if (pageName === 'game4') {
+        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('game4');
+    }
     else if (pageName === 'matchmaking')
     {
+        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('matchmaking');
         animateDots();
         switchTips();
