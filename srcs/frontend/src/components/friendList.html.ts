@@ -136,7 +136,6 @@ export async function friendListHTML() {
                                 </style>
                             ` : ''}
                         </p>
-                        <p class="friend-status" style="font-size: 11px; color: ${statusColor}; margin: 2px 0;">${statusText}</p>
                         ${spectateButton}
                     </div>
                     <!--${crownIcon}-->
@@ -278,12 +277,11 @@ export async function refreshFriendListStatus() {
             
             if (friendElement) {
                 const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
-                const statusText = friendElement.querySelector('.friend-status') as HTMLElement;
                 const existingSpectateBtn = friendElement.querySelector('.spectate-btn');
 
-                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator, statusText });
+                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator });
 
-                if (statusIndicator && statusText) {
+                if (statusIndicator) {
                     // Mettre à jour la couleur du point de statut
                     let statusColor = '#666'; // offline (gris)
                     let statusTextContent = 'Offline';
@@ -299,8 +297,6 @@ export async function refreshFriendListStatus() {
 
                     statusIndicator.style.backgroundColor = statusColor;
                     statusIndicator.title = statusTextContent;
-                    statusText.textContent = statusTextContent;
-                    statusText.style.color = statusColor;
 
                     // Ajouter/retirer le bouton spectate selon le statut
                     if (friend.isInGame && !existingSpectateBtn) {
