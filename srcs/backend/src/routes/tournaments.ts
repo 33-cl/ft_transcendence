@@ -52,7 +52,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 tournament: createdTournament
             });
         } catch (error) {
-            fastify.log.error('Error creating tournament:', error);
+            fastify.log.error(`Error creating tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });

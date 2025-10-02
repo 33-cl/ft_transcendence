@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, initializeFriendSearch, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initializeAddFriendSearch, initializeBackToFriendsButton, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 
 const components = {
@@ -8,6 +8,7 @@ const components = {
     goToProfile: {id: 'goToProfile', html: goToProfileHTML}, // stocke la fonction
     leaderboard: {id: 'leaderboard', html: leaderboardHTML},
     friendList: {id: 'friendList', html: friendListHTML},
+    addFriends: {id: 'addFriends', html: addFriendsHTML},
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
     game: {id: 'game', html: gameHTML},
     game4: {id: 'game4', html: game4HTML},
@@ -90,7 +91,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('friendList');
                 // Attendre que l'HTML soit rendu avant d'initialiser
                 setTimeout(() => {
-                    initializeFriendSearch(); // Initialiser la recherche d'amis
+                    initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
                     startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
                     initLoadingIcons(); // Initialiser les icônes de chargement
@@ -104,7 +105,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('friendList');
                 // Attendre que l'HTML soit rendu avant d'initialiser
                 setTimeout(() => {
-                    initializeFriendSearch(); // Initialiser la recherche d'amis
+                    initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
                     startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
                     initLoadingIcons(); // Initialiser les icônes de chargement
@@ -118,7 +119,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             await show('friendList');
             // Attendre que l'HTML soit rendu avant d'initialiser
             setTimeout(() => {
-                initializeFriendSearch(); // Initialiser la recherche d'amis
+                initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                 initializeFriendListEventListeners(); // Initialiser les event listeners
                 startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
                 initLoadingIcons(); // Initialiser les icônes de chargement
@@ -126,6 +127,16 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             await show('leaderboard');
             await show('goToProfile');
         }
+    }
+    else if (pageName === 'addFriends') {
+        await show('addFriends');
+        await show('leaderboard');
+        await show('goToProfile');
+        // Attendre que l'HTML soit rendu avant d'initialiser
+        setTimeout(() => {
+            initializeAddFriendSearch(); // Initialiser la recherche d'amis
+            initializeBackToFriendsButton(); // Initialiser le bouton retour
+        }, 100);
     }
     else if (pageName === 'settings') {
         stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
