@@ -4,7 +4,7 @@ export { signUpHTML } from './signUp.html.js';
 export { goToMainHTML } from './goToMain.html.js';
 export { leaderboardHTML } from './leaderboard.html.js';
 export { friendListHTML, spectateFreind, initLoadingIcons, destroyLoadingIcons, initializeFriendListEventListeners, refreshFriendListStatus, startFriendListAutoRefresh, stopFriendListAutoRefresh, initializeAddFriendsButton } from './friendList.html.js';
-export { addFriendsHTML, initializeAddFriendSearch, initializeBackToFriendsButton } from './addFriends.html.js';
+export { addFriendsHTML, initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from './addFriends.html.js';
 export { contextMenuHTML } from './contextMenu.html.js';
 export { mainMenuHTML } from './mainMenu.html.js';
 export { matchmakingHTML } from './matchmaking.html.js'

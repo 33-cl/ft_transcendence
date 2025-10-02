@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initializeAddFriendSearch, initializeBackToFriendsButton, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 
 const components = {
@@ -128,16 +128,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             await show('goToProfile');
         }
     }
-    else if (pageName === 'addFriends') {
-        await show('addFriends');
-        await show('leaderboard');
-        await show('goToProfile');
-        // Attendre que l'HTML soit rendu avant d'initialiser
-        setTimeout(() => {
-            initializeAddFriendSearch(); // Initialiser la recherche d'amis
-            initializeBackToFriendsButton(); // Initialiser le bouton retour
-        }, 100);
-    }
+
     else if (pageName === 'settings') {
         stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('settings');

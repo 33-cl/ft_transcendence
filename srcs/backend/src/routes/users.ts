@@ -148,10 +148,10 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Endpoint pour ajouter un ami
+  // Endpoint pour envoyer une demande d'ami
   fastify.post('/users/:id/friend', async (request, reply) => {
     try {
-      console.log('[ADD_FRIEND] === START add friend request ===');
+      console.log('[SEND_FRIEND_REQUEST] === START send friend request ===');
       
       // Récupérer le JWT depuis les cookies
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
@@ -193,16 +193,159 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Already friends' });
       }
 
-      // Ajouter la relation d'amitié
-      db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendId);
-      
-      console.log(`[ADD_FRIEND] Added friendship between ${currentUserId} and ${friendId}`);
-      console.log('[ADD_FRIEND] === END add friend request ===');
+      // Vérifier qu'il n'y a pas déjà une demande en attente
+      const existingRequest = db.prepare('SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?').get(currentUserId, friendId, 'pending');
+      if (existingRequest) {
+        return reply.status(400).send({ error: 'Friend request already sent' });
+      }
 
-      return { success: true, message: 'Friend added successfully' };
+      // Envoyer la demande d'ami
+      db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
+      
+      console.log(`[SEND_FRIEND_REQUEST] Sent friend request from ${currentUserId} to ${friendId}`);
+      console.log('[SEND_FRIEND_REQUEST] === END send friend request ===');
+
+      return { success: true, message: 'Friend request sent' };
     } catch (error) {
-      console.error('Error adding friend:', error);
-      return reply.status(500).send({ error: 'Failed to add friend' });
+      console.error('Error sending friend request:', error);
+      return reply.status(500).send({ error: 'Failed to send friend request' });
+    }
+  });
+
+  // Endpoint pour obtenir les demandes d'amis reçues
+  fastify.get('/users/friend-requests/received', async (request, reply) => {
+    try {
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      // Récupérer toutes les demandes d'amis reçues en attente
+      const requests = db.prepare(`
+        SELECT fr.id as request_id, u.id, u.username, u.avatar_url, fr.created_at
+        FROM friend_requests fr
+        JOIN users u ON fr.sender_id = u.id
+        WHERE fr.receiver_id = ? AND fr.status = 'pending'
+        ORDER BY fr.created_at DESC
+      `).all(currentUserId);
+
+      return { requests };
+    } catch (error) {
+      console.error('Error fetching friend requests:', error);
+      return reply.status(500).send({ error: 'Failed to fetch friend requests' });
+    }
+  });
+
+  // Endpoint pour accepter une demande d'ami
+  fastify.post('/users/friend-requests/:requestId/accept', async (request, reply) => {
+    try {
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      const requestId = parseInt((request.params as any).requestId);
+      
+      // Récupérer la demande d'ami
+      const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
+      
+      if (!friendRequest) {
+        return reply.status(404).send({ error: 'Friend request not found' });
+      }
+
+      // Ajouter les deux relations d'amitié (bidirectionnelle)
+      db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendRequest.sender_id);
+      db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(friendRequest.sender_id, currentUserId);
+      
+      // Mettre à jour le statut de la demande
+      db.prepare('UPDATE friend_requests SET status = ? WHERE id = ?').run('accepted', requestId);
+      
+      console.log(`[ACCEPT_FRIEND_REQUEST] Accepted friend request ${requestId}`);
+
+      return { success: true, message: 'Friend request accepted' };
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      return reply.status(500).send({ error: 'Failed to accept friend request' });
+    }
+  });
+
+  // Endpoint pour refuser une demande d'ami
+  fastify.post('/users/friend-requests/:requestId/reject', async (request, reply) => {
+    try {
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      const requestId = parseInt((request.params as any).requestId);
+      
+      // Récupérer la demande d'ami
+      const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
+      
+      if (!friendRequest) {
+        return reply.status(404).send({ error: 'Friend request not found' });
+      }
+
+      // Mettre à jour le statut de la demande
+      db.prepare('UPDATE friend_requests SET status = ? WHERE id = ?').run('rejected', requestId);
+      
+      console.log(`[REJECT_FRIEND_REQUEST] Rejected friend request ${requestId}`);
+
+      return { success: true, message: 'Friend request rejected' };
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      return reply.status(500).send({ error: 'Failed to reject friend request' });
     }
   });
 
