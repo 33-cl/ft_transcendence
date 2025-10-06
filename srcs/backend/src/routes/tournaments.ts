@@ -14,7 +14,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     // POST /tournaments - Créer un nouveau tournoi
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
-            const { name, maxPlayers = 8 } = request.body;
+            const body = request.body as CreateTournamentBody;
+            const { name, maxPlayers = 8 } = body;
 
             // Validation basique
             if (!name || name.trim().length === 0) {
@@ -39,6 +40,9 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             `);
 
             stmt.run(tournamentId, name.trim(), maxPlayers);
+
+            // Indique l'URL de la ressource nouvellement créée
+            reply.header('Location', `/tournaments/${tournamentId}`);
 
             // Retourner le tournoi créé
             const createdTournament = db.prepare(`
