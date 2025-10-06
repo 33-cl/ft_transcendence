@@ -60,4 +60,15 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
+
+    // GET /tournaments - Récupérer la liste des tournois
+    fastify.get('/tournaments', async (_request: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const tournaments = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC`).all();
+            reply.send({ success: true, tournaments });
+        } catch (error) {
+            fastify.log.error(`Error fetching tournaments: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
 }
