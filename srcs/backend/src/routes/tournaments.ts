@@ -71,4 +71,62 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
+
+    // POST /tournaments/:id/join - Inscrire un utilisateur à un tournoi
+    interface JoinTournamentBody {
+        userId: number;
+        alias: string;
+    }
+
+    fastify.post('/tournaments/:id/join', async (request: FastifyRequest<{ Params: { id: string }, Body: JoinTournamentBody }>, reply: FastifyReply) => {
+        try {
+            const { id } = request.params as { id: string };
+            const body = request.body as JoinTournamentBody;
+            const { userId, alias } = body;
+
+            if (!userId || !alias || alias.trim().length === 0) {
+                return reply.status(400).send({ error: 'userId and alias are required' });
+            }
+
+            // Vérifier que le tournoi existe et est en phase d'inscription
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id);
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            if (tournament.status !== 'registration') {
+                return reply.status(400).send({ error: 'Tournament is not open for registration' });
+            }
+
+            if (tournament.current_players >= tournament.max_players) {
+                return reply.status(400).send({ error: 'Tournament is full' });
+            }
+
+            // Insérer le participant (les contraintes UNIQUE en DB empêcheront les doublons)
+            const insert = db.prepare(`
+                INSERT INTO tournament_participants (tournament_id, user_id, alias)
+                VALUES (?, ?, ?)
+            `);
+
+            try {
+                const result = insert.run(id, userId, alias.trim());
+
+                // Incrémenter le compteur de participants
+                db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(id);
+
+                const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(result.lastInsertRowid);
+
+                reply.status(201).send({ success: true, participant });
+            } catch (err: any) {
+                // Gestion simple des erreurs de contrainte (user déjà inscrit ou alias déjà pris)
+                if (err && err.code === 'SQLITE_CONSTRAINT') {
+                    return reply.status(409).send({ error: 'User already joined or alias already taken' });
+                }
+                throw err;
+            }
+        } catch (error) {
+            fastify.log.error(`Error joining tournament: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
 }
