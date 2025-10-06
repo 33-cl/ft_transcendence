@@ -4,6 +4,18 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
 
+// Typages minimaux pour les résultats SQL utilisés ici
+interface TournamentRow {
+    id: string;
+    name?: string;
+    status: 'registration' | 'active' | 'completed' | 'cancelled';
+    max_players: number;
+    current_players: number;
+    created_at?: string;
+    started_at?: string | null;
+    completed_at?: string | null;
+}
+
 // Interface pour la création d'un tournoi
 interface CreateTournamentBody {
     name: string;
@@ -44,10 +56,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // Indique l'URL de la ressource nouvellement créée
             reply.header('Location', `/tournaments/${tournamentId}`);
 
-            // Retourner le tournoi créé
+            // Retourner le tournoi créé (cast pour TypeScript)
             const createdTournament = db.prepare(`
                 SELECT * FROM tournaments WHERE id = ?
-            `).get(tournamentId);
+            `).get(tournamentId) as TournamentRow | undefined;
 
             fastify.log.info(`Tournament created: ${name} (${tournamentId})`);
 
@@ -64,7 +76,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     // GET /tournaments - Récupérer la liste des tournois
     fastify.get('/tournaments', async (_request: FastifyRequest, reply: FastifyReply) => {
         try {
-            const tournaments = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC`).all();
+            const tournaments = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC`).all() as TournamentRow[];
             reply.send({ success: true, tournaments });
         } catch (error) {
             fastify.log.error(`Error fetching tournaments: ${error}`);
@@ -89,7 +101,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             }
 
             // Vérifier que le tournoi existe et est en phase d'inscription
-            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id);
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
             }
