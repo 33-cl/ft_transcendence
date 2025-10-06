@@ -78,6 +78,19 @@ db.exec(`
     started_at DATETIME,
     completed_at DATETIME
   );
+
+  -- Table pour lister les participants d'un tournoi
+  CREATE TABLE IF NOT EXISTS tournament_participants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    alias TEXT NOT NULL,
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(tournament_id, user_id),
+    UNIQUE(tournament_id, alias)
+  );
 `);
 
 
