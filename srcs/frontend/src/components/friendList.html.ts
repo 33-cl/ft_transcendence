@@ -55,6 +55,23 @@ export async function friendListHTML() {
 
         console.log('Users fetched:', users.length);
         
+        // Récupérer le nombre de demandes d'amis en attente
+        let friendRequestsCount = 0;
+        try {
+            const requestsResponse = await fetch('/users/friend-requests/received', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (requestsResponse.ok) {
+                const requestsData = await requestsResponse.json();
+                friendRequestsCount = (requestsData.requests || []).length;
+                console.log('Friend requests count:', friendRequestsCount);
+            }
+        } catch (error) {
+            console.warn('Could not fetch friend requests count:', error);
+        }
+
         let userItems = '';
 
         users.forEach((user: any) => {
@@ -101,12 +118,18 @@ export async function friendListHTML() {
             userItems = '<p class="text-center text-gray-400 mt-5">No friends yet...</p>';
         }
 
+        // Badge HTML pour les demandes d'amis en attente
+        const requestsBadge = friendRequestsCount > 0 
+            ? `<span class="friend-requests-badge absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center z-10">${friendRequestsCount}</span>`
+            : '';
+
         return /*html*/`
             <div id="friendList" class="user-list">
                 <div class="relative">
                     <h2>Friends</h2>
                     <button id="addFriendsBtn" class="absolute top-0 right-0 w-8 h-8 bg-black hover:bg-gray-900 border border-gray-600 rounded flex items-center justify-center transition-colors p-1.5" title="Add Friends">
                         <img src="./img/add-friend-icon.svg" alt="Add Friend" class="w-full h-full">
+                        ${requestsBadge}
                     </button>
                 </div>
                 <hr>
@@ -118,12 +141,32 @@ export async function friendListHTML() {
         
     } catch (error) {
         console.error('Error loading friends:', error);
+        // Même en cas d'erreur, essayer de récupérer le nombre de demandes
+        let friendRequestsCount = 0;
+        try {
+            const requestsResponse = await fetch('/users/friend-requests/received', {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (requestsResponse.ok) {
+                const requestsData = await requestsResponse.json();
+                friendRequestsCount = (requestsData.requests || []).length;
+            }
+        } catch (err) {
+            console.warn('Could not fetch friend requests count in error handler:', err);
+        }
+        
+        const requestsBadge = friendRequestsCount > 0 
+            ? `<span class="friend-requests-badge absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center z-10">${friendRequestsCount}</span>`
+            : '';
+
         return /*html*/`
             <div id="friendList" class="user-list">
                 <div class="relative">
                     <h2>Friends</h2>
                     <button id="addFriendsBtn" class="absolute top-0 right-0 w-8 h-8 bg-black hover:bg-gray-900 border border-gray-600 rounded flex items-center justify-center transition-colors p-1.5" title="Add Friends">
                         <img src="./img/add-friend-icon.svg" alt="Add Friend" class="w-full h-full">
+                        ${requestsBadge}
                     </button>
                 </div>
                 <hr>
@@ -294,12 +337,14 @@ export function startFriendListAutoRefresh() {
     setTimeout(() => {
         console.log('🔄 First automatic refresh trigger');
         refreshFriendListStatus();
+        updateFriendRequestsBadge();
     }, 1000);
     
     // Démarrer un nouveau rafraîchissement toutes les 3 secondes (plus rapide pour tester)
     friendListRefreshInterval = window.setInterval(() => {
         console.log('🔄 Auto-refresh interval triggered');
         refreshFriendListStatus();
+        updateFriendRequestsBadge();
     }, 3000);
     console.log('🔄 Started friend list auto-refresh with interval:', friendListRefreshInterval);
 }
@@ -398,4 +443,47 @@ export function initLoadingIcons(): void {
 // Fonction pour nettoyer les icônes (plus nécessaire avec CSS pur)
 export function destroyLoadingIcons(): void {
     console.log('Loading icons destroyed (CSS version)');
+}
+
+// Fonction pour mettre à jour le badge des demandes d'amis
+export async function updateFriendRequestsBadge() {
+    try {
+        const requestsResponse = await fetch('/users/friend-requests/received', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!requestsResponse.ok) {
+            console.warn('Failed to fetch friend requests count');
+            return;
+        }
+
+        const requestsData = await requestsResponse.json();
+        const friendRequestsCount = (requestsData.requests || []).length;
+        console.log('🔔 Updating friend requests badge:', friendRequestsCount);
+
+        const addFriendsBtn = document.getElementById('addFriendsBtn');
+        if (!addFriendsBtn) return;
+
+        // Chercher le badge existant
+        let badge = addFriendsBtn.querySelector('.friend-requests-badge') as HTMLElement;
+
+        if (friendRequestsCount > 0) {
+            if (badge) {
+                // Mettre à jour le badge existant
+                badge.textContent = friendRequestsCount.toString();
+            } else {
+                // Créer un nouveau badge
+                const badgeHTML = `<span class="friend-requests-badge absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center z-10">${friendRequestsCount}</span>`;
+                addFriendsBtn.insertAdjacentHTML('beforeend', badgeHTML);
+            }
+        } else {
+            // Supprimer le badge s'il n'y a plus de demandes
+            if (badge) {
+                badge.remove();
+            }
+        }
+    } catch (error) {
+        console.error('Error updating friend requests badge:', error);
+    }
 }

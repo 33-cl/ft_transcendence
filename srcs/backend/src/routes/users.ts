@@ -136,12 +136,24 @@ export default async function usersRoutes(fastify: FastifyInstance) {
           )
         ORDER BY u.username
         LIMIT 10
-      `).all(currentUserId, `%${query}%`, currentUserId);
+      `).all(currentUserId, `%${query}%`, currentUserId) as any[];
 
-      console.log(`[SEARCH] Found ${searchResults.length} users:`, searchResults.map((u: any) => u.username));
+      // Ajouter l'information si une demande d'ami a déjà été envoyée
+      const usersWithRequestStatus = searchResults.map((user: any) => {
+        const pendingRequest = db.prepare(
+          'SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?'
+        ).get(currentUserId, user.id, 'pending');
+        
+        return {
+          ...user,
+          hasPendingRequest: !!pendingRequest
+        };
+      });
+
+      console.log(`[SEARCH] Found ${usersWithRequestStatus.length} users:`, usersWithRequestStatus.map((u: any) => `${u.username} (pending: ${u.hasPendingRequest})`));
       console.log('[SEARCH] === END /users/search request ===');
 
-      return { users: searchResults };
+      return { users: usersWithRequestStatus };
     } catch (error) {
       console.error('Error searching users:', error);
       return reply.status(500).send({ error: 'Failed to search users' });
@@ -187,8 +199,10 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'User not found' });
       }
 
-      // Vérifier que la relation d'amitié n'existe pas déjà
-      const existingFriendship = db.prepare('SELECT 1 FROM friendships WHERE user_id = ? AND friend_id = ?').get(currentUserId, friendId);
+      // Vérifier que la relation d'amitié n'existe pas déjà (dans les deux sens)
+      const existingFriendship = db.prepare(
+        'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
+      ).get(currentUserId, friendId, friendId, currentUserId);
       if (existingFriendship) {
         return reply.status(400).send({ error: 'Already friends' });
       }
@@ -291,10 +305,10 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendRequest.sender_id);
       db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(friendRequest.sender_id, currentUserId);
       
-      // Mettre à jour le statut de la demande
-      db.prepare('UPDATE friend_requests SET status = ? WHERE id = ?').run('accepted', requestId);
+      // Supprimer la demande au lieu de la marquer comme acceptée (nettoyage)
+      db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
-      console.log(`[ACCEPT_FRIEND_REQUEST] Accepted friend request ${requestId}`);
+      console.log(`[ACCEPT_FRIEND_REQUEST] Accepted friend request ${requestId} and created friendship`);
 
       return { success: true, message: 'Friend request accepted' };
     } catch (error) {
@@ -337,10 +351,10 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Friend request not found' });
       }
 
-      // Mettre à jour le statut de la demande
-      db.prepare('UPDATE friend_requests SET status = ? WHERE id = ?').run('rejected', requestId);
+      // Supprimer la demande au lieu de la marquer comme rejetée (permet de redemander plus tard)
+      db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
-      console.log(`[REJECT_FRIEND_REQUEST] Rejected friend request ${requestId}`);
+      console.log(`[REJECT_FRIEND_REQUEST] Rejected and deleted friend request ${requestId}`);
 
       return { success: true, message: 'Friend request rejected' };
     } catch (error) {
@@ -382,16 +396,26 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Invalid friend ID' });
       }
 
-      // Vérifier que la relation d'amitié existe
-      const existingFriendship = db.prepare('SELECT 1 FROM friendships WHERE user_id = ? AND friend_id = ?').get(currentUserId, friendId);
+      // Vérifier que la relation d'amitié existe (dans un sens ou l'autre)
+      const existingFriendship = db.prepare(
+        'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
+      ).get(currentUserId, friendId, friendId, currentUserId);
+      
       if (!existingFriendship) {
         return reply.status(404).send({ error: 'Friendship not found' });
       }
 
-      // Supprimer la relation d'amitié
-      db.prepare('DELETE FROM friendships WHERE user_id = ? AND friend_id = ?').run(currentUserId, friendId);
+      // Supprimer la relation d'amitié dans les deux sens
+      db.prepare('DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)').run(
+        currentUserId, friendId, friendId, currentUserId
+      );
       
-      console.log(`[REMOVE_FRIEND] Removed friendship between ${currentUserId} and ${friendId}`);
+      // Supprimer également toutes les demandes d'amis en attente entre ces deux utilisateurs
+      db.prepare('DELETE FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)').run(
+        currentUserId, friendId, friendId, currentUserId
+      );
+      
+      console.log(`[REMOVE_FRIEND] Removed friendship and pending requests between ${currentUserId} and ${friendId} (both directions)`);
       console.log('[REMOVE_FRIEND] === END remove friend request ===');
 
       return { success: true, message: 'Friend removed successfully' };

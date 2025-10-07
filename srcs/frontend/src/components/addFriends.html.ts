@@ -67,7 +67,7 @@ export async function addFriendsHTML() {
 }
 
 // Fonction pour ajouter un ami
-async function addFriend(userId: number) {
+async function addFriend(userId: number, buttonElement?: HTMLButtonElement) {
     try {
         const response = await fetch(`/users/${userId}/friend`, {
             method: 'POST',
@@ -79,18 +79,18 @@ async function addFriend(userId: number) {
             throw new Error(errorData.error || 'Failed to add friend');
         }
 
+        console.log('Friend request sent successfully');
 
-        // Cacher les résultats de recherche
-        const searchResults = document.getElementById('searchResults');
-        if (searchResults) {
-            searchResults.classList.add('hidden');
+        // Mettre à jour le bouton pour afficher "Sent" au lieu de "Add"
+        if (buttonElement) {
+            buttonElement.textContent = 'Sent';
+            buttonElement.disabled = true;
+            buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700');
+            buttonElement.classList.add('bg-gray-600', 'cursor-default');
         }
 
-        // Effacer la recherche
-        const searchInput = document.getElementById('friendSearch') as HTMLInputElement;
-        if (searchInput) {
-            searchInput.value = '';
-        }
+        // Ne plus cacher les résultats ni effacer la recherche
+        // L'utilisateur peut maintenant voir qu'il a envoyé la demande
 
     } catch (error) {
         console.error('Error adding friend:', error);
@@ -135,28 +135,37 @@ export function initializeAddFriendSearch() {
                     if (users.length === 0) {
                         searchResults.innerHTML = '<div class="p-2.5 text-center text-gray-400">No users found</div>';
                     } else {
-                        searchResults.innerHTML = users.map((user: any) => `
-                            <div class="search-result-item flex items-center p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700" data-user-id="${user.id}">
-                                <img src="${user.avatar_url || './img/default-pp.jpg'}" 
-                                     alt="${user.username}" 
-                                     class="w-7.5 h-7.5 rounded-full mr-2.5"
-                                     onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                                <span class="flex-1">${user.username}</span>
-                                <button class="add-friend-btn bg-green-600 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-green-700" 
-                                        data-user-id="${user.id}">
-                                    Add
-                                </button>
-                            </div>
-                        `).join('');
+                        searchResults.innerHTML = users.map((user: any) => {
+                            // Déterminer l'état du bouton
+                            const buttonState = user.hasPendingRequest 
+                                ? { text: 'Sent', class: 'bg-gray-600 cursor-default', disabled: true }
+                                : { text: 'Add', class: 'bg-green-600 hover:bg-green-700', disabled: false };
+                            
+                            return `
+                                <div class="search-result-item flex items-center p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700" data-user-id="${user.id}">
+                                    <img src="${user.avatar_url || './img/default-pp.jpg'}" 
+                                         alt="${user.username}" 
+                                         class="w-7.5 h-7.5 rounded-full mr-2.5"
+                                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                                    <span class="flex-1">${user.username}</span>
+                                    <button class="add-friend-btn ${buttonState.class} text-white border-none px-2 py-1 rounded text-xs" 
+                                            data-user-id="${user.id}"
+                                            ${buttonState.disabled ? 'disabled' : ''}>
+                                        ${buttonState.text}
+                                    </button>
+                                </div>
+                            `;
+                        }).join('');
 
                         // Ajouter les event listeners pour les boutons d'ajout
                         const addButtons = searchResults.querySelectorAll('.add-friend-btn');
                         addButtons.forEach(button => {
                             button.addEventListener('click', async (e) => {
                                 e.stopPropagation();
-                                const userId = parseInt((e.target as HTMLElement).dataset.userId || '0');
-                                if (userId) {
-                                    await addFriend(userId);
+                                const buttonElement = e.target as HTMLButtonElement;
+                                const userId = parseInt(buttonElement.dataset.userId || '0');
+                                if (userId && !buttonElement.disabled) {
+                                    await addFriend(userId, buttonElement);
                                 }
                             });
                         });
@@ -222,6 +231,10 @@ async function acceptFriendRequest(requestId: number) {
         // Rafraîchir la liste des demandes d'amis
         await refreshFriendRequests();
 
+        // Mettre à jour le badge dans la friend list
+        const { updateFriendRequestsBadge } = await import('./friendList.html.js');
+        await updateFriendRequestsBadge();
+
     } catch (error) {
         console.error('Error accepting friend request:', error);
     }
@@ -244,6 +257,10 @@ async function rejectFriendRequest(requestId: number) {
         
         // Rafraîchir la liste des demandes d'amis
         await refreshFriendRequests();
+
+        // Mettre à jour le badge dans la friend list
+        const { updateFriendRequestsBadge } = await import('./friendList.html.js');
+        await updateFriendRequestsBadge();
 
     } catch (error) {
         console.error('Error rejecting friend request:', error);
