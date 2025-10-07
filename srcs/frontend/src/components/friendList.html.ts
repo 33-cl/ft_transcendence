@@ -345,7 +345,7 @@ export function startFriendListAutoRefresh() {
         console.log('🔄 Auto-refresh interval triggered');
         refreshFriendListStatus();
         updateFriendRequestsBadge();
-    }, 3000);
+    }, 1000);
     console.log('🔄 Started friend list auto-refresh with interval:', friendListRefreshInterval);
 }
 
