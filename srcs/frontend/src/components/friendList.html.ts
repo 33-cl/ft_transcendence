@@ -237,7 +237,7 @@ export async function refreshFriendListStatus() {
         console.log('🔄 Refreshing friend status:', friendsStatus);
 
         // Mettre à jour chaque ami dans la liste
-        friendsStatus.forEach((friend: any) => {
+        for (const friend of friendsStatus) {
             // Sélectionner spécifiquement dans la friendList, pas dans le leaderboard
             const friendElement = document.querySelector(`#friendsList [data-username="${friend.username}"]`);
             console.log(`🔍 Looking for friend element: ${friend.username}`, friendElement);
@@ -249,6 +249,9 @@ export async function refreshFriendListStatus() {
                 console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator, friendNameElement });
 
                 if (statusIndicator) {
+                    // Récupérer l'ancien statut
+                    const oldIsInGame = friendElement.getAttribute('data-is-in-game') === 'true';
+                    
                     // Mettre à jour la couleur du point de statut
                     let statusColor = '#666'; // offline (gris)
                     let statusTextContent = 'Offline';
@@ -268,6 +271,17 @@ export async function refreshFriendListStatus() {
                     // Mettre à jour l'attribut data-status
                     friendElement.setAttribute('data-status', friend.status);
                     friendElement.setAttribute('data-is-in-game', friend.isInGame ? 'true' : 'false');
+                    
+                    // Si le statut in-game a changé et qu'un menu contextuel est ouvert pour cet ami, le fermer
+                    const selectedUser = (window as any).selectedContextUser;
+                    if (selectedUser && selectedUser.username === friend.username && oldIsInGame !== friend.isInGame) {
+                        const menu = document.getElementById('contextMenu');
+                        if (menu && menu.innerHTML.trim()) {
+                            console.log(`🔄 Closing context menu for ${friend.username} due to game status change`);
+                            const { hide } = await import('../pages/utils.js');
+                            hide('contextMenu');
+                        }
+                    }
                 }
 
                 // Gérer l'animation mini-pong en temps réel
@@ -312,7 +326,7 @@ export async function refreshFriendListStatus() {
                 }
 
             }
-        });
+        }
     } catch (error) {
         console.error('Error refreshing friend list status:', error);
     }
@@ -364,42 +378,38 @@ export function stopFriendListAutoRefresh() {
 export async function spectateFreind(username: string) {
     try {
         console.log(`🔍 [SPECTATE] Starting spectate for ${username}`);
-        console.log(`🔍 [SPECTATE] Socket status:`, {
-            exists: !!window.socket,
-            connected: window.socket ? window.socket.connected : false,
-            id: window.socket ? window.socket.id : 'none'
-        });
+        
+        // Vérifier le statut actuel de l'ami AVANT de faire la requête
+        const friendElement = document.querySelector(`#friendsList [data-username="${username}"]`);
+        const isInGame = friendElement?.getAttribute('data-is-in-game') === 'true';
+        
+        if (!isInGame) {
+            console.log(`🔍 [SPECTATE] Friend ${username} is no longer in game`);
+            // Ne rien faire, l'ami n'est plus en jeu
+            return;
+        }
         
         // Chercher la room de l'ami (utilise les cookies automatiquement)
         const response = await fetch(`/rooms/friend/${username}`, {
             method: 'GET',
-            credentials: 'include' // Important : inclure les cookies
+            credentials: 'include'
         });
 
         if (!response.ok) {
             const error = await response.json();
-            if (response.status === 404) {
-                // Joueur pas en jeu - ne rien faire silencieusement
-                console.log(`🔍 [SPECTATE] ${username} is not in any active game right now.`);
-                return;
-            } else if (response.status === 403) {
+            if (response.status === 403) {
                 alert('You can only spectate friends.');
             } else if (response.status === 401) {
                 alert('Authentication required. Please log in.');
             } else {
-                alert('Error finding game: ' + (error.error || 'Unknown error'));
+                // Ne plus afficher d'alerte pour "Friend is not in any active game"
+                console.warn('Error finding game: ' + (error.error || 'Unknown error'));
             }
             return;
         }
 
         const roomData = await response.json();
         console.log('🔍 [SPECTATE] Room data for spectating:', roomData);
-        
-        // Vérifier que la room existe vraiment
-        if (!roomData.roomName) {
-            console.log(`🔍 [SPECTATE] No active room found for ${username}`);
-            return;
-        }
         
         // Rejoindre la room en tant que spectateur
         if (window.socket && window.socket.connected) {
