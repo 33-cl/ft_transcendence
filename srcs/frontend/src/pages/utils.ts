@@ -42,6 +42,11 @@ async function show(pageName: keyof typeof components, data?: any)
             else if (pageName === 'spectatorGameFinished') {
                 htmlResult = component.html(data);
             }
+            // Cas spécial pour contextMenu - passer isInGame
+            else if (pageName === 'contextMenu') {
+                const isInGame = (window as any).contextMenuIsInGame || false;
+                htmlResult = component.html(isInGame);
+            }
             else {
                 htmlResult = component.html();
             }

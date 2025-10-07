@@ -365,17 +365,13 @@ function initializeComponents(): void
                 (window as any).selectedContextUser = { username, userId: parseInt(userId), isInGame };
             }
 
+            // Régénérer le menu contextuel avec ou sans le bouton Spectate
+            (window as any).contextMenuIsInGame = isInGame;
+            show('contextMenu');
+            
+            // Positionner le menu contextuel
             const menu = document.getElementById('contextMenu');
-            if (menu)
-            {
-                // Afficher le bouton spectate (la fonction spectateFreind gère les cas où l'utilisateur n'est pas en jeu)
-                const spectateBtn = menu.querySelector('#spectateBtn') as HTMLElement;
-                if (spectateBtn) {
-                    spectateBtn.style.display = 'block'; // Toujours afficher, laisser spectateFreind gérer
-                }
-
-                show('contextMenu');
-
+            if (menu) {
                 menu.style.left = `${e.clientX}px`;
                 menu.style.top = `${e.clientY}px`;
             }
