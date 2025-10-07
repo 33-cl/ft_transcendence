@@ -154,11 +154,11 @@
     }
 
     .goToProfile-username {
-        @apply text-xl font-bold mb-2; /* Pseudo en haut, plus de truncate pour permettre l'expansion */
+        @apply text-xl font-bold mb-2 mr-8; /* Pseudo en haut, plus de truncate pour permettre l'expansion */
     }
 
     .goToProfile-logout {
-        @apply bg-red-800 text-white px-6 py-2 rounded-md border-none text-base; /* Bouton déconnexion taille normale */
+        @apply bg-red-800 text-white px-6 py-2 rounded-md border-none text-base ; /* Bouton déconnexion taille normale */
     }
 
     .goToProfile-logout:hover {
