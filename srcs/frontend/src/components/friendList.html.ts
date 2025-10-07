@@ -385,7 +385,7 @@ export async function spectateFreind(username: string) {
         
         if (!isInGame) {
             console.log(`🔍 [SPECTATE] Friend ${username} is no longer in game`);
-            // Ne rien faire, l'ami n'est plus en jeu
+            alert(`${username} is not currently in a game. Please wait for them to start playing!`);
             return;
         }
         
