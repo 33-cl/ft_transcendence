@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import db from '../db.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
-import { removeUserFromActiveList } from '../socket/socketAuth.js';
+import { removeUserFromActiveList, isUserAlreadyConnected } from '../socket/socketAuth.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
@@ -258,6 +258,15 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
     if (!user || !verifyPassword(password, user.password_hash)) {
       return reply.code(401).send({ error: 'Invalid credentials.' });
+    }
+
+    // Vérifier si l'utilisateur est déjà connecté
+    if (isUserAlreadyConnected(user.id)) {
+      fastify.log.warn(`User ${user.username} (${user.id}) attempted to login but is already connected`);
+      return reply.code(403).send({ 
+        error: 'This account is already connected on another browser or tab. Please close the other session first.',
+        code: 'USER_ALREADY_CONNECTED'
+      });
     }
 
     // Générer le JWT
