@@ -1,5 +1,6 @@
 import { load } from './utils.js';
 import { DEV_CONFIG } from '../config/dev.js';
+import { broadcastSessionCreated, broadcastSessionDestroyed } from '../utils/sessionBroadcast.js';
 
 function isValidEmailSimple(email: string): boolean {
     if (!email || typeof email !== 'string') return false;
@@ -127,6 +128,9 @@ document.addEventListener('componentsReady', () => {
                     await fetch('/auth/me', { credentials: 'include' }); 
                 } catch {}
                 
+                // Broadcast session creation to other tabs
+                broadcastSessionCreated();
+                
                 // Force websocket reconnection after successful registration
                 if ((window as any).currentUser && (window as any).reconnectWebSocket) {
                     console.log('Registration successful, reconnecting websocket with cookies...');
@@ -205,6 +209,9 @@ document.addEventListener('componentsReady', () => {
                 (window as any).currentUser = data?.user || null;
                 try { await fetch('/auth/me', { credentials: 'include' }); } catch {}
                 
+                // Broadcast session creation to other tabs
+                broadcastSessionCreated();
+                
                 // Force websocket reconnection after successful login
                 if ((window as any).currentUser && (window as any).reconnectWebSocket) {
                     console.log('Login successful, reconnecting websocket with cookies...');
@@ -246,8 +253,12 @@ document.addEventListener('componentsReady', () => {
     // Expose simple logout helper
     if (!window.logout) {
         window.logout = async () => {
-            try { await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
+            try { 
+                await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); 
+            } catch {}
             window.currentUser = null;
+            // Broadcast session destruction to other tabs
+            broadcastSessionDestroyed();
         };
     }
 });
