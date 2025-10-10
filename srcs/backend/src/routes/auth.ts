@@ -264,7 +264,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     if (isUserAlreadyConnected(user.id)) {
       fastify.log.warn(`User ${user.username} (${user.id}) attempted to login but is already connected`);
       return reply.code(403).send({ 
-        error: 'This account is already connected on another browser or tab. Please close the other session first.',
+        error: 'This account is already connected elsewhere.',
         code: 'USER_ALREADY_CONNECTED'
       });
     }

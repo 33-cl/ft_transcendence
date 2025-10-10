@@ -215,7 +215,7 @@ document.addEventListener('componentsReady', () => {
             } else {
                 // Gérer spécifiquement l'erreur de connexion multiple
                 if (data?.code === 'USER_ALREADY_CONNECTED') {
-                    msg.textContent = 'This account is already connected on another browser or tab. Please close the other session first.';
+                    msg.textContent = 'This account is already connected elsewhere.';
                     msg.style.color = 'red';
                 } else {
                     msg.textContent = data?.error || 'Login failed.';
