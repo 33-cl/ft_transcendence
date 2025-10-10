@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 // Add import for socket authentication utilities
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
-import { validateLength, sanitizeUsername, validateId, checkRateLimit } from '../security.js';
+import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -117,6 +117,12 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
+      // SECURITY: Rate limiting for search to prevent abuse
+      const searchRateLimitKey = `search_${currentUserId}`;
+      if (!checkRateLimit(searchRateLimitKey, RATE_LIMITS.SEARCH_USERS.max, RATE_LIMITS.SEARCH_USERS.window)) {
+        return reply.status(429).send({ error: 'Too many search requests. Please wait a moment.' });
+      }
+
       const query = (request.query as any)?.q || '';
       
       // SECURITY: Validate query length to prevent DoS
@@ -196,6 +202,12 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       if (!currentUserId) {
         return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      // SECURITY: Rate limiting for friend requests to prevent spam
+      const friendRequestRateLimitKey = `friend_request_${currentUserId}`;
+      if (!checkRateLimit(friendRequestRateLimitKey, RATE_LIMITS.FRIEND_REQUEST.max, RATE_LIMITS.FRIEND_REQUEST.window)) {
+        return reply.status(429).send({ error: 'Too many friend requests. Please wait a moment.' });
       }
 
       // SECURITY: Validate ID parameter
@@ -307,6 +319,12 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
+      // SECURITY: Rate limiting for accepting friend requests
+      const acceptRateLimitKey = `friend_accept_${currentUserId}`;
+      if (!checkRateLimit(acceptRateLimitKey, RATE_LIMITS.FRIEND_ACCEPT.max, RATE_LIMITS.FRIEND_ACCEPT.window)) {
+        return reply.status(429).send({ error: 'Too many accept requests. Please wait a moment.' });
+      }
+
       // SECURITY: Validate requestId parameter
       const requestId = validateId((request.params as any).requestId);
       if (!requestId) {
@@ -361,6 +379,12 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
+      // SECURITY: Rate limiting for rejecting friend requests
+      const rejectRateLimitKey = `friend_reject_${currentUserId}`;
+      if (!checkRateLimit(rejectRateLimitKey, RATE_LIMITS.FRIEND_REJECT.max, RATE_LIMITS.FRIEND_REJECT.window)) {
+        return reply.status(429).send({ error: 'Too many reject requests. Please wait a moment.' });
+      }
+
       // SECURITY: Validate requestId parameter
       const requestId = validateId((request.params as any).requestId);
       if (!requestId) {
@@ -412,6 +436,12 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       if (!currentUserId) {
         return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      // SECURITY: Rate limiting for removing friends
+      const removeRateLimitKey = `friend_remove_${currentUserId}`;
+      if (!checkRateLimit(removeRateLimitKey, RATE_LIMITS.FRIEND_REMOVE.max, RATE_LIMITS.FRIEND_REMOVE.window)) {
+        return reply.status(429).send({ error: 'Too many remove requests. Please wait a moment.' });
       }
 
       // SECURITY: Validate ID parameter
