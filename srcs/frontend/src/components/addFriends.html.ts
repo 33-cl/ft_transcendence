@@ -132,6 +132,9 @@ export function initializeAddFriendSearch() {
                     const data = await response.json();
                     const users = data.users || [];
 
+                    // Import security utilities
+                    const { escapeHtml, sanitizeUrl } = await import('../utils/security.js');
+
                     if (users.length === 0) {
                         searchResults.innerHTML = '<div class="p-2.5 text-center text-gray-400">No users found</div>';
                     } else {
@@ -141,15 +144,20 @@ export function initializeAddFriendSearch() {
                                 ? { text: 'Sent', class: 'bg-gray-600 cursor-default', disabled: true }
                                 : { text: 'Add', class: 'bg-green-600 hover:bg-green-700', disabled: false };
                             
+                            // SECURITY: Escape all user-controlled content to prevent XSS
+                            const safeUserId = parseInt(user.id) || 0;
+                            const safeUsername = escapeHtml(user.username || 'Unknown');
+                            const safeAvatarUrl = sanitizeUrl(user.avatar_url || './img/default-pp.jpg');
+                            
                             return `
-                                <div class="search-result-item flex items-center p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700" data-user-id="${user.id}">
-                                    <img src="${user.avatar_url || './img/default-pp.jpg'}" 
-                                         alt="${user.username}" 
+                                <div class="search-result-item flex items-center p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700" data-user-id="${safeUserId}">
+                                    <img src="${safeAvatarUrl}" 
+                                         alt="${safeUsername}" 
                                          class="w-7.5 h-7.5 rounded-full mr-2.5"
                                          onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
-                                    <span class="flex-1">${user.username}</span>
+                                    <span class="flex-1">${safeUsername}</span>
                                     <button class="add-friend-btn ${buttonState.class} text-white border-none px-2 py-1 rounded text-xs" 
-                                            data-user-id="${user.id}"
+                                            data-user-id="${safeUserId}"
                                             ${buttonState.disabled ? 'disabled' : ''}>
                                         ${buttonState.text}
                                     </button>

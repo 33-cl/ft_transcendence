@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 // Add import for socket authentication utilities
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
+import { validateLength, sanitizeUsername, validateId, checkRateLimit } from '../security.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -117,11 +118,20 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       }
 
       const query = (request.query as any)?.q || '';
+      
+      // SECURITY: Validate query length to prevent DoS
+      if (!validateLength(query, 1, 100)) {
+        return reply.status(400).send({ error: 'Query too long or too short' });
+      }
+      
       if (!query || query.length < 2) {
         return { users: [] };
       }
 
-      console.log(`[SEARCH] Searching for users with query: ${query}`);
+      // SECURITY: Sanitize search query to prevent SQL injection (additional protection)
+      const sanitizedQuery = query.replace(/[<>]/g, '').trim();
+
+      console.log(`[SEARCH] Searching for users with query: ${sanitizedQuery}`);
 
       // Chercher des utilisateurs qui ne sont pas déjà amis et qui ne sont pas l'utilisateur actuel
       const searchResults = db.prepare(`
@@ -136,7 +146,7 @@ export default async function usersRoutes(fastify: FastifyInstance) {
           )
         ORDER BY u.username
         LIMIT 10
-      `).all(currentUserId, `%${query}%`, currentUserId) as any[];
+      `).all(currentUserId, `%${sanitizedQuery}%`, currentUserId) as any[];
 
       // Ajouter l'information si une demande d'ami a déjà été envoyée
       const usersWithRequestStatus = searchResults.map((user: any) => {
@@ -188,9 +198,14 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
-      const friendId = parseInt((request.params as any).id);
-      if (!friendId || friendId === currentUserId) {
+      // SECURITY: Validate ID parameter
+      const friendId = validateId((request.params as any).id);
+      if (!friendId) {
         return reply.status(400).send({ error: 'Invalid friend ID' });
+      }
+      
+      if (friendId === currentUserId) {
+        return reply.status(400).send({ error: 'Cannot add yourself as a friend' });
       }
 
       // Vérifier que l'utilisateur existe
@@ -292,7 +307,11 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
-      const requestId = parseInt((request.params as any).requestId);
+      // SECURITY: Validate requestId parameter
+      const requestId = validateId((request.params as any).requestId);
+      if (!requestId) {
+        return reply.status(400).send({ error: 'Invalid request ID' });
+      }
       
       // Récupérer la demande d'ami
       const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
@@ -342,7 +361,11 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
-      const requestId = parseInt((request.params as any).requestId);
+      // SECURITY: Validate requestId parameter
+      const requestId = validateId((request.params as any).requestId);
+      if (!requestId) {
+        return reply.status(400).send({ error: 'Invalid request ID' });
+      }
       
       // Récupérer la demande d'ami
       const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
@@ -391,9 +414,14 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
-      const friendId = parseInt((request.params as any).id);
-      if (!friendId || friendId === currentUserId) {
+      // SECURITY: Validate ID parameter
+      const friendId = validateId((request.params as any).id);
+      if (!friendId) {
         return reply.status(400).send({ error: 'Invalid friend ID' });
+      }
+      
+      if (friendId === currentUserId) {
+        return reply.status(400).send({ error: 'Cannot remove yourself' });
       }
 
       // Vérifier que la relation d'amitié existe (dans un sens ou l'autre)
@@ -431,6 +459,15 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       const limit = parseInt((request.query as any)?.limit) || 10;
       const offset = parseInt((request.query as any)?.offset) || 0;
       
+      // SECURITY: Validate limit and offset to prevent DoS
+      if (limit < 1 || limit > 100) {
+        return reply.status(400).send({ error: 'Limit must be between 1 and 100' });
+      }
+      
+      if (offset < 0 || offset > 10000) {
+        return reply.status(400).send({ error: 'Offset must be between 0 and 10000' });
+      }
+      
       const leaderboard = RankingSystem.getLeaderboard({ limit, offset });
       const stats = RankingSystem.getLeaderboardStats();
       
@@ -452,7 +489,8 @@ export default async function usersRoutes(fastify: FastifyInstance) {
   // Endpoint pour obtenir le rang d'un utilisateur
   fastify.get('/users/:id/rank', async (request, reply) => {
     try {
-      const userId = parseInt((request.params as any).id);
+      // SECURITY: Validate ID parameter
+      const userId = validateId((request.params as any).id);
       
       if (!userId) {
         return reply.status(400).send({ error: 'Invalid user ID' });
@@ -474,11 +512,17 @@ export default async function usersRoutes(fastify: FastifyInstance) {
   // Endpoint pour obtenir le classement autour d'un rang donné
   fastify.get('/users/leaderboard/around/:rank', async (request, reply) => {
     try {
-      const rank = parseInt((request.params as any).rank);
+      // SECURITY: Validate rank parameter
+      const rank = validateId((request.params as any).rank);
       const radius = parseInt((request.query as any)?.radius) || 2;
       
-      if (!rank || rank < 1) {
+      if (!rank) {
         return reply.status(400).send({ error: 'Invalid rank' });
+      }
+      
+      // SECURITY: Validate radius to prevent excessive data retrieval
+      if (radius < 1 || radius > 50) {
+        return reply.status(400).send({ error: 'Radius must be between 1 and 50' });
       }
       
       const leaderboard = RankingSystem.getLeaderboardAroundRank(rank, radius);

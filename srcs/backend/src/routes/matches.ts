@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { updateUserStats, getMatchHistory, getUserByUsername } from '../user.js';
+import { validateId, sanitizeUsername, validateLength } from '../security.js';
 
 export default async function matchesRoutes(fastify: FastifyInstance) {
   // Enregistrer un match en utilisant les usernames (pour test)
@@ -12,12 +13,24 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
       const loserScore = parseInt(body.loserScore);
       const matchType: string = body.matchType || 'online';
 
-      // Validation des données
-      if (!winnerUsername || !loserUsername || isNaN(winnerScore) || isNaN(loserScore)) {
-        return reply.status(400).send({ error: 'Missing required fields' });
+      // SECURITY: Validate usernames
+      if (!winnerUsername || !loserUsername) {
+        return reply.status(400).send({ error: 'Missing usernames' });
+      }
+      
+      if (!validateLength(winnerUsername, 1, 50) || !validateLength(loserUsername, 1, 50)) {
+        return reply.status(400).send({ error: 'Invalid username length' });
+      }
+      
+      const sanitizedWinner = sanitizeUsername(winnerUsername);
+      const sanitizedLoser = sanitizeUsername(loserUsername);
+      
+      // Validation des scores
+      if (isNaN(winnerScore) || isNaN(loserScore) || winnerScore < 0 || loserScore < 0) {
+        return reply.status(400).send({ error: 'Invalid scores' });
       }
 
-      if (winnerUsername === loserUsername) {
+      if (sanitizedWinner === sanitizedLoser) {
         return reply.status(400).send({ 
           error: 'Winner and loser cannot be the same user. Use different browsers or private mode to test with different accounts.' 
         });
@@ -28,15 +41,15 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
       }
 
       // Chercher les utilisateurs par username
-      const winnerUser = getUserByUsername(winnerUsername) as any;
-      const loserUser = getUserByUsername(loserUsername) as any;
+      const winnerUser = getUserByUsername(sanitizedWinner) as any;
+      const loserUser = getUserByUsername(sanitizedLoser) as any;
 
       if (!winnerUser) {
-        return reply.status(404).send({ error: `Winner user '${winnerUsername}' not found` });
+        return reply.status(404).send({ error: `Winner user '${sanitizedWinner}' not found` });
       }
 
       if (!loserUser) {
-        return reply.status(404).send({ error: `Loser user '${loserUsername}' not found` });
+        return reply.status(404).send({ error: `Loser user '${sanitizedLoser}' not found` });
       }
 
       // Enregistrer le match et mettre à jour les statistiques
@@ -45,8 +58,8 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
       return reply.send({ 
         success: true, 
         message: 'Match recorded successfully',
-        winner: winnerUsername,
-        loser: loserUsername,
+        winner: sanitizedWinner,
+        loser: sanitizedLoser,
         score: `${winnerScore}-${loserScore}`
       });
     } catch (error) {
@@ -58,15 +71,21 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
   fastify.post('/matches/record', async (request, reply) => {
     try {
       const body = request.body as any;
-      const winnerId = parseInt(body.winnerId);
-      const loserId = parseInt(body.loserId);
+      
+      // SECURITY: Validate IDs
+      const winnerId = validateId(body.winnerId);
+      const loserId = validateId(body.loserId);
       const winnerScore = parseInt(body.winnerScore);
       const loserScore = parseInt(body.loserScore);
       const matchType: string = body.matchType || 'online';
 
       // Validation des données
-      if (!winnerId || !loserId || isNaN(winnerScore) || isNaN(loserScore)) {
-        return reply.status(400).send({ error: 'Missing required fields' });
+      if (!winnerId || !loserId) {
+        return reply.status(400).send({ error: 'Invalid user IDs' });
+      }
+      
+      if (isNaN(winnerScore) || isNaN(loserScore) || winnerScore < 0 || loserScore < 0) {
+        return reply.status(400).send({ error: 'Invalid scores' });
       }
 
       if (winnerId === loserId) {
@@ -92,10 +111,21 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
     try {
       const params = request.params as any;
       const query = request.query as any;
-      const userId = params.userId;
+      
+      // SECURITY: Validate userId
+      const userId = validateId(params.userId);
+      if (!userId) {
+        return reply.status(400).send({ error: 'Invalid user ID' });
+      }
+      
       const limitNum = parseInt(query.limit || '10') || 10;
+      
+      // SECURITY: Limit the maximum number of matches returned
+      if (limitNum < 1 || limitNum > 100) {
+        return reply.status(400).send({ error: 'Limit must be between 1 and 100' });
+      }
 
-      const matches = getMatchHistory(userId, limitNum);
+      const matches = getMatchHistory(userId.toString(), limitNum);
       return reply.send({ matches });
     } catch (error) {
       console.error('Error fetching match history:', error);

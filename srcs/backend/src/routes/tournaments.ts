@@ -3,6 +3,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
+import { validateLength, sanitizeUsername, validateId } from '../security.js';
 
 // Typages minimaux pour les résultats SQL utilisés ici
 interface TournamentRow {
@@ -29,15 +30,19 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const body = request.body as CreateTournamentBody;
             const { name, maxPlayers = 8 } = body;
 
-            // Validation basique
+            // SECURITY: Validation du nom du tournoi
             if (!name || name.trim().length === 0) {
                 return reply.status(400).send({ error: 'Tournament name is required' });
             }
 
-            if (name.trim().length > 50) {
-                return reply.status(400).send({ error: 'Tournament name too long (max 50 characters)' });
+            if (!validateLength(name, 1, 50)) {
+                return reply.status(400).send({ error: 'Tournament name must be between 1 and 50 characters' });
             }
+            
+            // Sanitize le nom pour éviter les injections
+            const sanitizedName = name.replace(/<[^>]*>/g, '').trim();
 
+            // SECURITY: Validation stricte du nombre de joueurs
             if (![4, 6, 8].includes(maxPlayers)) {
                 return reply.status(400).send({ error: 'Max players must be 4, 6, or 8' });
             }
@@ -51,7 +56,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 VALUES (?, ?, 'registration', ?, 0)
             `);
 
-            stmt.run(tournamentId, name.trim(), maxPlayers);
+            stmt.run(tournamentId, sanitizedName, maxPlayers);
 
             // Indique l'URL de la ressource nouvellement créée
             reply.header('Location', `/tournaments/${tournamentId}`);
@@ -61,7 +66,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 SELECT * FROM tournaments WHERE id = ?
             `).get(tournamentId) as TournamentRow | undefined;
 
-            fastify.log.info(`Tournament created: ${name} (${tournamentId})`);
+            fastify.log.info(`Tournament created: ${sanitizedName} (${tournamentId})`);
 
             reply.status(201).send({
                 success: true,
@@ -96,8 +101,22 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const body = request.body as JoinTournamentBody;
             const { userId, alias } = body;
 
-            if (!userId || !alias || alias.trim().length === 0) {
-                return reply.status(400).send({ error: 'userId and alias are required' });
+            // SECURITY: Validate userId
+            const validUserId = validateId(userId);
+            if (!validUserId) {
+                return reply.status(400).send({ error: 'Invalid userId' });
+            }
+
+            // SECURITY: Validate alias
+            if (!alias || !validateLength(alias, 1, 30)) {
+                return reply.status(400).send({ error: 'Alias must be between 1 and 30 characters' });
+            }
+            
+            const sanitizedAlias = sanitizeUsername(alias);
+            
+            // SECURITY: Validate tournament ID format (UUID)
+            if (!id || id.length < 10 || id.length > 50) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
             // Vérifier que le tournoi existe et est en phase d'inscription
@@ -121,7 +140,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             `);
 
             try {
-                const result = insert.run(id, userId, alias.trim());
+                const result = insert.run(id, validUserId, sanitizedAlias);
 
                 // Incrémenter le compteur de participants
                 db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(id);
