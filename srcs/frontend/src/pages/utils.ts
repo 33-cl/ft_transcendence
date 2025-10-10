@@ -1,5 +1,6 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
+import { initSessionBroadcast } from '../utils/sessionBroadcast.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
@@ -142,12 +143,16 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
         stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('signIn');
+        // Initialize cross-tab session listener
+        initSessionBroadcast();
         // show('goToMain');
     }
     else if (pageName === 'signUp')
     {
         stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('signUp');
+        // Initialize cross-tab session listener
+        initSessionBroadcast();
         // show('goToMain');
     }
     else if (pageName === 'game') {
