@@ -143,7 +143,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
         stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('signIn');
-        // Initialize cross-tab session listener
+        // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
         // show('goToMain');
     }
@@ -151,7 +151,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
         stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
         await show('signUp');
-        // Initialize cross-tab session listener
+        // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
         // show('goToMain');
     }

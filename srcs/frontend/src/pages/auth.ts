@@ -1,6 +1,6 @@
 import { load } from './utils.js';
 import { DEV_CONFIG } from '../config/dev.js';
-import { broadcastSessionCreated, broadcastSessionDestroyed } from '../utils/sessionBroadcast.js';
+import { broadcastSessionCreated, broadcastSessionDestroyed, isSessionBlocked, markSessionActive, markSessionInactive } from '../utils/sessionBroadcast.js';
 
 function isValidEmailSimple(email: string): boolean {
     if (!email || typeof email !== 'string') return false;
@@ -20,15 +20,22 @@ export async function checkSessionOnce() {
             const data = await res.json();
             window.currentUser = data?.user || null;
             
+            // Mark this tab as having an active session
+            if (window.currentUser) {
+                markSessionActive();
+            }
+            
             // Force websocket reconnection after successful auth verification
             if (window.currentUser && (window as any).reconnectWebSocket) {
                 (window as any).reconnectWebSocket();
             }
         } else {
             window.currentUser = null;
+            markSessionInactive();
         }
     } catch {
         window.currentUser = null;
+        markSessionInactive();
     }
 }
 
@@ -88,6 +95,13 @@ document.addEventListener('componentsReady', () => {
         const confirm = getEl('confirmPassword')?.value || '';
         const msg = ensureMsgUp();
 
+        // Check if session is blocked by another tab
+        if (isSessionBlocked()) {
+            msg.textContent = 'Cannot register: A session is already active in another tab.';
+            msg.style.color = 'red';
+            return;
+        }
+
         if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
             msg.textContent = 'Invalid username (3-20, alphanumeric and underscore).';
             msg.style.color = 'orange';
@@ -122,6 +136,9 @@ document.addEventListener('componentsReady', () => {
                 msg.textContent = 'Account created and signed in successfully!';
                 msg.style.color = 'lightgreen';
                 (window as any).currentUser = data?.user || null;
+                
+                // Mark this tab as having an active session
+                markSessionActive();
                 
                 // Vérifier la session pour s'assurer que tout est correct
                 try { 
@@ -189,6 +206,13 @@ document.addEventListener('componentsReady', () => {
         const password = getEl('password')?.value || '';
         const msg = ensureMsg();
 
+        // Check if session is blocked by another tab
+        if (isSessionBlocked()) {
+            msg.textContent = 'Cannot login: A session is already active in another tab.';
+            msg.style.color = 'red';
+            return;
+        }
+
         if (!login || !password) {
             msg.textContent = 'Enter username/email and password.';
             msg.style.color = 'orange';
@@ -208,6 +232,9 @@ document.addEventListener('componentsReady', () => {
                 msg.style.color = 'lightgreen';
                 (window as any).currentUser = data?.user || null;
                 try { await fetch('/auth/me', { credentials: 'include' }); } catch {}
+                
+                // Mark this tab as having an active session
+                markSessionActive();
                 
                 // Broadcast session creation to other tabs
                 broadcastSessionCreated();
@@ -257,6 +284,8 @@ document.addEventListener('componentsReady', () => {
                 await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); 
             } catch {}
             window.currentUser = null;
+            // Mark this tab as not having a session
+            markSessionInactive();
             // Broadcast session destruction to other tabs
             broadcastSessionDestroyed();
         };
