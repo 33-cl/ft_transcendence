@@ -50,6 +50,7 @@ const COLLAPSE_RING_DURATION = 120; // Durée d'absorption des étoiles de l'ann
 const COLLAPSE_STARS_DURATION = 300; // Durée d'absorption des étoiles du background (frames)
 const COLLAPSE_SHOOTING_STARS_DURATION = 180; // Durée d'absorption des étoiles filantes (frames)
 const COLLAPSE_FINAL_DURATION = 180; // Durée avant le reset (frames)
+const COLLAPSE_WAIT_DURATION = 240; // Durée d'attente après l'aspiration avant le reset (frames) ~4 secondes
 const RESET_DURATION = 100; // Durée de la régénération des étoiles (frames)
 
 let mouseX = window.innerWidth / 2;
@@ -79,6 +80,7 @@ enum CollapseState {
   STARS_COLLAPSE,
   SHOOTING_STARS_COLLAPSE,
   FINAL_COLLAPSE,
+  WAITING, // État d'attente avant le reset
   RESETTING, // État pour la régénération
   RESET_COMPLETE // État final - plus d'actions possibles
 }
@@ -97,6 +99,7 @@ class Star {
   isCollapsingToBlackHole: boolean = false;
   collapseStartTime: number = 0;
   originalOpacity: number; // Sauvegarder l'opacité originale
+  originalSize: number; // Sauvegarder la taille originale
   
   // Nouvelles propriétés pour le reset
   isResetting: boolean = false;
@@ -113,6 +116,7 @@ class Star {
     this.size = Math.random() * (STAR_SIZE_RANGE[1] - STAR_SIZE_RANGE[0]) + STAR_SIZE_RANGE[0];
     this.opacity = Math.random() * (STAR_OPACITY_RANGE[1] - STAR_OPACITY_RANGE[0]) + STAR_OPACITY_RANGE[0];
     this.originalOpacity = this.opacity; // Sauvegarder l'opacité originale
+    this.originalSize = this.size; // Sauvegarder la taille originale
     this.speed = 0.0005 + Math.random() * 0.001;
     
     // Sauvegarder les propriétés originales pour le reset
@@ -145,6 +149,7 @@ class Star {
     this.x = blackHoleX;
     this.y = blackHoleY;
     this.opacity = 0;
+    this.size = this.originalSize * 0.2; // Commencer petit
     
     // Recalculer la position finale basée sur les propriétés originales
     this.targetX = this.centerX + Math.cos(this.originalAngle) * this.originalDistance;
@@ -166,6 +171,9 @@ class Star {
         // Restauration progressive de l'opacité
         this.opacity = this.originalOpacity * easeProgress;
         
+        // Restauration progressive de la taille
+        this.size = this.originalSize * 0.2 + (this.originalSize * 0.8) * easeProgress;
+        
         // Restauration progressive de l'angle et distance pour continuer l'orbite
         this.angle = this.originalAngle;
         this.distance = this.originalDistance;
@@ -173,6 +181,7 @@ class Star {
         if (resetProgress >= 1) {
           this.isResetting = false;
           this.attractionTimer = 0;
+          this.size = this.originalSize; // S'assurer que la taille est exactement restaurée
         }
       }
       return;
@@ -199,10 +208,16 @@ class Star {
           const speed = 0.05;
           this.x += dx * speed;
           this.y += dy * speed;
+          
+          // Réduire progressivement la taille en fonction de la distance au trou noir
+          // Plus on est proche, plus on est petit
+          const sizeRatio = Math.max(0.2, distanceToBlackHole / 1000); // Minimum 20% de la taille
+          this.size = this.originalSize * sizeRatio;
         } else {
-          // Étoile au centre du trou noir
+          // Étoile au centre du trou noir - taille minimale
           this.x = blackHoleX;
           this.y = blackHoleY;
+          this.size = this.originalSize * 0.2;
         }
         return; // Ne pas faire l'orbite normale
       }
@@ -369,12 +384,21 @@ class BlackHole {
           break;
           
         case CollapseState.FINAL_COLLAPSE:
-          // Faire disparaître progressivement le trou noir lui-même
-          this.blackHoleOpacity -= 1 / COLLAPSE_FINAL_DURATION;
+          // Le trou noir reste visible pendant cette phase
           if (this.collapseTimer >= COLLAPSE_FINAL_DURATION) {
             // Sauvegarder la position finale du trou noir
             this.finalBlackHoleX = this.x;
             this.finalBlackHoleY = this.y;
+            this.collapseState = CollapseState.WAITING;
+            this.collapseTimer = 0;
+            // Le trou noir reste visible pendant l'attente
+          }
+          break;
+          
+        case CollapseState.WAITING:
+          // Attendre 4 secondes avant de démarrer le reset
+          // Le trou noir reste visible pendant toute l'attente
+          if (this.collapseTimer >= COLLAPSE_WAIT_DURATION) {
             this.collapseState = CollapseState.RESETTING;
             this.collapseTimer = 0;
             this.isVisible = false;
