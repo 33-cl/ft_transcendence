@@ -5,6 +5,7 @@ declare var io: any;
 
 // Pre-import load to avoid dynamic imports in event handlers
 import { load } from '../pages/utils.js';
+import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../components/sessionDisconnected.html.js';
 
 // Fonction pour mettre à jour le statut d'un ami dans la friendlist
 function updateFriendStatus(username: string, status: 'online' | 'in-game' | 'offline') {
@@ -69,6 +70,26 @@ function updateFriendStatusIndicator(friendElement: HTMLElement, status: 'online
 
     // Ajouter l'indicateur à l'élément ami
     friendElement.appendChild(indicator);
+}
+
+// Fonction pour afficher l'overlay de session déconnectée
+function showSessionDisconnectedOverlay(message: string) {
+    // Éviter les doublons
+    const existingOverlay = document.getElementById('sessionDisconnectedOverlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    // Créer un élément div pour contenir l'overlay
+    const overlayDiv = document.createElement('div');
+    overlayDiv.id = 'sessionDisconnectedOverlay';
+    overlayDiv.innerHTML = sessionDisconnectedHTML(message);
+    
+    // Ajouter l'overlay au body
+    document.body.appendChild(overlayDiv);
+    
+    // Initialiser les event listeners pour le bouton
+    initializeSessionDisconnectedListeners();
 }
 
 // Connexion socket.io sur le même domaine
@@ -202,10 +223,22 @@ function setupGlobalSocketListeners() {
                 return;
             }
             
-            // Handle user already connected error - just ignore silently
+            // Handle user already connected error - show overlay instead of ignoring
             if (data && data.code === 'USER_ALREADY_CONNECTED') {
-                // Don't show popup, don't reload, just silently ignore
-                // console.log('User already connected elsewhere, ignoring connection attempt');
+                console.log('🚫 User already connected elsewhere, showing overlay');
+                
+                // Stop friend list auto-refresh to prevent background requests
+                if ((window as any).stopFriendListAutoRefresh) {
+                    (window as any).stopFriendListAutoRefresh();
+                }
+                
+                // Disconnect the socket
+                socket.disconnect();
+                
+                // Show the session disconnected overlay
+                showSessionDisconnectedOverlay(
+                    'This account is already active in another tab or browser. Please close the other session first.'
+                );
                 return;
             }
             
@@ -259,6 +292,7 @@ function reconnectWebSocket() {
         disconnectBasicListenerSet = false;
         pongListenerSet = false;
         errorListenerSet = false;
+        friendStatusListenerSet = false;
         
         // Re-setup global listeners
         setupGlobalSocketListeners();

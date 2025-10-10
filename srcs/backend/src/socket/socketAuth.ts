@@ -110,7 +110,7 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
           activeUsers.delete(user.id);
           recentDisconnections.delete(user.id);
         } else {
-          // No recent disconnect, this is a true multiple connection attempt
+          // Refuse the new connection - simpler and cleaner
           console.log(`[DEBUG] User ${user.id} multiple connection rejected - no recent disconnect or outside grace period`);
           if (recentDisconnectTime) {
             console.log(`[DEBUG] Last disconnect was ${now - recentDisconnectTime}ms ago (grace period: ${RECONNECTION_GRACE_PERIOD}ms)`);
