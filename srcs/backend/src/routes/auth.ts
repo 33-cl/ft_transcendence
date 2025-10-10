@@ -9,6 +9,7 @@ import { fileTypeFromBuffer } from 'file-type';//detecte le vrai type d un fichi
 import sharp from 'sharp';//lib de traitement d img securise (resize, reencode, strip metadata))
 import { v4 as uuidv4 } from 'uuid';//genere des id unique pour les noms de fichier securises
 import { pipeline } from 'stream/promises';
+import { sanitizeUsername, sanitizeEmail, validateLength, checkRateLimit } from '../security.js';
 
 // Utilitaire pour convertir un stream en buffer
 async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
@@ -185,11 +186,22 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/register', async (request, reply) => {
     const { email, username, password } = (request.body as RegisterBody) || {};
 
+    // SECURITY: Validate input lengths to prevent DoS
+    if (!validateLength(email || '', 1, 255) || 
+        !validateLength(username || '', 1, 50) || 
+        !validateLength(password || '', 1, 255)) {
+      return reply.code(400).send({ error: 'Input length validation failed.' });
+    }
+
+    // SECURITY: Sanitize inputs to prevent XSS
+    const sanitizedEmail = sanitizeEmail(email || '');
+    const sanitizedUsername = sanitizeUsername(username || '');
+
     // Validations
-    if (!email || !isValidEmail(email)) {
+    if (!sanitizedEmail || !isValidEmail(sanitizedEmail)) {
       return reply.code(400).send({ error: 'Invalid email.' });
     }
-    if (!username || !isValidUsername(username)) {
+    if (!sanitizedUsername || !isValidUsername(sanitizedUsername)) {
       return reply.code(400).send({ error: 'Invalid username (3-20, alphanumeric and underscore).' });
     }
     if (!password || !isValidPassword(password)) {
@@ -201,7 +213,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const stmt = db.prepare(
         'INSERT INTO users (email, username, password_hash, avatar_url) VALUES (?, ?, ?, ?)' 
       );
-      const info = stmt.run(email.trim().toLowerCase(), username.trim(), password_hash, null);
+      const info = stmt.run(sanitizedEmail, sanitizedUsername, password_hash, null);
 
       const created = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
 
@@ -248,13 +260,27 @@ export default async function authRoutes(fastify: FastifyInstance) {
     const login: string = (body.login ?? body.username ?? body.email ?? '').toString().trim();
     const password: string = (body.password ?? '').toString();
 
+    // SECURITY: Rate limiting to prevent brute force attacks
+    const clientIp = request.ip;
+    if (!checkRateLimit(`login:${clientIp}`, 5, 60 * 1000)) {
+      return reply.code(429).send({ error: 'Too many login attempts. Please try again later.' });
+    }
+
+    // SECURITY: Validate input lengths
+    if (!validateLength(login, 1, 255) || !validateLength(password, 1, 255)) {
+      return reply.code(400).send({ error: 'Input length validation failed.' });
+    }
+
     if (!login || !password) return reply.code(400).send({ error: 'Missing credentials.' });
 
+    // SECURITY: Sanitize login input
+    const sanitizedLogin = login.toLowerCase().replace(/<[^>]*>/g, '');
+
     // Récupérer l'utilisateur par email (lowercased) ou username
-    const byEmail = isValidEmail(login);
+    const byEmail = isValidEmail(sanitizedLogin);
     const user = (byEmail
-      ? db.prepare('SELECT * FROM users WHERE email = ?').get(login.toLowerCase())
-      : db.prepare('SELECT * FROM users WHERE username = ?').get(login)) as DbUser | undefined;
+      ? db.prepare('SELECT * FROM users WHERE email = ?').get(sanitizedLogin)
+      : db.prepare('SELECT * FROM users WHERE username = ?').get(sanitizedLogin)) as DbUser | undefined;
 
     if (!user || !verifyPassword(password, user.password_hash)) {
       return reply.code(401).send({ error: 'Invalid credentials.' });
@@ -386,12 +412,31 @@ export default async function authRoutes(fastify: FastifyInstance) {
       currentPassword?: string;
       newPassword?: string;
     }) || {};
+    
+    // SECURITY: Validate input lengths
+    if (username && !validateLength(username, 1, 50)) {
+      return reply.code(400).send({ error: 'Username length invalid' });
+    }
+    if (email && !validateLength(email, 1, 255)) {
+      return reply.code(400).send({ error: 'Email length invalid' });
+    }
+    if (currentPassword && !validateLength(currentPassword, 1, 255)) {
+      return reply.code(400).send({ error: 'Password length invalid' });
+    }
+    if (newPassword && !validateLength(newPassword, 1, 255)) {
+      return reply.code(400).send({ error: 'Password length invalid' });
+    }
+    
+    // SECURITY: Sanitize inputs
+    const sanitizedUsername = username ? sanitizeUsername(username) : undefined;
+    const sanitizedEmail = email ? sanitizeEmail(email) : undefined;
+    
     // Validation des données
-    if (username !== undefined && !isValidUsername(username)) {
+    if (sanitizedUsername !== undefined && !isValidUsername(sanitizedUsername)) {
       return reply.code(400).send({ error: 'Invalid username (3-20, alphanumeric and underscore)' });
     }
 
-    if (email !== undefined && !isValidEmail(email)) {
+    if (sanitizedEmail !== undefined && !isValidEmail(sanitizedEmail)) {
       return reply.code(400).send({ error: 'Invalid email format' });
     }
 

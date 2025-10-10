@@ -6,6 +6,7 @@ import { rooms, roomExists, addPlayerToRoom, Room, getNextRoomName } from '../so
 import { createInitialGameState } from '../../game/gameState.js';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
+import { validateLength, sanitizeUsername, validateRoomName, validateMaxPlayers, checkRateLimit } from '../security.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -27,13 +28,27 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 	// Route POST /rooms : créer une nouvelle room
 	fastify.post('/rooms', async (request, reply) => 
 	{
+		// SECURITY: Rate limiting to prevent room spam
+		const clientIp = request.ip;
+		if (!checkRateLimit(`room-creation:${clientIp}`, 10, 60 * 1000)) {
+			return reply.status(429).send({ error: 'Too many rooms created. Please try again later.' });
+		}
+
 		const { maxPlayers, roomPrefix } = request.body as { maxPlayers: number; roomPrefix?: string };
-		if (!maxPlayers || typeof maxPlayers !== 'number')
-			return reply.status(400).send({ error: 'maxPlayers needed' });
+		
+		// SECURITY: Validate maxPlayers
+		if (!validateMaxPlayers(maxPlayers)) {
+			return reply.status(400).send({ error: 'Invalid maxPlayers (must be 2 or 4)' });
+		}
+		
+		// SECURITY: Validate and sanitize room prefix
+		const prefix = roomPrefix || 'room';
+		if (!validateRoomName(prefix)) {
+			return reply.status(400).send({ error: 'Invalid room prefix' });
+		}
 
 		// Génère un nom unique pour la room, incrémental et global
 		// AJOUT: Utilise le préfixe pour différencier les rooms locales et multiplayer
-		const prefix = roomPrefix || 'room';
 		let roomName;
 		do {
 			roomName = `${prefix}-${getNextRoomName()}`;
@@ -77,6 +92,12 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 	fastify.delete('/rooms/:roomName', async (request, reply) =>
 	{
 		const { roomName } = request.params as { roomName: string };
+		
+		// SECURITY: Validate room name
+		if (!validateRoomName(roomName)) {
+			return reply.status(400).send({ error: 'Invalid room name' });
+		}
+		
 		if (!rooms[roomName])
 			return reply.status(404).send({ error: 'Room not found' });
 		delete rooms[roomName];
@@ -87,6 +108,13 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 	fastify.get('/rooms/friend/:username', async (request, reply) => {
 		try {
 			const { username } = request.params as { username: string };
+			
+			// SECURITY: Validate and sanitize username
+			if (!validateLength(username, 1, 50)) {
+				return reply.status(400).send({ error: 'Invalid username length' });
+			}
+			
+			const sanitizedUsername = sanitizeUsername(username);
 			
 			// Vérifier l'authentification via cookies (comme les autres routes)
 			const cookies = parseCookies(request.headers['cookie'] as string | undefined);
@@ -109,7 +137,7 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 			}
 
 			// Vérifier que l'utilisateur target existe et est ami
-			const targetUser = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+			const targetUser = db.prepare('SELECT id FROM users WHERE username = ?').get(sanitizedUsername);
 			if (!targetUser) {
 				return reply.status(404).send({ error: 'User not found' });
 			}

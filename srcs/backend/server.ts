@@ -13,6 +13,7 @@ import usersRoutes from './src/routes/users.js'; // Route /users (API REST)
 import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
 import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
+import { validateId } from './src/security.js'; // Import security helpers
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
 import { getUserById } from './src/user.js'; // Importe le getter getUserById
@@ -87,7 +88,14 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Route GET pour récupérer les infos d'un utilisateur
     app.get('/profile/:id', async (request, reply) => {
       const { id } = request.params as { id: string };
-      const user = getUserById(id);
+      
+      // SECURITY: Validate ID parameter
+      const userId = validateId(id);
+      if (!userId) {
+        return reply.code(400).send({ error: 'Invalid user ID' });
+      }
+      
+      const user = getUserById(userId.toString());
       if (!user) {
         reply.code(404).send({ error: 'Utilisateur non trouvé' });
       } else {
