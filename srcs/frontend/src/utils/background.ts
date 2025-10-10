@@ -178,32 +178,38 @@ class Star {
       return;
     }
 
-    if (this.isCollapsingToBlackHole && blackHoleX !== undefined && blackHoleY !== undefined) {
-      const currentTime = Date.now();
-      if (currentTime >= this.collapseStartTime) {
-        // Mouvement vers le trou noir
-        const dx = blackHoleX - this.x;
-        const dy = blackHoleY - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance > 5) {
-          this.x += dx * 0.03;
-          this.y += dy * 0.03;
-          // Faire disparaître l'étoile progressivement
-          this.opacity *= 0.98;
-        } else {
-          // Étoile absorbée - elle reste invisible temporairement
-          this.opacity = 0;
-        }
-      }
-      return;
-    }
-
+    // Toujours faire tourner l'angle orbital
     this.angle += this.speed;
 
+    // Calculer la position orbitale normale
     const orbitX = this.centerX + Math.cos(this.angle) * this.distance;
     const orbitY = this.centerY + Math.sin(this.angle) * this.distance;
 
+    // Vérifier si l'étoile est en mode collapse et si le délai est passé
+    if (this.isCollapsingToBlackHole && blackHoleX !== undefined && blackHoleY !== undefined) {
+      const currentTime = Date.now();
+      if (currentTime >= this.collapseStartTime) {
+        // Le délai est passé, attraction directe vers le trou noir
+        const dx = blackHoleX - this.x;
+        const dy = blackHoleY - this.y;
+        const distanceToBlackHole = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distanceToBlackHole > 1) {
+          // Se déplacer directement vers le trou noir
+          const speed = 0.05;
+          this.x += dx * speed;
+          this.y += dy * speed;
+        } else {
+          // Étoile au centre du trou noir
+          this.x = blackHoleX;
+          this.y = blackHoleY;
+        }
+        return; // Ne pas faire l'orbite normale
+      }
+      // Si le délai n'est pas encore passé, continuer l'orbite normale (pas de return)
+    }
+
+    // Comportement normal (attraction souris ou orbite)
     if (this.attractionTimer > 0) {
       // Attirée vers la souris
       this.x += (this.targetX - this.x) * (EASE * 0.5);
@@ -219,7 +225,8 @@ class Star {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    if (this.opacity <= 0) return;
+    // Ne pas dessiner si en reset et pas encore visible
+    if (this.isResetting && this.opacity <= 0) return;
     
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -230,7 +237,9 @@ class Star {
       color = currentHoverColor;
     }
     
-    ctx.fillStyle = `rgba(${color}, ${this.opacity})`;
+    // Utiliser l'opacité originale quand pas en reset
+    const displayOpacity = this.isResetting ? this.opacity : this.originalOpacity;
+    ctx.fillStyle = `rgba(${color}, ${displayOpacity})`;
     ctx.fill();
   }
 }
