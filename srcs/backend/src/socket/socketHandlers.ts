@@ -342,16 +342,19 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         if (!roomName && typeof maxPlayers === 'number')
         {
             roomName = null;
-            // IMPORTANT: Pour les jeux locaux, on cherche/crée des rooms différentes
-            // Cela évite que les rooms locales interfèrent avec le multiplayer
-            for (const [name, room] of Object.entries(rooms))
-            {
-                if (room.maxPlayers === maxPlayers && 
-                    room.players.length < maxPlayers &&
-                    room.isLocalGame === isLocalGame)
+            // IMPORTANT: Pour les jeux locaux, on NE CHERCHE PAS de room existante
+            // Chaque jeu local doit avoir sa propre room unique (un jeu local = un onglet)
+            // Seulement pour le multiplayer, on cherche des rooms disponibles
+            if (!isLocalGame) {
+                for (const [name, room] of Object.entries(rooms))
                 {
-                    roomName = name;
-                    break;
+                    if (room.maxPlayers === maxPlayers && 
+                        room.players.length < maxPlayers &&
+                        room.isLocalGame === false)
+                    {
+                        roomName = name;
+                        break;
+                    }
                 }
             }
             
