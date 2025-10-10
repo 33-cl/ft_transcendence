@@ -45,6 +45,33 @@ export function validateLength(input: string, minLength: number, maxLength: numb
 }
 
 /**
+ * Rate limiting configurations
+ * Adapted limits based on action sensitivity and normal user behavior
+ */
+export const RATE_LIMITS = {
+    // 🔴 CRITICAL - Very strict limits for security-sensitive actions
+    LOGIN: { max: 5, window: 60000 },              // 5 attempts per minute - brute-force protection
+    REGISTER: { max: 3, window: 60000 },           // 3 accounts per minute - spam prevention
+    TWO_FA: { max: 3, window: 60000 },             // 3 attempts per minute - 2FA verification
+    PASSWORD_RESET: { max: 3, window: 60000 },     // 3 resets per minute - abuse prevention
+    
+    // 🟡 MODERATE - Balanced limits for social actions
+    FRIEND_REQUEST: { max: 10, window: 60000 },    // 10 requests per minute - spam prevention
+    FRIEND_ACCEPT: { max: 20, window: 60000 },     // 20 accepts per minute - batch accepting OK
+    FRIEND_REJECT: { max: 20, window: 60000 },     // 20 rejects per minute - batch rejecting OK
+    FRIEND_REMOVE: { max: 10, window: 60000 },     // 10 removals per minute - prevent mass unfriend
+    SEARCH_USERS: { max: 30, window: 60000 },      // 30 searches per minute - typing queries OK
+    UPLOAD_AVATAR: { max: 5, window: 60000 },      // 5 uploads per minute - bandwidth protection
+    
+    // 🟢 PERMISSIVE - Higher limits for read-only or frequent actions
+    GET_FRIENDS: { max: 60, window: 60000 },       // 60 per minute - auto-refresh OK
+    GET_STATUS: { max: 60, window: 60000 },        // 60 per minute - real-time status OK
+    GET_LEADERBOARD: { max: 30, window: 60000 },   // 30 per minute - dashboard views OK
+    GET_PROFILE: { max: 40, window: 60000 },       // 40 per minute - browsing profiles OK
+    CHAT_MESSAGE: { max: 60, window: 60000 },      // 60 messages per minute - active chat OK
+} as const;
+
+/**
  * Rate limiting helper: check if an action is allowed based on timestamp
  * Returns true if action is allowed, false if rate limited
  */
