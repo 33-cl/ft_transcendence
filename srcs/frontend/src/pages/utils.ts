@@ -39,6 +39,10 @@ async function show(pageName: keyof typeof components, data?: any)
                 // Nettoyer après utilisation
                 (window as any).selectedProfileUser = null;
             } 
+            // Cas spécial pour gameFinished - passer les données de fin de jeu
+            else if (pageName === 'gameFinished') {
+                htmlResult = component.html(data);
+            }
             // Cas spécial pour spectatorGameFinished - passer les données de fin de jeu
             else if (pageName === 'spectatorGameFinished') {
                 htmlResult = component.html(data);
@@ -202,7 +206,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         }, 100);
     }
     else if (pageName === 'gameFinished')
-        await show('gameFinished');
+        await show('gameFinished', data);
     else if (pageName === 'spectatorGameFinished')
         await show('spectatorGameFinished', data);
     else

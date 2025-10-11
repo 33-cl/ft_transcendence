@@ -45,7 +45,7 @@ export function addPlayerToRoom(roomName: string, socketId: string): boolean
 }
 
 // Retirer le joueur de sa room
-export function removePlayerFromRoom(socketId: string)
+export function removePlayerFromRoom(socketId: string): void
 {
 	let playerRoom: string | null = null;
 	for (const roomName in rooms)
@@ -59,6 +59,8 @@ export function removePlayerFromRoom(socketId: string)
 	if (playerRoom && rooms[playerRoom])
 	{
 		const room = rooms[playerRoom];
+		
+		// Remove the player
 		room.players = room.players.filter(id => id !== socketId);
 		
 		// Clean up username mapping when player leaves
