@@ -258,132 +258,112 @@
         @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
     }
     
-    /* Game Finished Page - Écran de fin de jeu avec overlay */
-    .game-finished-overlay {
+    /* Session Disconnected Overlay - Style sobre et minimaliste */
+    .session-overlay {
         @apply fixed inset-0 z-[9999];
         @apply flex items-center justify-center;
-        @apply bg-black bg-opacity-90;
-        animation: fadeIn 0.5s ease-in-out;
+        @apply bg-black bg-opacity-95;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .session-message-box {
+        @apply flex flex-col items-center justify-center;
+        @apply p-12;
+        @apply bg-black;
+        @apply border-2 border-white;
+        @apply max-w-2xl;
+        text-align: center;
+    }
+
+    .session-title {
+        @apply text-3xl font-bold mb-6 text-white;
+        letter-spacing: 0.2em;
+    }
+
+    .session-description {
+        @apply text-lg text-gray-300;
+        line-height: 1.8;
     }
 
     @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
     }
+    
+    /* Game Finished Overlay - Style sobre inspiré de session-overlay */
+    .game-finished-overlay {
+        @apply fixed inset-0 z-[60];
+        @apply flex items-center justify-center;
+        @apply bg-black bg-opacity-95;
+        animation: fadeIn 0.3s ease-in-out;
+    }
 
     .game-finished-box {
         @apply flex flex-col items-center justify-center;
-        @apply p-12 rounded-2xl;
-        @apply bg-gradient-to-br from-gray-900 to-black;
-        @apply border-4 border-amber-500;
-        @apply shadow-2xl;
-        max-width: 800px;
-        animation: slideUp 0.5s ease-out;
-    }
-
-    @keyframes slideUp {
-        from { 
-            transform: translateY(50px);
-            opacity: 0;
-        }
-        to { 
-            transform: translateY(0);
-            opacity: 1;
-        }
+        @apply p-12;
+        @apply bg-black;
+        @apply border-2 border-white;
+        @apply max-w-2xl;
+        text-align: center;
     }
 
     .game-finished-title {
-        @apply text-6xl font-bold mb-8 text-amber-500;
-        text-shadow: 0 0 20px rgba(245, 158, 11, 0.8);
-        animation: pulse 2s ease-in-out infinite;
+        @apply text-3xl font-bold mb-8 text-white;
+        letter-spacing: 0.2em;
     }
 
     .game-finished-forfeit-msg {
-        @apply text-2xl mb-8 text-red-400 font-semibold text-center;
+        @apply text-lg mb-6 text-red-400 text-center;
         @apply italic;
     }
 
     .game-finished-scores {
-        @apply flex flex-row items-center justify-center gap-12 mb-12;
+        @apply flex flex-row items-center justify-center gap-16 mb-8;
         @apply w-full;
     }
 
     .game-finished-player {
         @apply flex flex-col items-center justify-center;
-        @apply p-8 rounded-xl;
-        @apply border-2 min-w-[250px];
-    }
-
-    .game-finished-player.winner {
-        @apply border-green-400 bg-green-900 bg-opacity-20;
-        box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
-    }
-
-    .game-finished-player.loser {
-        @apply border-red-400 bg-red-900 bg-opacity-20;
-        box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+        @apply min-w-[200px];
     }
 
     .game-finished-player .player-label {
-        @apply text-xl font-bold mb-3 uppercase tracking-wider;
+        @apply text-sm font-bold mb-2 uppercase tracking-widest;
         @apply text-gray-400;
     }
 
     .game-finished-player.winner .player-label {
-        @apply text-green-300;
-    }
-
-    .game-finished-player.loser .player-label {
-        @apply text-red-300;
+        @apply text-white;
     }
 
     .game-finished-player .player-name {
-        @apply text-3xl font-bold mb-4;
-    }
-
-    .game-finished-player.winner .player-name {
-        @apply text-green-400;
-    }
-
-    .game-finished-player.loser .player-name {
-        @apply text-red-400;
+        @apply text-2xl font-bold mb-4 text-white;
     }
 
     .game-finished-player .player-score {
-        @apply text-6xl font-bold;
-    }
-
-    .game-finished-player.winner .player-score {
-        @apply text-green-300;
-        text-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
-    }
-
-    .game-finished-player.loser .player-score {
-        @apply text-red-300;
-        text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+        @apply text-5xl font-bold text-white;
     }
 
     .game-finished-vs {
-        @apply text-5xl font-bold text-gray-400;
+        @apply text-3xl font-bold text-gray-500;
         @apply px-4;
     }
 
     .game-finished-actions {
-        @apply flex flex-row gap-6 mt-4;
+        @apply flex flex-row gap-6 mt-6;
     }
 
     .game-finished-btn {
-        @apply px-8 py-4 text-xl font-bold;
-        @apply bg-gray-800 text-white;
-        @apply border-2 border-white rounded-lg;
-        @apply hover:bg-amber-500 hover:border-amber-500;
-        @apply transition-all duration-300;
+        @apply px-8 py-3 text-base font-bold;
+        @apply bg-black text-white;
+        @apply border-2 border-white;
+        @apply transition-all duration-200;
         @apply cursor-pointer;
+        letter-spacing: 0.1em;
     }
 
     .game-finished-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+        @apply bg-white text-black;
     }
 
     .game-finished-btn:active {
