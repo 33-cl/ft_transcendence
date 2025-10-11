@@ -91,8 +91,8 @@ function isValidEmail(email: string): boolean {
 }
 
 function isValidUsername(username: string): boolean {
-  // 3-20 chars, lettres/chiffres/underscore uniquement
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  // 3-10 chars, lettres/chiffres/underscore uniquement
+  return /^[a-zA-Z0-9_]{3,10}$/.test(username);
 }
 
 function isValidPassword(password: string): boolean {
@@ -202,7 +202,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid email.' });
     }
     if (!sanitizedUsername || !isValidUsername(sanitizedUsername)) {
-      return reply.code(400).send({ error: 'Invalid username (3-20, alphanumeric and underscore).' });
+      return reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore).' });
     }
     if (!password || !isValidPassword(password)) {
       return reply.code(400).send({ error: 'Password too short (min 8 characters).' });
@@ -433,7 +433,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     
     // Validation des données
     if (sanitizedUsername !== undefined && !isValidUsername(sanitizedUsername)) {
-      return reply.code(400).send({ error: 'Invalid username (3-20, alphanumeric and underscore)' });
+      return reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore)' });
     }
 
     if (sanitizedEmail !== undefined && !isValidEmail(sanitizedEmail)) {
