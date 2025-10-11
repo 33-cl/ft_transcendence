@@ -258,267 +258,351 @@
         @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
     }
     
-    /* Game Finished Page */
-    #game-finished-page {
-        @apply flex flex-col items-center justify-center w-full h-full p-8;
-    }
-
-    #game-finished-title {
-        @apply text-6xl font-bold mb-8 text-amber-500;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    }
-
-    #forfeit-message {
-        @apply text-2xl mb-8 text-red-400 font-semibold text-center;
-    }
-
-    #game-results {
-        @apply flex flex-row items-center justify-center gap-12 mb-12 w-full max-w-4xl;
-    }
-
-    .result-section {
-        @apply flex flex-col items-center justify-center p-8 rounded-lg flex-1;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .winner-section {
-        border-color: rgba(34, 197, 94, 0.5);
-        background: rgba(34, 197, 94, 0.1);
-    }
-
-    .loser-section {
-        border-color: rgba(239, 68, 68, 0.5);
-        background: rgba(239, 68, 68, 0.1);
-    }
-
-    .result-section h2 {
-        @apply text-3xl mb-4;
-    }
-
-    .result-section .player-name {
-        @apply text-4xl font-bold mb-2;
-    }
-
-    .winner-section .player-name {
-        @apply text-green-400;
-    }
-
-    .loser-section .player-name {
-        @apply text-red-400;
-    }
-
-    .result-section .player-score {
-        @apply text-6xl font-bold;
-    }
-
-    .winner-section .player-score {
-        @apply text-green-300;
-    }
-
-    .loser-section .player-score {
-        @apply text-red-300;
-    }
-
-    #vs-divider {
-        @apply text-5xl font-bold text-gray-400;
-    }
-
-    #game-finished-buttons {
-        @apply flex flex-row gap-6 mt-8;
-    }
-    
-    /* Boutons désactivés */
-    button:disabled {
-        @apply opacity-50 cursor-not-allowed;
-    }
-    
-    button:disabled:hover {
-        @apply bg-black text-white; /* Annule les effets de hover quand désactivé */
-    }
-
-    /* Session Disconnected Overlay */
-    /* Override .page styles for session disconnected overlay */
-    #sessionDisconnected.page {
-        @apply static transform-none p-0;
-        @apply w-full h-full min-h-0;
-    }
-    
-    .session-overlay {
-        @apply fixed top-0 left-0 w-screen h-screen;
-        @apply flex items-center justify-center;
-        @apply bg-black bg-opacity-85 z-[10000];
-    }
-
-    .session-message-box {
-        @apply bg-black border border-white;
-        @apply px-12 py-10 max-w-md text-center;
-    }
-
-    .session-title {
-        @apply text-white text-lg font-normal tracking-wider;
-        @apply mb-5;
-    }
-
-    .session-description {
-        @apply text-gray-400 text-sm leading-relaxed;
-        @apply mb-8;
-    }
-
-    .session-reload-btn {
-        @apply bg-transparent text-white border border-white;
-        @apply px-6 py-2 text-sm tracking-wider cursor-pointer;
-        @apply transition-all duration-200;
-    }
-
-    .session-reload-btn:hover {
-        @apply bg-white text-black;
-    }
-
-    /* Game Finished Overlay - Style minimaliste inspiré de session-overlay */
-    #gameFinished.page {
-        @apply static transform-none p-0;
-        @apply w-full h-full min-h-0;
-    }
-
+    /* Game Finished Page - Écran de fin de jeu avec overlay */
     .game-finished-overlay {
-        @apply fixed top-0 left-0 w-screen h-screen;
+        @apply fixed inset-0 z-[9999];
         @apply flex items-center justify-center;
-        @apply bg-black bg-opacity-85 z-[9999];
+        @apply bg-black bg-opacity-90;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
     .game-finished-box {
-        @apply bg-black border border-white;
-        @apply px-12 py-10 max-w-2xl text-center;
+        @apply flex flex-col items-center justify-center;
+        @apply p-12 rounded-2xl;
+        @apply bg-gradient-to-br from-gray-900 to-black;
+        @apply border-4 border-amber-500;
+        @apply shadow-2xl;
+        max-width: 800px;
+        animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { 
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to { 
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
 
     .game-finished-title {
-        @apply text-white text-2xl font-normal tracking-wider;
-        @apply mb-6;
+        @apply text-6xl font-bold mb-8 text-amber-500;
+        text-shadow: 0 0 20px rgba(245, 158, 11, 0.8);
+        animation: pulse 2s ease-in-out infinite;
     }
 
     .game-finished-forfeit-msg {
-        @apply text-gray-400 text-sm leading-relaxed;
-        @apply mb-8;
+        @apply text-2xl mb-8 text-red-400 font-semibold text-center;
+        @apply italic;
     }
 
     .game-finished-scores {
-        @apply flex items-center justify-center gap-8 mb-10;
+        @apply flex flex-row items-center justify-center gap-12 mb-12;
+        @apply w-full;
     }
 
     .game-finished-player {
-        @apply flex flex-col items-center gap-2;
+        @apply flex flex-col items-center justify-center;
+        @apply p-8 rounded-xl;
+        @apply border-2 min-w-[250px];
     }
 
-    .player-label {
-        @apply text-gray-500 text-xs tracking-widest uppercase;
+    .game-finished-player.winner {
+        @apply border-green-400 bg-green-900 bg-opacity-20;
+        box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
     }
 
-    .player-name {
-        @apply text-white text-lg font-normal;
+    .game-finished-player.loser {
+        @apply border-red-400 bg-red-900 bg-opacity-20;
+        box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
     }
 
-    .player-score {
-        @apply text-white text-3xl font-light;
+    .game-finished-player .player-label {
+        @apply text-xl font-bold mb-3 uppercase tracking-wider;
+        @apply text-gray-400;
+    }
+
+    .game-finished-player.winner .player-label {
+        @apply text-green-300;
+    }
+
+    .game-finished-player.loser .player-label {
+        @apply text-red-300;
+    }
+
+    .game-finished-player .player-name {
+        @apply text-3xl font-bold mb-4;
+    }
+
+    .game-finished-player.winner .player-name {
+        @apply text-green-400;
+    }
+
+    .game-finished-player.loser .player-name {
+        @apply text-red-400;
+    }
+
+    .game-finished-player .player-score {
+        @apply text-6xl font-bold;
     }
 
     .game-finished-player.winner .player-score {
-        @apply text-green-400;
+        @apply text-green-300;
+        text-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
     }
 
     .game-finished-player.loser .player-score {
-        @apply text-red-400;
+        @apply text-red-300;
+        text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
     }
 
     .game-finished-vs {
-        @apply text-gray-600 text-sm tracking-wider;
+        @apply text-5xl font-bold text-gray-400;
+        @apply px-4;
     }
 
     .game-finished-actions {
-        @apply flex items-center justify-center gap-4;
+        @apply flex flex-row gap-6 mt-4;
     }
 
     .game-finished-btn {
-        @apply bg-transparent text-white border border-white;
-        @apply px-6 py-2 text-sm tracking-wider cursor-pointer;
-        @apply transition-all duration-200;
+        @apply px-8 py-4 text-xl font-bold;
+        @apply bg-gray-800 text-white;
+        @apply border-2 border-white rounded-lg;
+        @apply hover:bg-amber-500 hover:border-amber-500;
+        @apply transition-all duration-300;
+        @apply cursor-pointer;
     }
 
     .game-finished-btn:hover {
-        @apply bg-white text-black;
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
     }
 
-    /* Spectator Game Finished Overlay - Same style as gameFinished */
-    #spectatorGameFinished.page {
-        @apply static transform-none p-0;
-        @apply w-full h-full min-h-0;
+    .game-finished-btn:active {
+        transform: scale(0.98);
+    }
+    
+    #map {
+        @apply border-2 border-white rounded-md; /* Map borders and corners */
     }
 
-    .spectator-game-finished-overlay {
-        @apply fixed top-0 left-0 w-screen h-screen;
-        @apply flex items-center justify-center;
-        @apply bg-black bg-opacity-85 z-[9999];
+    /* Profile page styling */
+    .profile-container {
+        @apply flex flex-col items-center justify-start w-full h-full pt-16;
     }
 
-    .spectator-game-finished-box {
-        @apply bg-black border border-white;
-        @apply px-12 py-10 max-w-2xl text-center;
+    .username-title {
+        @apply text-5xl mb-12;
     }
 
-    .spectator-game-finished-title {
-        @apply text-white text-2xl font-normal tracking-wider;
-        @apply mb-6;
+    .profile-stats {
+        @apply flex flex-row items-start justify-center gap-16;
     }
 
-    .spectator-game-finished-forfeit-msg {
-        @apply text-gray-400 text-sm leading-relaxed;
-        @apply mb-8;
+    .avatar-container {
+        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden bg-gray-800;
     }
 
-    .spectator-game-finished-scores {
-        @apply flex items-center justify-center gap-8 mb-10;
+    .avatar-container img {
+        @apply w-64 h-64 rounded-md relative;
+    }
+    
+    /* GIFs rectangulaires : utiliser object-cover pour éviter la déformation */
+    .avatar-container img[src*=".gif"] {
+        @apply object-cover;
     }
 
-    .spectator-game-finished-player {
-        @apply flex flex-col items-center gap-2;
+    .stats-container {
+        @apply flex flex-col items-start text-left;
     }
 
-    .spectator-game-finished-player .player-label {
-        @apply text-gray-500 text-xs tracking-widest uppercase;
+    .stat-row {
+        @apply text-4xl flex flex-row items-center justify-between w-full mb-6;
     }
 
-    .spectator-game-finished-player .player-name {
-        @apply text-white text-lg font-normal;
+    .stat-label {
+        @apply my-0 mr-16;
     }
 
-    .spectator-game-finished-player .player-score {
-        @apply text-white text-3xl font-light;
+    .title-value {
+        @apply text-amber-500;
     }
 
-    .spectator-game-finished-player.winner .player-score {
-        @apply text-green-400;
+    .match-history {
+        @apply mt-24 w-full max-w-2xl;
     }
 
-    .spectator-game-finished-player.loser .player-score {
-        @apply text-red-400;
+    .match-history h2 {
+        @apply text-3xl mb-6;
     }
 
-    .spectator-game-finished-vs {
-        @apply text-gray-600 text-sm tracking-wider;
+    #match-list {
+        @apply list-none p-0;
     }
 
-    .spectator-game-finished-actions {
-        @apply flex items-center justify-center gap-4;
+    .match-item {
+        @apply text-xl py-2;
     }
 
-    .spectator-game-finished-btn {
-        @apply bg-transparent text-white border border-white;
-        @apply px-6 py-2 text-sm tracking-wider cursor-pointer;
-        @apply transition-all duration-200;
+    .match-item.win {
+        @apply text-green-500;
     }
 
-    .spectator-game-finished-btn:hover {
-        @apply bg-white text-black;
+    .match-item.loss {
+        @apply text-red-500;
+    }
+
+    /* Sélecteur de difficulté IA */
+    .ai-difficulty-selector {
+        @apply fixed top-4 right-4 z-50;
+        @apply flex items-center gap-3;
+        @apply bg-black bg-opacity-80 backdrop-blur-sm;
+        @apply border border-white border-opacity-20 rounded-lg;
+        @apply px-4 py-2;
+    }
+
+    .ai-difficulty-label {
+        @apply text-white text-sm font-medium;
+        @apply whitespace-nowrap;
+    }
+
+    .ai-difficulty-select {
+        @apply bg-gray-800 text-white;
+        @apply border border-gray-600 rounded;
+        @apply px-2 py-1 text-sm;
+        @apply focus:outline-none focus:border-blue-400;
+        @apply cursor-pointer;
+    }
+
+    .ai-difficulty-select:hover {
+        @apply bg-gray-700;
+    }
+
+    .ai-difficulty-select option {
+        @apply bg-gray-800 text-white;
+    }
+
+    /* Bannière de difficulté IA */
+    .ai-difficulty-banner {
+        @apply fixed top-20 left-1/2 transform -translate-x-1/2 z-50;
+        @apply animate-pulse;
+        @apply bg-black bg-opacity-90 backdrop-blur-sm;
+        @apply border border-blue-400 rounded-lg;
+        @apply px-6 py-3;
+        @apply shadow-lg shadow-blue-400/50;
+    }
+
+    .ai-difficulty-content {
+        @apply flex items-center gap-3;
+    }
+
+    .ai-difficulty-icon {
+        @apply text-2xl;
+    }
+
+    .ai-difficulty-text {
+        @apply text-white text-lg font-bold;
+        @apply tracking-wide;
+    }
+
+    /* Configuration IA Page */
+    .ai-config-container {
+        @apply flex flex-col items-center justify-center min-h-screen;
+        @apply p-8 text-center;
+    }
+
+    .ai-config-container h1 {
+        @apply text-5xl mb-12 text-white;
+    }
+
+    .ai-config-content {
+        @apply max-w-4xl w-full;
+    }
+
+    .difficulty-section h2 {
+        @apply text-2xl mb-8 text-white;
+    }
+
+    .difficulty-options {
+        @apply grid grid-cols-1 md:grid-cols-3 gap-6 mb-20;
+    }
+
+    .game-config-button {
+        @apply flex flex-col items-center justify-center;
+        @apply p-6 rounded-lg border-2 transition-all duration-300;
+        @apply bg-gray-900 border-gray-600 text-white;
+        @apply hover:scale-105 hover:shadow-lg;
+        @apply cursor-pointer min-h-[150px];
+    }
+
+    .game-config-button:hover {
+        @apply bg-gray-800 border-white;
+    }
+
+    /* Hover spécifique pour les boutons de difficulté */
+    .game-config-button.easy-button:hover {
+        @apply border-green-400 bg-green-900 shadow-lg shadow-green-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.medium-button:hover {
+        @apply border-yellow-400 bg-yellow-900 shadow-lg shadow-yellow-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.hard-button:hover {
+        @apply border-red-400 bg-red-900 shadow-lg shadow-red-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.selected {
+        @apply border-blue-400 bg-blue-900 shadow-lg shadow-blue-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.easy-button.selected {
+        @apply border-green-400 bg-green-900 shadow-green-400/30;
+    }
+
+    .game-config-button.medium-button.selected {
+        @apply border-yellow-400 bg-yellow-900 shadow-yellow-400/30;
+    }
+
+    .game-config-button.hard-button.selected {
+        @apply border-red-400 bg-red-900 shadow-red-400/30;
+    }
+
+    .difficulty-icon {
+        @apply text-4xl mb-3;
+    }
+
+    .difficulty-name {
+        @apply text-xl font-bold mb-2;
+    }
+
+    .difficulty-desc {
+        @apply text-sm text-gray-300;
+    }
+
+    .action-buttons {
+        @apply flex flex-col sm:flex-row gap-4 justify-center items-center;
+    }
+
+    .start-button {
+        @apply bg-green-600 hover:bg-green-700 text-white font-bold;
+        @apply py-4 px-8 text-lg;
+    }
+
+    .back-button {
+        @apply bg-gray-600 hover:bg-gray-700 text-white;
+        @apply py-4 px-8;
     }
 }
