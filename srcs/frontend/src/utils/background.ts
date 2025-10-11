@@ -109,6 +109,10 @@ class Star {
   originalAngle: number;
   originalDistance: number;
   shouldChangeColor: boolean; // Détermine si cette étoile doit changer de couleur
+  
+  // Propriétés pour l'effet d'explosion du reset
+  explosionAngle: number = 0;
+  explosionSpeed: number = 0;
 
   constructor(private centerX: number, private centerY: number) {
     this.angle = Math.random() * Math.PI * 2;
