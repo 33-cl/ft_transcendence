@@ -664,8 +664,14 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
 			const playerSocket = io.sockets.sockets.get(socketId);
 			if (playerSocket) {
 				playerSocket.emit('gameFinished', {
-					winner,
-					loser,
+					winner: {
+						...winner,
+						username: displayWinnerUsername
+					},
+					loser: {
+						...loser,
+						username: displayLoserUsername
+					},
 					isPlayer: true
 				});
 			}

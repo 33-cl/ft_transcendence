@@ -376,74 +376,76 @@
         @apply bg-white text-black;
     }
 
-    /* Game Finished Page */
-    #gameFinished {
-        @apply flex flex-col items-center justify-center w-full h-full p-8;
+    /* Game Finished Overlay - Style minimaliste inspiré de session-overlay */
+    #gameFinished.page {
+        @apply static transform-none p-0;
+        @apply w-full h-full min-h-0;
+    }
+
+    .game-finished-overlay {
+        @apply fixed top-0 left-0 w-screen h-screen;
+        @apply flex items-center justify-center;
+        @apply bg-black bg-opacity-85 z-[9999];
+    }
+
+    .game-finished-box {
+        @apply bg-black border border-white;
+        @apply px-12 py-10 max-w-2xl text-center;
     }
 
     .game-finished-title {
-        @apply text-6xl font-bold mb-8 text-amber-500;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        @apply text-white text-2xl font-normal tracking-wider;
+        @apply mb-6;
     }
 
-    .forfeit-message {
-        @apply text-2xl mb-8 text-red-400 font-semibold text-center;
+    .game-finished-forfeit-msg {
+        @apply text-gray-400 text-sm leading-relaxed;
+        @apply mb-8;
     }
 
-    .game-results {
-        @apply flex flex-row items-center justify-center gap-12 mb-12 w-full max-w-4xl;
+    .game-finished-scores {
+        @apply flex items-center justify-center gap-8 mb-10;
     }
 
-    .winner-section, .loser-section {
-        @apply flex flex-col items-center justify-center p-8 rounded-lg flex-1;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 255, 0.1);
+    .game-finished-player {
+        @apply flex flex-col items-center gap-2;
     }
 
-    .winner-section {
-        border-color: rgba(34, 197, 94, 0.5);
-        background: rgba(34, 197, 94, 0.1);
-    }
-
-    .loser-section {
-        border-color: rgba(239, 68, 68, 0.5);
-        background: rgba(239, 68, 68, 0.1);
-    }
-
-    .winner-section h2, .loser-section h2 {
-        @apply text-3xl mb-4;
+    .player-label {
+        @apply text-gray-500 text-xs tracking-widest uppercase;
     }
 
     .player-name {
-        @apply text-4xl font-bold mb-2;
+        @apply text-white text-lg font-normal;
     }
 
-    .winner-name {
+    .player-score {
+        @apply text-white text-3xl font-light;
+    }
+
+    .game-finished-player.winner .player-score {
         @apply text-green-400;
     }
 
-    .loser-name {
+    .game-finished-player.loser .player-score {
         @apply text-red-400;
     }
 
-    .score {
-        @apply text-6xl font-bold;
+    .game-finished-vs {
+        @apply text-gray-600 text-sm tracking-wider;
     }
 
-    .winner-score {
-        @apply text-green-300;
+    .game-finished-actions {
+        @apply flex items-center justify-center gap-4;
     }
 
-    .loser-score {
-        @apply text-red-300;
+    .game-finished-btn {
+        @apply bg-transparent text-white border border-white;
+        @apply px-6 py-2 text-sm tracking-wider cursor-pointer;
+        @apply transition-all duration-200;
     }
 
-    .vs-divider {
-        @apply text-5xl font-bold text-gray-400;
-    }
-
-    .game-finished-buttons {
-        @apply flex flex-row gap-6 mt-8;
+    .game-finished-btn:hover {
+        @apply bg-white text-black;
     }
 }

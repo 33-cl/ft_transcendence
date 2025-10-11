@@ -524,6 +524,11 @@ function setupGameEventListeners() {
         socket.on('gameFinished', (data: any) => {
             gameFinishedListenerActive = true;
 
+            console.log('🏁 [GAME FINISHED] Data received:', data);
+            console.log('🏁 Winner:', data?.winner);
+            console.log('🏁 Loser:', data?.loser);
+            console.log('🏁 Forfeit:', data?.forfeit);
+
             // Affiche la page de fin de partie avec les données reçues
             if (data && data.winner) {
                 load('gameFinished', data);
