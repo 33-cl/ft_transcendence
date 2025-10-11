@@ -448,4 +448,77 @@
     .game-finished-btn:hover {
         @apply bg-white text-black;
     }
+
+    /* Spectator Game Finished Overlay - Same style as gameFinished */
+    #spectatorGameFinished.page {
+        @apply static transform-none p-0;
+        @apply w-full h-full min-h-0;
+    }
+
+    .spectator-game-finished-overlay {
+        @apply fixed top-0 left-0 w-screen h-screen;
+        @apply flex items-center justify-center;
+        @apply bg-black bg-opacity-85 z-[9999];
+    }
+
+    .spectator-game-finished-box {
+        @apply bg-black border border-white;
+        @apply px-12 py-10 max-w-2xl text-center;
+    }
+
+    .spectator-game-finished-title {
+        @apply text-white text-2xl font-normal tracking-wider;
+        @apply mb-6;
+    }
+
+    .spectator-game-finished-forfeit-msg {
+        @apply text-gray-400 text-sm leading-relaxed;
+        @apply mb-8;
+    }
+
+    .spectator-game-finished-scores {
+        @apply flex items-center justify-center gap-8 mb-10;
+    }
+
+    .spectator-game-finished-player {
+        @apply flex flex-col items-center gap-2;
+    }
+
+    .spectator-game-finished-player .player-label {
+        @apply text-gray-500 text-xs tracking-widest uppercase;
+    }
+
+    .spectator-game-finished-player .player-name {
+        @apply text-white text-lg font-normal;
+    }
+
+    .spectator-game-finished-player .player-score {
+        @apply text-white text-3xl font-light;
+    }
+
+    .spectator-game-finished-player.winner .player-score {
+        @apply text-green-400;
+    }
+
+    .spectator-game-finished-player.loser .player-score {
+        @apply text-red-400;
+    }
+
+    .spectator-game-finished-vs {
+        @apply text-gray-600 text-sm tracking-wider;
+    }
+
+    .spectator-game-finished-actions {
+        @apply flex items-center justify-center gap-4;
+    }
+
+    .spectator-game-finished-btn {
+        @apply bg-transparent text-white border border-white;
+        @apply px-6 py-2 text-sm tracking-wider cursor-pointer;
+        @apply transition-all duration-200;
+    }
+
+    .spectator-game-finished-btn:hover {
+        @apply bg-white text-black;
+    }
 }
