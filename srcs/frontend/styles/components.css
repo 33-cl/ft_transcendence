@@ -317,6 +317,30 @@
         @apply italic;
     }
 
+    /* Layout spécifique pour parties locales/IA */
+    .game-finished-local-result {
+        @apply flex flex-col items-center justify-center mb-8;
+        @apply w-full;
+    }
+
+    .game-finished-winner-announcement {
+        @apply text-4xl font-bold mb-6 text-white;
+        @apply tracking-wider;
+    }
+
+    .game-finished-final-score {
+        @apply flex items-center justify-center gap-6;
+        @apply text-white;
+    }
+
+    .game-finished-final-score .score-number {
+        @apply text-7xl font-bold;
+    }
+
+    .game-finished-final-score .score-separator {
+        @apply text-5xl font-bold text-gray-500;
+    }
+
     .game-finished-scores {
         @apply flex flex-row items-center justify-center gap-16 mb-8;
         @apply w-full;
