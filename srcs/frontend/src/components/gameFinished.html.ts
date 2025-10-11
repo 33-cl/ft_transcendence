@@ -1,14 +1,23 @@
 export const gameFinishedHTML = (data?: any) => {
+    console.log('🎮 [gameFinishedHTML] Rendering with data:', data);
+    
     const winner = data?.winner;
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
     const forfeitMessage = data?.forfeitMessage || '';
+    
+    console.log('🎮 Winner object:', winner);
+    console.log('🎮 Loser object:', loser);
+    console.log('🎮 Is forfeit:', isForfeit);
     
     // Determine display names
     const winnerName = winner?.username || winner?.side || 'Winner';
     const loserName = loser?.username || loser?.side || 'Loser';
     const winnerScore = winner?.score ?? 0;
     const loserScore = loser?.score ?? 0;
+    
+    console.log('🎮 Winner name:', winnerName, '| Score:', winnerScore);
+    console.log('🎮 Loser name:', loserName, '| Score:', loserScore);
     
     // Show restart button only for local games or if no forfeit
     const isOnlineGame = winner?.username && loser?.username;
