@@ -102,8 +102,8 @@ document.addEventListener('componentsReady', () => {
             return;
         }
 
-        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-            msg.textContent = 'Invalid username (3-20, alphanumeric and underscore).';
+        if (!/^[a-zA-Z0-9_]{3,10}$/.test(username)) {
+            msg.textContent = 'Invalid username (3-10 characters, alphanumeric and underscore).';
             msg.style.color = 'orange';
             return;
         }

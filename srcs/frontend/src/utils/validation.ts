@@ -7,8 +7,8 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function isValidUsername(username: string): boolean {
-  // 3-20 chars, lettres/chiffres/underscore uniquement - identique au backend
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  // 3-10 chars, lettres/chiffres/underscore uniquement - identique au backend
+  return /^[a-zA-Z0-9_]{3,10}$/.test(username);
 }
 
 export function isValidPassword(password: string): boolean {
@@ -23,7 +23,7 @@ export function validateInput(username?: string, email?: string, password?: stri
 } {
   // Validation username
   if (username !== undefined && username !== '' && !isValidUsername(username)) {
-    return { valid: false, error: 'Username must be 3-20 characters (letters, numbers, underscore only)' };
+    return { valid: false, error: 'Username must be 3-10 characters (letters, numbers, underscore only)' };
   }
 
   // Validation email

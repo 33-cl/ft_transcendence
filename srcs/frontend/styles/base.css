@@ -3,6 +3,15 @@
 @tailwind utilities;
 
 @layer base {
+   /* Sélection de texte en gris */
+   ::selection {
+       @apply bg-gray-500 text-white;
+   }
+
+   ::-moz-selection {
+       @apply bg-gray-500 text-white;
+   }
+
    html, body {
        @apply w-full h-full m-0;                         /* Page taking the whole screen */
        @apply font-press-start text-white text-center; /* Text */

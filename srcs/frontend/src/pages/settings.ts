@@ -285,7 +285,7 @@ async function saveChangedFields(): Promise<void> {
         if (hasUsernameChanged) {
             // Validation username avec la fonction spécifique
             if (!isValidUsername(username)) {
-                showMessage('Username must be 3-20 characters (letters, numbers, underscore only)', true);
+                showMessage('Username must be 3-10 characters (letters, numbers, underscore only)', true);
                 return;
             }
             profileData.username = username;
