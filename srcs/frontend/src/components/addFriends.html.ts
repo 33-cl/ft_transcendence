@@ -43,7 +43,7 @@ export async function addFriendsHTML() {
     return /*html*/`
         <div id="addFriends" class="user-list">
             <div class="relative">
-                <h2 class="m-0">Add Friends</h2>
+                <h2 class="m-0">Friends</h2>
                 <button id="backToFriendsBtn" class="absolute top-0 right-0 w-8 h-8 bg-black hover:bg-gray-900 border border-gray-600 rounded flex items-center justify-center transition-colors p-1.5" title="Back to Friends">
                     <img src="./img/back-to-list-arrow.svg" alt="Back to Friends" class="w-full h-full">
                 </button>

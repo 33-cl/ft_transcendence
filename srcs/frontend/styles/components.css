@@ -9,11 +9,11 @@
     }
 
     .default-button:hover {
-        @apply bg-green-500; /* Button hover background */
+        @apply bg-gray-500; /* Button hover background */
     }
 
     .default-button:active {
-        @apply bg-green-700 scale-95; /* Button active state */
+        @apply bg-gray-700 scale-95; /* Button active state */
     }
 
     .page {
