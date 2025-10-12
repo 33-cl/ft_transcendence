@@ -61,33 +61,6 @@
         animation: pulse-badge 2s ease-in-out infinite;
     }
 
-    @keyframes pulse-badge {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-    }
-
-    /* Pong Loading Icon - Animation personnalisées uniquement */
-    @keyframes pong-rotate {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    @keyframes pong-paddle-move {
-        0% { transform: translateY(-50%) translateY(-2px); }
-        100% { transform: translateY(-50%) translateY(2px); }
-    }
-
-    @keyframes pong-ball-bounce {
-        0% { left: 4px; transform: translateY(-50%); }
-        50% { left: 50%; transform: translateY(-50%) translateY(-1px); }
-        100% { left: calc(100% - 4px); transform: translateY(-50%); }
-    }
-
-    .pong-rotate { animation: pong-rotate 2s linear infinite; }
-    .pong-paddle-move { animation: pong-paddle-move 1s ease-in-out infinite alternate; }
-    .pong-paddle-move-reverse { animation: pong-paddle-move 1s ease-in-out infinite alternate-reverse; }
-    .pong-ball-bounce { animation: pong-ball-bounce 1s ease-in-out infinite; }
-
     /* Friend list styling - utilisé uniquement pour le leaderboard maintenant */
 
     /* Leaderboard specific styles */
@@ -283,11 +256,6 @@
     .session-description {
         @apply text-lg text-gray-300;
         line-height: 1.8;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
     }
     
     /* Game Finished Overlay - Style sobre inspiré de session-overlay */

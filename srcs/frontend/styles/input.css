@@ -2,7 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 /* Import other CSS files */
-@import 'base.css';
+
+@import 'global.css';
+
 @import 'components.css';
 @import 'forms.css';
 @import 'layout.css';
