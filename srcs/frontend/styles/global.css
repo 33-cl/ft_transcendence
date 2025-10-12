@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    /* Sélection de texte en gris */
+    ::selection {
+        @apply bg-gray-500 text-white;
+    }
+
+    ::-moz-selection {
+        @apply bg-gray-500 text-white;
+    }
+
+    html, body {
+        @apply w-full h-full m-0;
+        @apply font-press-start text-white text-center;
+        @apply flex flex-col items-center min-h-screen;
+    }
+
+    * {
+        @apply box-border;
+    }
+
+    h1 {
+        @apply text-2xl my-[2vh];
+        @apply drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] drop-shadow-[0_0_10px_rgba(255,255,255,0.5)];
+    }
+
+    h2 {
+        @apply text-2xl my-[2vh];
+    }
+
+    a {
+        @apply text-blue-700;
+    }
+
+    a:hover {
+        @apply text-purple-800;
+    }
+
+    /* Boutons désactivés - Style global */
+    button:disabled {
+        @apply opacity-50 cursor-not-allowed;
+    }
+
+    button:disabled:hover {
+        @apply bg-black text-white;
+    }
+}
+
+/* Animations globales */
+@layer utilities {
+    /* Animations pour pulse-badge */
+    @keyframes pulse-badge {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    /* Animations pour pong loading icon */
+    @keyframes pong-rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes pong-paddle-move {
+        0% { transform: translateY(-50%) translateY(-2px); }
+        100% { transform: translateY(-50%) translateY(2px); }
+    }
+
+    @keyframes pong-ball-bounce {
+        0% { left: 4px; transform: translateY(-50%); }
+        50% { left: 50%; transform: translateY(-50%) translateY(-1px); }
+        100% { left: calc(100% - 4px); transform: translateY(-50%); }
+    }
+
+    /* Animation fadeIn */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* Classes utilitaires pour les animations */
+    .pong-rotate {
+        animation: pong-rotate 2s linear infinite;
+    }
+
+    .pong-paddle-move {
+        animation: pong-paddle-move 1s ease-in-out infinite alternate;
+    }
+
+    .pong-paddle-move-reverse {
+        animation: pong-paddle-move 1s ease-in-out infinite alternate-reverse;
+    }
+
+    .pong-ball-bounce {
+        animation: pong-ball-bounce 1s ease-in-out infinite;
+    }
+}

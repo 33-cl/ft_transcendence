@@ -1,3 +1,5 @@
+import { hideAllPages, show } from '../pages/utils.js';
+
 // Configuration globale
 const BASE_STAR_COUNT = 2000; // Nombre de référence pour une fenêtre de taille standard
 const REFERENCE_SCREEN_AREA = 1920 * 1080; // Taille de référence (Full HD)
@@ -52,6 +54,10 @@ const COLLAPSE_SHOOTING_STARS_DURATION = 180; // Durée d'absorption des étoile
 const COLLAPSE_FINAL_DURATION = 180; // Durée avant le reset (frames)
 const COLLAPSE_WAIT_DURATION = 240; // Durée d'attente après l'aspiration avant le reset (frames) ~4 secondes
 const RESET_DURATION = 100; // Durée de la régénération des étoiles (frames)
+
+// Configuration du long clic pour retour au menu
+const LONG_PRESS_DURATION = 1500; // Durée du long clic en ms
+const RING_RADIUS = 50; // Rayon de l'anneau de chargement
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
@@ -801,6 +807,13 @@ class BackgroundStarfield {
   private animationFrameId: number | null = null;
   private hasResetStarted: boolean = false; // Pour s'assurer que le reset ne se lance qu'une fois
   private currentStarCount: number = 0; // Suivre le nombre actuel d'étoiles
+  
+  // Propriétés pour le long clic
+  private isLongPressing: boolean = false;
+  private longPressStartTime: number = 0;
+  private longPressX: number = 0;
+  private longPressY: number = 0;
+  private longPressProgress: number = 0;
 
   constructor(canvasId: string) {
     const canvasElement = document.getElementById(canvasId);
@@ -904,6 +917,11 @@ class BackgroundStarfield {
       mouseY = e.clientY;
       ATTRACTION_RADIUS = ATTRACTION_RADIUS_INITIAL; // reset radius
       lastMouseMoveTime = Date.now();
+      
+      // Annuler le long clic si la souris bouge
+      if (this.isLongPressing) {
+        this.cancelLongPress();
+      }
     });
 
     window.addEventListener('touchmove', (e) => {
@@ -913,7 +931,101 @@ class BackgroundStarfield {
       mouseY = touch.clientY;
       ATTRACTION_RADIUS = ATTRACTION_RADIUS_INITIAL;
       lastMouseMoveTime = Date.now();
+      
+      // Annuler le long clic si le doigt bouge
+      if (this.isLongPressing) {
+        this.cancelLongPress();
+      }
     });
+
+    // Événements pour le long clic sur le canvas
+    this.canvas.addEventListener('mousedown', (e) => {
+      this.startLongPress(e.clientX, e.clientY);
+    });
+
+    this.canvas.addEventListener('mouseup', () => {
+      this.cancelLongPress();
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      this.cancelLongPress();
+    });
+
+    // Support tactile
+    this.canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      if (touch) {
+        this.startLongPress(touch.clientX, touch.clientY);
+      }
+    });
+
+    this.canvas.addEventListener('touchend', () => {
+      this.cancelLongPress();
+    });
+
+    this.canvas.addEventListener('touchcancel', () => {
+      this.cancelLongPress();
+    });
+  }
+
+  private startLongPress(x: number, y: number): void {
+    this.isLongPressing = true;
+    this.longPressStartTime = Date.now();
+    this.longPressX = x;
+    this.longPressY = y;
+    this.longPressProgress = 0;
+  }
+
+  private cancelLongPress(): void {
+    this.isLongPressing = false;
+    this.longPressProgress = 0;
+  }
+
+  private updateLongPress(): void {
+    if (!this.isLongPressing) return;
+
+    const elapsed = Date.now() - this.longPressStartTime;
+    this.longPressProgress = Math.min(elapsed / LONG_PRESS_DURATION, 1);
+
+    if (this.longPressProgress >= 1) {
+      // Long clic complété - retour au menu principal
+      this.triggerBackToMainMenu();
+    }
+  }
+
+  private triggerBackToMainMenu(): void {
+    this.cancelLongPress();
+    
+    // Utiliser les fonctions de spa.ts
+    hideAllPages();
+    show('goToMain');
+  }
+
+  private drawLongPressRing(): void {
+    if (!this.isLongPressing || this.longPressProgress === 0) return;
+
+    const ctx = this.ctx;
+    const centerX = this.longPressX;
+    const centerY = this.longPressY;
+    const radius = RING_RADIUS;
+    const lineWidth = 4;
+
+    // Dessiner l'anneau de fond (gris clair)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+
+    // Dessiner l'anneau de progression (gris foncé)
+    const startAngle = -Math.PI / 2; // Commencer en haut
+    const endAngle = startAngle + (Math.PI * 2 * this.longPressProgress);
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+    ctx.strokeStyle = 'rgba(169, 169, 169, 0.8)';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
   }
 
   private attractStars(): void {
@@ -1020,6 +1132,10 @@ class BackgroundStarfield {
     this.shootingStars.forEach(shootingStar => {
       shootingStar.draw(this.ctx);
     });
+
+    // Mettre à jour et dessiner l'anneau de long clic
+    this.updateLongPress();
+    this.drawLongPressRing();
   }
 
   private animate(): void {
