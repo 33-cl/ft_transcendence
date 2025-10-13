@@ -24,6 +24,7 @@ interface CreateTournamentBody {
 }
 
 export default async function tournamentsRoutes(fastify: FastifyInstance) {
+    
     // POST /tournaments - Créer un nouveau tournoi
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
