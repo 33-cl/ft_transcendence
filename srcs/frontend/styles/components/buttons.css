@@ -1,0 +1,14 @@
+@layer components {
+    .default-button {
+        @apply bg-black p-4 border-2 border-white rounded-lg; /* Background and borders */
+        @apply px-4 py-2 text-2xl cursor-pointer;            /* Padding, text and cursor */
+    }
+
+    .default-button:hover {
+        @apply bg-gray-500; /* Button hover background */
+    }
+
+    .default-button:active {
+        @apply bg-gray-700 scale-95; /* Button active state */
+    }
+}

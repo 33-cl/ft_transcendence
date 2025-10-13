@@ -1,0 +1,10 @@
+@layer components {
+    .page {
+        @apply p-4 flex flex-col items-center justify-center min-h-screen gap-4;      /* Layout and spacing */
+        @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2; /* Centering positioning */
+    }
+
+    .page:empty {
+        pointer-events: none; /* Click-through for empty pages */
+    }
+}

@@ -57,7 +57,7 @@ const RESET_DURATION = 100; // Durée de la régénération des étoiles (frames
 
 // Configuration du long clic pour retour au menu
 const LONG_PRESS_DURATION = 1500; // Durée du long clic en ms
-const RING_RADIUS = 50; // Rayon de l'anneau de chargement
+const RING_RADIUS = 15; // Rayon de l'anneau de chargement
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
@@ -940,7 +940,9 @@ class BackgroundStarfield {
 
     // Événements pour le long clic sur le canvas
     this.canvas.addEventListener('mousedown', (e) => {
-      this.startLongPress(e.clientX, e.clientY);
+      if (this.isOnMainMenu()) {
+        this.startLongPress(e.clientX, e.clientY);
+      }
     });
 
     this.canvas.addEventListener('mouseup', () => {
@@ -953,9 +955,11 @@ class BackgroundStarfield {
 
     // Support tactile
     this.canvas.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      if (touch) {
-        this.startLongPress(touch.clientX, touch.clientY);
+      if (this.isOnMainMenu()) {
+        const touch = e.touches[0];
+        if (touch) {
+          this.startLongPress(touch.clientX, touch.clientY);
+        }
       }
     });
 
@@ -966,6 +970,11 @@ class BackgroundStarfield {
     this.canvas.addEventListener('touchcancel', () => {
       this.cancelLongPress();
     });
+  }
+
+  private isOnMainMenu(): boolean {
+    const mainMenuElement = document.getElementById('mainMenu');
+    return mainMenuElement !== null && mainMenuElement.innerHTML.trim() !== '';
   }
 
   private startLongPress(x: number, y: number): void {

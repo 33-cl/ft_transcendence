@@ -1,0 +1,5 @@
+@layer components {
+    #background {
+        @apply fixed top-0 left-0 w-full h-full -z-10 block; /* Canvas background positioning */
+    }
+}

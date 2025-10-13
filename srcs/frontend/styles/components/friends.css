@@ -1,0 +1,66 @@
+@layer components {
+    #leaderboard {
+        @apply left-[2%]; /* Right panel positioning - INVERSÉ */
+    }
+
+    #friendList {
+        @apply right-[2%]; /* Right panel positioning - INVERSÉ */
+    }
+
+    .user-list {
+        @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
+        @apply overflow-y-auto p-[1vh];            /* Scroll and padding */
+    }
+
+    .user-list img {
+        @apply w-[75px] h-[75px] rounded-md; /* User avatar styling - same as main menu avatar */
+    }
+
+    /* Badge de notification pour les demandes d'amis */
+    .friend-requests-badge {
+        @apply absolute -top-1 -right-1;
+        @apply bg-red-600 text-white;
+        @apply text-xs font-bold;
+        @apply rounded-full;
+        @apply w-5 h-5;
+        @apply flex items-center justify-center;
+        @apply z-10;
+        @apply shadow-lg;
+        animation: pulse-badge 2s ease-in-out infinite;
+    }
+
+    /* Friend list styling - utilisé uniquement pour le leaderboard maintenant */
+
+    /* Leaderboard specific styles */
+    #leaderboard .friend {
+        @apply flex items-center justify-center relative;
+    }
+
+    #leaderboard .position-number {
+        @apply absolute left-0 w-[25px];
+    }
+
+    #leaderboard img {
+        @apply ml-8; /* Décalage vers la droite pour éviter le chevauchement avec le numéro */
+    }
+
+    #leaderboard .friend-info {
+        @apply flex flex-col items-center text-center w-full;
+    }
+
+    #leaderboard .friend-name {
+        @apply text-lg mb-1;
+    }
+
+    #leaderboard .friend-stats {
+        @apply text-sm text-gray-400 m-0;
+    }
+
+    .friend-name {
+        @apply text-base font-bold mb-1;
+    }
+
+    .friend-stats {
+        @apply text-sm text-gray-400 m-0;
+    }
+}

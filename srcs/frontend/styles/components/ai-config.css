@@ -1,0 +1,147 @@
+@layer components {
+    /* Sélecteur de difficulté IA */
+    .ai-difficulty-selector {
+        @apply fixed top-4 right-4 z-50;
+        @apply flex items-center gap-3;
+        @apply bg-black bg-opacity-80 backdrop-blur-sm;
+        @apply border border-white border-opacity-20 rounded-lg;
+        @apply px-4 py-2;
+    }
+
+    .ai-difficulty-label {
+        @apply text-white text-sm font-medium;
+        @apply whitespace-nowrap;
+    }
+
+    .ai-difficulty-select {
+        @apply bg-gray-800 text-white;
+        @apply border border-gray-600 rounded;
+        @apply px-2 py-1 text-sm;
+        @apply focus:outline-none focus:border-blue-400;
+        @apply cursor-pointer;
+    }
+
+    .ai-difficulty-select:hover {
+        @apply bg-gray-700;
+    }
+
+    .ai-difficulty-select option {
+        @apply bg-gray-800 text-white;
+    }
+
+    /* Bannière de difficulté IA */
+    .ai-difficulty-banner {
+        @apply fixed top-20 left-1/2 transform -translate-x-1/2 z-50;
+        @apply animate-pulse;
+        @apply bg-black bg-opacity-90 backdrop-blur-sm;
+        @apply border border-blue-400 rounded-lg;
+        @apply px-6 py-3;
+        @apply shadow-lg shadow-blue-400/50;
+    }
+
+    .ai-difficulty-content {
+        @apply flex items-center gap-3;
+    }
+
+    .ai-difficulty-icon {
+        @apply text-2xl;
+    }
+
+    .ai-difficulty-text {
+        @apply text-white text-lg font-bold;
+        @apply tracking-wide;
+    }
+
+    /* Configuration IA Page */
+    .ai-config-container {
+        @apply flex flex-col items-center justify-center min-h-screen;
+        @apply p-8 text-center;
+    }
+
+    .ai-config-container h1 {
+        @apply text-5xl mb-12 text-white;
+    }
+
+    .ai-config-content {
+        @apply max-w-4xl w-full;
+    }
+
+    .difficulty-section h2 {
+        @apply text-2xl mb-8 text-white;
+    }
+
+    .difficulty-options {
+        @apply grid grid-cols-1 md:grid-cols-3 gap-6 mb-20;
+    }
+
+    .game-config-button {
+        @apply flex flex-col items-center justify-center;
+        @apply p-6 rounded-lg border-2 transition-all duration-300;
+        @apply bg-gray-900 border-gray-600 text-white;
+        @apply hover:scale-105 hover:shadow-lg;
+        @apply cursor-pointer min-h-[150px];
+    }
+
+    .game-config-button:hover {
+        @apply bg-gray-800 border-white;
+    }
+
+    /* Hover spécifique pour les boutons de difficulté */
+    .game-config-button.easy-button:hover {
+        @apply border-green-400 bg-green-900 shadow-lg shadow-green-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.medium-button:hover {
+        @apply border-yellow-400 bg-yellow-900 shadow-lg shadow-yellow-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.hard-button:hover {
+        @apply border-red-400 bg-red-900 shadow-lg shadow-red-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.selected {
+        @apply border-blue-400 bg-blue-900 shadow-lg shadow-blue-400/30;
+        @apply scale-105;
+    }
+
+    .game-config-button.easy-button.selected {
+        @apply border-green-400 bg-green-900 shadow-green-400/30;
+    }
+
+    .game-config-button.medium-button.selected {
+        @apply border-yellow-400 bg-yellow-900 shadow-yellow-400/30;
+    }
+
+    .game-config-button.hard-button.selected {
+        @apply border-red-400 bg-red-900 shadow-red-400/30;
+    }
+
+    .difficulty-icon {
+        @apply text-4xl mb-3;
+    }
+
+    .difficulty-name {
+        @apply text-xl font-bold mb-2;
+    }
+
+    .difficulty-desc {
+        @apply text-sm text-gray-300;
+    }
+
+    .action-buttons {
+        @apply flex flex-col sm:flex-row gap-4 justify-center items-center;
+    }
+
+    .start-button {
+        @apply bg-green-600 hover:bg-green-700 text-white font-bold;
+        @apply py-4 px-8 text-lg;
+    }
+
+    .back-button {
+        @apply bg-gray-600 hover:bg-gray-700 text-white;
+        @apply py-4 px-8;
+    }
+}
