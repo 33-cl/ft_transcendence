@@ -119,27 +119,76 @@ export function notifyFriendRemoved(user1Id: number, user2Id: number, fastify: F
     }
 }
 
-// Fonction pour notifier les amis du changement de statut d'un utilisateur
-function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
+// Fonction pour notifier qu'un profil utilisateur a été mis à jour
+export function notifyProfileUpdated(userId: number, updates: { username?: string; avatar_url?: string }, fastify: FastifyInstance) {
+    if (!globalIo) return;
+    
     try {
-        // Récupérer la liste des amis de cet utilisateur
-        const friends = db.prepare(`
-            SELECT f.friend_id, u.username 
-            FROM friendships f 
-            JOIN users u ON u.id = f.friend_id 
-            WHERE f.user_id = ?
-        `).all(userId);
-
-        // Récupérer le username de l'utilisateur qui change de statut
-        const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string } | undefined;
+        // Récupérer les informations actuelles de l'utilisateur
+        const user = db.prepare('SELECT id, username, avatar_url FROM users WHERE id = ?').get(userId) as { id: number; username: string; avatar_url: string | null } | undefined;
         
         if (!user) return;
-
-        // Pour chaque ami, vérifier s'il est connecté et lui envoyer la mise à jour
-        friends.forEach((friend: any) => {
-            const friendSocketId = getSocketIdForUser(friend.friend_id);
+        
+        // Récupérer tous les amis de cet utilisateur (dans les deux sens)
+        const friends = db.prepare(`
+            SELECT DISTINCT u.id, u.username
+            FROM users u
+            WHERE u.id IN (
+                SELECT friend_id FROM friendships WHERE user_id = ?
+                UNION
+                SELECT user_id FROM friendships WHERE friend_id = ?
+            )
+        `).all(userId, userId) as Array<{ id: number; username: string }>;
+        
+        console.log(`📢 Notifying ${friends.length} friends about profile update for user ${user.username}`);
+        
+        // Notifier chaque ami du changement de profil
+        for (const friend of friends) {
+            const friendSocketId = getSocketIdForUser(friend.id);
             if (friendSocketId) {
-                const friendSocket = io.sockets.sockets.get(friendSocketId);
+                const friendSocket = globalIo.sockets.sockets.get(friendSocketId);
+                if (friendSocket) {
+                    friendSocket.emit('profileUpdated', {
+                        userId: user.id,
+                        username: updates.username || user.username,
+                        avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : user.avatar_url,
+                        timestamp: Date.now()
+                    });
+                    console.log(`✅ Notified ${friend.username} about ${user.username}'s profile update`);
+                }
+            }
+        }
+    } catch (error) {
+        fastify.log.error(`Error notifying profile updated: ${error}`);
+    }
+}
+
+// Fonction pour notifier un changement de statut utilisateur à ses amis
+function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
+    if (!globalIo) return;
+    
+    try {
+        // Récupérer l'utilisateur
+        const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(userId) as { id: number; username: string } | undefined;
+        
+        if (!user) return;
+        
+        // Récupérer tous les amis de cet utilisateur
+        const friends = db.prepare(`
+            SELECT DISTINCT u.id, u.username
+            FROM users u
+            WHERE u.id IN (
+                SELECT friend_id FROM friendships WHERE user_id = ?
+                UNION
+                SELECT user_id FROM friendships WHERE friend_id = ?
+            )
+        `).all(userId, userId) as Array<{ id: number; username: string }>;
+        
+        // Notifier chaque ami du changement de statut
+        for (const friend of friends) {
+            const friendSocketId = getSocketIdForUser(friend.id);
+            if (friendSocketId) {
+                const friendSocket = globalIo.sockets.sockets.get(friendSocketId);
                 if (friendSocket) {
                     friendSocket.emit('friendStatusChanged', {
                         username: user.username,
@@ -148,30 +197,7 @@ function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' 
                     });
                 }
             }
-        });
-
-        // Également notifier dans l'autre sens (ceux qui ont cet utilisateur comme ami)
-        const reverseAFriends = db.prepare(`
-            SELECT f.user_id, u.username 
-            FROM friendships f 
-            JOIN users u ON u.id = f.user_id 
-            WHERE f.friend_id = ?
-        `).all(userId);
-
-        reverseAFriends.forEach((friend: any) => {
-            const friendSocketId = getSocketIdForUser(friend.user_id);
-            if (friendSocketId) {
-                const friendSocket = io.sockets.sockets.get(friendSocketId);
-                if (friendSocket) {
-                    friendSocket.emit('friendStatusChanged', {
-                        username: user.username,
-                        status: status,
-                        timestamp: Date.now()
-                    });
-                }
-            }
-        });
-
+        }
     } catch (error) {
         fastify.log.error(`Error broadcasting user status change: ${error}`);
     }

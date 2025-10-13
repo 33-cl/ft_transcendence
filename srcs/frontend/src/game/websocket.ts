@@ -110,6 +110,7 @@ let gameFinishedListenerActive = false;
 let friendStatusListenerSet = false;
 let friendAddedListenerSet = false;
 let friendRemovedListenerSet = false;
+let profileUpdatedListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -307,6 +308,28 @@ function setupGlobalSocketListeners() {
         });
         friendRemovedListenerSet = true;
     }
+    
+    // Event listener for profile updates (real-time friend list updates)
+    if (!profileUpdatedListenerSet) {
+        socket.on('profileUpdated', async (data: any) => {
+            console.log('🔄 Profile updated:', data);
+            
+            // Rafraîchir la liste d'amis pour afficher le nouveau pseudo/avatar
+            const friendListContainer = document.getElementById('friendList');
+            if (friendListContainer && friendListContainer.innerHTML) {
+                // Importer la fonction de rafraîchissement de la liste d'amis
+                try {
+                    const { friendListHTML, initLoadingIcons } = await import('../components/index.html.js');
+                    friendListContainer.innerHTML = await friendListHTML();
+                    initLoadingIcons();
+                    console.log('✅ Friend list refreshed after profile update');
+                } catch (error) {
+                    console.error('Error refreshing friend list after profile update:', error);
+                }
+            }
+        });
+        profileUpdatedListenerSet = true;
+    }
 }
 
 // Configurer les listeners globaux au chargement
@@ -341,6 +364,7 @@ function reconnectWebSocket() {
         friendStatusListenerSet = false;
         friendAddedListenerSet = false;
         friendRemovedListenerSet = false;
+        profileUpdatedListenerSet = false;
         
         // Re-setup global listeners
         setupGlobalSocketListeners();

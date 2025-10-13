@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import db from '../db.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { removeUserFromActiveList, isUserAlreadyConnected } from '../socket/socketAuth.js';
+import { notifyProfileUpdated } from '../socket/socketHandlers.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
@@ -512,6 +513,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
       
       db.prepare(query).run(...values);
 
+      // Notifier les amis du changement de profil (pseudo uniquement, pas l'avatar ici)
+      if (username) {
+        notifyProfileUpdated(sessionRow.id, { username }, fastify);
+      }
+
       return reply.send({ 
         ok: true, 
         message: 'Profile updated successfully',
@@ -703,6 +709,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
         userId
       );
       
+      // Notifier les amis du changement d'avatar
+      notifyProfileUpdated(userId, { avatar_url: finalAvatarUrl }, fastify);
+      
       console.log(`✅ Avatar saved for user ${userId}: ${finalFilename}`);
       
       return reply.send({ 
@@ -747,6 +756,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
         new Date().toISOString().slice(0, 19).replace('T', ' '), 
         userId
       );
+
+      // Notifier les amis du changement d'avatar
+      notifyProfileUpdated(userId, { avatar_url: defaultAvatarUrl }, fastify);
 
       return reply.send({ 
         message: 'Avatar reset successfully',
