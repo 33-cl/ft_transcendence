@@ -254,8 +254,8 @@ export function startFriendListRealtimeUpdates() {
     fetchInitialFriendStatuses();
 }
 
-// Fonction pour récupérer les statuts initiaux des amis (appelée UNE SEULE FOIS au démarrage)
-async function fetchInitialFriendStatuses() {
+// Fonction pour récupérer les statuts initiaux des amis (peut être appelée à tout moment pour rafraîchir)
+export async function fetchInitialFriendStatuses() {
     try {
         console.log('📡 Fetching initial friend statuses (one-time fetch)...');
         const response = await fetch('/users/friends-online', {
@@ -383,6 +383,12 @@ async function reloadFriendList() {
         friendListContainer.innerHTML = newHTML;
         initializeAddFriendsButton();
         initializeFriendListEventListeners();
+        
+        // 🚀 IMPORTANT : Après avoir rechargé la liste, récupérer les statuts actuels
+        // Attendre un peu que le DOM soit complètement rendu avant de mettre à jour les statuts
+        setTimeout(async () => {
+            await fetchInitialFriendStatuses();
+        }, 100);
     } catch (error) {
         console.error('Error reloading friend list:', error);
     }

@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import db from '../db.js';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { removeUserFromActiveList, isUserAlreadyConnected } from '../socket/socketAuth.js';
-import { notifyProfileUpdated } from '../socket/socketHandlers.js';
+import { notifyProfileUpdated, broadcastUserStatusChange, getGlobalIo } from '../socket/socketHandlers.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
@@ -362,6 +362,13 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // Remove user from active list to mark as offline
         removeUserFromActiveList(userId);
         console.log(`[LOGOUT] User ${userId} marked as offline`);
+        
+        // 🚀 NOUVEAU : Notifier les amis via WebSocket que l'utilisateur est offline
+        const io = getGlobalIo();
+        if (io) {
+          broadcastUserStatusChange(userId, 'offline', io, fastify);
+          console.log(`[LOGOUT] Notified friends that user ${userId} is now offline`);
+        }
         
         // Remove token from active_tokens
         db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);

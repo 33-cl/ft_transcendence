@@ -31,6 +31,11 @@ const joinRoomLocks = new Set<string>();
 // Global io instance for use in other modules
 let globalIo: Server | null = null;
 
+// Export a function to get the global io instance
+export function getGlobalIo(): Server | null {
+    return globalIo;
+}
+
 // Fonction pour notifier qu'un nouvel ami a été ajouté
 export function notifyFriendAdded(user1Id: number, user2Id: number, fastify: FastifyInstance) {
     if (!globalIo) return;
@@ -164,7 +169,7 @@ export function notifyProfileUpdated(userId: number, updates: { username?: strin
 }
 
 // Fonction pour notifier un changement de statut utilisateur à ses amis
-function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
+export function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
     if (!globalIo) return;
     
     try {

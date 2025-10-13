@@ -205,17 +205,21 @@ export function initializeBackToFriendsButton() {
     if (backBtn) {
         backBtn.addEventListener('click', async () => {
             const { show, hide } = await import('../pages/utils.js');
-            const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListRealtimeUpdates } = await import('./friendList.html.js');
+            const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListRealtimeUpdates, fetchInitialFriendStatuses } = await import('./friendList.html.js');
             
             // Cacher addFriends et afficher friendList
             hide('addFriends');
             await show('friendList');
             
             // Réinitialiser les fonctionnalités de friendList
-            setTimeout(() => {
+            setTimeout(async () => {
                 initializeAddFriendsButton();
                 initializeFriendListEventListeners();
                 startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
+                
+                // 🎯 IMPORTANT : Toujours rafraîchir les statuts quand on retourne à friendList
+                // (au cas où la liste a changé pendant qu'on était sur addFriends)
+                await fetchInitialFriendStatuses();
             }, 100);
         });
     }
