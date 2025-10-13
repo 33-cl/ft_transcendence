@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
-import { notifyFriendAdded } from '../socket/socketHandlers.js';
+import { notifyFriendAdded, notifyFriendRemoved } from '../socket/socketHandlers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -478,6 +478,10 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       );
       
       console.log(`[REMOVE_FRIEND] Removed friendship and pending requests between ${currentUserId} and ${friendId} (both directions)`);
+      
+      // Notifier les deux utilisateurs en temps réel
+      notifyFriendRemoved(currentUserId, friendId, fastify);
+      
       console.log('[REMOVE_FRIEND] === END remove friend request ===');
 
       return { success: true, message: 'Friend removed successfully' };
