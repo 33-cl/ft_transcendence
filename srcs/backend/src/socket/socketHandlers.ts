@@ -28,6 +28,56 @@ import db from '../db.js';
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
 
+// Global io instance for use in other modules
+let globalIo: Server | null = null;
+
+// Fonction pour notifier qu'un nouvel ami a été ajouté
+export function notifyFriendAdded(user1Id: number, user2Id: number, fastify: FastifyInstance) {
+    if (!globalIo) return;
+    
+    try {
+        // Récupérer les informations des deux utilisateurs
+        const user1 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user1Id) as { id: number; username: string } | undefined;
+        const user2 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user2Id) as { id: number; username: string } | undefined;
+        
+        if (!user1 || !user2) return;
+        
+        // Notifier user1 que user2 a été ajouté comme ami
+        const user1SocketId = getSocketIdForUser(user1.id);
+        if (user1SocketId) {
+            const user1Socket = globalIo.sockets.sockets.get(user1SocketId);
+            if (user1Socket) {
+                user1Socket.emit('friendAdded', {
+                    friend: {
+                        id: user2.id,
+                        username: user2.username
+                    },
+                    timestamp: Date.now()
+                });
+                console.log(`✅ Notified ${user1.username} that ${user2.username} was added as friend`);
+            }
+        }
+        
+        // Notifier user2 que user1 a été ajouté comme ami
+        const user2SocketId = getSocketIdForUser(user2.id);
+        if (user2SocketId) {
+            const user2Socket = globalIo.sockets.sockets.get(user2SocketId);
+            if (user2Socket) {
+                user2Socket.emit('friendAdded', {
+                    friend: {
+                        id: user1.id,
+                        username: user1.username
+                    },
+                    timestamp: Date.now()
+                });
+                console.log(`✅ Notified ${user2.username} that ${user1.username} was added as friend`);
+            }
+        }
+    } catch (error) {
+        fastify.log.error(`Error notifying friend added: ${error}`);
+    }
+}
+
 // Fonction pour notifier les amis du changement de statut d'un utilisateur
 function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
     try {
@@ -1049,6 +1099,9 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
 // Fonction principale qui enregistre tous les handlers socket.io
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
+    // Mutex global pour les opérations critiques
+    globalIo = io; // Stocker l'instance io globalement
+    
     // Tick rate à 120 FPS pour un gameplay fluide
     setInterval(() =>
 	{
