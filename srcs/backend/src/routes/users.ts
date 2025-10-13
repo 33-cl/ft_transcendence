@@ -23,6 +23,32 @@ function parseCookies(cookieString?: string): { [key: string]: string } {
   return out;
 }
 
+// Helper pour notifier qu'une nouvelle demande d'ami a été reçue
+function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance) {
+  try {
+    const sender = db.prepare('SELECT id, username FROM users WHERE id = ?').get(senderId) as { id: number; username: string } | undefined;
+    
+    if (!sender) return;
+    
+    const receiverSocketId = getSocketIdForUser(receiverId);
+    if (receiverSocketId && (fastify as any).io) {
+      const receiverSocket = (fastify as any).io.sockets.sockets.get(receiverSocketId);
+      if (receiverSocket) {
+        receiverSocket.emit('friendRequestReceived', {
+          sender: {
+            id: sender.id,
+            username: sender.username
+          },
+          timestamp: Date.now()
+        });
+        console.log(`✅ Notified user ${receiverId} about friend request from ${sender.username}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error notifying friend request received:', error);
+  }
+}
+
 export default async function usersRoutes(fastify: FastifyInstance) {
   fastify.get('/users', async (request, reply) => {
     try {
@@ -243,6 +269,9 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       // Envoyer la demande d'ami
       db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
+      
+      // Notifier le destinataire de la demande d'ami
+      notifyFriendRequestReceived(friendId, currentUserId, fastify);
       
       console.log(`[SEND_FRIEND_REQUEST] Sent friend request from ${currentUserId} to ${friendId}`);
       console.log('[SEND_FRIEND_REQUEST] === END send friend request ===');
@@ -576,17 +605,14 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Endpoint pour obtenir le statut en ligne des utilisateurs et amis
-  fastify.get('/users/status', async (request, reply) => {
+  // 🚀 NOUVEAU : Endpoint léger pour obtenir les statuts actuels des amis (appelé UNE FOIS au chargement)
+  // Ensuite les WebSocket events gèrent les mises à jour en temps réel
+  fastify.get('/users/friends-online', async (request, reply) => {
     try {
-      console.log('[STATUS] === START /users/status request ===');
-      
-      // Récupérer le JWT depuis les cookies
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
       const jwtToken = cookies['jwt'];
       
       if (!jwtToken) {
-        console.log('[STATUS] No JWT token found');
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
@@ -605,36 +631,30 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
-      // Récupérer les amis de l'utilisateur avec leurs informations
+      // Récupérer les amis de l'utilisateur
       const friends = db.prepare(`
-        SELECT u.id, u.username, f.friend_id 
+        SELECT u.id, u.username
         FROM friendships f
         JOIN users u ON f.friend_id = u.id
         WHERE f.user_id = ?
       `).all(currentUserId);
 
       // Obtenir le statut en ligne des amis
-      const friendsStatus = await Promise.all(friends.map(async (friend: any) => {
-        const socketId = await getSocketIdForUser(friend.id);
+      const friendsStatus = friends.map((friend: any) => {
+        const socketId = getSocketIdForUser(friend.id);
         const isOnline = !!socketId;
         const isInGame = isOnline && isUsernameInGame(friend.username);
         
         return {
-          id: friend.id,
           username: friend.username,
-          isOnline,
-          isInGame,
           status: isInGame ? 'in-game' : (isOnline ? 'online' : 'offline')
         };
-      }));
-      
-      console.log(`[STATUS] Found ${friendsStatus.length} friends with status information:`, friendsStatus.map((f: any) => `${f.username}:${f.status}`));
-      console.log('[STATUS] === END /users/status request ===');
+      });
 
       return { friendsStatus };
     } catch (error) {
-      console.error('Error fetching users status:', error);
-      return reply.status(500).send({ error: 'Failed to fetch users status' });
+      console.error('Error fetching friends online status:', error);
+      return reply.status(500).send({ error: 'Failed to fetch friends online status' });
     }
   });
 }

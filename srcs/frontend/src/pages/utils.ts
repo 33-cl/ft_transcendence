@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListAutoRefresh, stopFriendListAutoRefresh } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js';
 
@@ -78,9 +78,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
     hideAllPages();
     
-    // Arrêter le rafraîchissement automatique si on quitte le menu principal
+    // Arrêter les mises à jour WebSocket si on quitte le menu principal
     if (pageName !== 'mainMenu') {
-        stopFriendListAutoRefresh();
+        stopFriendListRealtimeUpdates();
     }
     
     if (pageName === 'landing')
@@ -103,7 +103,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 setTimeout(() => {
                     initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
-                    startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
+                    startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                     initLoadingIcons(); // Initialiser les icônes de chargement
                 }, 100);
                 await show('leaderboard');
@@ -117,7 +117,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 setTimeout(() => {
                     initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
-                    startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
+                    startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                     initLoadingIcons(); // Initialiser les icônes de chargement
                 }, 100);
                 await show('leaderboard');
@@ -131,7 +131,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             setTimeout(() => {
                 initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                 initializeFriendListEventListeners(); // Initialiser les event listeners
-                startFriendListAutoRefresh(); // Démarrer le rafraîchissement automatique
+                startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                 initLoadingIcons(); // Initialiser les icônes de chargement
             }, 100);
             await show('leaderboard');
@@ -140,12 +140,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
 
     else if (pageName === 'settings') {
-        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('settings');
     }
     else if (pageName === 'signIn')
     {
-        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('signIn');
         // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
@@ -153,23 +153,23 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'signUp')
     {
-        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('signUp');
         // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
         // show('goToMain');
     }
     else if (pageName === 'game') {
-        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('game');
     }
     else if (pageName === 'game4') {
-        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('game4');
     }
     else if (pageName === 'matchmaking')
     {
-        stopFriendListAutoRefresh(); // Arrêter le rafraîchissement
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('matchmaking');
         animateDots();
         switchTips();

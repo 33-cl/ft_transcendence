@@ -173,6 +173,9 @@ function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' 
         
         if (!user) return;
         
+        // 🔍 LOG pour debugging
+        console.log(`📡 [STATUS] Broadcasting status change for ${user.username}: ${status}`);
+        
         // Récupérer tous les amis de cet utilisateur
         const friends = db.prepare(`
             SELECT DISTINCT u.id, u.username
@@ -184,7 +187,10 @@ function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' 
             )
         `).all(userId, userId) as Array<{ id: number; username: string }>;
         
+        console.log(`📡 [STATUS] ${user.username} has ${friends.length} friends to notify`);
+        
         // Notifier chaque ami du changement de statut
+        let notifiedCount = 0;
         for (const friend of friends) {
             const friendSocketId = getSocketIdForUser(friend.id);
             if (friendSocketId) {
@@ -195,9 +201,12 @@ function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' 
                         status: status,
                         timestamp: Date.now()
                     });
+                    notifiedCount++;
                 }
             }
         }
+        
+        console.log(`📡 [STATUS] Notified ${notifiedCount}/${friends.length} friends about ${user.username}'s status: ${status}`);
     } catch (error) {
         fastify.log.error(`Error broadcasting user status change: ${error}`);
     }
@@ -611,9 +620,16 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                 room.playerUsernames[socket.id] = user.username;
                 fastify.log.info(`Socket ${socket.id} authenticated user ${user.username} added to room ${roomName}`);
                 
-                // Notifier les amis que l'utilisateur est maintenant en jeu
+                // 🚀 NOUVEAU : Notifier les amis quand la room est pleine et que la partie commence
                 if (room.players.length === room.maxPlayers) {
-                    broadcastUserStatusChange(user.id, 'in-game', io, fastify);
+                    // Notifier pour TOUS les joueurs dans la room, pas juste le dernier
+                    for (const [socketId, username] of Object.entries(room.playerUsernames)) {
+                        const player = getUserByUsername(username) as any;
+                        if (player) {
+                            broadcastUserStatusChange(player.id, 'in-game', io, fastify);
+                            fastify.log.info(`🎮 Notified friends that ${username} is now in-game`);
+                        }
+                    }
                 }
             } else {
                 // Reject unauthenticated sockets from joining online games
@@ -1017,8 +1033,9 @@ function handleSocketDisconnect(socket: Socket, io: Server, fastify: FastifyInst
                         
                         fastify.log.info(`[FORFAIT] gameFinished émis pour room ${playerRoom}: ${winnerUsername} bat ${disconnectedUsername} par forfait (${winningScore}-${disconnectedScore})`);
                         
-                        // Notifier les amis que le gagnant n'est plus en jeu
+                        // Notifier les amis que les DEUX joueurs ne sont plus en jeu
                         broadcastUserStatusChange(winnerUser.id, 'online', io, fastify);
+                        broadcastUserStatusChange(loserUser.id, 'offline', io, fastify); // Le perdant s'est déconnecté
                     }
                 }
                 
@@ -1118,8 +1135,9 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
                         
                         fastify.log.info(`[FORFAIT] gameFinished émis pour room ${previousRoom}: ${winnerUsername} bat ${leavingUsername} par forfait (${winningScore}-${leavingScore})`);
                         
-                        // Notifier les amis que le gagnant n'est plus en jeu
+                        // Notifier les amis que les DEUX joueurs ne sont plus en jeu
                         broadcastUserStatusChange(winnerUser.id, 'online', io, fastify);
+                        broadcastUserStatusChange(loserUser.id, 'online', io, fastify); // Le perdant quitte aussi
                     }
                 }
                 
@@ -1183,6 +1201,9 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
         const user = authenticateSocket(socket, fastify);
         if (user && typeof user === 'object') {
             fastify.log.info(`Socket ${socket.id} authentifié pour l'utilisateur ${user.username} (${user.id})`);
+            
+            // 🚀 NOUVEAU : Notifier les amis que l'utilisateur est maintenant en ligne
+            broadcastUserStatusChange(user.id, 'online', io, fastify);
         } else if (user === 'USER_ALREADY_CONNECTED') {
             // Utilisateur déjà connecté ailleurs
             socket.emit('error', { 
