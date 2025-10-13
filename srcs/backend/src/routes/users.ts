@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
+import { notifyFriendAdded } from '../socket/socketHandlers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -346,6 +347,9 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
       console.log(`[ACCEPT_FRIEND_REQUEST] Accepted friend request ${requestId} and created friendship`);
+      
+      // Notifier les deux utilisateurs qu'ils sont maintenant amis
+      notifyFriendAdded(currentUserId, friendRequest.sender_id, fastify);
 
       return { success: true, message: 'Friend request accepted' };
     } catch (error) {
