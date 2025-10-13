@@ -109,6 +109,7 @@ let errorListenerSet = false;
 let gameFinishedListenerActive = false;
 let friendStatusListenerSet = false;
 let friendAddedListenerSet = false;
+let friendRemovedListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -284,6 +285,28 @@ function setupGlobalSocketListeners() {
         });
         friendAddedListenerSet = true;
     }
+    
+    // Event listener for friend removed (real-time friend list updates)
+    if (!friendRemovedListenerSet) {
+        socket.on('friendRemoved', async (data: any) => {
+            console.log('❌ Friend removed:', data);
+            
+            // Rafraîchir la liste d'amis pour retirer l'ami supprimé
+            const friendListContainer = document.getElementById('friendList');
+            if (friendListContainer && friendListContainer.innerHTML) {
+                // Importer la fonction de rafraîchissement de la liste d'amis
+                try {
+                    const { friendListHTML, initLoadingIcons } = await import('../components/index.html.js');
+                    friendListContainer.innerHTML = await friendListHTML();
+                    initLoadingIcons();
+                    console.log('✅ Friend list refreshed after friend removed');
+                } catch (error) {
+                    console.error('Error refreshing friend list after friend removed:', error);
+                }
+            }
+        });
+        friendRemovedListenerSet = true;
+    }
 }
 
 // Configurer les listeners globaux au chargement
@@ -317,6 +340,7 @@ function reconnectWebSocket() {
         errorListenerSet = false;
         friendStatusListenerSet = false;
         friendAddedListenerSet = false;
+        friendRemovedListenerSet = false;
         
         // Re-setup global listeners
         setupGlobalSocketListeners();

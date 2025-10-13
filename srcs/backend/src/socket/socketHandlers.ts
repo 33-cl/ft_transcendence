@@ -78,6 +78,47 @@ export function notifyFriendAdded(user1Id: number, user2Id: number, fastify: Fas
     }
 }
 
+// Fonction pour notifier qu'un ami a été supprimé
+export function notifyFriendRemoved(user1Id: number, user2Id: number, fastify: FastifyInstance) {
+    if (!globalIo) return;
+    
+    try {
+        // Récupérer les informations des deux utilisateurs
+        const user1 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user1Id) as { id: number; username: string } | undefined;
+        const user2 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user2Id) as { id: number; username: string } | undefined;
+        
+        if (!user1 || !user2) return;
+        
+        // Notifier user1 que user2 a été supprimé de ses amis
+        const user1SocketId = getSocketIdForUser(user1.id);
+        if (user1SocketId) {
+            const user1Socket = globalIo.sockets.sockets.get(user1SocketId);
+            if (user1Socket) {
+                user1Socket.emit('friendRemoved', {
+                    friendId: user2.id,
+                    timestamp: Date.now()
+                });
+                console.log(`✅ Notified ${user1.username} that ${user2.username} was removed from friends`);
+            }
+        }
+        
+        // Notifier user2 que user1 a été supprimé de ses amis
+        const user2SocketId = getSocketIdForUser(user2.id);
+        if (user2SocketId) {
+            const user2Socket = globalIo.sockets.sockets.get(user2SocketId);
+            if (user2Socket) {
+                user2Socket.emit('friendRemoved', {
+                    friendId: user1.id,
+                    timestamp: Date.now()
+                });
+                console.log(`✅ Notified ${user2.username} that ${user1.username} was removed from friends`);
+            }
+        }
+    } catch (error) {
+        fastify.log.error(`Error notifying friend removed: ${error}`);
+    }
+}
+
 // Fonction pour notifier les amis du changement de statut d'un utilisateur
 function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
     try {
