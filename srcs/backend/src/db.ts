@@ -91,6 +91,25 @@ db.exec(`
     UNIQUE(tournament_id, user_id),
     UNIQUE(tournament_id, alias)
   );
+
+  -- Table pour stocker les matches d'un tournoi (bracket)
+  CREATE TABLE IF NOT EXISTS tournament_matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tournament_id TEXT NOT NULL,
+    round INTEGER NOT NULL, -- 1 = premier tour, etc.
+    player1_id INTEGER, -- peut être NULL si bye
+    player2_id INTEGER, -- peut être NULL si bye
+    winner_id INTEGER, -- NULL tant que non joué
+    status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'finished', 'cancelled')),
+    scheduled_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+    FOREIGN KEY(player1_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(player2_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(winner_id) REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tm_tournament_id ON tournament_matches(tournament_id);
 `);
 
 
