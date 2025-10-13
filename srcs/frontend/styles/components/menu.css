@@ -1,4 +1,9 @@
 @layer components {
+
+    #mainMenu {
+        @apply pointer-events-none;
+    }
+
     .menu-container {
         @apply mt-[7vh] pointer-events-none; /* Menu container spacing */
     }
