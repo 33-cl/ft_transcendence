@@ -61,7 +61,8 @@
 
     .game-finished-winner-announcement {
         @apply text-4xl font-bold mb-6 text-white;
-        @apply tracking-wider;
+        @apply tracking-widest;
+        letter-spacing: 0.3em;
     }
 
     .game-finished-final-score {
@@ -70,11 +71,16 @@
     }
 
     .game-finished-final-score .score-number {
-        @apply text-7xl font-bold;
+        @apply text-6xl font-bold;
+        @apply transition-all duration-300;
+    }
+
+    .game-finished-final-score .score-number.winner-score {
+        @apply text-white;
     }
 
     .game-finished-final-score .score-separator {
-        @apply text-5xl font-bold text-gray-500;
+        @apply text-4xl font-bold text-gray-500;
     }
 
     .game-finished-scores {

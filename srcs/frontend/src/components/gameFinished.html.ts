@@ -5,13 +5,15 @@ export const gameFinishedHTML = (data?: any) => {
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
     const forfeitMessage = data?.forfeitMessage || '';
+    const mode = data?.mode; // 'ai', 'local', ou undefined pour online
     
     console.log('🎮 Winner object:', winner);
     console.log('🎮 Loser object:', loser);
     console.log('🎮 Is forfeit:', isForfeit);
+    console.log('🎮 Mode:', mode);
     
     // Determine if this is a local/AI game (side-based) or online game (username-based)
-    const isLocalOrAIGame = winner?.side && !winner?.username;
+    const isLocalOrAIGame = (winner?.side && !winner?.username) || mode === 'ai' || mode === 'local';
     const isOnlineGame = winner?.username && loser?.username;
     
     // Determine display names
@@ -29,6 +31,24 @@ export const gameFinishedHTML = (data?: any) => {
     
     // Layout pour parties locales/IA (plus simple, centré)
     if (isLocalOrAIGame) {
+        // Déterminer le texte du gagnant
+        let winnerText = '';
+        // Les sides peuvent être 'A' (gauche), 'C' (droite), 'left', ou 'right'
+        const isLeftWinner = winnerName === 'left' || winnerName === 'A';
+        
+        if (mode === 'local') {
+            // Mode local : afficher LEFT/RIGHT PLAYER
+            winnerText = isLeftWinner ? 'LEFT PLAYER WINS!' : 'RIGHT PLAYER WINS!';
+        } else if (mode === 'ai') {
+            // Mode IA : afficher YOU WIN/LOSE
+            // L'IA contrôle le paddle GAUCHE (A), le joueur contrôle le paddle DROIT (C)
+            // Donc si le gagnant est à gauche (A), le joueur a perdu
+            winnerText = isLeftWinner ? 'YOU LOSE!' : 'YOU WIN!';
+        } else {
+            // Fallback si mode n'est pas spécifié - supposer local
+            winnerText = isLeftWinner ? 'LEFT PLAYER WINS!' : 'RIGHT PLAYER WINS!';
+        }
+        
         return /*html*/`
             <div class="game-finished-overlay">
                 <div class="game-finished-box">
@@ -36,13 +56,13 @@ export const gameFinishedHTML = (data?: any) => {
                     
                     <div class="game-finished-local-result">
                         <div class="game-finished-winner-announcement">
-                            ${winnerName === 'left' ? 'LEFT PLAYER' : winnerName === 'right' ? 'RIGHT PLAYER' : winnerName.toUpperCase()} WINS!
+                            ${winnerText}
                         </div>
                         
                         <div class="game-finished-final-score">
-                            <span class="score-number">${winnerScore}</span>
+                            <span class="score-number ${isLeftWinner ? 'winner-score' : ''}">${winnerScore}</span>
                             <span class="score-separator">-</span>
-                            <span class="score-number">${loserScore}</span>
+                            <span class="score-number ${!isLeftWinner ? 'winner-score' : ''}">${loserScore}</span>
                         </div>
                     </div>
                     

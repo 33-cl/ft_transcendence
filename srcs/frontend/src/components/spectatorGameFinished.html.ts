@@ -19,37 +19,38 @@ export function spectatorGameFinishedHTML(data?: any) {
     console.log('👁️ Winner name:', winnerName, '| Score:', winnerScore);
     console.log('👁️ Loser name:', loserName, '| Score:', loserScore);
 
+    // Utiliser les mêmes styles que gameFinished pour la cohérence visuelle
     return /*html*/`
-        <div class="spectator-game-finished-overlay">
-            <div class="spectator-game-finished-box">
-                <h2 class="spectator-game-finished-title">
-                    ${isForfeit ? 'MATCH ENDED - FORFEIT' : 'MATCH FINISHED'}
+        <div class="game-finished-overlay">
+            <div class="game-finished-box">
+                <h2 class="game-finished-title">
+                    ${isForfeit ? 'VICTORY BY FORFEIT' : 'GAME OVER'}
                 </h2>
                 
                 ${isForfeit ? `
-                    <p class="spectator-game-finished-forfeit-msg">
+                    <p class="game-finished-forfeit-msg">
                         ${forfeitMessage}
                     </p>
                 ` : ''}
                 
-                <div class="spectator-game-finished-scores">
-                    <div class="spectator-game-finished-player winner">
+                <div class="game-finished-scores">
+                    <div class="game-finished-player winner">
                         <span class="player-label">WINNER</span>
                         <span class="player-name">${winnerName}</span>
                         <span class="player-score">${winnerScore}</span>
                     </div>
                     
-                    <div class="spectator-game-finished-vs">VS</div>
+                    <div class="game-finished-vs">VS</div>
                     
-                    <div class="spectator-game-finished-player loser">
+                    <div class="game-finished-player loser">
                         <span class="player-label">${isForfeit ? 'FORFEIT' : 'LOSER'}</span>
                         <span class="player-name">${loserName}</span>
                         <span class="player-score">${loserScore}</span>
                     </div>
                 </div>
                 
-                <div class="spectator-game-finished-actions">
-                    <button id="mainMenuBtn" class="spectator-game-finished-btn">MAIN MENU</button>
+                <div class="game-finished-actions">
+                    <button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>
                 </div>
             </div>
         </div>
