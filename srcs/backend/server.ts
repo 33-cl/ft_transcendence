@@ -13,6 +13,7 @@ import usersRoutes from './src/routes/users.js'; // Route /users (API REST)
 import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
 import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
+import tournamentsRoutes from './src/routes/tournaments.js'; // Route /tournaments (tournois)
 import { validateId } from './src/security.js'; // Import security helpers
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
@@ -84,6 +85,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
     app.register(roomsRoutes); // Ajoute les routes /rooms
     app.register(authRoutes);  // Ajoute les routes /auth
     app.register(matchesRoutes); // Ajoute les routes /matches
+  app.register(tournamentsRoutes); // Ajoute les routes /tournaments
 
     // Route GET pour récupérer les infos d'un utilisateur
     app.get('/profile/:id', async (request, reply) => {
