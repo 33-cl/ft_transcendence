@@ -196,7 +196,10 @@ export function initializeFriendListEventListeners() {
 // Fonction pour initialiser le bouton Add Friends
 export function initializeAddFriendsButton() {
     const addFriendsBtn = document.getElementById('addFriendsBtn');
-    if (addFriendsBtn) {
+    if (addFriendsBtn && !(addFriendsBtn as any)._addFriendsListenerSet) {
+        // Marquer le bouton comme ayant un listener pour éviter les doublons
+        (addFriendsBtn as any)._addFriendsListenerSet = true;
+        
         addFriendsBtn.addEventListener('click', async () => {
             const { show, hide } = await import('../pages/utils.js');
             const { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } = await import('./addFriends.html.js');

@@ -275,9 +275,10 @@ function setupGlobalSocketListeners() {
             if (friendListContainer && friendListContainer.innerHTML) {
                 // Importer la fonction de rafraîchissement de la liste d'amis
                 try {
-                    const { friendListHTML, initLoadingIcons } = await import('../components/index.html.js');
+                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton } = await import('../components/index.html.js');
                     friendListContainer.innerHTML = await friendListHTML();
                     initLoadingIcons();
+                    initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
                     console.log('✅ Friend list refreshed after friend added');
                 } catch (error) {
                     console.error('Error refreshing friend list after friend added:', error);
@@ -297,9 +298,10 @@ function setupGlobalSocketListeners() {
             if (friendListContainer && friendListContainer.innerHTML) {
                 // Importer la fonction de rafraîchissement de la liste d'amis
                 try {
-                    const { friendListHTML, initLoadingIcons } = await import('../components/index.html.js');
+                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton } = await import('../components/index.html.js');
                     friendListContainer.innerHTML = await friendListHTML();
                     initLoadingIcons();
+                    initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
                     console.log('✅ Friend list refreshed after friend removed');
                 } catch (error) {
                     console.error('Error refreshing friend list after friend removed:', error);
@@ -319,9 +321,10 @@ function setupGlobalSocketListeners() {
             if (friendListContainer && friendListContainer.innerHTML) {
                 // Importer la fonction de rafraîchissement de la liste d'amis
                 try {
-                    const { friendListHTML, initLoadingIcons } = await import('../components/index.html.js');
+                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton } = await import('../components/index.html.js');
                     friendListContainer.innerHTML = await friendListHTML();
                     initLoadingIcons();
+                    initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
                     console.log('✅ Friend list refreshed after profile update');
                 } catch (error) {
                     console.error('Error refreshing friend list after profile update:', error);
