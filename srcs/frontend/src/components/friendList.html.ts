@@ -16,28 +16,9 @@ export async function friendListHTML() {
         const usersData = await usersResponse.json();
         const users = usersData.users || [];
 
-        // Récupérer le statut en temps réel des amis
-        let friendsStatus = new Map<string, any>();
-        try {
-            const statusResponse = await fetch('/users/status', {
-                method: 'GET',
-                credentials: 'include'
-            });
-
-            if (statusResponse.ok) {
-                const statusData = await statusResponse.json();
-                console.log('Friends status received:', statusData);
-                const statuses = statusData.friendsStatus || [];
-                statuses.forEach((friend: any) => {
-                    friendsStatus.set(friend.username, friend);
-                });
-                console.log('Friends status map:', friendsStatus);
-            } else {
-                console.warn('Failed to fetch friends status:', statusResponse.status, statusResponse.statusText);
-            }
-        } catch (error) {
-            console.warn('Could not fetch friends status:', error);
-        }
+        // ✨ NOUVEAU : On ne fait plus de fetch du statut initial
+        // Les WebSocket events mettront à jour le statut en temps réel après le chargement
+        console.log('Users will be displayed with offline status, WebSocket will update in real-time');
 
         // Récupérer le leaderboard pour identifier le premier
         const leaderboardResponse = await fetch('/users/leaderboard?limit=1', {
@@ -79,22 +60,16 @@ export async function friendListHTML() {
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
             
-            // Récupérer le statut de l'ami
-            const friendStatus = friendsStatus.get(user.username) || { status: 'offline', isInGame: false, isOnline: false };
-            const { status, isInGame } = friendStatus;
+            // ✨ NOUVEAU : Au chargement initial, tous les amis sont "offline"
+            // Les WebSocket events mettront à jour le statut en temps réel
+            const status = 'offline';
+            const isInGame = false;
             
-            console.log(`User ${user.username}: status=${status}, isInGame=${isInGame}`);
+            console.log(`User ${user.username}: initial status=${status} (will be updated by WebSocket)`);
 
-            // Définir la couleur du point de statut
-            let statusColor = '#666'; // offline (gris)
-            let statusText = 'Offline';
-            if (status === 'online') {
-                statusColor = '#4CAF50'; // online (vert)
-                statusText = 'Online';
-            } else if (status === 'in-game') {
-                statusColor = '#FF9800'; // in-game (orange)
-                statusText = 'In Game';
-            }
+            // Définir la couleur du point de statut (offline par défaut)
+            const statusColor = '#666'; // offline (gris)
+            const statusText = 'Offline';
 
             userItems += `
                 <div id="profileBtn" class="friend relative" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}">
@@ -218,160 +193,198 @@ export function initializeAddFriendsButton() {
     }
 }
 
-// Fonction pour rafraîchir le statut des amis
-export async function refreshFriendListStatus() {
-    try {
-        const friendsList = document.getElementById('friendsList');
-        if (!friendsList) return;
+// ============================================
+// 🚀 NOUVEAU SYSTÈME : WebSocket Push Events
+// ============================================
+// Plus de polling ! Le serveur nous notifie en temps réel
 
-        // Récupérer le statut en temps réel des amis
-        const statusResponse = await fetch('/users/status', {
+// Variable pour suivre si les listeners WebSocket sont actifs
+let friendListSocketListenersActive = false;
+
+// Fonction pour écouter les événements WebSocket en temps réel
+export function startFriendListRealtimeUpdates() {
+    if (!window.socket) {
+        console.warn('⚠️ WebSocket not available for real-time friend updates');
+        return;
+    }
+
+    // Éviter les doublons de listeners
+    if (friendListSocketListenersActive) {
+        console.log('✅ Friend list WebSocket listeners already active');
+        return;
+    }
+
+    console.log('� Starting real-time friend list updates via WebSocket...');
+
+    // 1️⃣ Écouter les changements de statut des amis (online/offline/in-game)
+    window.socket.on('friendStatusChanged', (data: { username: string; status: string; timestamp: number }) => {
+        console.log('🔔 Friend status changed:', data);
+        updateFriendStatus(data.username, data.status);
+    });
+
+    // 2️⃣ Écouter les ajouts d'amis
+    window.socket.on('friendAdded', (data: { friend: { id: number; username: string }; timestamp: number }) => {
+        console.log('🔔 Friend added:', data);
+        reloadFriendList();
+    });
+
+    // 3️⃣ Écouter les suppressions d'amis
+    window.socket.on('friendRemoved', (data: { friendId: number; timestamp: number }) => {
+        console.log('� Friend removed:', data);
+        reloadFriendList();
+    });
+
+    // 4️⃣ Écouter les mises à jour de profil (pseudo/avatar)
+    window.socket.on('profileUpdated', (data: { userId: number; username: string; avatar_url: string; timestamp: number }) => {
+        console.log('🔔 Profile updated:', data);
+        updateFriendProfile(data.userId, data.username, data.avatar_url);
+    });
+
+    // 5️⃣ Écouter les nouvelles demandes d'ami (pour le badge)
+    window.socket.on('friendRequestReceived', (data: { sender: { id: number; username: string }; timestamp: number }) => {
+        console.log('🔔 Friend request received:', data);
+        updateFriendRequestsBadge();
+    });
+
+    friendListSocketListenersActive = true;
+    console.log('✅ Friend list real-time updates activated!');
+
+    // 🆕 Faire un fetch initial UNIQUE pour obtenir les statuts actuels
+    // Ensuite, les WebSocket events prendront le relais
+    fetchInitialFriendStatuses();
+}
+
+// Fonction pour récupérer les statuts initiaux des amis (appelée UNE SEULE FOIS au démarrage)
+async function fetchInitialFriendStatuses() {
+    try {
+        console.log('📡 Fetching initial friend statuses (one-time fetch)...');
+        const response = await fetch('/users/friends-online', {
             method: 'GET',
             credentials: 'include'
         });
 
-        if (!statusResponse.ok) {
-            console.warn('Failed to refresh friends status');
+        if (!response.ok) {
+            console.warn('Failed to fetch initial friend statuses');
             return;
         }
 
-        const statusData = await statusResponse.json();
-        const friendsStatus = statusData.friendsStatus || [];
-        console.log('🔄 Refreshing friend status:', friendsStatus);
-
-        // Mettre à jour chaque ami dans la liste
+        const data = await response.json();
+        const friendsStatus = data.friendsStatus || [];
+        
+        console.log('✅ Initial friend statuses received:', friendsStatus);
+        
+        // Mettre à jour les statuts dans le DOM
         for (const friend of friendsStatus) {
-            // Sélectionner spécifiquement dans la friendList, pas dans le leaderboard
-            const friendElement = document.querySelector(`#friendsList [data-username="${friend.username}"]`);
-            console.log(`🔍 Looking for friend element: ${friend.username}`, friendElement);
-            
-            if (friendElement) {
-                const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
-                const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
-
-                console.log(`📍 Status elements for ${friend.username}:`, { statusIndicator, friendNameElement });
-
-                if (statusIndicator) {
-                    // Récupérer l'ancien statut
-                    const oldIsInGame = friendElement.getAttribute('data-is-in-game') === 'true';
-                    
-                    // Mettre à jour la couleur du point de statut
-                    let statusColor = '#666'; // offline (gris)
-                    let statusTextContent = 'Offline';
-                    if (friend.status === 'online') {
-                        statusColor = '#4CAF50'; // online (vert)
-                        statusTextContent = 'Online';
-                    } else if (friend.status === 'in-game') {
-                        statusColor = '#FF9800'; // in-game (orange)
-                        statusTextContent = 'In Game';
-                    }
-
-                    console.log(`🎨 Updating ${friend.username}: ${friend.status} -> ${statusTextContent} (${statusColor})`);
-
-                    statusIndicator.style.backgroundColor = statusColor;
-                    statusIndicator.title = statusTextContent;
-
-                    // Mettre à jour l'attribut data-status
-                    friendElement.setAttribute('data-status', friend.status);
-                    friendElement.setAttribute('data-is-in-game', friend.isInGame ? 'true' : 'false');
-                    
-                    // Si le statut in-game a changé et qu'un menu contextuel est ouvert pour cet ami, le fermer
-                    const selectedUser = (window as any).selectedContextUser;
-                    if (selectedUser && selectedUser.username === friend.username && oldIsInGame !== friend.isInGame) {
-                        const menu = document.getElementById('contextMenu');
-                        if (menu && menu.innerHTML.trim()) {
-                            console.log(`🔄 Closing context menu for ${friend.username} due to game status change`);
-                            const { hide } = await import('../pages/utils.js');
-                            hide('contextMenu');
-                        }
-                    }
-                }
-
-                // Gérer l'animation mini-pong en temps réel
-                if (friendNameElement) {
-                    const currentAnimation = friendNameElement.querySelector('.mini-pong-animation');
-                    const shouldShowAnimation = friend.status === 'in-game' && friend.isInGame;
-
-                    console.log(`🎮 Animation for ${friend.username}: shouldShow=${shouldShowAnimation}, currentExists=${!!currentAnimation}`);
-
-                    if (shouldShowAnimation && !currentAnimation) {
-                        // Ajouter l'animation mini-pong
-                        const miniPongHTML = `
-                            <div class="mini-pong-animation inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
-                                <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
-                                    <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                    <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
-                                    <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
-                                </div>
-                            </div>
-                        `;
-                        friendNameElement.insertAdjacentHTML('beforeend', miniPongHTML);
-                        
-                        // Ajouter le style keyframes s'il n'existe pas déjà
-                        if (!document.querySelector('#ballMoveStyle')) {
-                            const style = document.createElement('style');
-                            style.id = 'ballMoveStyle';
-                            style.textContent = `
-                                @keyframes ballMove {
-                                    0% { left: 2px; }
-                                    100% { left: calc(100% - 6px); }
-                                }
-                            `;
-                            document.head.appendChild(style);
-                        }
-                        
-                        console.log(`🎮 Added mini-pong animation for ${friend.username}`);
-                    } else if (!shouldShowAnimation && currentAnimation) {
-                        // Retirer l'animation mini-pong
-                        currentAnimation.remove();
-                        console.log(`🎮 Removed mini-pong animation for ${friend.username}`);
-                    }
-                }
-
-            }
+            updateFriendStatus(friend.username, friend.status);
         }
     } catch (error) {
-        console.error('Error refreshing friend list status:', error);
+        console.error('Error fetching initial friend statuses:', error);
     }
 }
 
-// Make refresh function available globally for other components
-(window as any).refreshFriendList = refreshFriendListStatus;
-
-// Variable pour stocker l'intervalle de rafraîchissement
-let friendListRefreshInterval: number | null = null;
-
-// Fonction pour démarrer le rafraîchissement automatique
-export function startFriendListAutoRefresh() {
-    // Arrêter l'ancien intervalle s'il existe
-    if (friendListRefreshInterval) {
-        clearInterval(friendListRefreshInterval);
+// Fonction pour arrêter les listeners WebSocket
+export function stopFriendListRealtimeUpdates() {
+    if (!window.socket || !friendListSocketListenersActive) {
+        return;
     }
-    
-    console.log('🔄 Starting friend list auto-refresh...');
-    
-    // Faire un premier rafraîchissement immédiatement
-    setTimeout(() => {
-        console.log('🔄 First automatic refresh trigger');
-        refreshFriendListStatus();
-        updateFriendRequestsBadge();
-    }, 1000);
-    
-    // Démarrer un nouveau rafraîchissement toutes les 3 secondes (plus rapide pour tester)
-    friendListRefreshInterval = window.setInterval(() => {
-        console.log('🔄 Auto-refresh interval triggered');
-        refreshFriendListStatus();
-        updateFriendRequestsBadge();
-    }, 1000);
-    console.log('🔄 Started friend list auto-refresh with interval:', friendListRefreshInterval);
+
+    console.log('🛑 Stopping friend list real-time updates...');
+
+    // Retirer tous les listeners
+    window.socket.off('friendStatusChanged');
+    window.socket.off('friendAdded');
+    window.socket.off('friendRemoved');
+    window.socket.off('profileUpdated');
+    window.socket.off('friendRequestReceived');
+
+    friendListSocketListenersActive = false;
+    console.log('✅ Friend list real-time updates stopped');
 }
 
-// Fonction pour arrêter le rafraîchissement automatique
-export function stopFriendListAutoRefresh() {
-    if (friendListRefreshInterval) {
-        clearInterval(friendListRefreshInterval);
-        friendListRefreshInterval = null;
-        console.log('🔄 Stopped friend list auto-refresh');
+// Fonction helper pour mettre à jour le statut d'un ami spécifique
+function updateFriendStatus(username: string, status: string) {
+    const friendElement = document.querySelector(`#friendsList [data-username="${username}"]`);
+    if (!friendElement) return;
+
+    const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
+    const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
+
+    if (statusIndicator) {
+        let statusColor = '#666'; // offline
+        let statusText = 'Offline';
+        if (status === 'online') {
+            statusColor = '#4CAF50';
+            statusText = 'Online';
+        } else if (status === 'in-game') {
+            statusColor = '#FF9800';
+            statusText = 'In Game';
+        }
+
+        statusIndicator.style.backgroundColor = statusColor;
+        statusIndicator.title = statusText;
+        friendElement.setAttribute('data-status', status);
+        friendElement.setAttribute('data-is-in-game', status === 'in-game' ? 'true' : 'false');
+    }
+
+    // Gérer l'animation mini-pong
+    if (friendNameElement) {
+        const currentAnimation = friendNameElement.querySelector('.mini-pong-animation');
+        const shouldShowAnimation = status === 'in-game';
+
+        if (shouldShowAnimation && !currentAnimation) {
+            const miniPongHTML = `
+                <div class="mini-pong-animation inline-block ml-3 w-8 h-5 animate-spin" style="animation-duration: 3s;">
+                    <div class="relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden">
+                        <div class="absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                        <div class="absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2"></div>
+                        <div class="absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2" style="animation: ballMove 1s ease-in-out infinite alternate;"></div>
+                    </div>
+                </div>
+            `;
+            friendNameElement.insertAdjacentHTML('beforeend', miniPongHTML);
+        } else if (!shouldShowAnimation && currentAnimation) {
+            currentAnimation.remove();
+        }
+    }
+}
+
+// Fonction helper pour mettre à jour le profil d'un ami
+function updateFriendProfile(userId: number, newUsername: string, newAvatarUrl: string) {
+    const friendElement = document.querySelector(`#friendsList [data-user-id="${userId}"]`);
+    if (!friendElement) return;
+
+    // Mettre à jour le pseudo
+    const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
+    if (friendNameElement) {
+        const animation = friendNameElement.querySelector('.mini-pong-animation');
+        friendNameElement.textContent = newUsername;
+        if (animation) {
+            friendNameElement.appendChild(animation);
+        }
+    }
+
+    // Mettre à jour l'avatar
+    const avatarElement = friendElement.querySelector('.profile-pic') as HTMLImageElement;
+    if (avatarElement && newAvatarUrl) {
+        avatarElement.src = newAvatarUrl;
+    }
+
+    // Mettre à jour l'attribut data-username
+    friendElement.setAttribute('data-username', newUsername);
+}
+
+// Fonction helper pour recharger toute la liste d'amis
+async function reloadFriendList() {
+    const friendListContainer = document.getElementById('friendList');
+    if (!friendListContainer) return;
+
+    try {
+        const newHTML = await friendListHTML();
+        friendListContainer.innerHTML = newHTML;
+        initializeAddFriendsButton();
+        initializeFriendListEventListeners();
+    } catch (error) {
+        console.error('Error reloading friend list:', error);
     }
 }
 
