@@ -1,11 +1,7 @@
-/* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-/* Import other CSS files */
 
 @import 'global.css';
 
-/* Import component files */
 @import 'components/background.css';
 @import 'components/buttons.css';
 @import 'components/pages.css';
@@ -18,10 +14,8 @@
 @import 'components/overlays.css';
 @import 'components/game.css';
 @import 'components/ai-config.css';
-
-@import 'forms.css';
-@import 'layout.css';
-@import 'pages.css';
+@import 'components/forms.css';
+@import 'components/layout.css';
 
 @tailwind base;
 @tailwind components;
