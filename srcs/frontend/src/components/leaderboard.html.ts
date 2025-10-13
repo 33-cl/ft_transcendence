@@ -28,7 +28,7 @@ export async function leaderboardHTML() {
         });
         
         if (leaderboardItems === '') {
-            leaderboardItems = '<p style="text-align: center; color: #ccc; margin-top: 20px;">Aucun joueur avec des matchs joués...</p>';
+            leaderboardItems = `<p class="text-center text-gray-400 mt-5">No players on the leaderboard yet...</p>'`;
         }
 
         // Afficher les statistiques globales
