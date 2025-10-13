@@ -1,6 +1,6 @@
 @layer components {
     .menu-container {
-        @apply mt-[7vh]; /* Menu container spacing */
+        @apply mt-[7vh] pointer-events-none; /* Menu container spacing */
     }
 
     .menu-section {
@@ -13,6 +13,10 @@
 
     #mainMenu button {
         @apply text-3xl; /* Button text size */
+    }
+
+    .button-group {
+        @apply pointer-events-none;
     }
 
     .bottom-left {

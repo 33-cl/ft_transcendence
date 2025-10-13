@@ -39,6 +39,10 @@
         @apply text-purple-800;
     }
 
+    button {
+        @apply pointer-events-auto;
+    }
+
     /* Boutons désactivés - Style global */
     button:disabled {
         @apply opacity-50 cursor-not-allowed;
