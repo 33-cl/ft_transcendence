@@ -515,9 +515,10 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                 // Send gameFinished event to show end screen for local/AI games
                 io.to(roomName).emit('gameFinished', {
                     winner,
-                    loser
+                    loser,
+                    mode: enableAI ? 'ai' : 'local' // Indiquer le mode pour l'affichage côté frontend
                 });
-                fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu local/IA room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
+                fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu ${enableAI ? 'IA' : 'local'} room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
             };
             
             room.pongGame = new PongGame(room.maxPlayers, localGameEndCallback);
@@ -575,11 +576,14 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
     if (room.isLocalGame) {
         // Send gameFinished event to show end screen for local/AI games
         if (room && room.players && room.players.length > 0 && typeof io !== 'undefined') {
+            // Déterminer si c'est un jeu IA en vérifiant si l'IA est activée
+            const isAIGame = room.pongGame?.state?.aiConfig?.enabled || false;
             io.to(roomName).emit('gameFinished', {
                 winner,
-                loser
+                loser,
+                mode: isAIGame ? 'ai' : 'local' // Indiquer le mode pour l'affichage côté frontend
             });
-            fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu local/IA room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
+            fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu ${isAIGame ? 'IA' : 'local'} room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
         }
         return;
     }
