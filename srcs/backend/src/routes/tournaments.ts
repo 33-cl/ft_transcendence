@@ -133,28 +133,35 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Tournament is full' });
             }
 
-            // Insérer le participant (les contraintes UNIQUE en DB empêcheront les doublons)
+            // Vérifications proactives pour renvoyer des erreurs précises
+            const existingByUser = db.prepare(
+                `SELECT id FROM tournament_participants WHERE tournament_id = ? AND user_id = ?`
+            ).get(id, validUserId);
+            if (existingByUser) {
+                return reply.status(409).send({ error: 'User already joined this tournament' });
+            }
+
+            const existingByAlias = db.prepare(
+                `SELECT id FROM tournament_participants WHERE tournament_id = ? AND alias = ?`
+            ).get(id, sanitizedAlias);
+            if (existingByAlias) {
+                return reply.status(409).send({ error: 'Alias already taken in this tournament' });
+            }
+
+            // Insérer le participant
             const insert = db.prepare(`
                 INSERT INTO tournament_participants (tournament_id, user_id, alias)
                 VALUES (?, ?, ?)
             `);
 
-            try {
-                const result = insert.run(id, validUserId, sanitizedAlias);
+            const result = insert.run(id, validUserId, sanitizedAlias);
 
-                // Incrémenter le compteur de participants
-                db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(id);
+            // Incrémenter le compteur de participants
+            db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(id);
 
-                const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(result.lastInsertRowid);
+            const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(result.lastInsertRowid);
 
-                reply.status(201).send({ success: true, participant });
-            } catch (err: any) {
-                // Gestion simple des erreurs de contrainte (user déjà inscrit ou alias déjà pris)
-                if (err && err.code === 'SQLITE_CONSTRAINT') {
-                    return reply.status(409).send({ error: 'User already joined or alias already taken' });
-                }
-                throw err;
-            }
+            reply.status(201).send({ success: true, participant });
         } catch (error) {
             fastify.log.error(`Error joining tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
