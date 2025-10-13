@@ -1,0 +1,5 @@
+@layer components {
+    #map {
+        @apply border-2 border-white rounded-md; /* Map borders and corners */
+    }
+}

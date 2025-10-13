@@ -1,0 +1,132 @@
+@layer components {
+    /* Session Disconnected Overlay - Style sobre et minimaliste */
+    .session-overlay {
+        @apply fixed inset-0 z-[9999];
+        @apply flex items-center justify-center;
+        @apply bg-black bg-opacity-95;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .session-message-box {
+        @apply flex flex-col items-center justify-center;
+        @apply p-12;
+        @apply bg-black;
+        @apply border-2 border-white;
+        @apply max-w-2xl;
+        text-align: center;
+    }
+
+    .session-title {
+        @apply text-3xl font-bold mb-6 text-white;
+        letter-spacing: 0.2em;
+    }
+
+    .session-description {
+        @apply text-lg text-gray-300;
+        line-height: 1.8;
+    }
+    
+    /* Game Finished Overlay - Style sobre inspiré de session-overlay */
+    .game-finished-overlay {
+        @apply fixed inset-0 z-[60];
+        @apply flex items-center justify-center;
+        @apply bg-black bg-opacity-95;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .game-finished-box {
+        @apply flex flex-col items-center justify-center;
+        @apply p-12;
+        @apply bg-black;
+        @apply border-2 border-white;
+        @apply max-w-2xl;
+        text-align: center;
+    }
+
+    .game-finished-title {
+        @apply text-3xl font-bold mb-8 text-white;
+        letter-spacing: 0.2em;
+    }
+
+    .game-finished-forfeit-msg {
+        @apply text-lg mb-6 text-red-400 text-center;
+        @apply italic;
+    }
+
+    /* Layout spécifique pour parties locales/IA */
+    .game-finished-local-result {
+        @apply flex flex-col items-center justify-center mb-8;
+        @apply w-full;
+    }
+
+    .game-finished-winner-announcement {
+        @apply text-4xl font-bold mb-6 text-white;
+        @apply tracking-wider;
+    }
+
+    .game-finished-final-score {
+        @apply flex items-center justify-center gap-6;
+        @apply text-white;
+    }
+
+    .game-finished-final-score .score-number {
+        @apply text-7xl font-bold;
+    }
+
+    .game-finished-final-score .score-separator {
+        @apply text-5xl font-bold text-gray-500;
+    }
+
+    .game-finished-scores {
+        @apply flex flex-row items-center justify-center gap-16 mb-8;
+        @apply w-full;
+    }
+
+    .game-finished-player {
+        @apply flex flex-col items-center justify-center;
+        @apply min-w-[200px];
+    }
+
+    .game-finished-player .player-label {
+        @apply text-sm font-bold mb-2 uppercase tracking-widest;
+        @apply text-gray-400;
+    }
+
+    .game-finished-player.winner .player-label {
+        @apply text-white;
+    }
+
+    .game-finished-player .player-name {
+        @apply text-2xl font-bold mb-4 text-white;
+    }
+
+    .game-finished-player .player-score {
+        @apply text-5xl font-bold text-white;
+    }
+
+    .game-finished-vs {
+        @apply text-3xl font-bold text-gray-500;
+        @apply px-4;
+    }
+
+    .game-finished-actions {
+        @apply flex flex-row gap-6 mt-6;
+    }
+
+    .game-finished-btn {
+        @apply px-8 py-3 text-base font-bold;
+        @apply bg-black text-white;
+        @apply border-2 border-white;
+        @apply transition-all duration-200;
+        @apply cursor-pointer;
+        letter-spacing: 0.1em;
+    }
+
+    .game-finished-btn:hover {
+        @apply bg-white text-black;
+    }
+
+    .game-finished-btn:active {
+        transform: scale(0.98);
+    }
+}

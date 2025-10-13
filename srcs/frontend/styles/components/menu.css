@@ -1,0 +1,33 @@
+@layer components {
+    .menu-container {
+        @apply mt-[7vh]; /* Menu container spacing */
+    }
+
+    .menu-section {
+        @apply my-[15vh]; /* Menu section spacing */
+    }
+
+    #mainMenu h1 {
+        @apply text-[42px] mb-[2vh]; /* Menu text size */
+    }
+
+    #mainMenu button {
+        @apply text-3xl; /* Button text size */
+    }
+
+    .bottom-left {
+        @apply fixed bottom-[20px] left-[20px] m-0 z-[100] bg-none shadow-none;
+    }
+
+    #contextMenu {
+        @apply fixed z-[1000] bg-gray-600 text-base;
+    }
+
+    #contextMenu li {
+        @apply p-4;
+    }
+
+    #contextMenu li:hover {
+        @apply bg-gray-400;
+    }
+}

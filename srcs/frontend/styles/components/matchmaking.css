@@ -1,0 +1,27 @@
+@layer components {
+    /* Matchmaking page */
+    #matchmaking-page {
+        @apply w-[100vw];
+    }
+
+    #matchmaking h1 {
+        @apply text-4xl;
+    }
+
+    #matchmaking button {
+        @apply text-xl pt-2;
+    }
+
+    #searchingText {
+        @apply text-2xl pb-4; /* Search status text styling */
+    }
+
+    #tips {
+        @apply text-gray-400 w-[60vw] mx-[20vw];   /* Full width and margin */
+        @apply fixed bottom-0 left-0;             /* Positioning */
+    } 
+
+    #tipText {
+        @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
+    }
+}

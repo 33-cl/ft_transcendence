@@ -5,7 +5,20 @@
 
 @import 'global.css';
 
-@import 'components.css';
+/* Import component files */
+@import 'components/background.css';
+@import 'components/buttons.css';
+@import 'components/pages.css';
+@import 'components/auth.css';
+@import 'components/friends.css';
+@import 'components/menu.css';
+@import 'components/profile.css';
+@import 'components/settings.css';
+@import 'components/matchmaking.css';
+@import 'components/overlays.css';
+@import 'components/game.css';
+@import 'components/ai-config.css';
+
 @import 'forms.css';
 @import 'layout.css';
 @import 'pages.css';

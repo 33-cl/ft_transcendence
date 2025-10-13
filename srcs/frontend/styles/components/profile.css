@@ -1,0 +1,95 @@
+@layer components {
+    .profile-pic {
+        @apply relative z-0; /* Profile picture layering */
+    }
+
+    #goToProfile-component {
+        @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 pr-12 z-[100] min-w-fit; /* Position, border, arrondi, fond, layout - s'adapte à la longueur du contenu */
+    }
+
+    #goToProfile .profile-pic {
+        @apply w-[75px] h-[75px] rounded-md mr-4 relative flex-shrink-0; /* Photo à gauche, taille et arrondi, position relative pour la couronne, ne se réduit pas */
+    }
+
+    .goToProfile-info {
+        @apply flex flex-col items-start whitespace-nowrap; /* Colonne pseudo + bouton, pas de retour à la ligne */
+    }
+
+    .goToProfile-username {
+        @apply text-xl font-bold mb-2 mr-8; /* Pseudo en haut, plus de truncate pour permettre l'expansion */
+    }
+
+    .goToProfile-logout {
+        @apply bg-red-800 text-white px-6 py-2 rounded-md border-none text-base ; /* Bouton déconnexion taille normale */
+    }
+
+    .goToProfile-logout:hover {
+        @apply bg-red-900; /* Bouton déconnexion hover */
+    }
+
+    /* Profile page styling */
+    .profile-container {
+        @apply flex flex-col items-center justify-start w-full h-full pt-16;
+    }
+
+    .username-title {
+        @apply text-5xl mb-12;
+    }
+
+    .profile-stats {
+        @apply flex flex-row items-start justify-center gap-16;
+    }
+
+    .avatar-container {
+        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden bg-gray-800;
+    }
+
+    .avatar-container img {
+        @apply w-64 h-64 rounded-md relative;
+    }
+    
+    /* GIFs rectangulaires : utiliser object-cover pour éviter la déformation */
+    .avatar-container img[src*=".gif"] {
+        @apply object-cover;
+    }
+
+    .stats-container {
+        @apply flex flex-col items-start text-left;
+    }
+
+    .stat-row {
+        @apply text-4xl flex flex-row items-center justify-between w-full mb-6;
+    }
+
+    .stat-label {
+        @apply my-0 mr-16;
+    }
+
+    .title-value {
+        @apply text-amber-500;
+    }
+
+    .match-history {
+        @apply mt-24 w-full max-w-2xl;
+    }
+
+    .match-history h2 {
+        @apply text-3xl mb-6;
+    }
+
+    #match-list {
+        @apply list-none p-0;
+    }
+
+    .match-item {
+        @apply text-xl py-2;
+    }
+
+    .match-item.win {
+        @apply text-green-500;
+    }
+
+    .match-item.loss {
+        @apply text-red-500;
+    }
+}
