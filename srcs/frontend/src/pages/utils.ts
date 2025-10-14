@@ -100,11 +100,15 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('mainMenu');
                 await show('friendList');
                 // Attendre que l'HTML soit rendu avant d'initialiser
-                setTimeout(() => {
+                setTimeout(async () => {
                     initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
                     startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                     initLoadingIcons(); // Initialiser les icônes de chargement
+                    
+                    // 🎯 Mettre à jour le badge des demandes d'amis dès l'affichage
+                    const { updateFriendRequestsBadge } = await import('../components/friendList.html.js');
+                    await updateFriendRequestsBadge();
                 }, 100);
                 await show('leaderboard');
                 await show('goToProfile');
@@ -114,11 +118,15 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('mainMenu');
                 await show('friendList');
                 // Attendre que l'HTML soit rendu avant d'initialiser
-                setTimeout(() => {
+                setTimeout(async () => {
                     initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
                     startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                     initLoadingIcons(); // Initialiser les icônes de chargement
+                    
+                    // 🎯 Mettre à jour le badge des demandes d'amis dès l'affichage
+                    const { updateFriendRequestsBadge } = await import('../components/friendList.html.js');
+                    await updateFriendRequestsBadge();
                 }, 100);
                 await show('leaderboard');
                 await show('goToProfile');
@@ -128,11 +136,15 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             await show('mainMenu');
             await show('friendList');
             // Attendre que l'HTML soit rendu avant d'initialiser
-            setTimeout(() => {
+            setTimeout(async () => {
                 initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                 initializeFriendListEventListeners(); // Initialiser les event listeners
                 startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                 initLoadingIcons(); // Initialiser les icônes de chargement
+                
+                // 🎯 Mettre à jour le badge des demandes d'amis dès l'affichage
+                const { updateFriendRequestsBadge } = await import('../components/friendList.html.js');
+                await updateFriendRequestsBadge();
             }, 100);
             await show('leaderboard');
             await show('goToProfile');

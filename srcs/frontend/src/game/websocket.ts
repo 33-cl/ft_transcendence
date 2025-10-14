@@ -111,6 +111,7 @@ let friendStatusListenerSet = false;
 let friendAddedListenerSet = false;
 let friendRemovedListenerSet = false;
 let profileUpdatedListenerSet = false;
+let friendRequestReceivedListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -332,6 +333,23 @@ function setupGlobalSocketListeners() {
             }
         });
         profileUpdatedListenerSet = true;
+    }
+    
+    // Event listener for friend request received (real-time badge update)
+    if (!friendRequestReceivedListenerSet) {
+        socket.on('friendRequestReceived', async (data: any) => {
+            console.log('🔔 Friend request received:', data);
+            
+            // Mettre à jour le badge des demandes d'amis
+            try {
+                const { updateFriendRequestsBadge } = await import('../components/index.html.js');
+                await updateFriendRequestsBadge();
+                console.log('✅ Friend requests badge updated');
+            } catch (error) {
+                console.error('Error updating friend requests badge:', error);
+            }
+        });
+        friendRequestReceivedListenerSet = true;
     }
 }
 

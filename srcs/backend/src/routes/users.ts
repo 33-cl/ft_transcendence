@@ -26,13 +26,24 @@ function parseCookies(cookieString?: string): { [key: string]: string } {
 // Helper pour notifier qu'une nouvelle demande d'ami a été reçue
 function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance) {
   try {
+    console.log(`🔔 [NOTIFY] Attempting to notify user ${receiverId} about friend request from ${senderId}`);
+    
     const sender = db.prepare('SELECT id, username FROM users WHERE id = ?').get(senderId) as { id: number; username: string } | undefined;
     
-    if (!sender) return;
+    if (!sender) {
+      console.log(`🔔 [NOTIFY] Sender ${senderId} not found in database`);
+      return;
+    }
+    
+    console.log(`🔔 [NOTIFY] Sender found: ${sender.username}`);
     
     const receiverSocketId = getSocketIdForUser(receiverId);
+    console.log(`🔔 [NOTIFY] Receiver socket ID: ${receiverSocketId}`);
+    
     if (receiverSocketId && (fastify as any).io) {
       const receiverSocket = (fastify as any).io.sockets.sockets.get(receiverSocketId);
+      console.log(`🔔 [NOTIFY] Receiver socket found: ${!!receiverSocket}`);
+      
       if (receiverSocket) {
         receiverSocket.emit('friendRequestReceived', {
           sender: {
@@ -42,10 +53,32 @@ function notifyFriendRequestReceived(receiverId: number, senderId: number, fasti
           timestamp: Date.now()
         });
         console.log(`✅ Notified user ${receiverId} about friend request from ${sender.username}`);
+      } else {
+        console.log(`⚠️ [NOTIFY] Receiver socket not found in io.sockets.sockets`);
+      }
+    } else {
+      console.log(`⚠️ [NOTIFY] Either receiverSocketId is null or fastify.io is unavailable`);
+    }
+  } catch (error) {
+    console.error('❌ [NOTIFY] Error notifying friend request received:', error);
+  }
+}
+
+// 🆕 Helper pour notifier un changement dans le compteur de demandes d'amis (accepté/rejeté)
+function notifyFriendRequestCountChanged(userId: number, fastify: FastifyInstance) {
+  try {
+    const userSocketId = getSocketIdForUser(userId);
+    if (userSocketId && (fastify as any).io) {
+      const userSocket = (fastify as any).io.sockets.sockets.get(userSocketId);
+      if (userSocket) {
+        userSocket.emit('friendRequestCountChanged', {
+          timestamp: Date.now()
+        });
+        console.log(`✅ Notified user ${userId} that friend request count changed`);
       }
     }
   } catch (error) {
-    console.error('Error notifying friend request received:', error);
+    console.error('Error notifying friend request count changed:', error);
   }
 }
 
@@ -379,6 +412,9 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       
       // Notifier les deux utilisateurs qu'ils sont maintenant amis
       notifyFriendAdded(currentUserId, friendRequest.sender_id, fastify);
+      
+      // 🆕 Notifier l'utilisateur que son compteur de demandes a changé
+      notifyFriendRequestCountChanged(currentUserId, fastify);
 
       return { success: true, message: 'Friend request accepted' };
     } catch (error) {
@@ -435,6 +471,9 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
       console.log(`[REJECT_FRIEND_REQUEST] Rejected and deleted friend request ${requestId}`);
+      
+      // 🆕 Notifier l'utilisateur que son compteur de demandes a changé
+      notifyFriendRequestCountChanged(currentUserId, fastify);
 
       return { success: true, message: 'Friend request rejected' };
     } catch (error) {

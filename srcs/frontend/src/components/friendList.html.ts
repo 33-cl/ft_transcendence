@@ -248,6 +248,17 @@ export function startFriendListRealtimeUpdates() {
 
     friendListSocketListenersActive = true;
     console.log('✅ Friend list real-time updates activated!');
+    
+    // Debug des listeners Socket.IO (compatible v3+)
+    if ((window.socket as any)._callbacks) {
+        const callbacks = (window.socket as any)._callbacks;
+        console.log('🔍 DEBUG: All registered callbacks:', Object.keys(callbacks));
+        console.log('🔍 DEBUG: friendStatusChanged listeners:', callbacks.$friendStatusChanged?.length || 0);
+        console.log('🔍 DEBUG: friendAdded listeners:', callbacks.$friendAdded?.length || 0);
+        console.log('🔍 DEBUG: friendRemoved listeners:', callbacks.$friendRemoved?.length || 0);
+        console.log('🔍 DEBUG: profileUpdated listeners:', callbacks.$profileUpdated?.length || 0);
+        console.log('🔍 DEBUG: friendRequestReceived listeners:', callbacks.$friendRequestReceived?.length || 0);
+    }
 
     // 🆕 Faire un fetch initial UNIQUE pour obtenir les statuts actuels
     // Ensuite, les WebSocket events prendront le relais
