@@ -79,6 +79,35 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // GET /tournaments/:id - Récupérer les détails d'un tournoi (participants + bracket)
+    fastify.get('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        try {
+            const { id } = request.params as { id: string };
+
+            if (!id || id.length < 10 || id.length > 50) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            const participants = db.prepare(
+                `SELECT id, tournament_id, user_id, alias, joined_at FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
+            ).all(id);
+
+            const matches = db.prepare(
+                `SELECT id, tournament_id, round, player1_id, player2_id, winner_id, status, scheduled_at FROM tournament_matches WHERE tournament_id = ? ORDER BY round, id`
+            ).all(id);
+
+            reply.send({ success: true, tournament, participants, matches });
+        } catch (error) {
+            fastify.log.error(`Error fetching tournament details: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
     // GET /tournaments - Récupérer la liste des tournois
     fastify.get('/tournaments', async (_request: FastifyRequest, reply: FastifyReply) => {
         try {
