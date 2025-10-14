@@ -389,6 +389,14 @@ async function reloadFriendList() {
     const friendListContainer = document.getElementById('friendList');
     if (!friendListContainer) return;
 
+    // 🚨 IMPORTANT : Ne recharger que si friendList est visible
+    // Si addFriends est affiché, ne pas interférer avec l'affichage
+    const addFriendsContainer = document.getElementById('addFriends');
+    if (addFriendsContainer && !addFriendsContainer.classList.contains('hidden')) {
+        console.log('⚠️ addFriends is visible, skipping friendList reload');
+        return;
+    }
+
     try {
         const newHTML = await friendListHTML();
         friendListContainer.innerHTML = newHTML;
