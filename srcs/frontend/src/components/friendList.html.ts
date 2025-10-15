@@ -218,7 +218,7 @@ export function startFriendListRealtimeUpdates() {
 
     // 1️⃣ Écouter les changements de statut des amis (online/offline/in-game)
     window.socket.on('friendStatusChanged', (data: { username: string; status: string; timestamp: number }) => {
-        console.log('🔔 Friend status changed:', data);
+        console.log('🔔 [WebSocket Event] friendStatusChanged received:', data);
         updateFriendStatus(data.username, data.status);
     });
 
@@ -314,11 +314,27 @@ export function stopFriendListRealtimeUpdates() {
 
 // Fonction helper pour mettre à jour le statut d'un ami spécifique
 function updateFriendStatus(username: string, status: string) {
+    console.log(`🔄 [updateFriendStatus] Updating status for ${username} to ${status}`);
+    
     const friendElement = document.querySelector(`#friendsList [data-username="${username}"]`);
-    if (!friendElement) return;
+    if (!friendElement) {
+        console.warn(`⚠️ [updateFriendStatus] Friend element not found for ${username}`);
+        console.log(`🔍 [updateFriendStatus] Available elements:`, 
+            Array.from(document.querySelectorAll('#friendsList [data-username]')).map(el => el.getAttribute('data-username')));
+        return;
+    }
 
+    console.log(`✅ [updateFriendStatus] Found friend element for ${username}`);
+    
     const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
     const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
+
+    if (!statusIndicator) {
+        console.error(`❌ [updateFriendStatus] Status indicator not found for ${username}`);
+        return;
+    }
+
+    console.log(`✅ [updateFriendStatus] Found status indicator for ${username}`);
 
     if (statusIndicator) {
         let statusColor = '#666'; // offline
@@ -335,6 +351,8 @@ function updateFriendStatus(username: string, status: string) {
         statusIndicator.title = statusText;
         friendElement.setAttribute('data-status', status);
         friendElement.setAttribute('data-is-in-game', status === 'in-game' ? 'true' : 'false');
+        
+        console.log(`✅ [updateFriendStatus] Updated ${username}: color=${statusColor}, text=${statusText}`);
     }
 
     // Gérer l'animation mini-pong
