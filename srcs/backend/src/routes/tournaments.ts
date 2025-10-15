@@ -281,7 +281,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             // Check if all matches in this round are finished -> advance bracket
             const round = tm.round as number;
-            const remaining = db.prepare(`SELECT COUNT(*) as cnt FROM tournament_matches WHERE tournament_id = ? AND round = ? AND status != 'finished'`).get(tid, round).cnt as number;
+            const remaining = (db.prepare(`SELECT COUNT(*) as cnt FROM tournament_matches WHERE tournament_id = ? AND round = ? AND status != 'finished'`).get(tid, round) as { cnt: number }).cnt;
 
             if (remaining === 0) {
                 // Récupérer tous les winners de la ronde, dans l'ordre des match id
