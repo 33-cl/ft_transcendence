@@ -112,7 +112,6 @@ export function updateAITarget(state: GameState): void {
     state.aiConfig.isMoving = Math.abs(targetY - state.aiConfig.currentY) > 5; // Seuil de mouvement
     
     // Log de debug pour visualiser les décisions de l'IA
-    console.log(`🤖 IA UPDATE: predicted=${predictedY.toFixed(1)}, target=${targetY.toFixed(1)}, current=${state.aiConfig.currentY.toFixed(1)}, moving=${state.aiConfig.isMoving}`);
 }
 
 /**
@@ -128,13 +127,11 @@ export function movePaddleWithLerp(state: GameState): void {
     // Si le paddle doit bouger mais que le délai de réaction n'a pas commencé, on l'initialise
     if (ai.isMoving && ai.reactionStartTime === 0) {
         ai.reactionStartTime = now;
-        console.log(`🤖 IA: Début du délai de réaction (${ai.reactionTime}ms)`);
         return; // On attend le délai avant de bouger
     }
     // Si le délai de réaction n'est pas écoulé, on ne bouge pas
     if (ai.isMoving && now - ai.reactionStartTime < ai.reactionTime) {
         const reste = ai.reactionTime - (now - ai.reactionStartTime);
-        console.log(`🤖 IA: Attente du délai, reste ${reste}ms`);
         return;
     }
     // Si on n'est pas censé bouger, on reset le délai

@@ -26,23 +26,18 @@ function parseCookies(cookieString?: string): { [key: string]: string } {
 // Helper pour notifier qu'une nouvelle demande d'ami a été reçue
 function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance) {
   try {
-    console.log(`🔔 [NOTIFY] Attempting to notify user ${receiverId} about friend request from ${senderId}`);
     
     const sender = db.prepare('SELECT id, username FROM users WHERE id = ?').get(senderId) as { id: number; username: string } | undefined;
     
     if (!sender) {
-      console.log(`🔔 [NOTIFY] Sender ${senderId} not found in database`);
       return;
     }
     
-    console.log(`🔔 [NOTIFY] Sender found: ${sender.username}`);
     
     const receiverSocketId = getSocketIdForUser(receiverId);
-    console.log(`🔔 [NOTIFY] Receiver socket ID: ${receiverSocketId}`);
     
     if (receiverSocketId && (fastify as any).io) {
       const receiverSocket = (fastify as any).io.sockets.sockets.get(receiverSocketId);
-      console.log(`🔔 [NOTIFY] Receiver socket found: ${!!receiverSocket}`);
       
       if (receiverSocket) {
         receiverSocket.emit('friendRequestReceived', {
@@ -52,13 +47,8 @@ function notifyFriendRequestReceived(receiverId: number, senderId: number, fasti
           },
           timestamp: Date.now()
         });
-        console.log(`✅ Notified user ${receiverId} about friend request from ${sender.username}`);
-      } else {
-        console.log(`⚠️ [NOTIFY] Receiver socket not found in io.sockets.sockets`);
       }
-    } else {
-      console.log(`⚠️ [NOTIFY] Either receiverSocketId is null or fastify.io is unavailable`);
-    }
+    } 
   } catch (error) {
     console.error('❌ [NOTIFY] Error notifying friend request received:', error);
   }
@@ -74,7 +64,6 @@ function notifyFriendRequestCountChanged(userId: number, fastify: FastifyInstanc
         userSocket.emit('friendRequestCountChanged', {
           timestamp: Date.now()
         });
-        console.log(`✅ Notified user ${userId} that friend request count changed`);
       }
     }
   } catch (error) {
@@ -85,50 +74,37 @@ function notifyFriendRequestCountChanged(userId: number, fastify: FastifyInstanc
 export default async function usersRoutes(fastify: FastifyInstance) {
   fastify.get('/users', async (request, reply) => {
     try {
-      console.log('[FRIENDS] === START /users request ===');
       
       // Récupérer le JWT depuis les cookies
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
       const jwtToken = cookies['jwt'];
       
       if (!jwtToken) {
-        console.log('[FRIENDS] No JWT token found');
         return { users: [] };
       }
 
-      console.log('[FRIENDS] JWT token found');
       let currentUserId: number | null = null;
       try {
         const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-        console.log(`[FRIENDS] JWT payload: ${JSON.stringify(payload)}`);
         const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-        console.log(`[FRIENDS] Active token check result: ${JSON.stringify(active)}`);
         if (active) {
           currentUserId = payload.userId;
-          console.log(`[FRIENDS] User authenticated: ${currentUserId}`);
-        } else {
-          console.log('[FRIENDS] Token not found in active_tokens');
-        }
+        } 
       } catch (err) {
-        console.log(`[FRIENDS] JWT verification failed: ${err}`);
         return { users: [] };
       }
 
       if (!currentUserId) {
-        console.log('[FRIENDS] No current user ID');
         return { users: [] };
       }
 
-      console.log(`[FRIENDS] Getting friends for user ${currentUserId}`);
 
       // Vérifier si l'utilisateur a des amis
       const friendsCount = db.prepare('SELECT COUNT(*) as count FROM friendships WHERE user_id = ?').get(currentUserId) as { count: number };
-      console.log(`[FRIENDS] Current friends count: ${friendsCount.count}`);
       
 
 
       // Récupérer tous les amis
-      console.log('[FRIENDS] Fetching friends...');
       const friends = db.prepare(`
         SELECT u.id, u.username, u.avatar_url, u.wins, u.losses, f.created_at 
         FROM friendships f
@@ -138,8 +114,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         LIMIT 10
       `).all(currentUserId);
       
-      console.log(`[FRIENDS] Found ${friends.length} friends:`, friends.map((f: any) => f.username));
-      console.log('[FRIENDS] === END /users request ===');
       
       return { users: friends };
     } catch (error) {
@@ -151,14 +125,12 @@ export default async function usersRoutes(fastify: FastifyInstance) {
   // Endpoint pour rechercher des utilisateurs
   fastify.get('/users/search', async (request, reply) => {
     try {
-      console.log('[SEARCH] === START /users/search request ===');
       
       // Récupérer le JWT depuis les cookies
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
       const jwtToken = cookies['jwt'];
       
       if (!jwtToken) {
-        console.log('[SEARCH] No JWT token found');
         return reply.status(401).send({ error: 'Not authenticated' });
       }
 
@@ -197,7 +169,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       // SECURITY: Sanitize search query to prevent SQL injection (additional protection)
       const sanitizedQuery = query.replace(/[<>]/g, '').trim();
 
-      console.log(`[SEARCH] Searching for users with query: ${sanitizedQuery}`);
 
       // Chercher des utilisateurs qui ne sont pas déjà amis et qui ne sont pas l'utilisateur actuel
       const searchResults = db.prepare(`
@@ -226,8 +197,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         };
       });
 
-      console.log(`[SEARCH] Found ${usersWithRequestStatus.length} users:`, usersWithRequestStatus.map((u: any) => `${u.username} (pending: ${u.hasPendingRequest})`));
-      console.log('[SEARCH] === END /users/search request ===');
 
       return { users: usersWithRequestStatus };
     } catch (error) {
@@ -239,7 +208,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
   // Endpoint pour envoyer une demande d'ami
   fastify.post('/users/:id/friend', async (request, reply) => {
     try {
-      console.log('[SEND_FRIEND_REQUEST] === START send friend request ===');
       
       // Récupérer le JWT depuis les cookies
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
@@ -306,8 +274,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       // Notifier le destinataire de la demande d'ami
       notifyFriendRequestReceived(friendId, currentUserId, fastify);
       
-      console.log(`[SEND_FRIEND_REQUEST] Sent friend request from ${currentUserId} to ${friendId}`);
-      console.log('[SEND_FRIEND_REQUEST] === END send friend request ===');
 
       return { success: true, message: 'Friend request sent' };
     } catch (error) {
@@ -408,7 +374,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       // Supprimer la demande au lieu de la marquer comme acceptée (nettoyage)
       db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
-      console.log(`[ACCEPT_FRIEND_REQUEST] Accepted friend request ${requestId} and created friendship`);
       
       // Notifier les deux utilisateurs qu'ils sont maintenant amis
       notifyFriendAdded(currentUserId, friendRequest.sender_id, fastify);
@@ -470,7 +435,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       // Supprimer la demande au lieu de la marquer comme rejetée (permet de redemander plus tard)
       db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
-      console.log(`[REJECT_FRIEND_REQUEST] Rejected and deleted friend request ${requestId}`);
       
       // 🆕 Notifier l'utilisateur que son compteur de demandes a changé
       notifyFriendRequestCountChanged(currentUserId, fastify);
@@ -485,7 +449,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
   // Endpoint pour supprimer un ami
   fastify.delete('/users/:id/friend', async (request, reply) => {
     try {
-      console.log('[REMOVE_FRIEND] === START remove friend request ===');
       
       // Récupérer le JWT depuis les cookies
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
@@ -544,13 +507,11 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       db.prepare('DELETE FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)').run(
         currentUserId, friendId, friendId, currentUserId
       );
-      
-      console.log(`[REMOVE_FRIEND] Removed friendship and pending requests between ${currentUserId} and ${friendId} (both directions)`);
-      
+
+
       // Notifier les deux utilisateurs en temps réel
       notifyFriendRemoved(currentUserId, friendId, fastify);
       
-      console.log('[REMOVE_FRIEND] === END remove friend request ===');
 
       return { success: true, message: 'Friend removed successfully' };
     } catch (error) {

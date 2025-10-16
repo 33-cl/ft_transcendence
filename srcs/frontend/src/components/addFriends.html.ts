@@ -1,5 +1,4 @@
 export async function addFriendsHTML() {
-    console.log('🔍 addFriendsHTML called');
     
     // Récupérer les demandes d'amis reçues
     let friendRequests: any[] = [];
@@ -79,7 +78,6 @@ async function addFriend(userId: number, buttonElement?: HTMLButtonElement) {
             throw new Error(errorData.error || 'Failed to add friend');
         }
 
-        console.log('Friend request sent successfully');
 
         // Mettre à jour le bouton pour afficher "Sent" au lieu de "Add"
         if (buttonElement) {
@@ -242,7 +240,6 @@ async function acceptFriendRequest(requestId: number) {
             throw new Error(errorData.error || 'Failed to accept friend request');
         }
 
-        console.log('Friend request accepted');
         
         // Rafraîchir la liste des demandes d'amis
         await refreshFriendRequests();
@@ -269,8 +266,6 @@ async function rejectFriendRequest(requestId: number) {
             throw new Error(errorData.error || 'Failed to reject friend request');
         }
 
-        console.log('Friend request rejected');
-        
         // Rafraîchir la liste des demandes d'amis
         await refreshFriendRequests();
 
