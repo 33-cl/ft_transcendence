@@ -427,14 +427,20 @@ async function reloadFriendList() {
         return;
     }
 
-    // 🚨 IMPORTANT : Recharger même si addFriends est visible
-    // On met à jour le HTML en arrière-plan pour que la liste soit prête
-    // quand l'utilisateur reviendra à friendList
+    // 🚨 IMPORTANT : Si le container est vide (innerHTML === ''), c'est qu'il a été caché avec hide()
+    // Dans ce cas, on ne doit PAS le recharger car il sera rechargé automatiquement par show() plus tard
+    if (friendListContainer.innerHTML.trim() === '') {
+        console.log('⚠️ [reloadFriendList] friendList container is empty (hidden), skipping reload');
+        console.log('   The list will be reloaded automatically when show() is called');
+        return;
+    }
+
+    // Vérifier si addFriends est visible (pour logging uniquement)
     const addFriendsContainer = document.getElementById('addFriends');
-    const isAddFriendsVisible = addFriendsContainer && !addFriendsContainer.classList.contains('hidden');
+    const isAddFriendsVisible = addFriendsContainer && addFriendsContainer.innerHTML.trim() !== '';
     
     if (isAddFriendsVisible) {
-        console.log('⚠️ [reloadFriendList] addFriends is visible, reloading friendList in background...');
+        console.log('⚠️ [reloadFriendList] addFriends is visible, but friendList has content so updating it...');
     }
 
     try {
@@ -451,7 +457,7 @@ async function reloadFriendList() {
         setTimeout(async () => {
             console.log('🔄 [reloadFriendList] Timeout finished, calling fetchInitialFriendStatuses...');
             await fetchInitialFriendStatuses();
-            console.log(`✅ [reloadFriendList] Friend list reload complete with statuses${isAddFriendsVisible ? ' (background update)' : ''}`);
+            console.log('✅ [reloadFriendList] Friend list reload complete with statuses');
         }, 100);
     } catch (error) {
         console.error('❌ [reloadFriendList] Error reloading friend list:', error);
