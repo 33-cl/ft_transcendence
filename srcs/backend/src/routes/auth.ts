@@ -34,7 +34,6 @@ function cleanupTempAvatars() {
       const stats = fs.statSync(filePath);
       if (stats.mtime.getTime() < oneHourAgo) {
         fs.unlinkSync(filePath);
-        console.log(`🗑️  Cleaned up old temp avatar: ${file}`);
       }
     });
   } catch (error) {
@@ -361,13 +360,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
         
         // Remove user from active list to mark as offline
         removeUserFromActiveList(userId);
-        console.log(`[LOGOUT] User ${userId} marked as offline`);
         
         // 🚀 NOUVEAU : Notifier les amis via WebSocket que l'utilisateur est offline
         const io = getGlobalIo();
         if (io) {
           broadcastUserStatusChange(userId, 'offline', io, fastify);
-          console.log(`[LOGOUT] Notified friends that user ${userId} is now offline`);
         }
         
         // Remove token from active_tokens
@@ -515,8 +512,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
       values.push(sessionRow.id); // Add user_id at the end for WHERE clause
       
-      console.log('Profile update query:', query);
-      console.log('Profile update values:', values);
       
       db.prepare(query).run(...values);
 
@@ -646,7 +641,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
       // 7. Réponse avec URL temporaire
       const tempAvatarUrl = `/avatars/${secureFilename}`;
       
-      console.log(`✅ Avatar uploaded securely for user ${userId}: ${secureFilename} (${detectedType.mime} -> ${extension.toUpperCase()}, ${fileBuffer.length} -> ${processedBuffer.length} bytes)`);
       
       return reply.send({ 
         ok: true, 
@@ -718,8 +712,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
       
       // Notifier les amis du changement d'avatar
       notifyProfileUpdated(userId, { avatar_url: finalAvatarUrl }, fastify);
-      
-      console.log(`✅ Avatar saved for user ${userId}: ${finalFilename}`);
       
       return reply.send({ 
         ok: true, 

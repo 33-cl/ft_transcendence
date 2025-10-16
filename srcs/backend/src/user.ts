@@ -58,7 +58,6 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
     });
 
     transaction();
-    console.log(`[BACKEND] Match enregistré avec succès: ${winner.username} vs ${loser.username}`);
 
   } catch (error) {
     console.error(`[BACKEND] Erreur lors de l'enregistrement des statistiques:`, error);

@@ -25,7 +25,6 @@ export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, p
     const angleInRadians = angles[zoneIndex] * Math.PI / 180;
     
     // Log pour debugging (à retirer plus tard)
-    console.log(`🎯 REBOND ANGULAIRE: ballY=${ballY.toFixed(1)}, paddleTop=${paddleTop.toFixed(1)}, height=${paddleHeight}, ratio=${impactRatio.toFixed(3)}, zone=${zoneIndex}, angle=${angles[zoneIndex]}°`);
     
     return angleInRadians;
 }
@@ -60,7 +59,6 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
     
     // Log pour confirmer le reset de vitesse
     const resetSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
-    console.log(`🔄 REMISE EN JEU - Vitesse reset à: ${resetSpeed.toFixed(2)} (baseX: ${baseSpeedX}, baseY: ${baseSpeedY}) - Compteur accélération: ${ballState.accelerationCount}`);
     
     // For subsequent resets, ensure countdown is disabled
     if (!isFirstLaunch) {
@@ -91,27 +89,7 @@ export function accelerateBall(state: GameState, ballState: BallState): void {
         // Calculer la vitesse APRÈS accélération
         const currentSpeedAfter = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
         
-        // Log détaillé pour vérifier l'accélération
-        console.log(`🚀 ACCÉLÉRATION PADDLE #${ballState.accelerationCount}:`, {
-            vitesse_avant: currentSpeedBefore.toFixed(2),
-            vitesse_après: currentSpeedAfter.toFixed(2),
-            gain: `+${((currentSpeedAfter - currentSpeedBefore) / currentSpeedBefore * 100).toFixed(1)}%`,
-            ballSpeedX_avant: oldSpeedX.toFixed(2),
-            ballSpeedX_après: state.ballSpeedX.toFixed(2),
-            ballSpeedY_avant: oldSpeedY.toFixed(2),
-            ballSpeedY_après: state.ballSpeedY.toFixed(2),
-            facteur: accelerationFactor,
-            vitesse_max: maxSpeed,
-            total_accelerations: ballState.accelerationCount
-        });
-    } else {
-        // Log quand la vitesse maximale est atteinte
-        console.log(`⚠️ VITESSE MAXIMALE ATTEINTE:`, {
-            vitesse_actuelle: currentSpeedBefore.toFixed(2),
-            vitesse_max: maxSpeed,
-            message: "Pas d'accélération supplémentaire",
-            total_accelerations: ballState.accelerationCount
-        });
+   
     }
 }
 

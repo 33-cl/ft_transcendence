@@ -69,16 +69,9 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 	fastify.get('/rooms', async (request, reply) =>
 	{
 		try {
-			console.log('GET /rooms called, rooms object keys:', Object.keys(rooms));
-			console.log('GET /rooms called, rooms object values:', Object.keys(rooms).map(key => ({
-				key,
-				playersCount: rooms[key]?.players?.length || 0,
-				maxPlayers: rooms[key]?.maxPlayers || 0
-			})));
 			
 			// Essayer de serialiser les rooms pour voir s'il y a un problème
 			const serializedRooms = JSON.stringify(rooms);
-			console.log('Rooms serialized successfully, length:', serializedRooms.length);
 			
 			return { rooms };
 		} catch (error) {

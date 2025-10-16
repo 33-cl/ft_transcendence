@@ -59,7 +59,6 @@ export function notifyFriendAdded(user1Id: number, user2Id: number, fastify: Fas
                     },
                     timestamp: Date.now()
                 });
-                console.log(`✅ Notified ${user1.username} that ${user2.username} was added as friend`);
             }
         }
         
@@ -75,7 +74,6 @@ export function notifyFriendAdded(user1Id: number, user2Id: number, fastify: Fas
                     },
                     timestamp: Date.now()
                 });
-                console.log(`✅ Notified ${user2.username} that ${user1.username} was added as friend`);
             }
         }
     } catch (error) {
@@ -103,7 +101,6 @@ export function notifyFriendRemoved(user1Id: number, user2Id: number, fastify: F
                     friendId: user2.id,
                     timestamp: Date.now()
                 });
-                console.log(`✅ Notified ${user1.username} that ${user2.username} was removed from friends`);
             }
         }
         
@@ -116,7 +113,6 @@ export function notifyFriendRemoved(user1Id: number, user2Id: number, fastify: F
                     friendId: user1.id,
                     timestamp: Date.now()
                 });
-                console.log(`✅ Notified ${user2.username} that ${user1.username} was removed from friends`);
             }
         }
     } catch (error) {
@@ -145,7 +141,6 @@ export function notifyProfileUpdated(userId: number, updates: { username?: strin
             )
         `).all(userId, userId) as Array<{ id: number; username: string }>;
         
-        console.log(`📢 Notifying ${friends.length} friends about profile update for user ${user.username}`);
         
         // Notifier chaque ami du changement de profil
         for (const friend of friends) {
@@ -159,7 +154,6 @@ export function notifyProfileUpdated(userId: number, updates: { username?: strin
                         avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : user.avatar_url,
                         timestamp: Date.now()
                     });
-                    console.log(`✅ Notified ${friend.username} about ${user.username}'s profile update`);
                 }
             }
         }
@@ -178,8 +172,6 @@ export function broadcastUserStatusChange(userId: number, status: 'online' | 'in
         
         if (!user) return;
         
-        // 🔍 LOG pour debugging
-        console.log(`📡 [STATUS] Broadcasting status change for ${user.username}: ${status}`);
         
         // Récupérer tous les amis de cet utilisateur
         const friends = db.prepare(`
@@ -192,7 +184,6 @@ export function broadcastUserStatusChange(userId: number, status: 'online' | 'in
             )
         `).all(userId, userId) as Array<{ id: number; username: string }>;
         
-        console.log(`📡 [STATUS] ${user.username} has ${friends.length} friends to notify`);
         
         // Notifier chaque ami du changement de statut
         let notifiedCount = 0;
@@ -211,7 +202,6 @@ export function broadcastUserStatusChange(userId: number, status: 'online' | 'in
             }
         }
         
-        console.log(`📡 [STATUS] Notified ${notifiedCount}/${friends.length} friends about ${user.username}'s status: ${status}`);
     } catch (error) {
         fastify.log.error(`Error broadcasting user status change: ${error}`);
     }
@@ -384,7 +374,6 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io?:
 				const paddles = ['A', 'C'];
 				const idx = room.players.indexOf(socket.id);
 				room.paddleBySocket[socket.id] = paddles[idx] || null;
-				console.log(`[BACKEND] Attribution paddle 1v1: socketId=${socket.id}, index=${idx}, paddle=${paddles[idx]}, isLocal=${room.isLocalGame}`);
 			} else if (room.maxPlayers === 4) {
 				// Attribution dynamique pour 1v1v1v1
 				const paddle = assignPaddleToPlayer(room);
@@ -447,15 +436,6 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         const isSpectator = data?.spectator === true;
         const previousRoom = getPlayerRoom(socket.id);
         
-        // Debug log pour vérifier la réception des données IA
-        if (enableAI) {
-            console.log(`🤖 [BACKEND] IA demandée avec difficulté: ${aiDifficulty}`);
-        }
-        
-        // Debug log pour les spectateurs
-        if (isSpectator) {
-            console.log(`👁️ [BACKEND] Spectator joining room: ${data?.roomName}`);
-        }
         
         if (previousRoom) {
             // Get the room object and clean up paddle assignments
@@ -550,13 +530,10 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             
             // Empêcher le spectate sur les jeux locaux
             if (room.isLocalGame) {
-                console.log(`👁️ [BACKEND] Spectator rejected: ${roomName} is a local game`);
                 socket.emit('error', { error: 'Cannot spectate local games' });
                 return;
             }
             
-            console.log(`👁️ [BACKEND] Adding spectator to room ${roomName}`);
-            console.log(`👁️ [BACKEND] Room state: players=${room.players.length}/${room.maxPlayers}, hasGame=${!!room.pongGame}, gameRunning=${room.pongGame?.state?.running}`);
             
             socket.join(roomName);
             
@@ -571,10 +548,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             
             // Si le jeu est en cours, envoyer immédiatement l'état du jeu
             if (room.pongGame && room.pongGame.state.running) {
-                console.log(`👁️ [BACKEND] Sending current game state to spectator`);
                 socket.emit('gameState', room.pongGame.state);
-            } else {
-                console.log(`👁️ [BACKEND] No active game in room for spectator`);
             }
             
             return; // Ne pas continuer avec la logique normale de joueur
@@ -584,7 +558,6 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             return;
         if (previousRoom)
         {
-            console.log(`🔄 JOIN: Removing socket ${socket.id} from previous room ${previousRoom}`);
             removePlayerFromRoom(socket.id);
             socket.leave(previousRoom);
         }
@@ -592,7 +565,6 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         // Double-check we're completely clean before proceeding
         const stillInRoom = getPlayerRoom(socket.id);
         if (stillInRoom) {
-            console.log(`⚠️  JOIN: Socket ${socket.id} still in room ${stillInRoom} after cleanup. Force cleaning...`);
             removePlayerFromRoom(socket.id);
             socket.leave(stillInRoom);
         }
@@ -664,9 +636,6 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             // Activer l'IA si demandé (mode Solo IA)
             if (enableAI && room.maxPlayers === 2) {
                 room.pongGame.enableAI(aiDifficulty as 'easy' | 'medium' | 'hard');
-                console.log(`🤖 [BACKEND] IA activée en mode ${aiDifficulty} pour la room ${roomName}`);
-                console.log(`🎯 [BACKEND] Configuration IA appliquée:`, room.pongGame.state.aiConfig);
-
             }
             
             room.pongGame.start();
@@ -892,9 +861,6 @@ function handleGameTick(io: any, fastify: FastifyInstance)
             if (!(typedRoom as any)._lastSpectatorLog || now - (typedRoom as any)._lastSpectatorLog > 5000) {
                 const connectedSockets = Array.from(io.sockets.adapter.rooms.get(roomName) || []) as string[];
                 const spectators = connectedSockets.filter(socketId => !typedRoom.players.includes(socketId));
-                if (spectators.length > 0) {
-                    console.log(`👁️ [BACKEND] Room ${roomName}: ${typedRoom.players.length} players, ${spectators.length} spectators, emitting gameState`);
-                }
                 (typedRoom as any)._lastSpectatorLog = now;
             }
             
@@ -939,7 +905,6 @@ function handleSocketMessage(socket: Socket, msg: string)
             else if (player === 'right') mappedPlayer = 'C';
             
             if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
-                console.log(`[BACKEND] Paddle autorisé, traitement de ${mappedPlayer} ${direction}`);
                 if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'D' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
                     room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
                     if (message.type === 'keydown') {

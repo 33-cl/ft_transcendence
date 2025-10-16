@@ -93,9 +93,6 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
     if (user) {
       // Vérifier si cet utilisateur est déjà connecté ailleurs
       const existingSocketId = activeUsers.get(user.id);
-      console.log(`[DEBUG] User ${user.username} (${user.id}) auth check: existing socket = ${existingSocketId}, current socket = ${socket.id}`);
-      console.log(`[DEBUG] Active users map:`, Array.from(activeUsers.entries()));
-      console.log(`[DEBUG] Recent disconnections:`, Array.from(recentDisconnections.entries()));
       
       if (existingSocketId && existingSocketId !== socket.id) {
         // Check if this is a reconnection shortly after a disconnect
@@ -104,17 +101,11 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
         const now = Date.now();
         
         if (recentDisconnectTime && (now - recentDisconnectTime) < RECONNECTION_GRACE_PERIOD) {
-          console.log(`[DEBUG] User ${user.id} reconnecting within grace period (${now - recentDisconnectTime}ms ago), allowing connection`);
           // Clean up the old socket reference and allow this new connection
           socketUsers.delete(existingSocketId);
           activeUsers.delete(user.id);
           recentDisconnections.delete(user.id);
         } else {
-          // Refuse the new connection - simpler and cleaner
-          console.log(`[DEBUG] User ${user.id} multiple connection rejected - no recent disconnect or outside grace period`);
-          if (recentDisconnectTime) {
-            console.log(`[DEBUG] Last disconnect was ${now - recentDisconnectTime}ms ago (grace period: ${RECONNECTION_GRACE_PERIOD}ms)`);
-          }
           if (fastify) fastify.log.warn(`User ${user.username} (${user.id}) is already connected on socket ${existingSocketId}. Refusing new connection on socket ${socket.id}`);
           return 'USER_ALREADY_CONNECTED';
         }
@@ -123,8 +114,6 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
       // Store user info for this socket
       socketUsers.set(socket.id, user);
       activeUsers.set(user.id, socket.id);
-      console.log(`[DEBUG] Added user ${user.username} (${user.id}) with socket ${socket.id} to active users`);
-      console.log(`[DEBUG] Active users after addition:`, Array.from(activeUsers.entries()));
       if (fastify) fastify.log.info(`Socket ${socket.id} authenticated as user ${user.username} (${user.id})`);
       return user;
     }
@@ -144,18 +133,14 @@ export function getSocketUser(socketId: string): SocketUser | null {
 // Remove user info when socket disconnects
 export function removeSocketUser(socketId: string): void {
   const user = socketUsers.get(socketId);
-  console.log(`[DEBUG] Removing socket ${socketId}, user was:`, user);
   if (user) {
     // Add to recent disconnections for grace period
     recentDisconnections.set(user.id, Date.now());
-    console.log(`[DEBUG] Added user ${user.id} to recent disconnections at ${Date.now()}`);
     
     // Remove from both maps
     activeUsers.delete(user.id);
     socketUsers.delete(socketId);
-    console.log(`[DEBUG] Removed user ${user.id} from active users`);
   }
-  console.log(`[DEBUG] Active users after socket removal:`, Array.from(activeUsers.entries()));
 }
 
 // Check if socket is authenticated
@@ -176,7 +161,6 @@ export function getSocketIdForUser(userId: number): string | undefined {
 // Remove user info by user ID (used for logout cleanup)
 export function removeUserFromActiveList(userId: number): void {
   const socketId = activeUsers.get(userId);
-  console.log(`[DEBUG] Logout cleanup: removing user ${userId}, had socket ${socketId}`);
   if (socketId) {
     // Remove from both maps
     socketUsers.delete(socketId);
@@ -184,7 +168,5 @@ export function removeUserFromActiveList(userId: number): void {
     
     // Also clear any recent disconnection record since this is an explicit logout
     recentDisconnections.delete(userId);
-    console.log(`[DEBUG] Cleared recent disconnection record for user ${userId} due to logout`);
   }
-  console.log(`[DEBUG] Active users after logout cleanup:`, Array.from(activeUsers.entries()));
 }
