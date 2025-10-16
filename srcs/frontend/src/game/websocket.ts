@@ -45,7 +45,14 @@ let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 let errorListenerSet = false;
 let gameFinishedListenerActive = false;
-// friendStatusListenerSet removed - now handled by friendList.html.ts
+// 🚨 NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
+// pour avoir un meilleur contrôle sur les mises à jour de la liste d'amis:
+// - friendStatusChanged → updateFriendStatus() (préserve le statut actuel)
+// - friendAdded → reloadFriendList() (avec fetch des statuts)
+// - friendRemoved → reloadFriendList() (avec fetch des statuts)
+// - profileUpdated → updateFriendProfile() (préserve le statut actuel)
+// - friendRequestReceived → updateFriendRequestsBadge()
+// Les listeners ici sont maintenus pour compatibilité mais ne font plus les mises à jour du DOM
 let friendAddedListenerSet = false;
 let friendRemovedListenerSet = false;
 let profileUpdatedListenerSet = false;
@@ -207,77 +214,43 @@ function setupGlobalSocketListeners() {
     // }
     
     // Event listener for friend added (real-time friend list updates)
+    // 🚨 NOTE: Ce listener est maintenant géré par friendList.html.ts via reloadFriendList()
+    // qui recharge la liste ET fetch les statuts réels
+    // Ce listener est désactivé pour éviter les doublons
     if (!friendAddedListenerSet) {
         socket.on('friendAdded', async (data: any) => {
-            console.log('✅ Friend added:', data);
-            
-            // Rafraîchir la liste d'amis pour afficher le nouvel ami
-            const friendListContainer = document.getElementById('friendList');
-            if (friendListContainer && friendListContainer.innerHTML) {
-                // Importer la fonction de rafraîchissement de la liste d'amis
-                try {
-                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton, fetchInitialFriendStatuses } = await import('../components/index.html.js');
-                    friendListContainer.innerHTML = await friendListHTML();
-                    initLoadingIcons();
-                    initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
-                    
-                    // 🚀 IMPORTANT : Récupérer les statuts réels après avoir rechargé la liste
-                    setTimeout(async () => {
-                        await fetchInitialFriendStatuses();
-                        console.log('✅ Friend statuses fetched after friend added');
-                    }, 100);
-                    
-                    console.log('✅ Friend list refreshed after friend added');
-                } catch (error) {
-                    console.error('Error refreshing friend list after friend added:', error);
-                }
-            }
+            console.log('✅ [websocket.ts] Friend added event received:', data);
+            // ⚠️ Ne plus recharger la liste ici !
+            // Le listener dans friendList.html.ts s'en occupe avec reloadFriendList()
+            console.log('✅ [websocket.ts] Friend add will be handled by friendList.html.ts');
         });
         friendAddedListenerSet = true;
     }
     
     // Event listener for friend removed (real-time friend list updates)
+    // 🚨 NOTE: Ce listener est maintenant géré par friendList.html.ts via reloadFriendList()
+    // qui recharge la liste ET fetch les statuts réels
+    // Ce listener est désactivé pour éviter les doublons
     if (!friendRemovedListenerSet) {
         socket.on('friendRemoved', async (data: any) => {
-            console.log('❌ Friend removed:', data);
-            
-            // Rafraîchir la liste d'amis pour retirer l'ami supprimé
-            const friendListContainer = document.getElementById('friendList');
-            if (friendListContainer && friendListContainer.innerHTML) {
-                // Importer la fonction de rafraîchissement de la liste d'amis
-                try {
-                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton } = await import('../components/index.html.js');
-                    friendListContainer.innerHTML = await friendListHTML();
-                    initLoadingIcons();
-                    initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
-                    console.log('✅ Friend list refreshed after friend removed');
-                } catch (error) {
-                    console.error('Error refreshing friend list after friend removed:', error);
-                }
-            }
+            console.log('❌ [websocket.ts] Friend removed event received:', data);
+            // ⚠️ Ne plus recharger la liste ici !
+            // Le listener dans friendList.html.ts s'en occupe avec reloadFriendList()
+            console.log('✅ [websocket.ts] Friend removal will be handled by friendList.html.ts');
         });
         friendRemovedListenerSet = true;
     }
     
     // Event listener for profile updates (real-time friend list updates)
+    // 🚨 NOTE: Ce listener est maintenant géré par friendList.html.ts via updateFriendProfile()
+    // qui préserve le statut actuel au lieu de recharger toute la liste
+    // Ce listener est conservé uniquement pour la compatibilité avec d'autres parties du code
     if (!profileUpdatedListenerSet) {
         socket.on('profileUpdated', async (data: any) => {
-            console.log('🔄 Profile updated:', data);
-            
-            // Rafraîchir la liste d'amis pour afficher le nouveau pseudo/avatar
-            const friendListContainer = document.getElementById('friendList');
-            if (friendListContainer && friendListContainer.innerHTML) {
-                // Importer la fonction de rafraîchissement de la liste d'amis
-                try {
-                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton } = await import('../components/index.html.js');
-                    friendListContainer.innerHTML = await friendListHTML();
-                    initLoadingIcons();
-                    initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
-                    console.log('✅ Friend list refreshed after profile update');
-                } catch (error) {
-                    console.error('Error refreshing friend list after profile update:', error);
-                }
-            }
+            console.log('🔄 [websocket.ts] Profile updated event received:', data);
+            // ⚠️ Ne plus recharger toute la liste ici !
+            // Le listener dans friendList.html.ts s'en occupe avec updateFriendProfile()
+            console.log('✅ [websocket.ts] Profile update will be handled by friendList.html.ts');
         });
         profileUpdatedListenerSet = true;
     }

@@ -268,28 +268,31 @@ export function startFriendListRealtimeUpdates() {
 // Fonction pour récupérer les statuts initiaux des amis (peut être appelée à tout moment pour rafraîchir)
 export async function fetchInitialFriendStatuses() {
     try {
-        console.log('📡 Fetching initial friend statuses (one-time fetch)...');
+        console.log('📡 [fetchInitialFriendStatuses] Fetching initial friend statuses...');
         const response = await fetch('/users/friends-online', {
             method: 'GET',
             credentials: 'include'
         });
 
         if (!response.ok) {
-            console.warn('Failed to fetch initial friend statuses');
+            console.warn('⚠️ [fetchInitialFriendStatuses] Failed to fetch initial friend statuses');
             return;
         }
 
         const data = await response.json();
         const friendsStatus = data.friendsStatus || [];
         
-        console.log('✅ Initial friend statuses received:', friendsStatus);
+        console.log(`✅ [fetchInitialFriendStatuses] Initial friend statuses received (${friendsStatus.length} friends):`, friendsStatus);
         
         // Mettre à jour les statuts dans le DOM
         for (const friend of friendsStatus) {
+            console.log(`🔄 [fetchInitialFriendStatuses] Updating ${friend.username} with status ${friend.status}`);
             updateFriendStatus(friend.username, friend.status);
         }
+        
+        console.log('✅ [fetchInitialFriendStatuses] All statuses updated successfully');
     } catch (error) {
-        console.error('Error fetching initial friend statuses:', error);
+        console.error('❌ [fetchInitialFriendStatuses] Error fetching initial friend statuses:', error);
     }
 }
 
@@ -379,12 +382,24 @@ function updateFriendStatus(username: string, status: string) {
 
 // Fonction helper pour mettre à jour le profil d'un ami
 function updateFriendProfile(userId: number, newUsername: string, newAvatarUrl: string) {
+    console.log(`🔄 [updateFriendProfile] Updating profile for userId=${userId}, newUsername=${newUsername}`);
+    
     const friendElement = document.querySelector(`#friendsList [data-user-id="${userId}"]`);
-    if (!friendElement) return;
+    if (!friendElement) {
+        console.warn(`⚠️ [updateFriendProfile] Friend element not found for userId=${userId}`);
+        return;
+    }
+
+    // 🔥 IMPORTANT : Préserver le statut actuel et l'animation in-game
+    const currentStatus = friendElement.getAttribute('data-status') || 'offline';
+    const currentIsInGame = friendElement.getAttribute('data-is-in-game') === 'true';
+    
+    console.log(`✅ [updateFriendProfile] Found friend element, preserving status: ${currentStatus}, isInGame: ${currentIsInGame}`);
 
     // Mettre à jour le pseudo
     const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
     if (friendNameElement) {
+        // Préserver l'animation mini-pong si elle existe
         const animation = friendNameElement.querySelector('.mini-pong-animation');
         friendNameElement.textContent = newUsername;
         if (animation) {
@@ -400,34 +415,46 @@ function updateFriendProfile(userId: number, newUsername: string, newAvatarUrl: 
 
     // Mettre à jour l'attribut data-username
     friendElement.setAttribute('data-username', newUsername);
+    
+    console.log(`✅ [updateFriendProfile] Profile updated for ${newUsername} (status preserved: ${currentStatus})`);
 }
 
 // Fonction helper pour recharger toute la liste d'amis
 async function reloadFriendList() {
     const friendListContainer = document.getElementById('friendList');
-    if (!friendListContainer) return;
-
-    // 🚨 IMPORTANT : Ne recharger que si friendList est visible
-    // Si addFriends est affiché, ne pas interférer avec l'affichage
-    const addFriendsContainer = document.getElementById('addFriends');
-    if (addFriendsContainer && !addFriendsContainer.classList.contains('hidden')) {
-        console.log('⚠️ addFriends is visible, skipping friendList reload');
+    if (!friendListContainer) {
+        console.log('⚠️ [reloadFriendList] friendList container not found');
         return;
     }
 
+    // 🚨 IMPORTANT : Recharger même si addFriends est visible
+    // On met à jour le HTML en arrière-plan pour que la liste soit prête
+    // quand l'utilisateur reviendra à friendList
+    const addFriendsContainer = document.getElementById('addFriends');
+    const isAddFriendsVisible = addFriendsContainer && !addFriendsContainer.classList.contains('hidden');
+    
+    if (isAddFriendsVisible) {
+        console.log('⚠️ [reloadFriendList] addFriends is visible, reloading friendList in background...');
+    }
+
     try {
+        console.log('🔄 [reloadFriendList] Starting friend list reload...');
         const newHTML = await friendListHTML();
         friendListContainer.innerHTML = newHTML;
         initializeAddFriendsButton();
         initializeFriendListEventListeners();
         
+        console.log('🔄 [reloadFriendList] DOM updated, fetching statuses...');
+        
         // 🚀 IMPORTANT : Après avoir rechargé la liste, récupérer les statuts actuels
         // Attendre un peu que le DOM soit complètement rendu avant de mettre à jour les statuts
         setTimeout(async () => {
+            console.log('🔄 [reloadFriendList] Timeout finished, calling fetchInitialFriendStatuses...');
             await fetchInitialFriendStatuses();
+            console.log(`✅ [reloadFriendList] Friend list reload complete with statuses${isAddFriendsVisible ? ' (background update)' : ''}`);
         }, 100);
     } catch (error) {
-        console.error('Error reloading friend list:', error);
+        console.error('❌ [reloadFriendList] Error reloading friend list:', error);
     }
 }
 
