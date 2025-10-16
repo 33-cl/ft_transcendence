@@ -33,6 +33,12 @@ const SHOOTING_STAR_GRAVITY_RADIUS = 150; // rayon d'attraction pour les étoile
 const SHOOTING_STAR_GRAVITY_STRENGTH_MAX = 0.3; // force d'attraction maximale (quand très proche)
 const SHOOTING_STAR_GRAVITY_STRENGTH_MIN = 0.05; // force d'attraction minimale (à la limite du rayon)
 
+// Configuration de la planète
+const PLANET_SIZE = 80; // taille de la planète
+const PLANET_SPEED = 0.0008; // vitesse d'orbite
+const PLANET_DISTANCE = 350; // distance du centre (entre le trou noir et les étoiles)
+const PLANET_OPACITY = 0.9; // opacité de base
+
 // Configuration du trou noir
 const BLACK_HOLE_SIZE = 15; // taille réduite
 // const BLACK_HOLE_SIZE = 0; // taille réduite
@@ -798,12 +804,160 @@ class ShootingStar {
   }
 }
 
+class Planet {
+  x: number;
+  y: number;
+  angle: number;
+  distance: number;
+  size: number;
+  opacity: number;
+  image: HTMLImageElement;
+  imageLoaded: boolean = false;
+  isVisible: boolean = true;
+  
+  // Propriétés pour le collapse
+  isCollapsingToBlackHole: boolean = false;
+  collapseStartTime: number = 0;
+  targetX: number = 0;
+  targetY: number = 0;
+  originalOpacity: number;
+  
+  // Propriétés pour le reset
+  isResetting: boolean = false;
+  resetStartTime: number = 0;
+
+  constructor(private centerX: number, private centerY: number) {
+    this.angle = Math.random() * Math.PI * 2;
+    this.distance = PLANET_DISTANCE;
+    this.size = PLANET_SIZE;
+    this.opacity = PLANET_OPACITY;
+    this.originalOpacity = this.opacity;
+    
+    // Position initiale
+    this.x = this.centerX + Math.cos(this.angle) * this.distance;
+    this.y = this.centerY + Math.sin(this.angle) * this.distance;
+    
+    // Charger l'image de la planète
+    this.image = new Image();
+    this.image.src = '/img/planet.gif';
+    this.image.onload = () => {
+      this.imageLoaded = true;
+    };
+  }
+
+  startCollapseToBlackHole(blackHoleX: number, blackHoleY: number, delay: number = 0): void {
+    this.isCollapsingToBlackHole = true;
+    this.collapseStartTime = Date.now() + delay;
+    this.targetX = blackHoleX;
+    this.targetY = blackHoleY;
+  }
+
+  startReset(blackHoleX: number, blackHoleY: number, delay: number = 0): void {
+    this.isResetting = true;
+    this.isCollapsingToBlackHole = false;
+    this.resetStartTime = Date.now() + delay;
+    this.x = blackHoleX;
+    this.y = blackHoleY;
+    this.opacity = 0;
+    this.size = PLANET_SIZE * 0.3; // Commencer plus petit
+  }
+
+  update(): void {
+    if (this.isResetting) {
+      const currentTime = Date.now();
+      if (currentTime >= this.resetStartTime) {
+        const resetProgress = Math.min((currentTime - this.resetStartTime) / (RESET_DURATION * 16.67), 1);
+        const easeProgress = 1 - Math.pow(1 - resetProgress, 3); // Ease out cubic
+        
+        // Calculer la position cible basée sur l'angle actuel
+        const targetX = this.centerX + Math.cos(this.angle) * this.distance;
+        const targetY = this.centerY + Math.sin(this.angle) * this.distance;
+        
+        // Interpolation de position
+        this.x = this.x + (targetX - this.x) * easeProgress * 0.1;
+        this.y = this.y + (targetY - this.y) * easeProgress * 0.1;
+        
+        // Restauration progressive de l'opacité et de la taille
+        this.opacity = this.originalOpacity * easeProgress;
+        this.size = PLANET_SIZE * 0.3 + (PLANET_SIZE * 0.7) * easeProgress;
+        
+        if (resetProgress >= 1) {
+          this.isResetting = false;
+          this.opacity = this.originalOpacity;
+          this.size = PLANET_SIZE;
+        }
+      }
+      return;
+    }
+
+    if (this.isCollapsingToBlackHole) {
+      const currentTime = Date.now();
+      if (currentTime >= this.collapseStartTime) {
+        // Mouvement vers le trou noir
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 2) {
+          this.x += dx * 0.05;
+          this.y += dy * 0.05;
+          
+          // Réduire l'opacité et la taille progressivement
+          this.opacity *= 0.97;
+          this.size *= 0.98;
+        } else {
+          this.isVisible = false;
+        }
+      }
+      return;
+    }
+
+    // Mouvement orbital normal
+    this.angle += PLANET_SPEED;
+    this.x = this.centerX + Math.cos(this.angle) * this.distance;
+    this.y = this.centerY + Math.sin(this.angle) * this.distance;
+  }
+
+  draw(ctx: CanvasRenderingContext2D): void {
+    if (!this.isVisible || !this.imageLoaded || this.opacity <= 0.01) return;
+    
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    
+    // Dessiner la planète avec une légère lueur
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 1.5);
+    gradient.addColorStop(0, `rgba(100, 150, 255, ${this.opacity * 0.3})`);
+    gradient.addColorStop(0.5, `rgba(100, 150, 255, ${this.opacity * 0.1})`);
+    gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Désactiver le lissage pour un effet pixelisé
+    ctx.imageSmoothingEnabled = false;
+    
+    // Dessiner l'image de la planète
+    ctx.drawImage(
+      this.image,
+      this.x - this.size / 2,
+      this.y - this.size / 2,
+      this.size,
+      this.size
+    );
+    
+    ctx.restore();
+  }
+}
+
 class BackgroundStarfield {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private stars: Star[] = [];
   private shootingStars: ShootingStar[] = [];
   private blackHole: BlackHole | null = null;
+  private planet: Planet | null = null;
   private animationFrameId: number | null = null;
   private hasResetStarted: boolean = false; // Pour s'assurer que le reset ne se lance qu'une fois
   private currentStarCount: number = 0; // Suivre le nombre actuel d'étoiles
@@ -872,6 +1026,11 @@ class BackgroundStarfield {
     // Créer le trou noir seulement la première fois
     if (!this.blackHole) {
       this.blackHole = new BlackHole(centerX, centerY);
+    }
+    
+    // Créer la planète seulement la première fois
+    if (!this.planet) {
+      this.planet = new Planet(centerX, centerY);
     }
   }
 
@@ -1124,6 +1283,24 @@ class BackgroundStarfield {
       star.update(this.blackHole?.x, this.blackHole?.y);
       star.draw(this.ctx);
     });
+
+    // Mettre à jour et dessiner la planète
+    if (this.planet) {
+      // Si le trou noir demande le collapse des étoiles, aspirer aussi la planète
+      if (this.blackHole && this.blackHole.shouldCollapseStars() && !this.planet.isCollapsingToBlackHole && !this.planet.isResetting) {
+        this.planet.startCollapseToBlackHole(this.blackHole.x, this.blackHole.y, 100);
+      }
+      
+      // Si le trou noir demande le reset, réinitialiser la planète
+      if (this.blackHole && this.blackHole.shouldReset() && !this.planet.isResetting) {
+        const finalPosition = this.blackHole.getFinalPosition();
+        this.planet.startReset(finalPosition.x, finalPosition.y, 500);
+        this.planet.isVisible = true; // Réactiver la visibilité
+      }
+      
+      this.planet.update();
+      this.planet.draw(this.ctx);
+    }
 
     // Gérer les étoiles filantes - ne plus en créer si le trou noir est en collapse ou reset
     if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
