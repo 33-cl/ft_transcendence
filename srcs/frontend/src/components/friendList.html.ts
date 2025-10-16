@@ -218,7 +218,7 @@ export function startFriendListRealtimeUpdates() {
 
     // 1️⃣ Écouter les changements de statut des amis (online/offline/in-game)
     window.socket.on('friendStatusChanged', (data: { username: string; status: string; timestamp: number }) => {
-        console.log('🔔 Friend status changed:', data);
+        console.log('🔔 [WebSocket Event] friendStatusChanged received:', data);
         updateFriendStatus(data.username, data.status);
     });
 
@@ -248,6 +248,17 @@ export function startFriendListRealtimeUpdates() {
 
     friendListSocketListenersActive = true;
     console.log('✅ Friend list real-time updates activated!');
+    
+    // Debug des listeners Socket.IO (compatible v3+)
+    if ((window.socket as any)._callbacks) {
+        const callbacks = (window.socket as any)._callbacks;
+        console.log('🔍 DEBUG: All registered callbacks:', Object.keys(callbacks));
+        console.log('🔍 DEBUG: friendStatusChanged listeners:', callbacks.$friendStatusChanged?.length || 0);
+        console.log('🔍 DEBUG: friendAdded listeners:', callbacks.$friendAdded?.length || 0);
+        console.log('🔍 DEBUG: friendRemoved listeners:', callbacks.$friendRemoved?.length || 0);
+        console.log('🔍 DEBUG: profileUpdated listeners:', callbacks.$profileUpdated?.length || 0);
+        console.log('🔍 DEBUG: friendRequestReceived listeners:', callbacks.$friendRequestReceived?.length || 0);
+    }
 
     // 🆕 Faire un fetch initial UNIQUE pour obtenir les statuts actuels
     // Ensuite, les WebSocket events prendront le relais
@@ -303,11 +314,27 @@ export function stopFriendListRealtimeUpdates() {
 
 // Fonction helper pour mettre à jour le statut d'un ami spécifique
 function updateFriendStatus(username: string, status: string) {
+    console.log(`🔄 [updateFriendStatus] Updating status for ${username} to ${status}`);
+    
     const friendElement = document.querySelector(`#friendsList [data-username="${username}"]`);
-    if (!friendElement) return;
+    if (!friendElement) {
+        console.warn(`⚠️ [updateFriendStatus] Friend element not found for ${username}`);
+        console.log(`🔍 [updateFriendStatus] Available elements:`, 
+            Array.from(document.querySelectorAll('#friendsList [data-username]')).map(el => el.getAttribute('data-username')));
+        return;
+    }
 
+    console.log(`✅ [updateFriendStatus] Found friend element for ${username}`);
+    
     const statusIndicator = friendElement.querySelector('.status-indicator') as HTMLElement;
     const friendNameElement = friendElement.querySelector('.friend-name') as HTMLElement;
+
+    if (!statusIndicator) {
+        console.error(`❌ [updateFriendStatus] Status indicator not found for ${username}`);
+        return;
+    }
+
+    console.log(`✅ [updateFriendStatus] Found status indicator for ${username}`);
 
     if (statusIndicator) {
         let statusColor = '#666'; // offline
@@ -324,6 +351,8 @@ function updateFriendStatus(username: string, status: string) {
         statusIndicator.title = statusText;
         friendElement.setAttribute('data-status', status);
         friendElement.setAttribute('data-is-in-game', status === 'in-game' ? 'true' : 'false');
+        
+        console.log(`✅ [updateFriendStatus] Updated ${username}: color=${statusColor}, text=${statusText}`);
     }
 
     // Gérer l'animation mini-pong
@@ -377,6 +406,14 @@ function updateFriendProfile(userId: number, newUsername: string, newAvatarUrl: 
 async function reloadFriendList() {
     const friendListContainer = document.getElementById('friendList');
     if (!friendListContainer) return;
+
+    // 🚨 IMPORTANT : Ne recharger que si friendList est visible
+    // Si addFriends est affiché, ne pas interférer avec l'affichage
+    const addFriendsContainer = document.getElementById('addFriends');
+    if (addFriendsContainer && !addFriendsContainer.classList.contains('hidden')) {
+        console.log('⚠️ addFriends is visible, skipping friendList reload');
+        return;
+    }
 
     try {
         const newHTML = await friendListHTML();

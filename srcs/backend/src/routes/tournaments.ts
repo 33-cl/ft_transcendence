@@ -79,6 +79,35 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // GET /tournaments/:id - Récupérer les détails d'un tournoi (participants + bracket)
+    fastify.get('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        try {
+            const { id } = request.params as { id: string };
+
+            if (!id || id.length < 10 || id.length > 50) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            const participants = db.prepare(
+                `SELECT id, tournament_id, user_id, alias, joined_at FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
+            ).all(id);
+
+            const matches = db.prepare(
+                `SELECT id, tournament_id, round, player1_id, player2_id, winner_id, status, scheduled_at FROM tournament_matches WHERE tournament_id = ? ORDER BY round, id`
+            ).all(id);
+
+            reply.send({ success: true, tournament, participants, matches });
+        } catch (error) {
+            fastify.log.error(`Error fetching tournament details: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
     // GET /tournaments - Récupérer la liste des tournois
     fastify.get('/tournaments', async (_request: FastifyRequest, reply: FastifyReply) => {
         try {
@@ -196,6 +225,90 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             reply.status(201).send({ success: true, participant });
         } catch (error) {
             fastify.log.error(`Error joining tournament: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
+    // POST /tournaments/:id/matches/:matchId/result - Enregistrer le résultat d'un match de tournoi
+    interface MatchResultBody {
+        winnerId: number;
+        loserId: number;
+        winnerScore: number;
+        loserScore: number;
+    }
+
+    fastify.post('/tournaments/:id/matches/:matchId/result', async (request: FastifyRequest<{ Params: { id: string, matchId: string }, Body: MatchResultBody }>, reply: FastifyReply) => {
+        try {
+            const { id, matchId } = request.params as { id: string, matchId: string };
+            const body = request.body as MatchResultBody;
+
+            if (!id || id.length < 10 || id.length > 50) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            const tid = id;
+            const mid = parseInt(matchId, 10);
+            if (Number.isNaN(mid)) return reply.status(400).send({ error: 'Invalid matchId' });
+
+            const { winnerId, loserId, winnerScore = 0, loserScore = 0 } = body || {};
+            if (!validateId(winnerId) || !validateId(loserId)) {
+                return reply.status(400).send({ error: 'Invalid winnerId or loserId' });
+            }
+
+            // Vérifier que le tournoi et le match existent
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tid) as TournamentRow | undefined;
+            if (!tournament) return reply.status(404).send({ error: 'Tournament not found' });
+
+            const tm = db.prepare(`SELECT * FROM tournament_matches WHERE id = ? AND tournament_id = ?`).get(mid, tid) as any;
+            if (!tm) return reply.status(404).send({ error: 'Match not found for this tournament' });
+
+            if (tm.status === 'finished') return reply.status(400).send({ error: 'Match already finished' });
+
+            // Validate winner belongs to the match
+            if (tm.player1_id !== winnerId && tm.player2_id !== winnerId) {
+                return reply.status(400).send({ error: 'Winner is not a participant of this match' });
+            }
+
+            // Record tournament match winner
+            db.prepare(`UPDATE tournament_matches SET winner_id = ?, status = 'finished' WHERE id = ?`).run(winnerId, mid);
+
+            // Insert global match record
+            const insertGlobal = db.prepare(`
+                INSERT INTO matches (winner_id, loser_id, winner_score, loser_score, match_type)
+                VALUES (?, ?, ?, ?, 'tournament')
+            `);
+            insertGlobal.run(winnerId, loserId, winnerScore, loserScore);
+
+            // Check if all matches in this round are finished -> advance bracket
+            const round = tm.round as number;
+            const remaining = (db.prepare(`SELECT COUNT(*) as cnt FROM tournament_matches WHERE tournament_id = ? AND round = ? AND status != 'finished'`).get(tid, round) as { cnt: number }).cnt;
+
+            if (remaining === 0) {
+                // Récupérer tous les winners de la ronde, dans l'ordre des match id
+                const winnersRows = db.prepare(`SELECT winner_id FROM tournament_matches WHERE tournament_id = ? AND round = ? ORDER BY id`).all(tid, round) as Array<{ winner_id: number | null }>;
+                const winners = winnersRows.map(r => r.winner_id).filter(Boolean) as number[];
+
+                if (winners.length <= 1) {
+                    // Tournoi terminé
+                    db.prepare(`UPDATE tournaments SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tid);
+                } else {
+                    const nextRound = round + 1;
+                    const insertNext = db.prepare(`
+                        INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
+                        VALUES (?, ?, ?, ?, 'scheduled')
+                    `);
+
+                    for (let i = 0; i < winners.length; i += 2) {
+                        const p1 = winners[i];
+                        const p2 = i + 1 < winners.length ? winners[i + 1] : null;
+                        insertNext.run(tid, nextRound, p1, p2);
+                    }
+                }
+            }
+
+            reply.send({ success: true });
+        } catch (error) {
+            fastify.log.error(`Error recording tournament match result: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });

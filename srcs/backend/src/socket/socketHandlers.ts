@@ -1223,6 +1223,33 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
         }
         
         socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
+        // Minimal handler for tournament match room joining
+        // Client payload: { tournamentId: string, matchId: number }
+        socket.on('tournament:join_match', (data: any) => {
+            try {
+                const tournamentId = data?.tournamentId;
+                const matchId = data?.matchId;
+                if (!tournamentId || !matchId) {
+                    socket.emit('tournament:join_match:error', { error: 'tournamentId and matchId required' });
+                    return;
+                }
+
+                const user = getSocketUser(socket.id);
+                if (!user) {
+                    socket.emit('tournament:join_match:error', { error: 'Authentication required' });
+                    return;
+                }
+
+                const roomName = `tournament:${tournamentId}:match:${matchId}`;
+                socket.join(roomName);
+                socket.emit('tournament:join_match:ok', { room: roomName });
+                fastify.log.info(`Socket ${socket.id} (user=${user.username}) joined ${roomName}`);
+            } catch (err) {
+                socket.emit('tournament:join_match:error', { error: 'Internal server error' });
+            }
+        });
+        
+        
         socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
         socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
         socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));

@@ -7,70 +7,8 @@ declare var io: any;
 import { load } from '../pages/utils.js';
 import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../components/sessionDisconnected.html.js';
 
-// Fonction pour mettre à jour le statut d'un ami dans la friendlist
-function updateFriendStatus(username: string, status: 'online' | 'in-game' | 'offline') {
-    console.log(`👥 Updating friend status: ${username} -> ${status}`);
-    
-    // Trouver l'élément de l'ami dans la friendlist
-    const friendElement = document.querySelector(`[data-username="${username}"]`) as HTMLElement;
-    if (!friendElement) {
-        console.log(`👥 Friend element not found for ${username}`);
-        return;
-    }
-
-    // Supprimer les anciennes classes de statut
-    friendElement.classList.remove('friend-online', 'friend-in-game', 'friend-offline');
-    
-    // Ajouter la nouvelle classe de statut
-    switch (status) {
-        case 'online':
-            friendElement.classList.add('friend-online');
-            friendElement.setAttribute('data-is-in-game', 'false');
-            break;
-        case 'in-game':
-            friendElement.classList.add('friend-in-game');
-            friendElement.setAttribute('data-is-in-game', 'true');
-            break;
-        case 'offline':
-            friendElement.classList.add('friend-offline');
-            friendElement.setAttribute('data-is-in-game', 'false');
-            break;
-    }
-
-    // Mettre à jour l'indicateur visuel
-    updateFriendStatusIndicator(friendElement, status);
-}
-
-// Fonction pour mettre à jour l'indicateur visuel de statut
-function updateFriendStatusIndicator(friendElement: HTMLElement, status: 'online' | 'in-game' | 'offline') {
-    // Supprimer l'ancien indicateur s'il existe
-    const oldIndicator = friendElement.querySelector('.status-indicator');
-    if (oldIndicator) {
-        oldIndicator.remove();
-    }
-
-    // Créer le nouvel indicateur
-    const indicator = document.createElement('div');
-    indicator.className = 'status-indicator';
-    
-    switch (status) {
-        case 'online':
-            indicator.innerHTML = '<div class="status-dot status-online"></div>';
-            indicator.title = 'Online';
-            break;
-        case 'in-game':
-            indicator.innerHTML = '<div class="status-dot status-in-game"></div>';
-            indicator.title = 'In Game';
-            break;
-        case 'offline':
-            indicator.innerHTML = '<div class="status-dot status-offline"></div>';
-            indicator.title = 'Offline';
-            break;
-    }
-
-    // Ajouter l'indicateur à l'élément ami
-    friendElement.appendChild(indicator);
-}
+// NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
+// pour centraliser la gestion des mises à jour de la friendlist et éviter les conflits
 
 // Fonction pour afficher l'overlay de session déconnectée
 function showSessionDisconnectedOverlay(message: string) {
@@ -107,10 +45,11 @@ let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 let errorListenerSet = false;
 let gameFinishedListenerActive = false;
-let friendStatusListenerSet = false;
+// friendStatusListenerSet removed - now handled by friendList.html.ts
 let friendAddedListenerSet = false;
 let friendRemovedListenerSet = false;
 let profileUpdatedListenerSet = false;
+let friendRequestReceivedListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -257,13 +196,15 @@ function setupGlobalSocketListeners() {
     }
     
     // Event listener for friend status changes (real-time friend list updates)
-    if (!friendStatusListenerSet) {
-        socket.on('friendStatusChanged', (data: any) => {
-            console.log('👥 Friend status changed:', data);
-            updateFriendStatus(data.username, data.status);
-        });
-        friendStatusListenerSet = true;
-    }
+    // NOTE: Ce listener est désormais géré par friendList.html.ts via startFriendListRealtimeUpdates()
+    // pour éviter les conflits de double gestion des mises à jour de statut
+    // if (!friendStatusListenerSet) {
+    //     socket.on('friendStatusChanged', (data: any) => {
+    //         console.log('👥 Friend status changed:', data);
+    //         updateFriendStatus(data.username, data.status);
+    //     });
+    //     friendStatusListenerSet = true;
+    // }
     
     // Event listener for friend added (real-time friend list updates)
     if (!friendAddedListenerSet) {
@@ -275,10 +216,17 @@ function setupGlobalSocketListeners() {
             if (friendListContainer && friendListContainer.innerHTML) {
                 // Importer la fonction de rafraîchissement de la liste d'amis
                 try {
-                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton } = await import('../components/index.html.js');
+                    const { friendListHTML, initLoadingIcons, initializeAddFriendsButton, fetchInitialFriendStatuses } = await import('../components/index.html.js');
                     friendListContainer.innerHTML = await friendListHTML();
                     initLoadingIcons();
                     initializeAddFriendsButton(); // Réinitialiser le bouton Add Friends
+                    
+                    // 🚀 IMPORTANT : Récupérer les statuts réels après avoir rechargé la liste
+                    setTimeout(async () => {
+                        await fetchInitialFriendStatuses();
+                        console.log('✅ Friend statuses fetched after friend added');
+                    }, 100);
+                    
                     console.log('✅ Friend list refreshed after friend added');
                 } catch (error) {
                     console.error('Error refreshing friend list after friend added:', error);
@@ -333,6 +281,23 @@ function setupGlobalSocketListeners() {
         });
         profileUpdatedListenerSet = true;
     }
+    
+    // Event listener for friend request received (real-time badge update)
+    if (!friendRequestReceivedListenerSet) {
+        socket.on('friendRequestReceived', async (data: any) => {
+            console.log('🔔 Friend request received:', data);
+            
+            // Mettre à jour le badge des demandes d'amis
+            try {
+                const { updateFriendRequestsBadge } = await import('../components/index.html.js');
+                await updateFriendRequestsBadge();
+                console.log('✅ Friend requests badge updated');
+            } catch (error) {
+                console.error('Error updating friend requests badge:', error);
+            }
+        });
+        friendRequestReceivedListenerSet = true;
+    }
 }
 
 // Configurer les listeners globaux au chargement
@@ -364,7 +329,7 @@ function reconnectWebSocket() {
         disconnectBasicListenerSet = false;
         pongListenerSet = false;
         errorListenerSet = false;
-        friendStatusListenerSet = false;
+        // friendStatusListenerSet removed - now handled by friendList.html.ts
         friendAddedListenerSet = false;
         friendRemovedListenerSet = false;
         profileUpdatedListenerSet = false;

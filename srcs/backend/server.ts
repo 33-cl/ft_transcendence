@@ -126,6 +126,9 @@ app.addHook('onSend', (request, reply, payload, done) => {
     }
   });
 
+  // Attacher io à fastify pour qu'il soit accessible dans les routes
+  (app as any).io = io;
+
   registerSocketHandlers(io, app); // Branche les handlers d'événements WebSocket (Pong, rooms, etc.)
 } catch (error) {
     app.log.error(error);
