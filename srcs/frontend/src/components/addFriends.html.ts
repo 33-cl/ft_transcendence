@@ -220,6 +220,10 @@ export function initializeBackToFriendsButton() {
                 // 🎯 IMPORTANT : Toujours rafraîchir les statuts quand on retourne à friendList
                 // (au cas où la liste a changé pendant qu'on était sur addFriends)
                 await fetchInitialFriendStatuses();
+                
+                // 🔔 IMPORTANT : Mettre à jour le badge dès qu'on affiche friendList
+                const { updateFriendRequestsBadge } = await import('./friendList.html.js');
+                await updateFriendRequestsBadge();
             }, 100);
         });
     }
