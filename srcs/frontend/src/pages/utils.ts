@@ -89,13 +89,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
          if ((window as any).aiMode) {
             (window as any).aiMode = false; //Retour au menu - reset du flag IA 🤖 
-            console.log('🏠 Retour au menu principal - Mode IA désactivé, contrôles W/S réactivés');
          } 
         // Refresh user stats BEFORE showing components to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
-                if (statsChanged)
-                    console.log('📊 User stats refreshed before main menu display');
+            (window as any).refreshUserStats().then(async (_statsChanged: boolean) => {
+
             // Show components after stats are refreshed
                 await show('mainMenu');
                 await show('friendList');
@@ -190,10 +188,8 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
         // Refresh user stats BEFORE showing profile to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then(async (statsChanged: boolean) => {
-                if (statsChanged) {
-                    console.log('📊 User stats refreshed before profile display');
-                }
+            (window as any).refreshUserStats().then(async (_statsChanged: boolean) => {
+      
                 // Show components after stats are refreshed
                 await show('profile');
                 await show('goToMain');

@@ -1,16 +1,10 @@
 export const gameFinishedHTML = (data?: any) => {
-    console.log('🎮 [gameFinishedHTML] Rendering with data:', data);
     
     const winner = data?.winner;
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
     const forfeitMessage = data?.forfeitMessage || '';
     const mode = data?.mode; // 'ai', 'local', ou undefined pour online
-    
-    console.log('🎮 Winner object:', winner);
-    console.log('🎮 Loser object:', loser);
-    console.log('🎮 Is forfeit:', isForfeit);
-    console.log('🎮 Mode:', mode);
     
     // Determine if this is a local/AI game (side-based) or online game (username-based)
     const isLocalOrAIGame = (winner?.side && !winner?.username) || mode === 'ai' || mode === 'local';
@@ -21,10 +15,6 @@ export const gameFinishedHTML = (data?: any) => {
     const loserName = loser?.username || loser?.side || 'Loser';
     const winnerScore = winner?.score ?? 0;
     const loserScore = loser?.score ?? 0;
-    
-    console.log('🎮 Winner name:', winnerName, '| Score:', winnerScore);
-    console.log('🎮 Loser name:', loserName, '| Score:', loserScore);
-    console.log('🎮 Is local/AI game:', isLocalOrAIGame);
     
     // Show restart button only for local games or if no forfeit
     const showRestartBtn = !isOnlineGame || !isForfeit;

@@ -41,24 +41,11 @@ export function resetPongRenderer(): void {
 (window as any).resetPongRenderer = resetPongRenderer;
 
 export function draw(gameState: any)
-{
-    // Logs de debug temporairement désactivés pour les performances
-    // const drawId = Math.random().toString(36).substr(2, 9);
-    // console.log(`[DRAW-${drawId}] === DÉBUT RENDU ===`);
-    // console.log(`[DRAW-${drawId}] Canvas/ctx disponibles:`, !!canvas, !!ctx);
-    
+{   
     if (!ctx || !canvas) {
-        // console.error(`[DRAW] Pas de canvas/ctx - abandon du rendu`);
         return;
     }
     
-    // Log simplifié pour debug uniquement si nécessaire
-    // console.log(`[DRAW] gameState:`, {
-    //     paddlesCount: gameState.paddles?.length,
-    //     ballX: gameState.ballX,
-    //     ballY: gameState.ballY,
-    //     running: gameState.running
-    // });
     
     // Clear le canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -168,8 +155,6 @@ export function draw(gameState: any)
             scoreElem.innerHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
         }
     }
-
-    // console.log(`[DRAW] === FIN RENDU ===`);
 }
 
 (window as any).draw = draw;

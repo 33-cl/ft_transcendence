@@ -5,12 +5,7 @@
 (window as any).controlledPaddle = null;
 
 function sendKeyEvent(type: 'keydown' | 'keyup', player: 'A' | 'B' | 'C' | 'D' | 'left' | 'right', direction: 'up' | 'down') {
-    // Log des touches actives pour debug visuel
-    if (type === 'keydown') {
-        console.log(`🎮 Touche active: ${player} ${direction}`);
-    }
     
-    // console.log(`[FRONT] sendKeyEvent: type=${type}, player=${player}, direction=${direction}, controlledPaddle=${(window as any).controlledPaddle}`);
     if ((window as any).isLocalGame) {
         (window as any).sendMessage(type, { player, direction });
     } else {
