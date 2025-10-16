@@ -1,14 +1,10 @@
 export function spectatorGameFinishedHTML(data?: any) {
-    console.log('👁️ [spectatorGameFinishedHTML] Rendering with data:', data);
     
     const winner = data?.winner;
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
     const forfeitMessage = data?.forfeitMessage || '';
     
-    console.log('👁️ Winner object:', winner);
-    console.log('👁️ Loser object:', loser);
-    console.log('👁️ Is forfeit:', isForfeit);
     
     // Determine display names
     const winnerName = winner?.username || winner?.side || 'Winner';
@@ -16,9 +12,6 @@ export function spectatorGameFinishedHTML(data?: any) {
     const winnerScore = winner?.score ?? 0;
     const loserScore = loser?.score ?? 0;
     
-    console.log('👁️ Winner name:', winnerName, '| Score:', winnerScore);
-    console.log('👁️ Loser name:', loserName, '| Score:', loserScore);
-
     // Utiliser les mêmes styles que gameFinished pour la cohérence visuelle
     return /*html*/`
         <div class="game-finished-overlay">

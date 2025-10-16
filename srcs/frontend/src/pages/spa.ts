@@ -56,7 +56,7 @@ async function fetchUserByUsername(username: string) {
 }
 
 // Fonction pour supprimer un ami
-async function removeFriend(userId: number, username: string) {
+async function removeFriend(userId: number, _username: string) {
     try {
         const response = await fetch(`/users/${userId}/friend`, {
             method: 'DELETE',
@@ -68,7 +68,6 @@ async function removeFriend(userId: number, username: string) {
             throw new Error(errorData.error || 'Failed to remove friend');
         }
 
-        console.log(`Friend ${username} removed successfully`);
         
         // Recharger la liste d'amis
         const friendListContainer = document.getElementById('friendList');

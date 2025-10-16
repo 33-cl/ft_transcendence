@@ -55,12 +55,6 @@ export function initAIConfigManagers(): void {
         // Sauvegarder aussi dans localStorage pour cohérence
         localStorage.setItem('aiDifficulty', difficulty);
         
-        // Log de debug pour vérifier la transmission
-        console.log(`🎮 Variables IA définies:`, {
-            aiMode: (window as any).aiMode,
-            aiDifficulty: (window as any).aiDifficulty,
-            selectedDifficulty: difficulty
-        });
         
         try {
             // Rejoindre une room en mode local avec IA

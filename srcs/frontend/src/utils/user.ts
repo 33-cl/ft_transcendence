@@ -18,13 +18,11 @@ export function initAvatarChange(): void {
         
         // Vérifications de sécurité
         if (!target || !target.files || target.files.length === 0) {
-            console.log("Aucun fichier sélectionné");
             return;
         }
         
         const file = target.files[0];
         if (file) {
-            console.log("Fichier sélectionné:", file.name, "- Type:", file.type, "- Taille:", file.size, "bytes");
             
             // Stocker temporairement le fichier pour traitement ultérieur
             window.temporaryAvatarFile = file;

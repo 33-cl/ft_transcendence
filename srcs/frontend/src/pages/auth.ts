@@ -56,7 +56,6 @@ export async function refreshUserStats() {
                 
                 // Log if stats changed
                 if (newUser.wins !== oldWins || newUser.losses !== oldLosses) {
-                    console.log(`Stats updated: ${oldWins} -> ${newUser.wins} wins, ${oldLosses} -> ${newUser.losses} losses`);
                     return true; // Stats changed
                 }
             }
@@ -150,7 +149,6 @@ document.addEventListener('componentsReady', () => {
                 
                 // Force websocket reconnection after successful registration
                 if ((window as any).currentUser && (window as any).reconnectWebSocket) {
-                    console.log('Registration successful, reconnecting websocket with cookies...');
                     (window as any).reconnectWebSocket();
                 }
                 
@@ -241,7 +239,6 @@ document.addEventListener('componentsReady', () => {
                 
                 // Force websocket reconnection after successful login
                 if ((window as any).currentUser && (window as any).reconnectWebSocket) {
-                    console.log('Login successful, reconnecting websocket with cookies...');
                     (window as any).reconnectWebSocket();
                 }
                 

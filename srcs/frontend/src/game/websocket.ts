@@ -53,10 +53,6 @@ let gameFinishedListenerActive = false;
 // - profileUpdated → updateFriendProfile() (préserve le statut actuel)
 // - friendRequestReceived → updateFriendRequestsBadge()
 // Les listeners ici sont maintenus pour compatibilité mais ne font plus les mises à jour du DOM
-let friendAddedListenerSet = false;
-let friendRemovedListenerSet = false;
-let profileUpdatedListenerSet = false;
-let friendRequestReceivedListenerSet = false;
 
 // Fonction pour configurer les event listeners globaux (une seule fois)
 function setupGlobalSocketListeners() {
@@ -106,7 +102,6 @@ function setupGlobalSocketListeners() {
             
             // Si c'est un spectateur, aller directement à la page de jeu
             if ((window as any).isSpectator) {
-                console.log('👁️ Spectator joining game page directly');
                 if (data.maxPlayers === 3) {
                     load('game3');
                 } else {
@@ -114,18 +109,14 @@ function setupGlobalSocketListeners() {
                 }
                 // Force setup of game event listeners after navigation for spectators
                 setTimeout(() => {
-                    console.log('👁️ [SPECTATOR] Setting up game event listeners after navigation');
                     const mapCanvas = document.getElementById('map');
                     if (mapCanvas) {
-                        console.log('👁️ [SPECTATOR] Canvas found, setting up');
                         if (typeof (window as any).setupGameEventListeners === 'function') {
                             (window as any).setupGameEventListeners();
                         }
                         if (typeof (window as any).initPongRenderer === 'function') {
                             (window as any).initPongRenderer('map');
                         }
-                    } else {
-                        console.log('👁️ [SPECTATOR] Canvas not found yet');
                     }
                 }, 200);
                 return;
@@ -174,7 +165,6 @@ function setupGlobalSocketListeners() {
             
             // Handle user already connected error - show overlay instead of ignoring
             if (data && data.code === 'USER_ALREADY_CONNECTED') {
-                console.log('🚫 User already connected elsewhere, showing overlay');
                 
                 // Stop friend list auto-refresh to prevent background requests
                 if ((window as any).stopFriendListAutoRefresh) {
@@ -207,70 +197,17 @@ function setupGlobalSocketListeners() {
     // pour éviter les conflits de double gestion des mises à jour de statut
     // if (!friendStatusListenerSet) {
     //     socket.on('friendStatusChanged', (data: any) => {
-    //         console.log('👥 Friend status changed:', data);
     //         updateFriendStatus(data.username, data.status);
     //     });
     //     friendStatusListenerSet = true;
     // }
     
-    // Event listener for friend added (real-time friend list updates)
-    // 🚨 NOTE: Ce listener est maintenant géré par friendList.html.ts via reloadFriendList()
-    // qui recharge la liste ET fetch les statuts réels
-    // Ce listener est désactivé pour éviter les doublons
-    if (!friendAddedListenerSet) {
-        socket.on('friendAdded', async (data: any) => {
-            console.log('✅ [websocket.ts] Friend added event received:', data);
-            // ⚠️ Ne plus recharger la liste ici !
-            // Le listener dans friendList.html.ts s'en occupe avec reloadFriendList()
-            console.log('✅ [websocket.ts] Friend add will be handled by friendList.html.ts');
-        });
-        friendAddedListenerSet = true;
-    }
-    
-    // Event listener for friend removed (real-time friend list updates)
-    // 🚨 NOTE: Ce listener est maintenant géré par friendList.html.ts via reloadFriendList()
-    // qui recharge la liste ET fetch les statuts réels
-    // Ce listener est désactivé pour éviter les doublons
-    if (!friendRemovedListenerSet) {
-        socket.on('friendRemoved', async (data: any) => {
-            console.log('❌ [websocket.ts] Friend removed event received:', data);
-            // ⚠️ Ne plus recharger la liste ici !
-            // Le listener dans friendList.html.ts s'en occupe avec reloadFriendList()
-            console.log('✅ [websocket.ts] Friend removal will be handled by friendList.html.ts');
-        });
-        friendRemovedListenerSet = true;
-    }
-    
-    // Event listener for profile updates (real-time friend list updates)
-    // 🚨 NOTE: Ce listener est maintenant géré par friendList.html.ts via updateFriendProfile()
-    // qui préserve le statut actuel au lieu de recharger toute la liste
-    // Ce listener est conservé uniquement pour la compatibilité avec d'autres parties du code
-    if (!profileUpdatedListenerSet) {
-        socket.on('profileUpdated', async (data: any) => {
-            console.log('🔄 [websocket.ts] Profile updated event received:', data);
-            // ⚠️ Ne plus recharger toute la liste ici !
-            // Le listener dans friendList.html.ts s'en occupe avec updateFriendProfile()
-            console.log('✅ [websocket.ts] Profile update will be handled by friendList.html.ts');
-        });
-        profileUpdatedListenerSet = true;
-    }
-    
-    // Event listener for friend request received (real-time badge update)
-    if (!friendRequestReceivedListenerSet) {
-        socket.on('friendRequestReceived', async (data: any) => {
-            console.log('🔔 Friend request received:', data);
-            
-            // Mettre à jour le badge des demandes d'amis
-            try {
-                const { updateFriendRequestsBadge } = await import('../components/index.html.js');
-                await updateFriendRequestsBadge();
-                console.log('✅ Friend requests badge updated');
-            } catch (error) {
-                console.error('Error updating friend requests badge:', error);
-            }
-        });
-        friendRequestReceivedListenerSet = true;
-    }
+    // 🚨 NOTE: Les listeners suivants sont maintenant entièrement gérés par friendList.html.ts
+    // - friendAdded → reloadFriendList()
+    // - friendRemoved → reloadFriendList()
+    // - profileUpdated → updateFriendProfile()
+    // - friendRequestReceived → updateFriendRequestsBadge()
+    // Ils ont été supprimés d'ici pour éviter les doublons
 }
 
 // Configurer les listeners globaux au chargement
@@ -302,10 +239,8 @@ function reconnectWebSocket() {
         disconnectBasicListenerSet = false;
         pongListenerSet = false;
         errorListenerSet = false;
-        // friendStatusListenerSet removed - now handled by friendList.html.ts
-        friendAddedListenerSet = false;
-        friendRemovedListenerSet = false;
-        profileUpdatedListenerSet = false;
+        // NOTE: friendAdded, friendRemoved, profileUpdated, friendRequestReceived
+        // sont maintenant gérés par friendList.html.ts
         
         // Re-setup global listeners
         setupGlobalSocketListeners();
@@ -505,12 +440,6 @@ function setupGameEventListeners() {
     // Event listener pour les états de jeu
     if (!gameStateListenerActive) {
         socket.on('gameState', (state: any) => {
-            console.log('🎮 [FRONTEND] Received gameState:', { 
-                ball: state.ball ? { x: state.ball.x, y: state.ball.y } : 'null',
-                paddleA: state.paddleA ? { x: state.paddleA.x, y: state.paddleA.y } : 'null',
-                paddleC: state.paddleC ? { x: state.paddleC.x, y: state.paddleC.y } : 'null',
-                isSpectator: (window as any).isSpectator
-            });
             draw(state);
         });
         gameStateListenerActive = true;
@@ -537,11 +466,6 @@ function setupGameEventListeners() {
         socket.on('gameFinished', (data: any) => {
             gameFinishedListenerActive = true;
 
-            console.log('🏁 [GAME FINISHED] Data received:', data);
-            console.log('🏁 Winner:', data?.winner);
-            console.log('🏁 Loser:', data?.loser);
-            console.log('🏁 Forfeit:', data?.forfeit);
-
             // Affiche la page de fin de partie avec les données reçues
             if (data && data.winner) {
                 load('gameFinished', data);
@@ -555,8 +479,6 @@ function setupGameEventListeners() {
     if (!spectatorGameFinishedListenerActive) {
         socket.on('spectatorGameFinished', (data: any) => {
             spectatorGameFinishedListenerActive = true;
-            
-            console.log('👁️ [SPECTATOR] Game finished, showing spectator end screen', data);
             
             // Arrêter le jeu et nettoyer l'état
             cleanupGameState();

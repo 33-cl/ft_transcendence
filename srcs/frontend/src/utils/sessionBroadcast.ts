@@ -41,7 +41,6 @@ export function initSessionBroadcast() {
 
     // Don't initialize multiple times
     if (sessionChannel) {
-        console.log('Session broadcast already initialized');
         return;
     }
 
@@ -57,11 +56,9 @@ export function initSessionBroadcast() {
         if (event.data.type === 'SESSION_CREATED') {
             // If this tab already has an active session, ignore the message
             if (hasActiveSession) {
-                console.log('⚠️ Ignoring SESSION_CREATED - this tab already has an active session');
                 return;
             }
             
-            console.log('⚠️ Session created in another tab, showing overlay and blocking this tab');
             
             // Set the global block flag
             sessionBlockedByAnotherTab = true;
@@ -85,7 +82,6 @@ export function initSessionBroadcast() {
             // Clear current user in this tab only (don't logout as it would destroy the session for all tabs)
             (window as any).currentUser = null;
         } else if (event.data.type === 'SESSION_DESTROYED') {
-            console.log('✅ Session destroyed in another tab, removing overlay and unblocking');
             
             // Unblock this tab
             sessionBlockedByAnotherTab = false;
@@ -99,18 +95,14 @@ export function initSessionBroadcast() {
             // Another tab is checking if there's an active session
             // Respond only if we have an active session (hasActiveSession flag)
             if (hasActiveSession) {
-                console.log('📢 Responding to session check - we have an active session');
                 sessionChannel?.postMessage({ type: 'SESSION_ACTIVE', tabId: TAB_ID });
             }
         } else if (event.data.type === 'SESSION_ACTIVE') {
             // If this tab already has an active session, ignore the message
             if (hasActiveSession) {
-                console.log('⚠️ Ignoring SESSION_ACTIVE - this tab already has an active session');
                 return;
             }
             
-            // Another tab has an active session, block this tab
-            console.log('⚠️ Another tab has an active session, blocking this tab');
             
             // Set the global block flag
             sessionBlockedByAnotherTab = true;
@@ -143,7 +135,6 @@ export function initSessionBroadcast() {
 // Broadcast that a session has been created (after successful login/register)
 export function broadcastSessionCreated() {
     if (sessionChannel) {
-        console.log('📢 Broadcasting session creation to other tabs');
         sessionChannel.postMessage({ type: 'SESSION_CREATED', tabId: TAB_ID });
     }
 }
@@ -151,7 +142,6 @@ export function broadcastSessionCreated() {
 // Broadcast that a session has been destroyed (after logout)
 export function broadcastSessionDestroyed() {
     if (sessionChannel) {
-        console.log('📢 Broadcasting session destruction to other tabs');
         sessionChannel.postMessage({ type: 'SESSION_DESTROYED', tabId: TAB_ID });
     }
 }
