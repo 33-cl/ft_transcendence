@@ -1,6 +1,7 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from '../utils/sessionBroadcast.js';
+import { guardFunction } from '../utils/securityGuard.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
@@ -255,5 +256,5 @@ function hideAllPages(): void
 }
 
 export { show, load, hideAllPages, hide };
-// Exposer load globalement pour les autres modules
-(window as any).load = load; 
+// Exposer load globalement pour les autres modules avec protection
+(window as any).load = guardFunction(load, 'load'); 

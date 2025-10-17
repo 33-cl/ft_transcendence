@@ -1,6 +1,7 @@
 import { load } from './utils.js';
 import { DEV_CONFIG } from '../config/dev.js';
 import { broadcastSessionCreated, broadcastSessionDestroyed, isSessionBlocked, markSessionActive, markSessionInactive } from '../utils/sessionBroadcast.js';
+import { guardFunction } from '../utils/securityGuard.js';
 
 function isValidEmailSimple(email: string): boolean {
     if (!email || typeof email !== 'string') return false;
@@ -14,6 +15,13 @@ function isValidEmailSimple(email: string): boolean {
 }
 
 export async function checkSessionOnce() {
+    // 🚨 SECURITY: Don't check session if this tab is blocked
+    if (isSessionBlocked()) {
+        console.log('🚫 Security: checkSessionOnce blocked - Tab does not have active session');
+        window.currentUser = null;
+        return;
+    }
+    
     try {
         const res = await fetch('/auth/me', { credentials: 'include' });
         if (res.ok) {
@@ -274,9 +282,10 @@ document.addEventListener('componentsReady', () => {
         }
     });
 
-    // Expose simple logout helper
+    // Expose simple logout helper with security guard
     if (!window.logout) {
-        window.logout = async () => {
+        // Internal logout implementation
+        const logoutImpl = async () => {
             try { 
                 await fetch('/auth/logout', { method: 'POST', credentials: 'include' }); 
             } catch {}
@@ -286,6 +295,9 @@ document.addEventListener('componentsReady', () => {
             // Broadcast session destruction to other tabs
             broadcastSessionDestroyed();
         };
+        
+        // Wrap with security guard to prevent execution in blocked tabs
+        window.logout = guardFunction(logoutImpl, 'logout');
     }
 });
 
