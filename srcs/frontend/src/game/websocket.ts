@@ -167,31 +167,40 @@ function setupGlobalSocketListeners() {
                 return;
             }
             
-            // Handle user already connected error - show overlay instead of ignoring
+            // Handle user already connected error
+            // NOTE: Normally this is already handled by BroadcastChannel (sessionBroadcast.ts)
+            // This is just a fallback for edge cases (e.g., BroadcastChannel not supported)
             if (data && data.code === 'USER_ALREADY_CONNECTED') {
                 console.log('⚠️ WebSocket: USER_ALREADY_CONNECTED received');
                 
-                // Check if overlay already exists (from BroadcastChannel)
-                const overlayAlreadyExists = document.getElementById('sessionDisconnectedOverlay');
-                if (overlayAlreadyExists) {
-                    console.log('ℹ️ Overlay already exists, not creating a new one');
+                // Import isSessionBlocked dynamically to check if BroadcastChannel already handled this
+                import('../utils/sessionBroadcast.js').then(({ isSessionBlocked }) => {
+                    // Check if already blocked by BroadcastChannel OR if overlay already exists
+                    const alreadyBlocked = isSessionBlocked();
+                    const overlayExists = document.getElementById('sessionDisconnectedOverlay');
+                    
+                    if (alreadyBlocked || overlayExists) {
+                        console.log('ℹ️ Session already blocked by BroadcastChannel, not creating duplicate overlay');
+                        socket.disconnect();
+                        return;
+                    }
+                    
+                    // Fallback: BroadcastChannel didn't handle it (e.g., not supported in browser)
+                    console.log('🎨 FALLBACK: Creating session blocked overlay from WebSocket');
+                    
+                    // Stop friend list auto-refresh to prevent background requests
+                    if ((window as any).stopFriendListAutoRefresh) {
+                        (window as any).stopFriendListAutoRefresh();
+                    }
+                    
+                    // Disconnect the socket
                     socket.disconnect();
-                    return;
-                }
-                
-                // Stop friend list auto-refresh to prevent background requests
-                if ((window as any).stopFriendListAutoRefresh) {
-                    (window as any).stopFriendListAutoRefresh();
-                }
-                
-                // Disconnect the socket
-                socket.disconnect();
-                
-                // Show the session disconnected overlay
-                console.log('🎨 Creating session blocked overlay (WebSocket USER_ALREADY_CONNECTED)');
-                showSessionDisconnectedOverlay(
-                    'This account is already active in another tab or browser. Please close the other session first.'
-                );
+                    
+                    // Show the session disconnected overlay
+                    showSessionDisconnectedOverlay(
+                        'This account is already active in another tab or browser. Please close the other session first.'
+                    );
+                });
                 return;
             }
             
