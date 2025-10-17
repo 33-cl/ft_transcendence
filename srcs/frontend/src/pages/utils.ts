@@ -1,6 +1,6 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
-import { initSessionBroadcast } from '../utils/sessionBroadcast.js';
+import { initSessionBroadcast, isSessionBlocked } from '../utils/sessionBroadcast.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
@@ -25,6 +25,18 @@ const components = {
 
 async function show(pageName: keyof typeof components, data?: any)
 {
+    console.log(`📄 show('${pageName}') called`);
+    
+    // 🚨 SECURITY: Don't load ANY content if session is blocked
+    const blocked = isSessionBlocked();
+    console.log(`   isSessionBlocked() returned: ${blocked}`);
+    
+    if (blocked && pageName !== 'signIn' && pageName !== 'signUp') {
+        console.warn(`🚫 Component loading BLOCKED for '${pageName}': Session is active in another tab`);
+        return; // Don't load any content
+    }
+    
+    console.log(`✅ Loading component '${pageName}'`);
     // Show the requested component
     const component = components[pageName];
     const element = document.getElementById(component.id);
@@ -76,6 +88,12 @@ async function show(pageName: keyof typeof components, data?: any)
 
 async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
+    // 🚨 CRITICAL SECURITY CHECK: Block navigation if session is blocked by another tab
+    if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp') {
+        console.warn('Navigation blocked: Session is active in another tab');
+        return; // Don't allow navigation
+    }
+    
     hideAllPages();
     
     // Arrêter les mises à jour WebSocket si on quitte le menu principal
