@@ -5,6 +5,7 @@ import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
+import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -471,7 +472,10 @@ if (document.readyState === 'loading')
 {
     document.addEventListener('DOMContentLoaded', async () =>
     {
-        // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
+        // �️ SECURITY: Install fetch guard FIRST to intercept all requests
+        installFetchGuard();
+        
+        // �🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
         await initSessionBroadcast();
         
         await checkSessionOnce();
@@ -486,6 +490,9 @@ if (document.readyState === 'loading')
 else
 {
     (async () => {
+        // 🛡️ SECURITY: Install fetch guard FIRST to intercept all requests
+        installFetchGuard();
+        
         // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
         await initSessionBroadcast();
         
