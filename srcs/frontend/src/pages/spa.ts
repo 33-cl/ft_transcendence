@@ -4,6 +4,7 @@ import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
+import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -470,6 +471,9 @@ if (document.readyState === 'loading')
 {
     document.addEventListener('DOMContentLoaded', async () =>
     {
+        // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
+        await initSessionBroadcast();
+        
         await checkSessionOnce();
         if (!window.currentUser || !window.currentUser.username)
             load('signIn');
@@ -482,6 +486,9 @@ if (document.readyState === 'loading')
 else
 {
     (async () => {
+        // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
+        await initSessionBroadcast();
+        
         await checkSessionOnce();
         if (!window.currentUser || !window.currentUser.username)
             load('signIn');

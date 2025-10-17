@@ -12,9 +12,12 @@ import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from 
 
 // Fonction pour afficher l'overlay de session déconnectée
 function showSessionDisconnectedOverlay(message: string) {
+    console.log('🎨 showSessionDisconnectedOverlay() called with message:', message);
+    
     // Éviter les doublons
     const existingOverlay = document.getElementById('sessionDisconnectedOverlay');
     if (existingOverlay) {
+        console.log('🗑️ Removing existing overlay in showSessionDisconnectedOverlay()');
         existingOverlay.remove();
     }
     
@@ -25,6 +28,7 @@ function showSessionDisconnectedOverlay(message: string) {
     
     // Ajouter l'overlay au body
     document.body.appendChild(overlayDiv);
+    console.log('✅ Overlay appended to body by showSessionDisconnectedOverlay()');
     
     // Initialiser les event listeners pour le bouton
     initializeSessionDisconnectedListeners();
@@ -165,6 +169,15 @@ function setupGlobalSocketListeners() {
             
             // Handle user already connected error - show overlay instead of ignoring
             if (data && data.code === 'USER_ALREADY_CONNECTED') {
+                console.log('⚠️ WebSocket: USER_ALREADY_CONNECTED received');
+                
+                // Check if overlay already exists (from BroadcastChannel)
+                const overlayAlreadyExists = document.getElementById('sessionDisconnectedOverlay');
+                if (overlayAlreadyExists) {
+                    console.log('ℹ️ Overlay already exists, not creating a new one');
+                    socket.disconnect();
+                    return;
+                }
                 
                 // Stop friend list auto-refresh to prevent background requests
                 if ((window as any).stopFriendListAutoRefresh) {
@@ -175,6 +188,7 @@ function setupGlobalSocketListeners() {
                 socket.disconnect();
                 
                 // Show the session disconnected overlay
+                console.log('🎨 Creating session blocked overlay (WebSocket USER_ALREADY_CONNECTED)');
                 showSessionDisconnectedOverlay(
                     'This account is already active in another tab or browser. Please close the other session first.'
                 );
