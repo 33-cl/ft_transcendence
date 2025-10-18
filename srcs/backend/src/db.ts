@@ -115,7 +115,71 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_tm_tournament_id ON tournament_matches(tournament_id);
 `);
 
-
+// Migration: Add google_id and provider columns if they don't exist
+try {
+  // Check if columns exist
+  const tableInfo = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string, notnull: number }>;
+  const hasGoogleId = tableInfo.some(col => col.name === 'google_id');
+  const hasProvider = tableInfo.some(col => col.name === 'provider');
+  const hasDisplayName = tableInfo.some(col => col.name === 'display_name');
+  const passwordHashCol = tableInfo.find(col => col.name === 'password_hash');
+  
+  if (!hasGoogleId) {
+    console.log('📝 Migration: Adding google_id column to users table');
+    db.exec('ALTER TABLE users ADD COLUMN google_id TEXT');
+    db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL');
+  }
+  
+  if (!hasProvider) {
+    console.log('📝 Migration: Adding provider column to users table');
+    db.exec("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'local'");
+  }
+  
+  if (!hasDisplayName) {
+    console.log('📝 Migration: Adding display_name column to users table');
+    db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
+  }
+  
+  // SQLite doesn't support ALTER COLUMN, so we need to recreate the table if password_hash is NOT NULL
+  if (passwordHashCol && passwordHashCol.notnull === 1) {
+    console.log('📝 Migration: Making password_hash nullable for OAuth users');
+    db.exec(`
+      BEGIN TRANSACTION;
+      
+      -- Create new table with password_hash as nullable
+      CREATE TABLE users_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT,
+        display_name TEXT,
+        avatar_url TEXT,
+        google_id TEXT,
+        provider TEXT DEFAULT 'local',
+        wins INTEGER DEFAULT 0,
+        losses INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      -- Copy data from old table
+      INSERT INTO users_new SELECT * FROM users;
+      
+      -- Drop old table
+      DROP TABLE users;
+      
+      -- Rename new table
+      ALTER TABLE users_new RENAME TO users;
+      
+      -- Recreate indexes
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+      
+      COMMIT;
+    `);
+  }
+} catch (err) {
+  console.error('Migration error:', err);
+}
 
 console.log('✅ Base de données initialisée');
 

@@ -8,7 +8,7 @@ export const signUpHTML = /*html*/`
     <div id="signUpMsg" style="margin-top:8px"></div>
 
 
-    <button class="gsi-material-button" onclick="window.location.href='https://localhost:8080/auth/google'">
+    <button class="gsi-material-button" onclick="window.location.href='https://localhost:3000/auth/google'">
     <div class="gsi-material-button-state"></div>
     <div class="gsi-material-button-content-wrapper">
         <div class="gsi-material-button-icon">
