@@ -1,3 +1,9 @@
+# environment variables
+.env
+srcs/.env
+srcs/backend/.env
+srcs/frontend/.env
+
 srcs/backend/node_modules
 srcs/frontend/node_modules
 srcs/backend/dist/
