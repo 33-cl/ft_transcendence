@@ -1,4 +1,4 @@
-// server.ts
+import 'dotenv/config';
 
 import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
  // Importe le framework Fastify (serveur HTTP)
@@ -6,19 +6,19 @@ import fastifyCors from '@fastify/cors'; // Plugin CORS pour Fastify
 import fs from 'fs'; // Pour lire les fichiers SSL (clé/certificat)
 import path from 'path'; // Pour gérer les chemins de fichiers
 import { Server as SocketIOServer } from 'socket.io';
-// Importe la classe Server du module socket.io 
-// (renomee en SocketIOServer) pour le temps réel (WebSocket)
 
 import usersRoutes from './src/routes/users.js'; // Route /users (API REST)
 import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
 import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
 import tournamentsRoutes from './src/routes/tournaments.js'; // Route /tournaments (tournois)
+import oauthRoutes from './src/routes/oauth.js'; // Route /auth/google/callback (OAuth)
 import { validateId } from './src/security.js'; // Import security helpers
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
 import { getUserById } from './src/user.js'; // Importe le getter getUserById
 
+import fastifyOAuth2 from '@fastify/oauth2';
 import fastifyCookie from '@fastify/cookie'; // Plugin Cookie pour Fastify
 import fastifyMultipart from '@fastify/multipart'; // Plugin Multipart pour Fastify
 
@@ -73,6 +73,26 @@ app.addHook('onSend', (request, reply, payload, done) => {
       }
     });
 
+    // Google OAuth2
+    await app.register(fastifyOAuth2, {
+      name: 'google',
+      scope: ['profile', 'email'],
+      credentials: {
+        client: {
+          id: process.env.GOOGLE_CLIENT_ID || '',
+          secret: process.env.GOOGLE_CLIENT_SECRET || ''
+        },
+        auth: {
+          authorizeHost: 'https://accounts.google.com',
+          authorizePath: '/o/oauth2/v2/auth',
+          tokenHost: 'https://oauth2.googleapis.com',
+          tokenPath: '/token'
+        }
+      },
+      startRedirectPath: '/auth/google',
+      callbackUri: 'https://localhost:8080/auth/google/callback'
+    });
+
     // Ensure avatar directory exists
     ensureAvatarDirectory();
 
@@ -85,7 +105,8 @@ app.addHook('onSend', (request, reply, payload, done) => {
     app.register(roomsRoutes); // Ajoute les routes /rooms
     app.register(authRoutes);  // Ajoute les routes /auth
     app.register(matchesRoutes); // Ajoute les routes /matches
-  app.register(tournamentsRoutes); // Ajoute les routes /tournaments
+    app.register(tournamentsRoutes); // Ajoute les routes /tournaments
+    app.register(oauthRoutes); // Ajoute les routes OAuth Google
 
     // Route GET pour récupérer les infos d'un utilisateur
     app.get('/profile/:id', async (request, reply) => {
@@ -135,9 +156,3 @@ app.addHook('onSend', (request, reply, payload, done) => {
     process.exit(1);
   }
 })();
-
-// Pas de mise a jour du cache
-
-
-// Plus besoin de https.createServer ni de server.listen
-// (Fastify gère tout, y compris le HTTPS)

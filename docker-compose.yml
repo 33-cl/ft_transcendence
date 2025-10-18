@@ -23,6 +23,8 @@ services:
       - avatar_storage:/app/public/avatars
       - db_storage:/app/db
     restart: unless-stopped
+    env_file: 
+      - .env
 
 volumes:
   avatar_storage:

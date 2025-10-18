@@ -1,4 +1,3 @@
-# Stage 1: Builder
 FROM node:20-slim AS builder
 
 WORKDIR /app
@@ -17,6 +16,9 @@ RUN npm rebuild better-sqlite3 --build-from-source
 
 # Install jsonwebtoken types for TypeScript
 RUN npm install --save-dev @types/jsonwebtoken
+
+
+# RUN npm install @fastify/oauth2 dotenv
 
 # Copy backend sources (node_modules excluded via root .dockerignore)
 COPY ./srcs/backend/ ./
