@@ -76,7 +76,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Google OAuth2
     await app.register(fastifyOAuth2, {
       name: 'google',
-      scope: ['profile', 'email'],
+      scope: ['openid', 'profile', 'email'], // Add 'openid' to get id_token
       credentials: {
         client: {
           id: process.env.GOOGLE_CLIENT_ID || '',
@@ -90,7 +90,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
         }
       },
       startRedirectPath: '/auth/google',
-      callbackUri: 'https://localhost:8080/auth/google/callback'
+      callbackUri: 'https://localhost:3000/auth/google/callback'
     });
 
     // Ensure avatar directory exists
@@ -146,6 +146,8 @@ app.addHook('onSend', (request, reply, payload, done) => {
       credentials: true // Autorise les cookies/headers d'authentification
     }
   });
+
+
 
   // Attacher io à fastify pour qu'il soit accessible dans les routes
   (app as any).io = io;
