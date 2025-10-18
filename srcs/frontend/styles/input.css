@@ -16,6 +16,7 @@
 @import 'components/ai-config.css';
 @import 'components/forms.css';
 @import 'components/layout.css';
+@import 'components/google-button.css';
 
 @tailwind base;
 @tailwind components;

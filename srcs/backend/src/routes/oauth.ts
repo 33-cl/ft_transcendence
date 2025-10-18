@@ -83,7 +83,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
       });
 
       // Redirect to frontend if success
-      return reply.redirect('https://localhost:3000/#/profile');
+      return reply.redirect('https://localhost:3000/mainMenu');
 
     } catch (err) {
       app.log.error(err, 'Erreur pendant le callback Google OAuth');
