@@ -33,11 +33,14 @@ const SHOOTING_STAR_GRAVITY_RADIUS = 150; // rayon d'attraction pour les étoile
 const SHOOTING_STAR_GRAVITY_STRENGTH_MAX = 0.3; // force d'attraction maximale (quand très proche)
 const SHOOTING_STAR_GRAVITY_STRENGTH_MIN = 0.05; // force d'attraction minimale (à la limite du rayon)
 
-// Configuration de la planète
-const PLANET_SIZE = 80; // taille de la planète
-const PLANET_SPEED = 0.0008; // vitesse d'orbite
-const PLANET_DISTANCE = 350; // distance du centre (entre le trou noir et les étoiles)
+const PLANET_COUNT = 2; // nombre maximum de planètes simultanées
+const PLANET_SIZE_RANGE: [number, number] = [50, 100]; // taille aléatoire (px)
+const PLANET_SPEED_RANGE: [number, number] = [1.5, 4.0]; // vitesse de traversée
+const PLANET_ROTATION_SPEED_RANGE: [number, number] = [0.001, 0.02]; // vitesse de rotation
+const PLANET_SPAWN_RATE = 0.002; // probabilité de spawn par frame (même logique que shooting stars)
+const PLANET_SIZE_PULSE_SPEED: number = 0.005; // vitesse de pulsation de la taille (petit pulse)
 const PLANET_OPACITY = 0.9; // opacité de base
+const PLANET_SHRINK_FACTOR = 0.5;
 
 // Configuration du trou noir
 const BLACK_HOLE_SIZE = 15; // taille réduite
@@ -807,35 +810,47 @@ class ShootingStar {
 class Planet {
   x: number;
   y: number;
-  angle: number;
-  distance: number;
-  size: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  velocityX: number;
+  velocityY: number;
+  rotation: number;
+  rotationSpeed: number;
+  baseSize: number;
+  currentSize: number;
+  sizePulse: number; // Pour l'animation de taille
   opacity: number;
   image: HTMLImageElement;
   imageLoaded: boolean = false;
-  isVisible: boolean = true;
+  isActive: boolean = false;
+  // For curved path
+  controlX: number = 0;
+  controlY: number = 0;
+  travelProgress: number = 0; // 0..1 along the bezier
+  travelSpeed: number = 0; // how fast progress increases (depends on distance and speed)
+  mass: number = 1; // heavier than stars
+  glowColor: string = '0'; // Valeur de rotation de teinte (hue-rotate en degrés)
   
-  // Propriétés pour le collapse
-  isCollapsingToBlackHole: boolean = false;
-  collapseStartTime: number = 0;
-  targetX: number = 0;
-  targetY: number = 0;
-  originalOpacity: number;
-  
-  // Propriétés pour le reset
-  isResetting: boolean = false;
-  resetStartTime: number = 0;
-
-  constructor(private centerX: number, private centerY: number) {
-    this.angle = Math.random() * Math.PI * 2;
-    this.distance = PLANET_DISTANCE;
-    this.size = PLANET_SIZE;
+  constructor(
+    private canvasWidth: number,
+    private canvasHeight: number
+  ) {
+    // Taille aléatoire
+    this.baseSize = Math.random() * (PLANET_SIZE_RANGE[1] - PLANET_SIZE_RANGE[0]) + PLANET_SIZE_RANGE[0];
+    this.currentSize = this.baseSize;
     this.opacity = PLANET_OPACITY;
-    this.originalOpacity = this.opacity;
+    this.rotation = 0;
+    this.sizePulse = Math.random() * Math.PI * 2; // Phase aléatoire pour la pulsation
     
-    // Position initiale
-    this.x = this.centerX + Math.cos(this.angle) * this.distance;
-    this.y = this.centerY + Math.sin(this.angle) * this.distance;
+    // Couleur aléatoire pour la lueur
+    this.generateRandomColor();
+    
+    // Rotation aléatoire
+    this.rotationSpeed = Math.random() * (PLANET_ROTATION_SPEED_RANGE[1] - PLANET_ROTATION_SPEED_RANGE[0]) + PLANET_ROTATION_SPEED_RANGE[0];
+    // 50% de chance d'avoir une rotation inverse
+    if (Math.random() < 0.5) this.rotationSpeed *= -1;
     
     // Charger l'image de la planète
     this.image = new Image();
@@ -843,108 +858,160 @@ class Planet {
     this.image.onload = () => {
       this.imageLoaded = true;
     };
+    
+    // Initialisation de la trajectoire (sera définie par spawn())
+    this.startX = 0;
+    this.startY = 0;
+    this.endX = 0;
+    this.endY = 0;
+    this.x = 0;
+    this.y = 0;
+    this.velocityX = 0;
+    this.velocityY = 0;
   }
 
-  startCollapseToBlackHole(blackHoleX: number, blackHoleY: number, delay: number = 0): void {
-    this.isCollapsingToBlackHole = true;
-    this.collapseStartTime = Date.now() + delay;
-    this.targetX = blackHoleX;
-    this.targetY = blackHoleY;
+  // Générer une rotation de teinte aléatoire pour changer la couleur de l'image
+  generateRandomColor(): void {
+    // Valeurs de rotation de teinte prédéfinies pour des couleurs variées
+    // 0° = couleur originale, 120° = vert, 240° = bleu, etc.
+    const hueRotations = [
+      '0',     // Couleur originale
+      '30',    // Orange/Rouge
+      '60',    // Jaune
+      '120',   // Vert
+      '180',   // Cyan
+      '210',   // Bleu clair
+      '240',   // Bleu
+      '270',   // Violet
+      '300',   // Magenta
+      '330',   // Rose/Rouge
+    ];
+    
+    // Choisir une rotation aléatoire
+    const randomIndex = Math.floor(Math.random() * hueRotations.length);
+    this.glowColor = hueRotations[randomIndex] || '0';
   }
 
-  startReset(blackHoleX: number, blackHoleY: number, delay: number = 0): void {
-    this.isResetting = true;
-    this.isCollapsingToBlackHole = false;
-    this.resetStartTime = Date.now() + delay;
-    this.x = blackHoleX;
-    this.y = blackHoleY;
-    this.opacity = 0;
-    this.size = PLANET_SIZE * 0.3; // Commencer plus petit
+  spawn(): void {
+    if (!this.imageLoaded) return;
+    
+    this.isActive = true;
+    this.opacity = PLANET_OPACITY;
+    
+    // Générer une nouvelle couleur aléatoire à chaque spawn
+    this.generateRandomColor();
+    
+    // Vitesse aléatoire
+    const speed = Math.random() * (PLANET_SPEED_RANGE[1] - PLANET_SPEED_RANGE[0]) + PLANET_SPEED_RANGE[0];
+    
+    // Choisir un bord aléatoire (0: haut, 1: droite, 2: bas, 3: gauche)
+    const edge = Math.floor(Math.random() * 4);
+    
+    switch (edge) {
+      case 0: // Haut -> Bas
+        this.startX = Math.random() * this.canvasWidth;
+        this.startY = -this.baseSize;
+        this.endX = Math.random() * this.canvasWidth;
+        this.endY = this.canvasHeight + this.baseSize;
+        break;
+      case 1: // Droite -> Gauche
+        this.startX = this.canvasWidth + this.baseSize;
+        this.startY = Math.random() * this.canvasHeight;
+        this.endX = -this.baseSize;
+        this.endY = Math.random() * this.canvasHeight;
+        break;
+      case 2: // Bas -> Haut
+        this.startX = Math.random() * this.canvasWidth;
+        this.startY = this.canvasHeight + this.baseSize;
+        this.endX = Math.random() * this.canvasWidth;
+        this.endY = -this.baseSize;
+        break;
+      case 3: // Gauche -> Droite
+        this.startX = -this.baseSize;
+        this.startY = Math.random() * this.canvasHeight;
+        this.endX = this.canvasWidth + this.baseSize;
+        this.endY = Math.random() * this.canvasHeight;
+        break;
+    }
+    
+    this.x = this.startX;
+    this.y = this.startY;
+  // Compute a control point for a curved quadratic bezier path
+  // Control point near the center but jittered so trajectories vary
+  const midX = (this.startX + this.endX) / 2;
+  const midY = (this.startY + this.endY) / 2;
+  const jitter = Math.min(this.canvasWidth, this.canvasHeight) * 0.25;
+  this.controlX = midX + (Math.random() - 0.5) * jitter;
+  this.controlY = midY + (Math.random() - 0.5) * jitter;
+
+  // Travel progress speed normalized by distance so that speed approx equals 'speed' pixels/frame
+  const dx = this.endX - this.startX;
+  const dy = this.endY - this.startY;
+  const chord = Math.sqrt(dx * dx + dy * dy);
+  // approximate bezier length ~ chord + 0.25 * (distance from control to chord)
+  const ctrlDist = Math.sqrt(Math.pow(this.controlX - midX, 2) + Math.pow(this.controlY - midY, 2));
+  const approxLength = chord + 0.5 * ctrlDist;
+  this.travelSpeed = speed / Math.max(approxLength, 1);
+  this.travelProgress = 0;
+  // set mass proportional to size (heavier = less affected by cursor)
+  this.mass = this.baseSize / 40; // arbitrary scaling (e.g., baseSize 40 -> mass 1)
   }
 
   update(): void {
-    if (this.isResetting) {
-      const currentTime = Date.now();
-      if (currentTime >= this.resetStartTime) {
-        const resetProgress = Math.min((currentTime - this.resetStartTime) / (RESET_DURATION * 16.67), 1);
-        const easeProgress = 1 - Math.pow(1 - resetProgress, 3); // Ease out cubic
-        
-        // Calculer la position cible basée sur l'angle actuel
-        const targetX = this.centerX + Math.cos(this.angle) * this.distance;
-        const targetY = this.centerY + Math.sin(this.angle) * this.distance;
-        
-        // Interpolation de position
-        this.x = this.x + (targetX - this.x) * easeProgress * 0.1;
-        this.y = this.y + (targetY - this.y) * easeProgress * 0.1;
-        
-        // Restauration progressive de l'opacité et de la taille
-        this.opacity = this.originalOpacity * easeProgress;
-        this.size = PLANET_SIZE * 0.3 + (PLANET_SIZE * 0.7) * easeProgress;
-        
-        if (resetProgress >= 1) {
-          this.isResetting = false;
-          this.opacity = this.originalOpacity;
-          this.size = PLANET_SIZE;
-        }
-      }
-      return;
-    }
+    if (!this.isActive) return;
+    // Avancer le travel progress
+    this.travelProgress += this.travelSpeed;
+    if (this.travelProgress > 1) this.travelProgress = 1;
 
-    if (this.isCollapsingToBlackHole) {
-      const currentTime = Date.now();
-      if (currentTime >= this.collapseStartTime) {
-        // Mouvement vers le trou noir
-        const dx = this.targetX - this.x;
-        const dy = this.targetY - this.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance > 2) {
-          this.x += dx * 0.05;
-          this.y += dy * 0.05;
-          
-          // Réduire l'opacité et la taille progressivement
-          this.opacity *= 0.97;
-          this.size *= 0.98;
-        } else {
-          this.isVisible = false;
-        }
-      }
-      return;
-    }
+    // Quadratic Bezier interpolation
+    const t = this.travelProgress;
+    const oneMinusT = 1 - t;
+    this.x = oneMinusT * oneMinusT * this.startX + 2 * oneMinusT * t * this.controlX + t * t * this.endX;
+    this.y = oneMinusT * oneMinusT * this.startY + 2 * oneMinusT * t * this.controlY + t * t * this.endY;
 
-    // Mouvement orbital normal
-    this.angle += PLANET_SPEED;
-    this.x = this.centerX + Math.cos(this.angle) * this.distance;
-    this.y = this.centerY + Math.sin(this.angle) * this.distance;
+    // Rotation
+    this.rotation += this.rotationSpeed;
+
+    // Shrink over the trajectory: start at baseSize and shrink towards factor
+    const shrinkProgress = t; // linear along the path
+    const shrinkMultiplier = 1 - (1 - PLANET_SHRINK_FACTOR) * shrinkProgress;
+    // plus a small pulse
+    this.sizePulse += PLANET_SIZE_PULSE_SPEED;
+    const pulse = 1 + (Math.sin(this.sizePulse) * 0.5) * 0.04; // tiny pulse +-4%
+    this.currentSize = this.baseSize * shrinkMultiplier * pulse;
+
+    // If travel finished or planet outside bounds, deactivate
+    if (this.travelProgress >= 1 || this.x < -this.baseSize || this.x > this.canvasWidth + this.baseSize ||
+        this.y < -this.baseSize || this.y > this.canvasHeight + this.baseSize) {
+      this.isActive = false;
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    if (!this.isVisible || !this.imageLoaded || this.opacity <= 0.01) return;
+    if (!this.isActive || !this.imageLoaded || this.opacity <= 0.01) return;
     
     ctx.save();
     ctx.globalAlpha = this.opacity;
     
-    // Dessiner la planète avec une légère lueur
-    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 1.5);
-    gradient.addColorStop(0, `rgba(100, 150, 255, ${this.opacity * 0.3})`);
-    gradient.addColorStop(0.5, `rgba(100, 150, 255, ${this.opacity * 0.1})`);
-    gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
-    
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2);
-    ctx.fill();
+    // Appliquer la rotation
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
     
     // Désactiver le lissage pour un effet pixelisé
     ctx.imageSmoothingEnabled = false;
     
-    // Dessiner l'image de la planète
+    // Appliquer un filtre de couleur (teinte) à l'image de la planète
+    // Format: hue-rotate pour changer la teinte de l'image
+    const hueRotate = this.glowColor; // On va stocker une valeur de rotation de teinte
+    ctx.filter = `hue-rotate(${hueRotate}deg) saturate(150%)`;
+    
+    // Dessiner l'image de la planète avec le filtre de couleur
     ctx.drawImage(
       this.image,
-      this.x - this.size / 2,
-      this.y - this.size / 2,
-      this.size,
-      this.size
+      -this.currentSize / 2,
+      -this.currentSize / 2,
+      this.currentSize,
+      this.currentSize
     );
     
     ctx.restore();
@@ -957,7 +1024,7 @@ class BackgroundStarfield {
   private stars: Star[] = [];
   private shootingStars: ShootingStar[] = [];
   private blackHole: BlackHole | null = null;
-  private planet: Planet | null = null;
+  private planets: Planet[] = []; // Tableau de planètes
   private animationFrameId: number | null = null;
   private hasResetStarted: boolean = false; // Pour s'assurer que le reset ne se lance qu'une fois
   private currentStarCount: number = 0; // Suivre le nombre actuel d'étoiles
@@ -1028,10 +1095,34 @@ class BackgroundStarfield {
       this.blackHole = new BlackHole(centerX, centerY);
     }
     
-    // Créer la planète seulement la première fois
-    if (!this.planet) {
-      this.planet = new Planet(centerX, centerY);
+    // Initialiser le pool de planètes (comme les shooting stars, max PLANET_COUNT simultanées)
+    // On crée un pool de PLANET_COUNT * 2 pour avoir des objets réutilisables
+    if (this.planets.length === 0) {
+      for (let i = 0; i < PLANET_COUNT * 2; i++) {
+        const planet = new Planet(this.canvas.width, this.canvas.height);
+        this.planets.push(planet);
+      }
     }
+  }
+
+  private spawnPlanet(): void {
+    // Compter le nombre de planètes actives
+    const activePlanetsCount = this.planets.filter(p => p.isActive).length;
+    
+    // Même logique que les étoiles filantes : spawn si en dessous de la limite et probabilité
+    if (activePlanetsCount < PLANET_COUNT && Math.random() < PLANET_SPAWN_RATE) {
+      // Trouver une planète inactive
+      const inactivePlanet = this.planets.find(p => !p.isActive);
+      if (inactivePlanet) {
+        inactivePlanet.spawn();
+      }
+    }
+  }
+
+  private updatePlanets(): void {
+    this.planets.forEach(planet => {
+      planet.update();
+    });
   }
 
   private spawnShootingStar(): void {
@@ -1284,24 +1375,6 @@ class BackgroundStarfield {
       star.draw(this.ctx);
     });
 
-    // Mettre à jour et dessiner la planète
-    if (this.planet) {
-      // Si le trou noir demande le collapse des étoiles, aspirer aussi la planète
-      if (this.blackHole && this.blackHole.shouldCollapseStars() && !this.planet.isCollapsingToBlackHole && !this.planet.isResetting) {
-        this.planet.startCollapseToBlackHole(this.blackHole.x, this.blackHole.y, 100);
-      }
-      
-      // Si le trou noir demande le reset, réinitialiser la planète
-      if (this.blackHole && this.blackHole.shouldReset() && !this.planet.isResetting) {
-        const finalPosition = this.blackHole.getFinalPosition();
-        this.planet.startReset(finalPosition.x, finalPosition.y, 500);
-        this.planet.isVisible = true; // Réactiver la visibilité
-      }
-      
-      this.planet.update();
-      this.planet.draw(this.ctx);
-    }
-
     // Gérer les étoiles filantes - ne plus en créer si le trou noir est en collapse ou reset
     if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
       this.spawnShootingStar();
@@ -1317,6 +1390,13 @@ class BackgroundStarfield {
     // Dessiner les étoiles filantes
     this.shootingStars.forEach(shootingStar => {
       shootingStar.draw(this.ctx);
+    });
+
+    // Gérer les planètes APRÈS le trou noir pour qu'elles soient au-dessus
+    this.spawnPlanet(); // Tenter de faire apparaître une nouvelle planète
+    this.updatePlanets(); // Mettre à jour toutes les planètes
+    this.planets.forEach(planet => {
+      planet.draw(this.ctx);
     });
 
     // Mettre à jour et dessiner l'anneau de long clic
