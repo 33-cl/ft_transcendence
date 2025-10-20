@@ -10,8 +10,4 @@ srcs/backend/dist/
 
 # Avatar uploads (user-generated content)
 public/avatars/
-*.jpeg
-*.jpg
-*.png
-*.gif
 .history/

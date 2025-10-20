@@ -35,7 +35,7 @@ const SHOOTING_STAR_GRAVITY_STRENGTH_MIN = 0.05; // force d'attraction minimale 
 
 const PLANET_COUNT = 2; // nombre maximum de planètes simultanées
 const PLANET_SIZE_RANGE: [number, number] = [50, 100]; // taille aléatoire (px)
-const PLANET_SPEED_RANGE: [number, number] = [1.5, 4.0]; // vitesse de traversée
+const PLANET_SPEED_RANGE: [number, number] = [1.5, 3]; // vitesse de traversée
 const PLANET_ROTATION_SPEED_RANGE: [number, number] = [0.001, 0.02]; // vitesse de rotation
 const PLANET_SPAWN_RATE = 0.002; // probabilité de spawn par frame (même logique que shooting stars)
 const PLANET_SIZE_PULSE_SPEED: number = 0.005; // vitesse de pulsation de la taille (petit pulse)
@@ -841,7 +841,8 @@ class Planet {
     // Taille aléatoire
     this.baseSize = Math.random() * (PLANET_SIZE_RANGE[1] - PLANET_SIZE_RANGE[0]) + PLANET_SIZE_RANGE[0];
     this.currentSize = this.baseSize;
-    this.opacity = PLANET_OPACITY;
+    // Opacité aléatoire entre 0.7 et 0.9
+    this.opacity = 0.7 + Math.random() * 0.2;
     this.rotation = 0;
     this.sizePulse = Math.random() * Math.PI * 2; // Phase aléatoire pour la pulsation
     
@@ -989,7 +990,7 @@ class Planet {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    if (!this.isActive || !this.imageLoaded || this.opacity <= 0.01) return;
+    if (!this.isActive || !this.imageLoaded) return;
     
     ctx.save();
     ctx.globalAlpha = this.opacity;
