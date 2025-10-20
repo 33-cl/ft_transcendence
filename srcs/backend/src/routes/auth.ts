@@ -85,12 +85,12 @@ interface SessionJoinRow {
   updated_at: string;
 }
 
-function isValidEmail(email: string): boolean {
+export function isValidEmail(email: string): boolean {
   // Validation simple et robuste
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function isValidUsername(username: string): boolean {
+export function isValidUsername(username: string): boolean {
   // 3-10 chars, lettres/chiffres/underscore uniquement
   return /^[a-zA-Z0-9_]{3,10}$/.test(username);
 }
