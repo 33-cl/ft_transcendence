@@ -16,10 +16,10 @@
     }
 
     #settings-form input {
-        @apply w-64 text-right; /* Largeur fixe et alignement du texte */
+        @apply w-64 text-right;
         @apply caret-transparent bg-transparent border-none outline-none;
         @apply focus:ring-0 focus:outline-none focus:border-none;
-        @apply border-b-2 border-white; /* Ligne sous le texte */
+        @apply border-b-2 border-white;
     }
 
     #settings-form input::placeholder {

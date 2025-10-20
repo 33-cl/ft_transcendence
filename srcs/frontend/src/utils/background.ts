@@ -67,6 +67,7 @@ const RESET_DURATION = 100; // Durée de la régénération des étoiles (frames
 // Configuration du long clic pour retour au menu
 const LONG_PRESS_DURATION = 1500; // Durée du long clic en ms
 const RING_RADIUS = 15; // Rayon de l'anneau de chargement
+const LONG_PRESS_MOVE_TOLERANCE = 10; // Tolérance de mouvement en pixels avant d'annuler le long clic
 
 let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
@@ -1168,9 +1169,15 @@ class BackgroundStarfield {
       ATTRACTION_RADIUS = ATTRACTION_RADIUS_INITIAL; // reset radius
       lastMouseMoveTime = Date.now();
       
-      // Annuler le long clic si la souris bouge
+      // Annuler le long clic si la souris bouge trop (avec tolérance)
       if (this.isLongPressing) {
-        this.cancelLongPress();
+        const dx = e.clientX - this.longPressX;
+        const dy = e.clientY - this.longPressY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > LONG_PRESS_MOVE_TOLERANCE) {
+          this.cancelLongPress();
+        }
       }
     });
 
@@ -1182,9 +1189,15 @@ class BackgroundStarfield {
       ATTRACTION_RADIUS = ATTRACTION_RADIUS_INITIAL;
       lastMouseMoveTime = Date.now();
       
-      // Annuler le long clic si le doigt bouge
+      // Annuler le long clic si le doigt bouge trop (avec tolérance)
       if (this.isLongPressing) {
-        this.cancelLongPress();
+        const dx = touch.clientX - this.longPressX;
+        const dy = touch.clientY - this.longPressY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > LONG_PRESS_MOVE_TOLERANCE) {
+          this.cancelLongPress();
+        }
       }
     });
 
