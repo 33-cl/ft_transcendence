@@ -136,15 +136,47 @@ function setupInputBehavior(): void {
     const emailInput = document.getElementById('email') as HTMLInputElement;
     const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
 
+    // Fonction pour ajuster la largeur d'un input en fonction de son contenu
+    const adjustInputWidth = (input: HTMLInputElement) => {
+        // Créer un élément temporaire pour mesurer la largeur du texte
+        const span = document.createElement('span');
+        span.style.position = 'absolute';
+        span.style.visibility = 'hidden';
+        span.style.whiteSpace = 'pre';
+        span.style.font = window.getComputedStyle(input).font;
+        span.textContent = input.value || input.placeholder;
+        document.body.appendChild(span);
+        
+        // Ajouter un peu de padding pour être sûr que tout soit visible
+        const textWidth = span.offsetWidth + 20;
+        document.body.removeChild(span);
+        
+        // Définir une largeur minimale et maximale
+        const minWidth = 256; // 16rem = 256px
+        const maxWidth = 600; // Largeur maximale pour ne pas être trop large
+        
+        // Appliquer la largeur calculée
+        input.style.width = `${Math.max(minWidth, Math.min(maxWidth, textWidth))}px`;
+    };
+
     if (usernameInput) {
         // Stocker la valeur originale
         const originalUsername = window.currentUser?.username || '';
+        
+        // Ajuster la largeur initiale
+        adjustInputWidth(usernameInput);
+        
+        // Ajuster la largeur à chaque modification
+        usernameInput.addEventListener('input', () => {
+            adjustInputWidth(usernameInput);
+        });
         
         // Quand on clique sur le champ, le vider s'il contient encore la valeur par défaut
         usernameInput.addEventListener('focus', () => {
             if (usernameInput.value === originalUsername) {
                 usernameInput.value = '';
             }
+            adjustInputWidth(usernameInput);
         });
 
         // Si on quitte le champ et qu'il est vide, remettre la valeur par défaut
@@ -152,6 +184,7 @@ function setupInputBehavior(): void {
             if (usernameInput.value.trim() === '') {
                 usernameInput.value = originalUsername;
             }
+            adjustInputWidth(usernameInput);
         });
 
         // Ajouter l'événement Enter pour sauvegarder
@@ -167,11 +200,20 @@ function setupInputBehavior(): void {
         // Stocker la valeur originale
         const originalEmail = window.currentUser?.email || '';
         
+        // Ajuster la largeur initiale
+        adjustInputWidth(emailInput);
+        
+        // Ajuster la largeur à chaque modification
+        emailInput.addEventListener('input', () => {
+            adjustInputWidth(emailInput);
+        });
+        
         // Quand on clique sur le champ, le vider s'il contient encore la valeur par défaut
         emailInput.addEventListener('focus', () => {
             if (emailInput.value === originalEmail) {
                 emailInput.value = '';
             }
+            adjustInputWidth(emailInput);
         });
 
         // Si on quitte le champ et qu'il est vide, remettre la valeur par défaut
@@ -179,6 +221,7 @@ function setupInputBehavior(): void {
             if (emailInput.value.trim() === '') {
                 emailInput.value = originalEmail;
             }
+            adjustInputWidth(emailInput);
         });
 
         // Ajouter l'événement Enter pour sauvegarder
@@ -191,6 +234,14 @@ function setupInputBehavior(): void {
     }
 
     if (passwordInput) {
+        // Ajuster la largeur initiale
+        adjustInputWidth(passwordInput);
+        
+        // Ajuster la largeur à chaque modification
+        passwordInput.addEventListener('input', () => {
+            adjustInputWidth(passwordInput);
+        });
+        
         setupPasswordField(passwordInput);
     }
 }

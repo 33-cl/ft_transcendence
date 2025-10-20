@@ -181,6 +181,4 @@ try {
   console.error('Migration error:', err);
 }
 
-console.log('✅ Base de données initialisée');
-
 export default db;
