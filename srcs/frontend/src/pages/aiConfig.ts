@@ -4,7 +4,7 @@ import { setStarsHoverColor, getColorRgb } from '../utils/background.js';
 // Variables globales pour la configuration de l'IA (plus nécessaire car on lance directement)
 
 // Fonction pour initialiser les gestionnaires d'événements de la page aiConfig
-expot function initAIConfigManagers(): void {
+export function initAIConfigManagers(): void {
     // Sélecteurs de mode de jeu
     const vsAiBtn = document.getElementById('vs-ai');
     const vsPlayerBtn = document.getElementById('vs-player');
