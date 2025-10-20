@@ -12,6 +12,10 @@
         @apply bg-gray-500 text-white;
     }
 
+    .clickable {
+        @apply pointer-events-auto;
+    }
+
     html, body {
         @apply w-full h-full m-0;
         @apply font-press-start text-white text-center;

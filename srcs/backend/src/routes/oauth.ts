@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
+import { sanitizeUsername } from '../security.js';
+import { isValidUsername } from './auth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
@@ -17,6 +19,41 @@ function getJwtExpiry(token: string): number | null {
 // Helper function to format date for SQLite
 function fmtSqliteDate(d: Date): string {
   return d.toISOString().replace('T', ' ').substring(0, 19);
+}
+
+// Helper function to parse and sanitize username from email
+function parseUsernameFromEmail(email: string): string {
+  // Extract the part before @
+  const rawUsername = email.split('@')[0];
+  
+  // Remove all non-alphanumeric and non-underscore characters
+  let cleaned = rawUsername.replace(/[^a-zA-Z0-9_]/g, '');
+  
+  // If empty after cleaning, use a default
+  if (!cleaned) {
+    cleaned = 'user';
+  }
+  
+  // Truncate to max 10 characters
+  if (cleaned.length > 10) {
+    cleaned = cleaned.substring(0, 10);
+  }
+  
+  // If less than 3 characters, pad with random numbers
+  while (cleaned.length < 3) {
+    cleaned += Math.floor(Math.random() * 10).toString();
+  }
+  
+  // Sanitize for extra security
+  const sanitized = sanitizeUsername(cleaned);
+  
+  // Final validation
+  if (!isValidUsername(sanitized)) {
+    // Fallback: generate a simple valid username
+    return 'user' + Math.floor(Math.random() * 1000000);
+  }
+  
+  return sanitized;
 }
 
 export default async function oauthRoutes(app: FastifyInstance) {
@@ -65,14 +102,16 @@ export default async function oauthRoutes(app: FastifyInstance) {
 
       // Create if it doesn't exist
       if (!user) {
-        // Generate a unique username based on email or name
-        const baseUsername = googleUser.email.split('@')[0] || googleUser.name.replace(/\s+/g, '_').toLowerCase();
+        // Parse username from email with same validation as standard auth
+        const baseUsername = parseUsernameFromEmail(googleUser.email);
         let username = baseUsername;
         let counter = 1;
 
         // Check username uniqueness
         while (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) {
-          username = `${baseUsername}${counter}`;
+          // If username exists, append counter (keeping it under 10 chars)
+          const maxBaseLength = 10 - counter.toString().length;
+          username = baseUsername.substring(0, maxBaseLength) + counter;
           counter++;
         }
 
