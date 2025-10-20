@@ -239,16 +239,19 @@ function initializeComponents(): void
             await load('profile');
         }
         if (target.id === 'logOutBtn') {
-            // Appeler le logout côté serveur
-            try {
-                await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-            } catch (e) {
-                console.error('Logout request failed:', e);
+            // Use the global logout function which handles broadcast
+            if (typeof window.logout === 'function') {
+                await window.logout();
+            } else {
+                // Fallback if logout function not available
+                try {
+                    await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+                } catch (e) {
+                    console.error('Logout request failed:', e);
+                }
+                window.currentUser = null;
             }
             
-            // Vider le cache et réinitialiser l'état de l'application
-            window.currentUser = null;
-
             // Vider le cache du navigateur pour cette application
             if ('caches' in window) {
                 try {
