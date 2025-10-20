@@ -132,9 +132,9 @@ function setupPasswordField(passwordInput: HTMLInputElement): void {
 
 // Fonction pour configurer le comportement des champs de saisie
 function setupInputBehavior(): void {
-    const usernameInput = document.getElementById('username') as HTMLInputElement;
-    const emailInput = document.getElementById('email') as HTMLInputElement;
-    const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
+    const usernameInput = document.getElementById('settings-username') as HTMLInputElement;
+    const emailInput = document.getElementById('settings-email') as HTMLInputElement;
+    const passwordInput = document.getElementById('settings-password') as HTMLInputElement;
 
     // Fonction pour ajuster la largeur d'un input en fonction de son contenu
     const adjustInputWidth = (input: HTMLInputElement) => {
@@ -273,14 +273,14 @@ async function savePasswordDirectly(currentPassword: string, newPassword: string
             
         } else {
             showMessage(result.error || 'Password update failed', true);
-            const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
+            const passwordInput = document.getElementById('settings-password') as HTMLInputElement;
             if (passwordInput && (passwordInput as any).resetPasswordField) {
                 (passwordInput as any).resetPasswordField();
             }
         }
     } catch (error) {
         showMessage('Network error occurred', true);
-        const passwordInput = document.getElementById('passwordField') as HTMLInputElement;
+        const passwordInput = document.getElementById('settings-password') as HTMLInputElement;
         if (passwordInput && (passwordInput as any).resetPasswordField) {
             (passwordInput as any).resetPasswordField();
         }
@@ -289,8 +289,8 @@ async function savePasswordDirectly(currentPassword: string, newPassword: string
 
 // Fonction pour détecter les changements et sauvegarder uniquement ce qui a été modifié
 async function saveChangedFields(): Promise<void> {
-    const usernameInput = document.getElementById('username') as HTMLInputElement;
-    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const usernameInput = document.getElementById('settings-username') as HTMLInputElement;
+    const emailInput = document.getElementById('settings-email') as HTMLInputElement;
 
     if (!usernameInput || !emailInput) {
         showMessage('Form elements not found', true);

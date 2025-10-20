@@ -16,7 +16,7 @@
     }
 
     #settings-form input {
-        @apply text-right min-w-64 w-auto; /* Alignement du texte et largeur automatique */
+        @apply w-64 text-right; /* Largeur fixe et alignement du texte */
         @apply caret-transparent bg-transparent border-none outline-none;
         @apply focus:ring-0 focus:outline-none focus:border-none;
         @apply border-b-2 border-white; /* Ligne sous le texte */
@@ -35,7 +35,7 @@
     }
 
     #avatar-buttons {
-        @apply text-right min-w-64; /* Alignement à droite avec largeur minimale */
+        @apply text-right w-64; /* Alignement à droite avec largeur */
     }
 
     #settings-buttons {
