@@ -241,6 +241,9 @@ export async function initSessionBroadcast(): Promise<void> {
                 if (existingOverlay) {
                     existingOverlay.remove();
                 }
+                
+                console.log('✅ Overlay removed - tab is now unblocked');
+                console.log('   The sign-in page behind the overlay should now be accessible');
             } else {
                 console.log('⏭️ Ignoring SESSION_DESTROYED (this tab has active session or is owner)');
             }
