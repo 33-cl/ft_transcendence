@@ -126,14 +126,6 @@ app.addHook('onSend', (request, reply, payload, done) => {
       }
     });
 
-    // DEBUG : log le body reçu pour POST /rooms
-    app.addHook('preHandler', (request, _reply, done) => {
-      if (request.url.startsWith('/rooms') && request.method === 'POST') {
-        app.log.info({ body: request.body }, 'POST /rooms body');
-      }
-      done(); // Passe au handler suivant
-    });
-
     // Lancement du serveur HTTPS (Fastify)
     const address = await app.listen({ port: 8080, host: '0.0.0.0' }); // Démarre le serveur sur le port 8080, toutes interfaces
     app.log.info(`✅ Serveur lancé sur ${address}`); // Log l'adresse du serveur

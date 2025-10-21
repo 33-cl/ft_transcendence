@@ -1,5 +1,5 @@
 // routes/rooms.ts
-// Ce fichier expose une API REST pour gérer les rooms (création, listing, suppression)
+// Ce fichier expose une API pour gérer les rooms (création, listing, suppression)
 
 import { FastifyInstance } from 'fastify';
 import { rooms, roomExists, addPlayerToRoom, Room, getNextRoomName } from '../socket/roomManager.js';
