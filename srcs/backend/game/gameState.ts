@@ -10,6 +10,7 @@ export type AIDifficulty = 'easy' | 'medium' | 'hard';
 /**
  * Configuration de l'Intelligence Artificielle pour le mode 1 joueur
  * Contrôle le comportement du paddle automatique (paddle gauche en mode 1v1)
+ * Simule des inputs clavier comme un joueur humain
  */
 export interface AIConfig {
     enabled: boolean;          // Active/désactive l'IA (false = mode 2 joueurs humains)
@@ -18,10 +19,16 @@ export interface AIConfig {
     errorMargin: number;       // Marge d'erreur en pixels pour les erreurs aléatoires (5-15px)
     lastUpdate: number;        // Timestamp de la dernière mise à jour des calculs IA
     targetY: number;           // Position Y cible calculée par l'IA
-    currentY: number;          // Position Y actuelle (interpolée) du paddle IA
+    currentY: number;          // Position Y actuelle du paddle IA (mise à jour par movePaddle)
     isMoving: boolean;         // Indique si le paddle IA est en mouvement
     reactionStartTime: number; // Timestamp du début du délai de réaction
-    paddleSpeed: number;       // Vitesse de déplacement du paddle IA (pixels/frame)
+    paddleSpeed: number;       // Vitesse de déplacement du paddle IA (identique aux joueurs)
+    
+    // Simulation des touches clavier
+    keyPressed: 'up' | 'down' | null;  // Touche actuellement "pressée" par l'IA
+    keyPressStartTime: number;         // Timestamp du début de la pression
+    keyHoldDuration: number;           // Durée minimale de maintien d'une touche
+    keyReleaseChance: number;          // Probabilité de relâcher prématurément la touche
 }
 
 /**
