@@ -20,10 +20,10 @@ export async function addFriendsHTML() {
     if (friendRequests.length > 0) {
         requestsHTML = friendRequests.map((request: any) => `
             <div class="flex items-center p-2 border-b border-gray-700 gap-2">
-                <img src="${request.avatar_url || './img/default-pp.jpg'}" 
+                <img src="${request.avatar_url || './img/planet.gif'}" 
                      alt="${request.username}" 
                      class="w-10 h-10 rounded-full"
-                     onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                     onerror="this.onerror=null;this.src='./img/planet.gif';">
                 <span class="flex-1 text-sm">${request.username}</span>
                 <button class="accept-request-btn bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700" 
                         data-request-id="${request.request_id}">
@@ -145,14 +145,14 @@ export function initializeAddFriendSearch() {
                             // SECURITY: Escape all user-controlled content to prevent XSS
                             const safeUserId = parseInt(user.id) || 0;
                             const safeUsername = escapeHtml(user.username || 'Unknown');
-                            const safeAvatarUrl = sanitizeUrl(user.avatar_url || './img/default-pp.jpg');
+                            const safeAvatarUrl = sanitizeUrl(user.avatar_url || './img/planet.gif');
                             
                             return `
                                 <div class="search-result-item flex items-center p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700" data-user-id="${safeUserId}">
                                     <img src="${safeAvatarUrl}" 
                                          alt="${safeUsername}" 
                                          class="w-7.5 h-7.5 rounded-full mr-2.5"
-                                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                                         onerror="this.onerror=null;this.src='./img/planet.gif';">
                                     <span class="flex-1">${safeUsername}</span>
                                     <button class="add-friend-btn ${buttonState.class} text-white border-none px-2 py-1 rounded text-xs" 
                                             data-user-id="${safeUserId}"
@@ -300,10 +300,10 @@ async function refreshFriendRequests() {
         if (friendRequests.length > 0) {
             requestsHTML = friendRequests.map((request: any) => `
                 <div class="flex items-center p-2 border-b border-gray-700 gap-2">
-                    <img src="${request.avatar_url || './img/default-pp.jpg'}" 
+                    <img src="${request.avatar_url || './img/planet.gif'}" 
                          alt="${request.username}" 
                          class="w-10 h-10 rounded-full"
-                         onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                         onerror="this.onerror=null;this.src='./img/planet.gif';">
                     <span class="flex-1 text-sm">${request.username}</span>
                     <button class="accept-request-btn bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700" 
                             data-request-id="${request.request_id}">

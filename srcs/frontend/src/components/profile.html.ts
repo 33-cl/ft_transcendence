@@ -17,7 +17,7 @@ export async function profileHTML(targetUser?: any) {
     const username = user?.username || 'user';
     const wins = user?.wins || 0;
     const losses = user?.losses || 0;
-    const avatarUrl = user?.avatar_url || './img/default-pp.jpg';
+    const avatarUrl = user?.avatar_url || './img/planet.gif';
     
     // Récupérer les vrais matchs de l'utilisateur
     const matches = user?.id ? await fetchUserMatches(user.id) : [];
@@ -42,7 +42,7 @@ export async function profileHTML(targetUser?: any) {
         
         <div class="profile-stats">
             <div class="avatar-container">
-                <img src="${avatarUrl}" alt="User Avatar" class="profile-pic" onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                <img src="${avatarUrl}" alt="User Avatar" class="profile-pic" onerror="this.onerror=null;this.src='./img/planet.gif';">
             </div>
             
             <div class="stats-container">

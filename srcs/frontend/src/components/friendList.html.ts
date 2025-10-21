@@ -52,7 +52,7 @@ export async function friendListHTML() {
         let userItems = '';
 
         users.forEach((user: any) => {
-            const avatarUrl = user.avatar_url || './img/default-pp.jpg';
+            const avatarUrl = user.avatar_url || './img/planet.gif';
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon crown" style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; z-index: 10;">' : '';
             
@@ -70,7 +70,7 @@ export async function friendListHTML() {
                 <div id="profileBtn" class="friend relative" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}">
                     <div class="relative inline-block">
                         <img src="${avatarUrl}" alt="${user.username} Avatar" class="profile-pic" 
-                             onerror="this.onerror=null;this.src='./img/default-pp.jpg';">
+                             onerror="this.onerror=null;this.src='./img/planet.gif';">
                         <div class="status-indicator absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-gray-900 z-10" 
                              style="background-color: ${statusColor};" 
                              title="${statusText}">

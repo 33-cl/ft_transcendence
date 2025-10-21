@@ -1,6 +1,6 @@
 export async function goToProfileHTML() {
     const username = window.currentUser?.username || 'a';
-    const avatarUrl = window.currentUser?.avatar_url || './img/default-pp.jpg';
+    const avatarUrl = window.currentUser?.avatar_url || './img/planet.gif';
     
     // Vérifier si l'utilisateur est premier du leaderboard
     let crown = '';
@@ -27,7 +27,7 @@ export async function goToProfileHTML() {
         <div id="goToProfile-component">
             <div class="profile-pic" style="display: inline-block;">
                 <!-- ${crown} -->
-                <img id="goToProfile" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/default-pp.jpg';" style="cursor: pointer;" />
+                <img id="goToProfile" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/planet.gif';" style="cursor: pointer;" />
             </div>
             <div class="goToProfile-info">
                 <div class="goToProfile-username">${username}</div>
