@@ -14,10 +14,8 @@
 
 import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
-import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from './roomManager.js';
-import https from 'https';
+import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms, createRoom } from './roomManager.js';
 import { PongGame } from '../../game/PongGame.js';
-import { Buffer } from 'buffer';
 import { createInitialGameState } from '../../game/gameState.js';
 import { PaddleSide } from '../../game/gameState.js';
 import { RoomType } from '../types.js';
@@ -471,48 +469,9 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             
             if (!roomName)
             {
+                // Créer une nouvelle room directement (sans appel HTTP)
                 const roomPrefix = isLocalGame ? 'local' : 'multi';
-                const postData = JSON.stringify({ 
-                    maxPlayers,
-                    roomPrefix
-                });
-                
-                const options = {
-                    hostname: 'localhost',
-                    port: 8080,
-                    path: '/rooms',
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Content-Length': Buffer.byteLength(postData)
-                    },
-                    rejectUnauthorized: false // auto-signé en dev
-                } as any;
-                
-                roomName = await new Promise((resolve, reject) =>
-                {
-                    const req = https.request(options, (res: any) =>
-                    {
-                        let data = '';
-                        res.on('data', (chunk: any) => { data += chunk; });
-                        res.on('end', () =>
-                        {
-                            try
-                            {
-                                const json = JSON.parse(data);
-                                resolve(json.roomName);
-                            }
-                            catch (e) { 
-                                reject(e); 
-                            }
-                        });
-                    });
-                    req.on('error', (err) => {
-                        reject(err);
-                    });
-                    req.write(postData);
-                    req.end();
-                });
+                roomName = createRoom(maxPlayers, roomPrefix);
             }
         }
         if (!canJoinRoom(socket, roomName))
