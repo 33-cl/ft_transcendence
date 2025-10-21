@@ -172,6 +172,7 @@ export function updateAITarget(state: GameState): void {
 /**
  * Simule les inputs clavier de l'IA (appelé chaque frame)
  * L'IA appelle movePaddle() exactement comme un joueur humain
+ * Intègre les comportements avancés : panique, micro-corrections, persistance
  * @param state État actuel du jeu
  */
 export function simulateKeyboardInput(state: GameState): void {
@@ -184,14 +185,22 @@ export function simulateKeyboardInput(state: GameState): void {
         ai.currentY = state.paddles[0].y;
     }
 
+    // Gestion du timer de micro-corrections
+    if (ai.microcorrectionTimer > 0) {
+        ai.microcorrectionTimer = Math.max(0, ai.microcorrectionTimer - 16); // ~60fps
+    }
+
     // Si le paddle doit bouger mais que le délai de réaction n'a pas commencé, on l'initialise
     if (ai.isMoving && ai.reactionStartTime === 0) {
         ai.reactionStartTime = now;
         return; // On attend le délai avant de bouger
     }
     
+    // Délai de réaction adaptatif : plus court en mode panique
+    const adaptiveReactionTime = ai.panicMode ? ai.reactionTime * 0.7 : ai.reactionTime;
+    
     // Si le délai de réaction n'est pas écoulé, on ne bouge pas
-    if (ai.isMoving && now - ai.reactionStartTime < ai.reactionTime) {
+    if (ai.isMoving && now - ai.reactionStartTime < adaptiveReactionTime) {
         return;
     }
     
@@ -206,8 +215,10 @@ export function simulateKeyboardInput(state: GameState): void {
     // Déterminer quelle direction prendre
     const paddleCenter = ai.currentY + (state.paddles[0]?.height || state.paddleHeight) / 2;
     const difference = ai.targetY - paddleCenter;
-    const threshold = 5; // Seuil de précision (pixels)
-
+    
+    // Seuil de précision adaptatif selon la difficulté et le mode panique
+    let threshold = ai.panicMode ? 2 : (ai.difficulty === 'hard' ? 4 : ai.difficulty === 'medium' ? 6 : 8);
+    
     // Si on est assez proche de la cible, arrêter de bouger
     if (Math.abs(difference) <= threshold) {
         ai.keyPressed = null;
@@ -228,18 +239,35 @@ export function simulateKeyboardInput(state: GameState): void {
         // Bonne direction : continuer ou relâcher selon les paramètres
         const keyHeldDuration = now - ai.keyPressStartTime;
         
+        // Durée de maintien adaptative : plus courte en mode panique
+        const adaptiveHoldDuration = ai.panicMode ? ai.keyHoldDuration * 0.6 : ai.keyHoldDuration;
+        
+        // Chance de relâchement adaptative : plus élevée en mode panique pour easy/medium
+        let adaptiveReleaseChance = ai.keyReleaseChance;
+        if (ai.panicMode && ai.difficulty !== 'hard') {
+            adaptiveReleaseChance *= 1.5; // Augmente les erreurs en mode panique
+        }
+        
         // Vérifier si on doit relâcher prématurément (simulation d'erreur humaine)
-        if (keyHeldDuration >= ai.keyHoldDuration && Math.random() < ai.keyReleaseChance) {
+        if (keyHeldDuration >= adaptiveHoldDuration && Math.random() < adaptiveReleaseChance) {
             ai.keyPressed = null;
             ai.keyPressStartTime = 0;
+            
+            // Démarrer le timer de micro-correction après un relâchement
+            if (Math.random() < ai.microcorrectionChance) {
+                ai.microcorrectionTimer = 100 + Math.random() * 200; // 100-300ms
+            }
         } else {
             // Continuer à maintenir la touche
             movePaddle(state, 'A', requiredDirection);
         }
     } else {
-        // Mauvaise direction : relâcher et changer
-        ai.keyPressed = requiredDirection;
-        ai.keyPressStartTime = now;
-        movePaddle(state, 'A', requiredDirection);
+        // Mauvaise direction : relâcher et changer (mais avec une certaine inertie)
+        const directionChangeDelay = ai.panicMode ? 50 : 150; // Plus rapide en panique
+        if (now - ai.keyPressStartTime >= directionChangeDelay) {
+            ai.keyPressed = requiredDirection;
+            ai.keyPressStartTime = now;
+            movePaddle(state, 'A', requiredDirection);
+        }
     }
 }
