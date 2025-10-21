@@ -34,6 +34,7 @@ WORKDIR /app
 
 # Install OpenSSL and generate SSL certificates at build time
 RUN apt-get update && \
+    apt-get install -y sqlite3 && \
     apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/* && \
     openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
