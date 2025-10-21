@@ -29,6 +29,15 @@ export interface AIConfig {
     keyPressStartTime: number;         // Timestamp du début de la pression
     keyHoldDuration: number;           // Durée minimale de maintien d'une touche
     keyReleaseChance: number;          // Probabilité de relâcher prématurément la touche
+    
+    // Nouveaux comportements humains
+    panicMode: boolean;                // L'IA est-elle en mode panique ?
+    lastDecisionTime: number;          // Dernière fois qu'elle a changé d'avis
+    microcorrectionTimer: number;      // Timer pour les micro-corrections
+    panicThreshold: number;            // Distance balle où l'IA panique
+    microcorrectionChance: number;     // Probabilité de micro-corrections
+    persistanceTime: number;           // Temps avant de changer d'avis
+    maxErrorFrequency: number;         // Fréquence maximale d'erreurs importantes
 }
 
 /**
