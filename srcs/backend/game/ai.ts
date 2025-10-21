@@ -66,7 +66,16 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         keyPressed: null,                 // Aucune touche pressée au début
         keyPressStartTime: 0,             // Pas de pression en cours
         keyHoldDuration: settings.keyHoldDuration,
-        keyReleaseChance: settings.keyReleaseChance
+        keyReleaseChance: settings.keyReleaseChance,
+        
+        // Nouveaux comportements humains
+        panicMode: false,                 // Pas en panique au début
+        lastDecisionTime: 0,              // Aucune décision prise encore
+        microcorrectionTimer: 0,          // Timer des micro-corrections
+        panicThreshold: settings.panicThreshold,
+        microcorrectionChance: settings.microcorrectionChance,
+        persistanceTime: settings.persistanceTime,
+        maxErrorFrequency: settings.maxErrorFrequency
     };
 }
 
