@@ -15,7 +15,6 @@ function isValidEmailSimple(email: string): boolean {
 }
 
 export async function checkSessionOnce() {
-    // 🚨 SECURITY: Don't check session if this tab is blocked
     if (isSessionBlocked()) {
         console.log('🚫 Security: checkSessionOnce blocked - Tab does not have active session');
         window.currentUser = null;
@@ -299,6 +298,33 @@ document.addEventListener('componentsReady', () => {
         // Wrap with security guard to prevent execution in blocked tabs
         window.logout = guardFunction(logoutImpl, 'logout');
     }
+});
+
+document.addEventListener('componentsReady', () => {
+    const googleAuthBtn = document.getElementById('googleAuthBtn');
+    if (!googleAuthBtn || (googleAuthBtn as any)._bound) return;
+    (googleAuthBtn as any)._bound = true;
+
+    googleAuthBtn.addEventListener('click', () => {
+
+        if (isSessionBlocked()) {
+            const msg = document.getElementById('signUpMsg');
+            if (msg) {
+                msg.textContent = 'Cannot authenticate: A session is already active in another tab.';
+                msg.style.color = 'red';
+            }
+            return;
+        }
+
+        const authWindow = window.open('https://localhost:8080/auth/google', '_blank', 'width=500,height=600');
+        
+        const checkInterval = setInterval(() => {
+            if (authWindow?.closed) {
+                clearInterval(checkInterval);
+                window.location.reload();
+            }
+        }, 500);
+    });
 });
 
 // DEV ONLY: Handler pour le bouton Skip Login
