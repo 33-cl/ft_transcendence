@@ -133,3 +133,21 @@ export function isUsernameInGame(username: string): boolean {
   }
   return false;
 }
+
+// Helper: créer une nouvelle room avec un nom unique
+export function createRoom(maxPlayers: number, roomPrefix: string = 'room'): string {
+  let roomName: string;
+  do {
+    roomName = `${roomPrefix}-${getNextRoomName()}`;
+  } while (roomExists(roomName));
+  
+  const room: Room = {
+    players: [],
+    maxPlayers,
+    gameState: createInitialGameState(),
+    isLocalGame: roomPrefix === 'local'
+  };
+  
+  rooms[roomName] = room;
+  return roomName;
+}
