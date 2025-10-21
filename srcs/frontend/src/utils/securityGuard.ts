@@ -8,7 +8,8 @@ import { isSessionBlocked } from './sessionBroadcast.js';
  */
 export function guardFunction<T extends (...args: any[]) => any>(
     fn: T,
-    functionName: string
+    functionName: string,
+    requiresAuth: boolean = false
 ): T {
     return ((...args: any[]) => {
         // Vérifier si la session est bloquée
@@ -16,6 +17,15 @@ export function guardFunction<T extends (...args: any[]) => any>(
             console.error(`🚫 Security: Blocked call to ${functionName} - Session is blocked in this tab`);
             console.trace('Call stack:');
             return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
+        }
+        
+        // Vérifier si l'utilisateur est connecté (pour les fonctions qui nécessitent une auth)
+        if (requiresAuth) {
+            const currentUser = (window as any).currentUser;
+            if (!currentUser) {
+                console.error(`🚫 Security: Blocked call to ${functionName} - User not authenticated`);
+                return Promise.reject(new Error(`Action blocked: User not authenticated`));
+            }
         }
         
         // Si pas bloqué, exécuter la fonction normalement
@@ -62,21 +72,33 @@ export function installFetchGuard() {
     const originalFetch = window.fetch;
     
     window.fetch = function(...args: Parameters<typeof fetch>): Promise<Response> {
+        const url = args[0]?.toString() || 'unknown';
+        
+        // Autoriser toujours les requêtes d'authentification
+        if (url.includes('/auth/login') || 
+            url.includes('/auth/register') || 
+            url.includes('/auth/logout') ||
+            url.includes('/auth/me') ||
+            url.includes('/oauth/')) {
+            return originalFetch.apply(this, args);
+        }
+        
         // Vérifier si la session est bloquée
         if (isSessionBlocked()) {
-            const url = args[0]?.toString() || 'unknown';
-            
-            // Autoriser seulement les requêtes d'authentification
-            if (url.includes('/auth/login') || url.includes('/auth/register')) {
-                console.log(`✅ Security: Allowing auth request to ${url}`);
-                return originalFetch.apply(this, args);
-            }
-            
             console.error(`🚫 Security: Blocked fetch to ${url} - Session is blocked in this tab`);
             return Promise.reject(new Error(`Fetch blocked: This tab does not have an active session`));
         }
         
-        // Si pas bloqué, exécuter normalement
+        // Vérifier si l'utilisateur est connecté pour les requêtes API protégées
+        if (url.includes('/api/')) {
+            const currentUser = (window as any).currentUser;
+            if (!currentUser) {
+                console.error(`🚫 Security: Blocked fetch to ${url} - No active user session`);
+                return Promise.reject(new Error(`Fetch blocked: User not authenticated`));
+            }
+        }
+        
+        // Si tout est OK, exécuter normalement
         return originalFetch.apply(this, args);
     };
     
