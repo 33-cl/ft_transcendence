@@ -16,9 +16,8 @@ declare global
 		_pongControlsRoomJoinedListener: boolean;
 		sendKeyEvent: (type: 'keydown' | 'keyup', player: 'left' | 'right' | 'A' | 'B' | 'C', direction: 'up' | 'down') => void;
 		temporaryAvatarFile?: File;
-		lastGameType?: 'local2p' | 'local4p' | 'soloAI'; // Pour traquer le dernier type de jeu pour restart
+		lastGameType?: 'local2p' | 'local4p' | 'soloAI';
 
-		// Auth/session
 		currentUser?: {
 			id: number;
 			email: string;
