@@ -5,7 +5,7 @@ import { GameState, createInitialGameState } from './gameState.js';
 import { movePaddle } from './paddle.js';
 import { resetBall, BallState, checkBallCollisions4Players, checkBallCollisions2Players, shouldResetBall } from './ball.js';
 import { checkScoring4Players, checkScoring2Players, checkGameEnd4Players, checkGameEnd2Players, GameEndInfo } from './score.js';
-import { updateAITarget, movePaddleWithLerp, createAIConfig } from './ai.js';
+import { updateAITarget, simulateKeyboardInput, createAIConfig } from './ai.js';
 
 export class PongGame {
     public state: GameState;
@@ -102,8 +102,8 @@ export class PongGame {
         if (this.state.paddles && this.state.paddles.length === 2) {
             // Mise à jour IA (si activée)
             if (this.state.aiConfig && this.state.aiConfig.enabled) {
-                updateAITarget(this.state);      // 1x/seconde
-                movePaddleWithLerp(this.state);  // Chaque frame
+                updateAITarget(this.state);         // 1x/seconde
+                simulateKeyboardInput(this.state);  // Chaque frame - simule les touches
             }
             // Vérifier les collisions avec les paddles et les bords
             checkBallCollisions2Players(this.state, this.ballState);

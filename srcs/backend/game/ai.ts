@@ -1,7 +1,9 @@
 // ai.ts - Intelligence Artificielle pour le mode 1 joueur
 // Contrôle le paddle gauche (côté A) avec un comportement réaliste et équilibré
+// Simule des inputs clavier comme un joueur humain
 
 import { GameState, AIDifficulty, AIConfig } from './gameState.js';
+import { movePaddle } from './paddle.js';
 
 /**
  * Configuration des niveaux de difficulté de l'IA
@@ -9,19 +11,22 @@ import { GameState, AIDifficulty, AIConfig } from './gameState.js';
  */
 const DIFFICULTY_SETTINGS = {
     easy: {
-        reactionTime: 700,    // Réaction lente (700ms)
-        errorMargin: 15,      // Beaucoup d'erreurs (±15 pixels)
-        moveSpeed: 0.05       // Mouvement lent
+        reactionTime: 700,          // Réaction lente (700ms)
+        errorMargin: 15,            // Beaucoup d'erreurs (±15 pixels)
+        keyHoldDuration: 200,       // Durée minimale de maintien d'une touche (ms)
+        keyReleaseChance: 0.3       // 30% de chance de relâcher la touche prématurément
     },
     medium: {
-        reactionTime: 500,    // Réaction moyenne (500ms)
-        errorMargin: 10,      // Erreurs modérées (±10 pixels)
-        moveSpeed: 0.08       // Mouvement normal
+        reactionTime: 500,          // Réaction moyenne (500ms)
+        errorMargin: 10,            // Erreurs modérées (±10 pixels)
+        keyHoldDuration: 150,       // Durée minimale de maintien d'une touche (ms)
+        keyReleaseChance: 0.15      // 15% de chance de relâcher la touche prématurément
     },
     hard: {
-        reactionTime: 300,    // Réaction rapide (300ms)
-        errorMargin: 5,       // Peu d'erreurs (±5 pixels)
-        moveSpeed: 0.12       // Mouvement rapide
+        reactionTime: 300,          // Réaction rapide (300ms)
+        errorMargin: 5,             // Peu d'erreurs (±5 pixels)
+        keyHoldDuration: 100,       // Durée minimale de maintien d'une touche (ms)
+        keyReleaseChance: 0.05      // 5% de chance de relâcher la touche prématurément
     }
 };
 
@@ -43,7 +48,13 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         currentY: 325,                    // Position actuelle (sera mise à jour)
         isMoving: false,                  // Pas en mouvement au début
         reactionStartTime: 0,             // Initialisé à 0 (aucun délai en cours)
-        paddleSpeed: difficulty === 'easy' ? 5 : difficulty === 'medium' ? 8 : 12 // Valeurs par défaut selon la difficulté
+        paddleSpeed: 20,                  // Même vitesse que les joueurs humains (state.paddleSpeed)
+        
+        // Simulation des touches clavier
+        keyPressed: null,                 // Aucune touche pressée au début
+        keyPressStartTime: 0,             // Pas de pression en cours
+        keyHoldDuration: settings.keyHoldDuration,
+        keyReleaseChance: settings.keyReleaseChance
     };
 }
 
@@ -115,43 +126,76 @@ export function updateAITarget(state: GameState): void {
 }
 
 /**
- * Déplace le paddle IA de manière fluide vers sa cible (appelé chaque frame)
- * Utilise une interpolation linéaire (lerp) pour des mouvements naturels
+ * Simule les inputs clavier de l'IA (appelé chaque frame)
+ * L'IA appelle movePaddle() exactement comme un joueur humain
  * @param state État actuel du jeu
  */
-export function movePaddleWithLerp(state: GameState): void {
+export function simulateKeyboardInput(state: GameState): void {
     if (!state.aiConfig || !state.aiConfig.enabled) return;
     const ai = state.aiConfig;
     const now = Date.now();
+
+    // Mettre à jour la position actuelle basée sur le paddle réel
+    if (state.paddles && state.paddles.length >= 1) {
+        ai.currentY = state.paddles[0].y;
+    }
 
     // Si le paddle doit bouger mais que le délai de réaction n'a pas commencé, on l'initialise
     if (ai.isMoving && ai.reactionStartTime === 0) {
         ai.reactionStartTime = now;
         return; // On attend le délai avant de bouger
     }
+    
     // Si le délai de réaction n'est pas écoulé, on ne bouge pas
     if (ai.isMoving && now - ai.reactionStartTime < ai.reactionTime) {
-        const reste = ai.reactionTime - (now - ai.reactionStartTime);
         return;
     }
-    // Si on n'est pas censé bouger, on reset le délai
+    
+    // Si on n'est pas censé bouger, on reset le délai et les touches
     if (!ai.isMoving) {
         ai.reactionStartTime = 0;
+        ai.keyPressed = null;
+        ai.keyPressStartTime = 0;
+        return;
     }
 
-    const settings = DIFFICULTY_SETTINGS[ai.difficulty];
-    const difference = ai.targetY - ai.currentY;
-    ai.currentY += difference * settings.moveSpeed;
-    
-    if (state.paddles && state.paddles.length >= 1) {
-        const paddleLeft = state.paddles[0];
+    // Déterminer quelle direction prendre
+    const paddleCenter = ai.currentY + (state.paddles[0]?.height || state.paddleHeight) / 2;
+    const difference = ai.targetY - paddleCenter;
+    const threshold = 5; // Seuil de précision (pixels)
+
+    // Si on est assez proche de la cible, arrêter de bouger
+    if (Math.abs(difference) <= threshold) {
+        ai.keyPressed = null;
+        ai.keyPressStartTime = 0;
+        return;
+    }
+
+    // Déterminer la direction nécessaire
+    const requiredDirection: 'up' | 'down' = difference < 0 ? 'up' : 'down';
+
+    // Gestion des touches : presser, maintenir, ou relâcher
+    if (!ai.keyPressed) {
+        // Aucune touche pressée : en presser une nouvelle
+        ai.keyPressed = requiredDirection;
+        ai.keyPressStartTime = now;
+        movePaddle(state, 'A', requiredDirection);
+    } else if (ai.keyPressed === requiredDirection) {
+        // Bonne direction : continuer ou relâcher selon les paramètres
+        const keyHeldDuration = now - ai.keyPressStartTime;
         
-        // Appliquer les limites du canvas pour empêcher le paddle de sortir
-        const minY = 0;
-        const maxY = state.canvasHeight - paddleLeft.height;
-        ai.currentY = Math.max(minY, Math.min(maxY, ai.currentY));
-        
-        paddleLeft.y = ai.currentY;
-        ai.currentY = paddleLeft.y;
+        // Vérifier si on doit relâcher prématurément (simulation d'erreur humaine)
+        if (keyHeldDuration >= ai.keyHoldDuration && Math.random() < ai.keyReleaseChance) {
+            ai.keyPressed = null;
+            ai.keyPressStartTime = 0;
+        } else {
+            // Continuer à maintenir la touche
+            movePaddle(state, 'A', requiredDirection);
+        }
+    } else {
+        // Mauvaise direction : relâcher et changer
+        ai.keyPressed = requiredDirection;
+        ai.keyPressStartTime = now;
+        movePaddle(state, 'A', requiredDirection);
     }
 }
