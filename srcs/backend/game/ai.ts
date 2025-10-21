@@ -111,25 +111,47 @@ export function predictBallLanding(state: GameState): number {
 /**
  * Met à jour la cible de l'IA (appelé maximum 1 fois par seconde)
  * Applique les délais de réaction et les erreurs selon la difficulté
+ * Intègre les nouveaux comportements : panique, persistance, micro-corrections
  * @param state État actuel du jeu
  */
 export function updateAITarget(state: GameState): void {
     if (!state.aiConfig) return;
     
     const now = Date.now();
+    const ai = state.aiConfig;
     
     // Vérifier si c'est le moment de mettre à jour (1 fois par seconde max)
-    if (now - state.aiConfig.lastUpdate < 1000) return;
+    if (now - ai.lastUpdate < 1000) return;
+    
+    // Détecter le mode panique selon la distance de la balle
+    const ballDistance = Math.abs(state.ballX - (state.paddleMargin + state.paddleWidth));
+    ai.panicMode = ballDistance <= ai.panicThreshold && state.ballSpeedX < 0; // Balle qui approche
     
     // Prédire où la balle va atterrir
     const predictedY = predictBallLanding(state);
     
-    // Appliquer une erreur aléatoire (10% de chances de se tromper significativement)
+    // Système de persistance : ne pas changer d'avis trop souvent
     let targetY = predictedY;
-    if (Math.random() < 0.1) {
-        // Erreur importante : décalage aléatoire
-        const errorOffset = (Math.random() - 0.5) * state.aiConfig.errorMargin * 2;
-        targetY += errorOffset;
+    if (ai.lastDecisionTime > 0 && (now - ai.lastDecisionTime) < ai.persistanceTime) {
+        // Garder l'ancienne cible si on est encore dans la période de persistance
+        targetY = ai.targetY;
+    } else {
+        // Nouvelle décision autorisée
+        ai.lastDecisionTime = now;
+        
+        // Appliquer les erreurs selon la fréquence maximale et le mode panique
+        const errorChance = ai.panicMode ? ai.maxErrorFrequency * 1.5 : ai.maxErrorFrequency;
+        if (Math.random() < errorChance) {
+            // Erreur importante : décalage aléatoire
+            const errorOffset = (Math.random() - 0.5) * ai.errorMargin * 2;
+            targetY += errorOffset;
+        }
+        
+        // Micro-corrections : petits ajustements aléatoires pour simuler l'imprécision humaine
+        if (Math.random() < ai.microcorrectionChance) {
+            const microError = (Math.random() - 0.5) * (ai.errorMargin * 0.3);
+            targetY += microError;
+        }
     }
     
     // S'assurer que la cible reste dans les limites du canvas
@@ -139,11 +161,12 @@ export function updateAITarget(state: GameState): void {
     targetY = Math.max(minY, Math.min(maxY, targetY));
     
     // Mettre à jour la configuration IA
-    state.aiConfig.targetY = targetY;
-    state.aiConfig.lastUpdate = now;
-    state.aiConfig.isMoving = Math.abs(targetY - state.aiConfig.currentY) > 5; // Seuil de mouvement
+    ai.targetY = targetY;
+    ai.lastUpdate = now;
     
-    // Log de debug pour visualiser les décisions de l'IA
+    // Seuil de mouvement adaptatif : plus précis en mode difficile, plus large en facile
+    const movementThreshold = ai.panicMode ? 3 : (ai.difficulty === 'hard' ? 4 : ai.difficulty === 'medium' ? 6 : 8);
+    ai.isMoving = Math.abs(targetY - ai.currentY) > movementThreshold;
 }
 
 /**
