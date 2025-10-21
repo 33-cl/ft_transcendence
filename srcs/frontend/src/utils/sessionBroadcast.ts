@@ -28,6 +28,10 @@ let overlayObserver: MutationObserver | null = null;
 // Store known tab IDs that have confirmed sessions
 const knownSessionTabs = new Set<string>();
 
+// Rate limiting: Track message timestamps to prevent DoS
+const messageTimestamps: number[] = [];
+const MAX_MESSAGES_PER_MINUTE = 10;
+
 // Export function to check if session is blocked
 export function isSessionBlocked(): boolean {
     console.log('🔍 isSessionBlocked() called, sessionBlockedByAnotherTab =', sessionBlockedByAnotherTab);
@@ -169,7 +173,34 @@ export async function initSessionBroadcast(): Promise<void> {
 
     // Listen for session events from other tabs
     sessionChannel.onmessage = (event) => {
+        // Validate message structure FIRST (before accessing properties)
+        // Check event.data exists and is an object BEFORE accessing any properties
+        if (event.data === null || event.data === undefined || typeof event.data !== 'object') {
+            console.warn('⚠️ SECURITY: Invalid message format (not an object) - Ignoring');
+            return;
+        }
+        
+        // Now safe to access properties
+        if (!event.data.type || !event.data.tabId) {
+            console.warn('⚠️ SECURITY: Invalid message format (missing type or tabId) - Ignoring');
+            return;
+        }
+        
         console.log('📨 Received message:', event.data.type, 'from tab:', event.data.tabId);
+        
+        // SECURITY: Rate limiting to prevent DoS
+        const now = Date.now();
+        messageTimestamps.push(now);
+        // Remove timestamps older than 1 minute
+        while (messageTimestamps.length > 0 && messageTimestamps[0]! < now - 60000) {
+            messageTimestamps.shift();
+        }
+        
+        if (messageTimestamps.length > MAX_MESSAGES_PER_MINUTE) {
+            console.warn('⚠️ SECURITY: Rate limit exceeded - Ignoring message');
+            console.warn('   Messages in last minute:', messageTimestamps.length);
+            return;
+        }
         
         // Ignore messages from this tab itself
         if (event.data.tabId === TAB_ID) {
@@ -179,6 +210,15 @@ export async function initSessionBroadcast(): Promise<void> {
         
         if (event.data.type === 'SESSION_CREATED') {
             console.log('🔴 SESSION_CREATED received from another tab');
+            
+            // SECURITY: Ignore SESSION_CREATED if we don't have a session cookie
+            // This prevents malicious tabs from blocking legitimate tabs
+            const hasCookie = document.cookie.includes('session=') || document.cookie.includes('connect.sid=');
+            if (!hasCookie && !hasActiveSession) {
+                console.warn('⚠️ SECURITY: Ignoring SESSION_CREATED - no session cookie found in this tab');
+                console.warn('   This might be a malicious message from tab:', event.data.tabId);
+                return;
+            }
             
             // Register this tab as a known session holder
             knownSessionTabs.add(event.data.tabId);
@@ -258,6 +298,13 @@ export async function initSessionBroadcast(): Promise<void> {
         } else if (event.data.type === 'SESSION_ACTIVE') {
             console.log('🔴 SESSION_ACTIVE received from another tab');
             
+            // SECURITY: Ignore SESSION_ACTIVE if we don't have a session cookie
+            const hasCookie = document.cookie.includes('session=') || document.cookie.includes('connect.sid=');
+            if (!hasCookie && !hasActiveSession) {
+                console.warn('⚠️ SECURITY: Ignoring SESSION_ACTIVE - no session cookie found in this tab');
+                return;
+            }
+            
             // Register this tab as a known session holder
             knownSessionTabs.add(event.data.tabId);
             console.log('   Registered tab:', event.data.tabId, '- Known tabs:', Array.from(knownSessionTabs));
@@ -311,7 +358,8 @@ export async function initSessionBroadcast(): Promise<void> {
         sessionChannel!.onmessage = (event) => {
             if (originalHandler) originalHandler.call(channel, event);
             
-            if (event.data.type === 'SESSION_ACTIVE' && !responded) {
+            // SECURITY: Validate message before accessing properties
+            if (event.data && typeof event.data === 'object' && event.data.type === 'SESSION_ACTIVE' && !responded) {
                 responded = true;
                 clearTimeout(timeout);
                 console.log('🔴 SESSION_ACTIVE response received - blocking this tab');

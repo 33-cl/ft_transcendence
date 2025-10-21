@@ -297,7 +297,8 @@ document.addEventListener('componentsReady', () => {
         };
         
         // Wrap with security guard to prevent execution in blocked tabs
-        window.logout = guardFunction(logoutImpl, 'logout');
+        // requiresAuth = true to ensure user is authenticated before logout
+        window.logout = guardFunction(logoutImpl, 'logout', true);
     }
 });
 
