@@ -1,6 +1,7 @@
 export function settingsHTML() {
     const username = window.currentUser?.username || 'a';
     const email = window.currentUser?.email;
+    const isGoogleAuth = window.currentUser?.provider === 'google';
 
     return /*html*/ `
     <h1>USER SETTINGS</h1>
@@ -18,7 +19,7 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">EMAIL</span>
-            <input type="email" id="settings-email" placeholder="${email}">
+            <input type="email" id="settings-email" placeholder="${email}"${isGoogleAuth ? ' disabled' : ''}>
         </div>
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>

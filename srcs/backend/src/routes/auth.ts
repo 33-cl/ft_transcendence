@@ -215,7 +215,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       );
       const info = stmt.run(sanitizedEmail, sanitizedUsername, password_hash, null);
 
-      const created = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
+      const created = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
 
       // Générer le JWT
       const maxAge = 60 * 60 * 24 * 7; // 7 jours
@@ -341,7 +341,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       // Check token presence in active_tokens
       const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
       if (!active) return reply.code(401).send({ error: 'Session expired or logged out.' });
-      const user = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at FROM users WHERE id = ?').get(payload.userId);
+      const user = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?').get(payload.userId);
       if (!user) return reply.code(401).send({ error: 'Utilisateur non trouvé.' });
       return reply.send({ user });
     } catch (err) {
