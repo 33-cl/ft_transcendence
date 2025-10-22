@@ -211,15 +211,6 @@ export async function initSessionBroadcast(): Promise<void> {
         if (event.data.type === 'SESSION_CREATED') {
             console.log('🔴 SESSION_CREATED received from another tab');
             
-            // SECURITY: Ignore SESSION_CREATED if we don't have a session cookie
-            // This prevents malicious tabs from blocking legitimate tabs
-            const hasCookie = document.cookie.includes('session=') || document.cookie.includes('connect.sid=');
-            if (!hasCookie && !hasActiveSession) {
-                console.warn('⚠️ SECURITY: Ignoring SESSION_CREATED - no session cookie found in this tab');
-                console.warn('   This might be a malicious message from tab:', event.data.tabId);
-                return;
-            }
-            
             // Register this tab as a known session holder
             knownSessionTabs.add(event.data.tabId);
             console.log('   Registered tab:', event.data.tabId, '- Known tabs:', Array.from(knownSessionTabs));
@@ -297,13 +288,6 @@ export async function initSessionBroadcast(): Promise<void> {
             }
         } else if (event.data.type === 'SESSION_ACTIVE') {
             console.log('🔴 SESSION_ACTIVE received from another tab');
-            
-            // SECURITY: Ignore SESSION_ACTIVE if we don't have a session cookie
-            const hasCookie = document.cookie.includes('session=') || document.cookie.includes('connect.sid=');
-            if (!hasCookie && !hasActiveSession) {
-                console.warn('⚠️ SECURITY: Ignoring SESSION_ACTIVE - no session cookie found in this tab');
-                return;
-            }
             
             // Register this tab as a known session holder
             knownSessionTabs.add(event.data.tabId);
