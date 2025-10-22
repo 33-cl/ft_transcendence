@@ -201,12 +201,24 @@ else if (mauvaise_direction) {
 
 ## 📊 Statistiques et Debug
 
+### Propriétés de debug dans AIConfig
+```typescript
+debugMode: boolean;        // Active les logs de debug
+decisionCount: number;     // Nombre de décisions prises
+errorCount: number;        // Nombre d'erreurs commises
+panicCount: number;        // Nombre de fois en mode panique
+```
+
 ### Activation du mode debug
 ```typescript
+// Via l'interface AIConfig
+state.aiConfig.debugMode = true;
+
+// Ou via une méthode dédiée dans PongGame
 game.enableAIDebug()
 ```
 
-### Logs affichés
+### Logs affichés en temps réel
 ```
 🎯 [IA-medium] Prédiction: Y=325.0 | Balle: X=425.3, SpeedX=-4.50
 🚨 [IA-medium] MODE PANIQUE activé! Distance balle: 145.2px
@@ -215,18 +227,12 @@ game.enableAIDebug()
 📊 [IA-medium] Stats: Décisions=45, Erreurs=7, Paniques=3
 ```
 
-### Récupération des statistiques
-```typescript
-const stats = game.getAIStats()
-// {
-//   difficulty: 'medium',
-//   decisionCount: 45,
-//   errorCount: 7,
-//   panicCount: 3,
-//   errorRate: '15.56%',
-//   currentState: { ... }
-// }
-```
+### Informations tracées
+- **Prédictions** : Position Y cible, position et vitesse de la balle
+- **Mode panique** : Activation/désactivation avec distance balle
+- **Erreurs** : Décalage appliqué et contexte (panique ou normal)
+- **Micro-corrections** : Ajustements fins pour réalisme
+- **Statistiques** : Compteurs en temps réel des décisions/erreurs/paniques
 
 ---
 
