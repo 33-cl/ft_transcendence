@@ -31,6 +31,13 @@ import {
   isValidUsername,
   isValidPassword
 } from '../services/validation.service.js';
+import { 
+  checkPassword,
+  checkAlreadyConnected,
+  authenticateUser,
+  createSafeUser,
+  validateAndGetUser
+} from '../helpers/auth.helper.js';
 
 // Utilitaire pour convertir un stream en buffer
 async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
@@ -151,13 +158,15 @@ function parseCookies(header?: string): Record<string, string> {
 export default async function authRoutes(fastify: FastifyInstance) {
 
   // Helper to get JWT from cookies
-  function getJwtFromRequest(request: any): string | undefined {
+  function getJwtFromRequest(request: any): string | undefined
+  {
     const cookies = parseCookies(request.headers['cookie'] as string | undefined);
     return cookies['jwt'];
   }
 
   // Helper to get JWT expiry
-  function getJwtExpiry(token: string): number | null {
+  function getJwtExpiry(token: string): number | null
+  {
     try {
       const decoded = jwt.decode(token) as { exp?: number };
       return decoded?.exp ? decoded.exp : null;
@@ -220,80 +229,41 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
+  /**
+   * POST /auth/login
+   * Connexion d'un utilisateur
+   * 
+   * Flux :
+   * 1. Validation, rate limiting et récupération de l'utilisateur (validateAndGetUser)
+   * 2. Vérification du password (checkPassword)
+   * 3. Vérification si déjà connecté (checkAlreadyConnected)
+   * 4. Authentification - JWT + cookie + active_tokens (authenticateUser)
+   * 5. Envoi de la réponse avec données sécurisées (createSafeUser)
+   */
   fastify.post('/auth/login', async (request, reply) => {
     const body = (request.body as any) || {};
     const login: string = (body.login ?? body.username ?? body.email ?? '').toString().trim();
     const password: string = (body.password ?? '').toString();
 
-    // SECURITY: Rate limiting to prevent brute force attacks
-    const clientIp = request.ip;
-    if (!checkRateLimit(`login:${clientIp}`, 5, 60 * 1000)) {
-      return reply.code(429).send({ error: 'Too many login attempts. Please try again later.' });
-    }
+    // Validation, rate limiting et récupération de l'utilisateur
+    const user = validateAndGetUser(login, password, request.ip, reply);
+    if (!user)
+      return;
 
-    // SECURITY: Validate input lengths
-    if (!validateLength(login, 1, 255) || !validateLength(password, 1, 255)) {
-      return reply.code(400).send({ error: 'Input length validation failed.' });
-    }
+    // Vérification du password
+    if (!checkPassword(password, user, reply))
+      return;
 
-    if (!login || !password) return reply.code(400).send({ error: 'Missing credentials.' });
+    // Vérification si déjà connecté
+    if (!checkAlreadyConnected(user.id, user.username, reply, fastify))
+      return;
 
-    // SECURITY: Sanitize login input
-    const sanitizedLogin = login.toLowerCase().replace(/<[^>]*>/g, '');
+    // Authentification (génère JWT, stocke token, envoie cookie)
+    authenticateUser(user, reply);
 
-    // Récupérer l'utilisateur par email (lowercased) ou username
-    const byEmail = isValidEmail(sanitizedLogin);
-    const user = (byEmail
-      ? db.prepare('SELECT * FROM users WHERE email = ?').get(sanitizedLogin)
-      : db.prepare('SELECT * FROM users WHERE username = ?').get(sanitizedLogin)) as DbUser | undefined;
+    // Réponse avec utilisateur sécurisé (sans password_hash)
+    const safeUser = createSafeUser(user);
 
-    if (!user || !verifyPassword(password, user.password_hash)) {
-      return reply.code(401).send({ error: 'Invalid credentials.' });
-    }
-
-    // Vérifier si l'utilisateur est déjà connecté
-    if (isUserAlreadyConnected(user.id)) {
-      fastify.log.warn(`User ${user.username} (${user.id}) attempted to login but is already connected`);
-      return reply.code(403).send({ 
-        error: 'This account is already connected elsewhere.',
-        code: 'USER_ALREADY_CONNECTED'
-      });
-    }
-
-    // Générer le JWT
-    const maxAge = 60 * 60 * 24 * 7;
-    const jwtToken = jwt.sign(
-      { userId: user.id, username: user.username, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    // Invalidate previous tokens for user
-    db.prepare('DELETE FROM active_tokens WHERE user_id = ?').run(user.id);
-    // Store new token
-    const exp = getJwtExpiry(jwtToken);
-    db.prepare('INSERT INTO active_tokens (user_id, token, expires_at) VALUES (?, ?, ?)').run(
-      user.id,
-      jwtToken,
-      exp ? fmtSqliteDate(new Date(exp * 1000)) : null
-    );
-    reply.setCookie('jwt', jwtToken, {
-      httpOnly: true,
-      secure: true,
-      path: '/',
-      sameSite: 'strict',
-      maxAge: maxAge
-    });
-
-    const safeUser = {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      avatar_url: user.avatar_url ?? null,
-      wins: user.wins,
-      losses: user.losses,
-      created_at: user.created_at,
-      updated_at: user.updated_at
-    };
     return reply.send({ user: safeUser });
   });
 
