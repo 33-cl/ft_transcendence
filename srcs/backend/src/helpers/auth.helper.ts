@@ -8,8 +8,12 @@ import {
   storeActiveToken, 
   getJwtMaxAge,
   getUserByEmail,
-  getUserByUsername
+  getUserByUsername,
+  verifyJwt,
+  removeActiveToken
 } from '../services/auth.service.js';
+import { removeUserFromActiveList } from '../socket/socketAuth.js';
+import { getGlobalIo, broadcastUserStatusChange } from '../socket/socketHandlers.js';
 
 interface DbUser {
   id: number;
@@ -191,4 +195,292 @@ function getUserByLoginCredential(login: string): DbUser | undefined
         // C'est un username → garder la casse et chercher dans 'username'
         return getUserByUsername(cleanLogin) as DbUser | undefined;
     }
+}
+
+/**
+ * Gère la déconnexion d'un utilisateur
+ * - Vérifie et décode le JWT
+ * - Marque l'utilisateur comme offline (activeUsers)
+ * - Notifie les amis via WebSocket
+ * - Supprime le token de active_tokens
+ * 
+ * @param jwtToken - Le token JWT à révoquer
+ * @param fastify - Instance Fastify pour les logs et notifications
+ */
+export function handleLogout(jwtToken: string, fastify: FastifyInstance): void {
+  try {
+    // Vérifier et décoder le JWT pour obtenir le userId
+    const decodedToken = verifyJwt(jwtToken);
+    
+    if (decodedToken)
+    {
+      // Marquer l'utilisateur comme offline
+      removeUserFromActiveList(decodedToken.userId);
+      
+      // Notifier les amis via WebSocket
+      const io = getGlobalIo();
+      if (io)
+        broadcastUserStatusChange(decodedToken.userId, 'offline', io, fastify);
+    }
+    
+    // Supprimer le token de active_tokens (même si JWT invalide)
+    removeActiveToken(jwtToken);
+    
+  } catch (err) {
+    // En cas d'erreur, supprimer quand même le token
+    fastify.log.warn('[LOGOUT] Failed to verify JWT during logout');
+    removeActiveToken(jwtToken);
+  }
+}
+
+// ============================================
+// Profile Update Helpers
+// ============================================
+
+import { 
+  verifyJwt as verifyJwtService,
+  isTokenActive,
+  getUserById
+} from '../services/auth.service.js';
+import { 
+  sanitizeUsername as sanitizeUsernameUtil, 
+  sanitizeEmail as sanitizeEmailUtil
+} from '../security.js';
+import { 
+  isValidUsername as isValidUsernameService,
+  isValidEmail as isValidEmailService,
+  isValidPassword as isValidPasswordService
+} from '../services/validation.service.js';
+import { notifyProfileUpdated } from '../socket/socketHandlers.js';
+import db from '../db.js';
+import { hashPassword as hashPasswordService, verifyPassword as verifyPasswordService } from '../services/auth.service.js';
+
+interface ProfileUpdateData {
+  username?: string;
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
+
+interface UserSession {
+  id: number;
+  email: string;
+  username: string;
+}
+
+/**
+ * Authentifie l'utilisateur via JWT et récupère son userId
+ * @returns userId si authentifié, undefined sinon (et envoie la réponse d'erreur)
+ */
+export function authenticateProfileRequest(jwtToken: string | undefined, reply: FastifyReply): number | undefined {
+  if (!jwtToken) {
+    reply.code(401).send({ error: 'Not authenticated' });
+    return undefined;
+  }
+
+  try {
+    const decodedToken = verifyJwtService(jwtToken);
+    if (!decodedToken) {
+      reply.code(401).send({ error: 'JWT invalide ou expiré' });
+      return undefined;
+    }
+
+    // Vérifier que le token est dans active_tokens
+    if (!isTokenActive(decodedToken.userId, jwtToken)) {
+      reply.code(401).send({ error: 'Session expired or logged out' });
+      return undefined;
+    }
+
+    return decodedToken.userId;
+  } catch (err) {
+    reply.code(401).send({ error: 'JWT invalide ou expiré' });
+    return undefined;
+  }
+}
+
+/**
+ * Récupère les données de session utilisateur (id, email, username)
+ * @returns UserSession si trouvé, undefined sinon (et envoie la réponse d'erreur)
+ */
+export function getUserSession(userId: number, reply: FastifyReply): UserSession | undefined {
+  const sessionRow = db.prepare('SELECT id, email, username FROM users WHERE id = ?').get(userId) as UserSession | undefined;
+  
+  if (!sessionRow) {
+    reply.code(401).send({ error: 'Invalid or expired session/JWT' });
+    return undefined;
+  }
+  
+  return sessionRow;
+}
+
+/**
+ * Valide les longueurs des inputs du profil
+ * @returns true si valide, false sinon (et envoie la réponse d'erreur)
+ */
+export function validateProfileInputLengths(data: ProfileUpdateData, reply: FastifyReply): boolean {
+  if (data.username && !validateLength(data.username, 1, 50)) {
+    reply.code(400).send({ error: 'Username length invalid' });
+    return false;
+  }
+  if (data.email && !validateLength(data.email, 1, 255)) {
+    reply.code(400).send({ error: 'Email length invalid' });
+    return false;
+  }
+  if (data.currentPassword && !validateLength(data.currentPassword, 1, 255)) {
+    reply.code(400).send({ error: 'Password length invalid' });
+    return false;
+  }
+  if (data.newPassword && !validateLength(data.newPassword, 1, 255)) {
+    reply.code(400).send({ error: 'Password length invalid' });
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Sanitize et valide les données du profil
+ * @returns Données sanitized si valides, undefined sinon (et envoie la réponse d'erreur)
+ */
+export function sanitizeAndValidateProfileData(
+  data: ProfileUpdateData, 
+  reply: FastifyReply
+): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined {
+  const sanitizedUsername = data.username ? sanitizeUsernameUtil(data.username) : undefined;
+  const sanitizedEmail = data.email ? sanitizeEmailUtil(data.email) : undefined;
+
+  if (sanitizedUsername !== undefined && !isValidUsernameService(sanitizedUsername)) {
+    reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore)' });
+    return undefined;
+  }
+
+  if (sanitizedEmail !== undefined && !isValidEmailService(sanitizedEmail)) {
+    reply.code(400).send({ error: 'Invalid email format' });
+    return undefined;
+  }
+
+  if (data.newPassword !== undefined && !isValidPasswordService(data.newPassword)) {
+    reply.code(400).send({ error: 'New password too short (min 8 characters)' });
+    return undefined;
+  }
+
+  return { sanitizedUsername, sanitizedEmail };
+}
+
+/**
+ * Vérifie le mot de passe actuel si l'utilisateur veut en changer
+ * @returns true si valide ou pas de changement, false sinon (et envoie la réponse d'erreur)
+ */
+export function verifyCurrentPassword(
+  newPassword: string | undefined,
+  currentPassword: string | undefined,
+  userId: number,
+  reply: FastifyReply
+): boolean {
+  if (!newPassword || !currentPassword) {
+    return true; // Pas de changement de password
+  }
+
+  const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId) as { password_hash: string } | undefined;
+  
+  if (!user) {
+    reply.code(404).send({ error: 'User not found' });
+    return false;
+  }
+
+  if (!verifyPasswordService(currentPassword, user.password_hash)) {
+    reply.code(400).send({ error: 'Current password is incorrect' });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Vérifie l'unicité de l'email s'il est changé
+ * @returns true si unique ou pas changé, false sinon (et envoie la réponse d'erreur)
+ */
+export function checkEmailUniqueness(
+  email: string | undefined,
+  currentEmail: string,
+  userId: number,
+  reply: FastifyReply
+): boolean {
+  if (!email || email === currentEmail) {
+    return true; // Pas de changement
+  }
+
+  const existingEmailUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, userId);
+  if (existingEmailUser) {
+    reply.code(409).send({ error: 'Email already taken' });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Vérifie l'unicité du username s'il est changé
+ * @returns true si unique ou pas changé, false sinon (et envoie la réponse d'erreur)
+ */
+export function checkUsernameUniqueness(
+  username: string | undefined,
+  currentUsername: string,
+  userId: number,
+  reply: FastifyReply
+): boolean {
+  if (!username || username === currentUsername)
+    return true; // Pas de changement
+
+  const existingUsernameUser = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, userId);
+  if (existingUsernameUser)
+  {
+    reply.code(409).send({ error: 'Username already taken' });
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Construit et exécute la requête UPDATE pour le profil
+ * @returns true si au moins une modification, false si aucun changement (et envoie la réponse d'erreur)
+ */
+export function updateUserProfile(
+  data: ProfileUpdateData,
+  userId: number,
+  reply: FastifyReply
+): boolean {
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (data.username) {
+    updates.push('username = ?');
+    values.push(data.username);
+  }
+
+  if (data.email) {
+    updates.push('email = ?');
+    values.push(data.email);
+  }
+
+  if (data.newPassword) {
+    const passwordHash = hashPasswordService(data.newPassword);
+    updates.push('password_hash = ?');
+    values.push(passwordHash);
+  }
+
+  updates.push('updated_at = ?');
+  values.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
+
+  if (updates.length === 1) { // Seulement updated_at
+    reply.code(400).send({ error: 'No changes provided' });
+    return false;
+  }
+
+  const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+  values.push(userId);
+  
+  db.prepare(query).run(...values);
+  
+  return true;
 }

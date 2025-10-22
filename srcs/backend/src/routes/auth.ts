@@ -36,7 +36,16 @@ import {
   checkAlreadyConnected,
   authenticateUser,
   createSafeUser,
-  validateAndGetUser
+  validateAndGetUser,
+  handleLogout,
+  authenticateProfileRequest,
+  getUserSession,
+  validateProfileInputLengths,
+  sanitizeAndValidateProfileData,
+  verifyCurrentPassword,
+  checkEmailUniqueness,
+  checkUsernameUniqueness,
+  updateUserProfile
 } from '../helpers/auth.helper.js';
 
 // Utilitaire pour convertir un stream en buffer
@@ -307,32 +316,25 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // POST /auth/logout -> supprime la session/JWT
+  /**
+   * POST /auth/logout
+   * Déconnexion d'un utilisateur
+   * 
+   * Flux :
+   * 1. Extraction du JWT depuis les cookies
+   * 2. Traitement de la déconnexion (révocation token, notification amis)
+   * 3. Suppression du cookie JWT
+   * 4. Réponse de confirmation
+   */
   fastify.post('/auth/logout', async (request, reply) => {
+    // Extraction du JWT
     const jwtToken = getJwtFromRequest(request);
-    if (jwtToken) {
-      try {
-        // Get user ID before deleting token
-        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-        const userId = payload.userId;
-        
-        // Remove user from active list to mark as offline
-        removeUserFromActiveList(userId);
-        
-        // 🚀 NOUVEAU : Notifier les amis via WebSocket que l'utilisateur est offline
-        const io = getGlobalIo();
-        if (io) {
-          broadcastUserStatusChange(userId, 'offline', io, fastify);
-        }
-        
-        // Remove token from active_tokens
-        db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);
-      } catch (err) {
-        console.warn('[LOGOUT] Failed to verify JWT during logout:', err);
-        // Still remove token even if JWT verification fails
-        db.prepare('DELETE FROM active_tokens WHERE token = ?').run(jwtToken);
-      }
-    }
+    
+    // Traitement de la déconnexion si un JWT existe
+    if (jwtToken)
+      handleLogout(jwtToken, fastify);
+    
+    // Suppression du cookie JWT (maxAge: 0 = expire immédiatement)
     reply.setCookie('jwt', '', {
       httpOnly: true,
       secure: true,
@@ -340,144 +342,78 @@ export default async function authRoutes(fastify: FastifyInstance) {
       sameSite: 'strict',
       maxAge: 0
     });
+    
     return reply.send({ ok: true });
   });
 
-  // Endpoint pour mettre à jour le profil utilisateur
+  /**
+   * PUT /auth/profile
+   * Mise à jour du profil utilisateur (username, email, password)
+   * 
+   * Flux :
+   * 1. Authentification JWT (authenticateProfileRequest)
+   * 2. Récupération de la session utilisateur (getUserSession)
+   * 3. Extraction du body (username, email, currentPassword, newPassword)
+   * 4. Validation des longueurs des inputs (validateProfileInputLengths)
+   * 5. Sanitization et validation des données (sanitizeAndValidateProfileData)
+   * 6. Vérification du mot de passe actuel si changement (verifyCurrentPassword)
+   * 7. Vérification unicité email si changé (checkEmailUniqueness)
+   * 8. Vérification unicité username si changé (checkUsernameUniqueness)
+   * 9. Construction et exécution de l'UPDATE (updateUserProfile)
+   * 10. Notification WebSocket aux amis (notifyProfileUpdated)
+   * 11. Réponse de confirmation
+   */
   fastify.put('/auth/profile', async (request, reply) => {
+    // Étape 1 : Authentification JWT
     const jwtToken = getJwtFromRequest(request);
-    let userId: number | undefined;
-    if (jwtToken) {
-      try {
-        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-        // Check token presence in active_tokens
-        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-        if (!active) return reply.code(401).send({ error: 'Session expired or logged out' });
-        userId = payload.userId;
-      } catch (err) {
-        return reply.code(401).send({ error: 'JWT invalide ou expiré' });
-      }
-    }
-    // Si pas de JWT, refuse
-    if (!userId) {
-      return reply.code(401).send({ error: 'Not authenticated' });
-    }
-    // Récupérer l'utilisateur
-    const sessionRow = db.prepare(`
-      SELECT id, email, username FROM users WHERE id = ?
-    `).get(userId) as { id: number; email: string; username: string } | undefined;
-    if (!sessionRow) {
-      return reply.code(401).send({ error: 'Invalid or expired session/JWT' });
-    }
+    const userId = authenticateProfileRequest(jwtToken, reply);
+    if (!userId)
+      return;
+
+    // Étape 2 : Récupération de la session utilisateur
+    const sessionRow = getUserSession(userId, reply);
+    if (!sessionRow)
+      return;
+
+    // Étape 3 : Extraction du body
     const { username, email, currentPassword, newPassword } = (request.body as {
       username?: string;
       email?: string;
       currentPassword?: string;
       newPassword?: string;
     }) || {};
-    
-    // SECURITY: Validate input lengths
-    if (username && !validateLength(username, 1, 50)) {
-      return reply.code(400).send({ error: 'Username length invalid' });
-    }
-    if (email && !validateLength(email, 1, 255)) {
-      return reply.code(400).send({ error: 'Email length invalid' });
-    }
-    if (currentPassword && !validateLength(currentPassword, 1, 255)) {
-      return reply.code(400).send({ error: 'Password length invalid' });
-    }
-    if (newPassword && !validateLength(newPassword, 1, 255)) {
-      return reply.code(400).send({ error: 'Password length invalid' });
-    }
-    
-    // SECURITY: Sanitize inputs
-    const sanitizedUsername = username ? sanitizeUsername(username) : undefined;
-    const sanitizedEmail = email ? sanitizeEmail(email) : undefined;
-    
-    // Validation des données
-    if (sanitizedUsername !== undefined && !isValidUsername(sanitizedUsername)) {
-      return reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore)' });
-    }
 
-    if (sanitizedEmail !== undefined && !isValidEmail(sanitizedEmail)) {
-      return reply.code(400).send({ error: 'Invalid email format' });
-    }
+    // Étape 4 : Validation des longueurs
+    if (!validateProfileInputLengths({ username, email, currentPassword, newPassword }, reply))
+      return;
 
-    if (newPassword !== undefined && !isValidPassword(newPassword)) {
-      return reply.code(400).send({ error: 'New password too short (min 8 characters)' });
-    }
+    // Étape 5 : Sanitization et validation des données
+    const sanitized = sanitizeAndValidateProfileData({ username, email, newPassword }, reply);
+    if (!sanitized)
+      return;
 
     try {
-      // Si on veut changer le mot de passe, vérifier l'ancien
-      if (newPassword && currentPassword) {
-        const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(sessionRow.id) as { password_hash: string } | undefined;
-        
-        if (!user) {
-          return reply.code(404).send({ error: 'User not found' });
-        }
+      // Étape 6 : Vérification du mot de passe actuel si changement
+      if (!verifyCurrentPassword(newPassword, currentPassword, sessionRow.id, reply))
+        return;
 
-        if (!verifyPassword(currentPassword, user.password_hash)) {
-          return reply.code(400).send({ error: 'Current password is incorrect' });
-        }
-      } 
-      // else if (newPassword && !currentPassword) {
-      //   return reply.code(400).send({ error: 'Current password is required to change password' });
-      // }
+      // Étape 7 : Vérification unicité email
+      if (!checkEmailUniqueness(email, sessionRow.email, sessionRow.id, reply))
+        return;
 
-      // Vérifier l'unicité de l'email si changé
-      if (email && email !== sessionRow.email) {
-        const existingEmailUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, sessionRow.id);
-        if (existingEmailUser) {
-          return reply.code(409).send({ error: 'Email already taken' });
-        }
-      }
+      // Étape 8 : Vérification unicité username
+      if (!checkUsernameUniqueness(username, sessionRow.username, sessionRow.id, reply))
+        return;
 
-      // Vérifier l'unicité du username si changé
-      if (username && username !== sessionRow.username) {
-        const existingUsernameUser = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, sessionRow.id);
-        if (existingUsernameUser) {
-          return reply.code(409).send({ error: 'Username already taken' });
-        }
-      }
+      // Étape 9 : Construction et exécution de l'UPDATE
+      if (!updateUserProfile({ username, email, newPassword }, sessionRow.id, reply))
+        return;
 
-      // Construire la requête de mise à jour dynamiquement
-      const updates: string[] = [];
-      const values: any[] = [];
-
-      if (username) {
-        updates.push('username = ?');
-        values.push(username);
-      }
-
-      if (email) {
-        updates.push('email = ?');
-        values.push(email);
-      }
-
-      if (newPassword) {
-        const passwordHash = hashPassword(newPassword);
-        updates.push('password_hash = ?');
-        values.push(passwordHash);
-      }
-
-      updates.push('updated_at = ?');
-      values.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
-
-      if (updates.length === 1) { // Seulement updated_at
-        return reply.code(400).send({ error: 'No changes provided' });
-      }
-
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
-      values.push(sessionRow.id); // Add user_id at the end for WHERE clause
-      
-      
-      db.prepare(query).run(...values);
-
-      // Notifier les amis du changement de profil (pseudo uniquement, pas l'avatar ici)
-      if (username) {
+      // Étape 10 : Notification WebSocket aux amis (si changement de username)
+      if (username)
         notifyProfileUpdated(sessionRow.id, { username }, fastify);
-      }
 
+      // Étape 11 : Réponse de confirmation
       return reply.send({ 
         ok: true, 
         message: 'Profile updated successfully',
@@ -487,7 +423,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
           passwordChanged: !!newPassword
         }
       });
-
     } catch (error) {
       console.error('Profile update error:', error);
       return reply.code(500).send({ error: 'Internal server error' });
