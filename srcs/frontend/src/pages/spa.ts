@@ -6,7 +6,7 @@ import { initSettingsHandlers } from './settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
-import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad } from '../utils/navigation.js';
+import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL } from '../utils/navigation.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -464,10 +464,23 @@ initNavigationOnLoad(async () => {
     await initSessionBroadcast();
     
     await checkSessionOnce();
-    if (!window.currentUser || !window.currentUser.username)
-        load('signIn');
-    else
-        load('mainMenu');
+    
+    // Déterminer la page à charger : soit depuis l'URL, soit page par défaut selon authentification
+    let targetPage = getPageFromURL();
+    
+    if (!window.currentUser || !window.currentUser.username) {
+        // Non connecté : forcer signIn ou signUp
+        if (targetPage !== 'signIn' && targetPage !== 'signUp') {
+            targetPage = 'signIn';
+        }
+    } else {
+        // Connecté : empêcher l'accès aux pages d'authentification
+        if (targetPage === 'signIn' || targetPage === 'signUp') {
+            targetPage = 'mainMenu';
+        }
+    }
+    
+    load(targetPage);
     initializeComponents();
     setupRoomJoinedHandler();
 });
