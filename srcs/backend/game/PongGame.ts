@@ -158,6 +158,55 @@ export class PongGame {
         this.state.aiConfig = undefined;
         console.log('🤖 IA désactivée');
     }
+
+    /**
+     * Active le mode debug de l'IA pour visualiser ses décisions
+     * Requis pour l'évaluation : expliquer comment l'IA fonctionne
+     */
+    enableAIDebug() {
+        if (this.state.aiConfig) {
+            this.state.aiConfig.debugMode = true;
+            console.log('[IA DEBUG] Mode debug activé - Les décisions de l\'IA seront affichées');
+        }
+    }
+
+    /**
+     * Désactive le mode debug de l'IA
+     */
+    disableAIDebug() {
+        if (this.state.aiConfig) {
+            this.state.aiConfig.debugMode = false;
+            console.log('[IA DEBUG] Mode debug désactivé');
+        }
+    }
+
+    /**
+     * Récupère les statistiques de l'IA pour l'évaluation
+     * @returns Objet contenant les statistiques de performance
+     */
+    getAIStats() {
+        if (!this.state.aiConfig) {
+            return null;
+        }
+        
+        const ai = this.state.aiConfig;
+        const errorRate = ai.decisionCount > 0 ? (ai.errorCount / ai.decisionCount * 100) : 0;
+        
+        return {
+            difficulty: ai.difficulty,
+            decisionCount: ai.decisionCount,
+            errorCount: ai.errorCount,
+            panicCount: ai.panicCount,
+            errorRate: errorRate.toFixed(2) + '%',
+            currentState: {
+                panicMode: ai.panicMode,
+                isMoving: ai.isMoving,
+                keyPressed: ai.keyPressed,
+                targetY: ai.targetY.toFixed(1),
+                currentY: ai.currentY.toFixed(1)
+            }
+        };
+    }
 }
 
 // Pour usage backend :
