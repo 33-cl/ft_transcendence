@@ -1,7 +1,7 @@
 @layer components {
     /* Matchmaking page */
     #matchmaking-page {
-        @apply w-[100vw];
+        @apply w-[100%];
     }
 
     #matchmaking h1 {
@@ -14,10 +14,11 @@
 
     #searchingText {
         @apply text-2xl pb-4; /* Search status text styling */
+        @apply block min-w-[50rem]; /* Largeur minimale fixe pour éviter le resize, block pour rester sur sa ligne */
     }
 
     #tips {
-        @apply text-gray-400 w-[60vw] mx-[20vw];   /* Full width and margin */
+        @apply text-gray-400 w-[100%] mx-[0%];   /* Full width and margin */
         @apply fixed bottom-0 left-0;             /* Positioning */
     } 
 
