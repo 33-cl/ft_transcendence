@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { sanitizeUsername } from '../security.js';
-import { isValidUsername } from './auth.js';
+import { isValidUsername } from '../services/validation.service.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
