@@ -11,3 +11,4 @@ srcs/backend/dist/
 # Avatar uploads (user-generated content)
 public/avatars/
 .history/
+*.md
