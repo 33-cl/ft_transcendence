@@ -50,20 +50,24 @@ export function draw(gameState: any)
     // Clear le canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Obtenir les dimensions du terrain de jeu depuis le gameState
+    const gameWidth = gameState.canvasWidth || canvas.width;
+    const gameHeight = gameState.canvasHeight || canvas.height;
+
     // --- DESSIN DU TERRAIN ---
     if (gameState.paddles && gameState.paddles.length === 4) {
         // Mode 1v1v1v1 : carré avec bordures
         ctx.save();
         ctx.strokeStyle = '#888';
         ctx.lineWidth = 4;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeRect(0, 0, gameWidth, gameHeight);
         ctx.restore();
     } else {
         // Mode 1v1 : rectangle classique
         ctx.save();
         ctx.strokeStyle = '#888';
         ctx.lineWidth = 4;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeRect(0, 0, gameWidth, gameHeight);
         ctx.restore();
     }
 
