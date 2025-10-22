@@ -13,13 +13,18 @@ import { GameState, createInitialGameState } from './gameState.js';
 export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, paddleHeight: number): number {
     // Angles prédéfinis pour chaque zone (en degrés)
     // Zones 3 et 4 = 0° pour un centre élargi
-    const angles = [-45, -30, -15, 0, 0, 15, 30, 45];
+    const zoneCount = 16;
+    const minAngle = -40;
+    const maxAngle = 40;
+    const angles = Array.from({length: zoneCount}, (_, i) =>
+        minAngle + ((maxAngle - minAngle) * i) / (zoneCount - 1)
+    );
     
     // Calculer la position relative de l'impact sur le paddle [0, 1]
     const impactRatio = (ballY - paddleTop) / paddleHeight;
     
-    // Déterminer la zone (0-7), avec protection contre les débordements
-    const zoneIndex = Math.max(0, Math.min(7, Math.floor(impactRatio * 8)));
+    // Déterminer la zone, avec protection contre les débordements
+    const zoneIndex = Math.max(0, Math.min(angles.length - 1, Math.floor(impactRatio * angles.length)));
     
     // Convertir l'angle en radians
     const angleInRadians = angles[zoneIndex] * Math.PI / 180;
