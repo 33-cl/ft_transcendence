@@ -18,7 +18,7 @@
     }
 
     #tips {
-        @apply text-gray-400 w-[100%] mx-[0%];   /* Full width and margin */
+        @apply text-gray-400 w-[100%];   /* Full width and margin */
         @apply fixed bottom-0 left-0;             /* Positioning */
     } 
 
