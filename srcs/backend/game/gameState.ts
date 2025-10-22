@@ -92,12 +92,12 @@ export interface GameState{
  * @returns L'état initial du jeu avec les raquettes positionnées correctement
  */
 export function createInitialGameState(numPlayers: number = 2): GameState {
-    // Constantes de configuration du jeu
-    const canvasHeight  = 650;   // Hauteur du terrain de jeu
-    const canvasWidth   = 850;   // Largeur du terrain de jeu
-    const paddleHeight  = 110;   // Hauteur des raquettes verticales
-    const paddleWidth   = 10;    // Largeur des raquettes verticales
-    const paddleMargin  = 10;    // Marge entre raquettes et bords
+    // Constantes de configuration du jeu - Canvas agrandi pour meilleure visibilité
+    const canvasHeight  = 800;   // Hauteur du terrain de jeu (650 -> 800)
+    const canvasWidth   = 1200;  // Largeur du terrain de jeu (850 -> 1200)
+    const paddleHeight  = 135;   // Hauteur des raquettes verticales (110 -> 135)
+    const paddleWidth   = 12;    // Largeur des raquettes verticales (10 -> 12)
+    const paddleMargin  = 12;    // Marge entre raquettes et bords (10 -> 12)
     const paddleY       = canvasHeight / 2 - paddleHeight / 2; // Position Y par défaut (centré)
 
     // Ordre des côtés pour l'attribution des raquettes
@@ -165,14 +165,14 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         paddleWidth:    paddleWidth,
         paddleMargin:   paddleMargin,
         paddles:        paddles,
-        paddleSpeed:    15,              // Vitesse de déplacement des raquettes (pixels/frame)
+        paddleSpeed:    24,              // Vitesse de déplacement des raquettes (20 -> 24 pour canvas plus grand)
         
         // Configuration de la balle
         ballX:          canvasWidth / 2,  // Position initiale au centre X
         ballY:          canvasHeight / 2, // Position initiale au centre Y
-        ballRadius:     15,               // Rayon de la balle (diminué pour meilleure jouabilité)
-        ballSpeedX:     4,                // Vitesse horizontale initiale
-        ballSpeedY:     4,                // Vitesse verticale initiale
+        ballRadius:     18,               // Rayon de la balle ajusté (15 -> 18)
+        ballSpeedX:     5.5,              // Vitesse horizontale initiale ajustée (4 -> 5.5)
+        ballSpeedY:     5.5,              // Vitesse verticale initiale ajustée (4 -> 5.5)
         
         // Configuration de la partie
         win:            3,                // Nombre de points pour gagner
