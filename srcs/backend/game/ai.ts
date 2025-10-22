@@ -75,7 +75,13 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         panicThreshold: settings.panicThreshold,
         microcorrectionChance: settings.microcorrectionChance,
         persistanceTime: settings.persistanceTime,
-        maxErrorFrequency: settings.maxErrorFrequency
+        maxErrorFrequency: settings.maxErrorFrequency,
+        
+        // Debug et statistiques
+        debugMode: false,                 // Debug désactivé par défaut
+        decisionCount: 0,                 // Compteur de décisions
+        errorCount: 0,                    // Compteur d'erreurs
+        panicCount: 0                     // Compteur de paniques
     };
 }
 
@@ -125,10 +131,23 @@ export function updateAITarget(state: GameState): void {
     
     // Détecter le mode panique selon la distance de la balle
     const ballDistance = Math.abs(state.ballX - (state.paddleMargin + state.paddleWidth));
+    const wasPanic = ai.panicMode;
     ai.panicMode = ballDistance <= ai.panicThreshold && state.ballSpeedX < 0; // Balle qui approche
+    
+    // Compteur de panique
+    if (ai.panicMode && !wasPanic) {
+        ai.panicCount++;
+        if (ai.debugMode) {
+            console.log(`🚨 [IA-${ai.difficulty}] MODE PANIQUE activé! Distance balle: ${ballDistance.toFixed(1)}px`);
+        }
+    }
     
     // Prédire où la balle va atterrir
     const predictedY = predictBallLanding(state);
+    
+    if (ai.debugMode) {
+        console.log(`🎯 [IA-${ai.difficulty}] Prédiction: Y=${predictedY.toFixed(1)} | Balle: X=${state.ballX.toFixed(1)}, SpeedX=${state.ballSpeedX.toFixed(2)}`);
+    }
     
     // Système de persistance : ne pas changer d'avis trop souvent
     let targetY = predictedY;
@@ -138,6 +157,7 @@ export function updateAITarget(state: GameState): void {
     } else {
         // Nouvelle décision autorisée
         ai.lastDecisionTime = now;
+        ai.decisionCount++;
         
         // Appliquer les erreurs selon la fréquence maximale et le mode panique
         const errorChance = ai.panicMode ? ai.maxErrorFrequency * 1.5 : ai.maxErrorFrequency;
@@ -145,12 +165,25 @@ export function updateAITarget(state: GameState): void {
             // Erreur importante : décalage aléatoire
             const errorOffset = (Math.random() - 0.5) * ai.errorMargin * 2;
             targetY += errorOffset;
+            ai.errorCount++;
+            
+            if (ai.debugMode) {
+                console.log(`❌ [IA-${ai.difficulty}] ERREUR! Décalage: ${errorOffset.toFixed(1)}px (${ai.panicMode ? 'PANIQUE' : 'normale'})`);
+            }
         }
         
         // Micro-corrections : petits ajustements aléatoires pour simuler l'imprécision humaine
         if (Math.random() < ai.microcorrectionChance) {
             const microError = (Math.random() - 0.5) * (ai.errorMargin * 0.3);
             targetY += microError;
+            
+            if (ai.debugMode) {
+                console.log(`🔧 [IA-${ai.difficulty}] Micro-correction: ${microError.toFixed(1)}px`);
+            }
+        }
+        
+        if (ai.debugMode) {
+            console.log(`📊 [IA-${ai.difficulty}] Stats: Décisions=${ai.decisionCount}, Erreurs=${ai.errorCount}, Paniques=${ai.panicCount}`);
         }
     }
     
