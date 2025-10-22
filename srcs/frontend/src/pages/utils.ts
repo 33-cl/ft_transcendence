@@ -2,6 +2,7 @@ import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, a
 import { animateDots, switchTips } from '../components/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from '../utils/sessionBroadcast.js';
 import { guardFunction } from '../utils/securityGuard.js';
+import { pushHistoryState } from '../utils/navigation.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
@@ -240,7 +241,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         console.warn(`Page ${pageName} not found`);
 
     if (updateHistory)
-        window.history.pushState({ page: pageName }, '', `/${pageName}`);
+        pushHistoryState(pageName);
 }
 
 function hide(pageName: keyof typeof components)

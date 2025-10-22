@@ -6,6 +6,7 @@ import { initSettingsHandlers } from './settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
+import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad } from '../utils/navigation.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -269,15 +270,7 @@ function initializeComponents(): void
             sessionStorage.clear();
             
             // When logout, prevent back navigation to protected pages
-            window.history.replaceState(null, '', '/signin');
-            window.history.pushState(null, '', '/signin');
-            window.addEventListener('popstate', function preventBack() {
-                if (!window.currentUser) {
-                    // Forcer le retour à signin
-                    window.history.pushState(null, '', '/signin');
-                    load('signIn');
-                }
-            });
+            preventBackNavigationAfterLogout();
             await load('signIn');
         }
 
@@ -458,55 +451,25 @@ function setupRoomJoinedHandler()
 }
 
 
-window.addEventListener('popstate', async function(event) {
-    let targetPage = event.state?.page || 'signIn';
-    
-    // Protection: si connecté et tentative d'accès aux pages d'auth → rediriger
-    if (window.currentUser && (targetPage === 'signIn' || targetPage === 'signUp')) {
-        targetPage = 'mainMenu';
-    }
-    
-    await load(targetPage, false);
-});
+// Setup popstate handler for browser back/forward buttons
+setupPopStateHandler();
 
 // // top level statemetn ( s'execute des que le fichier est importe)
 // // --> manipuler le dom quúne fois qu'il est pret
-if (document.readyState === 'loading')
-{
-    document.addEventListener('DOMContentLoaded', async () =>
-    {
-        // �️ SECURITY: Install fetch guard FIRST to intercept all requests
-        installFetchGuard();
-        
-        // �🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
-        await initSessionBroadcast();
-        
-        await checkSessionOnce();
-        if (!window.currentUser || !window.currentUser.username)
-            load('signIn');
-        else
-            load('mainMenu');
-        initializeComponents();
-        setupRoomJoinedHandler();
-    });
-}
-else
-{
-    (async () => {
-        // 🛡️ SECURITY: Install fetch guard FIRST to intercept all requests
-        installFetchGuard();
-        
-        // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
-        await initSessionBroadcast();
-        
-        await checkSessionOnce();
-        if (!window.currentUser || !window.currentUser.username)
-            load('signIn');
-        else
-            load('mainMenu');
-        initializeComponents();
-        setupRoomJoinedHandler();
-    })();
-}
+initNavigationOnLoad(async () => {
+    // 🛡️ SECURITY: Install fetch guard FIRST to intercept all requests
+    installFetchGuard();
+    
+    // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
+    await initSessionBroadcast();
+    
+    await checkSessionOnce();
+    if (!window.currentUser || !window.currentUser.username)
+        load('signIn');
+    else
+        load('mainMenu');
+    initializeComponents();
+    setupRoomJoinedHandler();
+});
 
 export { show, hideAllPages, hide };
