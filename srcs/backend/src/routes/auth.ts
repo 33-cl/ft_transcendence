@@ -267,18 +267,41 @@ export default async function authRoutes(fastify: FastifyInstance) {
     return reply.send({ user: safeUser });
   });
 
-  // GET /auth/me -> utilisateur courant via cookie sid ou JWT
+  /**
+   * GET /auth/me
+   * Récupère l'utilisateur courant via JWT
+   * 
+   * Flux :
+   * 1. Extraction du JWT depuis les cookies
+   * 2. Vérification de la validité du JWT
+   * 3. Vérification que le token est dans active_tokens
+   * 4. Récupération et renvoi des données utilisateur
+   */
   fastify.get('/auth/me', async (request, reply) => {
+    // Extraction du JWT
     const jwtToken = getJwtFromRequest(request);
-    if (!jwtToken) return reply.code(401).send({ error: 'No JWT.' });
+    if (!jwtToken)
+      return reply.code(401).send({ error: 'No JWT.' });
+
     try {
-      const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number; username: string; email: string };
-      // Check token presence in active_tokens
-      const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-      if (!active) return reply.code(401).send({ error: 'Session expired or logged out.' });
-      const user = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?').get(payload.userId);
-      if (!user) return reply.code(401).send({ error: 'Utilisateur non trouvé.' });
+      // Vérification et décodage du JWT
+      const decodedToken = jwt.verify(jwtToken, JWT_SECRET) as { userId: number; username: string; email: string };
+      
+      // Vérification que le token est dans active_tokens (pas révoqué)
+      const activeT = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(decodedToken.userId, jwtToken);
+      if (!activeT)
+        return reply.code(401).send({ error: 'Session expired or logged out.' });
+      
+      // Récupération de l'utilisateur
+      const user = db.prepare(
+        'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?'
+      ).get(decodedToken.userId);
+      
+      if (!user)
+        return reply.code(401).send({ error: 'Utilisateur non trouvé.' });
+      
       return reply.send({ user });
+      
     } catch (err) {
       return reply.code(401).send({ error: 'JWT invalide ou expiré.' });
     }
