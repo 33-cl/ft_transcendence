@@ -38,6 +38,12 @@ export interface AIConfig {
     microcorrectionChance: number;     // Probabilité de micro-corrections
     persistanceTime: number;           // Temps avant de changer d'avis
     maxErrorFrequency: number;         // Fréquence maximale d'erreurs importantes
+    
+    // Debug et statistiques (pour l'évaluation)
+    debugMode: boolean;                // Active les logs de debug
+    decisionCount: number;             // Nombre de décisions prises
+    errorCount: number;                // Nombre d'erreurs commises
+    panicCount: number;                // Nombre de fois en mode panique
 }
 
 /**
