@@ -76,3 +76,14 @@ export function initNavigationOnLoad(callback: () => void | Promise<void>): void
 export function isDOMReady(): boolean {
     return document.readyState !== 'loading';
 }
+
+/**
+ * Obtient le nom de la page depuis l'URL actuelle
+ * @returns Le nom de la page (ex: 'mainMenu', 'profile', etc.) ou 'signIn' par défaut
+ */
+export function getPageFromURL(): string {
+    const path = window.location.pathname;
+    // Enlever le slash initial et utiliser la première partie du chemin
+    const pageName = path.replace(/^\//, '') || 'signIn';
+    return pageName;
+}
