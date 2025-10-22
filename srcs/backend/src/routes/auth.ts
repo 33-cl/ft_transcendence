@@ -12,6 +12,26 @@ import { v4 as uuidv4 } from 'uuid';//genere des id unique pour les noms de fich
 import { pipeline } from 'stream/promises';
 import { sanitizeUsername, sanitizeEmail, validateLength, checkRateLimit } from '../security.js';
 
+// Import des services (logique métier séparée)
+import { 
+  createUser, 
+  generateJwt, 
+  storeActiveToken, 
+  getJwtMaxAge,
+  verifyPassword as verifyPasswordService,
+  hashPassword as hashPasswordService,
+  getUserByEmail,
+  getUserByUsername,
+  isTokenActive,
+  removeActiveToken
+} from '../services/auth.service.js';
+import { 
+  validateRegisterInput,
+  isValidEmail,
+  isValidUsername,
+  isValidPassword
+} from '../services/validation.service.js';
+
 // Utilitaire pour convertir un stream en buffer
 async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
   const chunks: Buffer[] = [];
@@ -85,46 +105,9 @@ interface SessionJoinRow {
   updated_at: string;
 }
 
-export function isValidEmail(email: string): boolean {
-  // Validation simple et robuste
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-export function isValidUsername(username: string): boolean {
-  // 3-10 chars, lettres/chiffres/underscore uniquement
-  return /^[a-zA-Z0-9_]{3,10}$/.test(username);
-}
-
-function isValidPassword(password: string): boolean {
-  // Longueur minimale 8
-  return typeof password === 'string' && password.length >= 8;
-}
-
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  // return sous format: algo:salt:hash
-  return `scrypt:${salt}:${hash}`;
-}
-
-function verifyPassword(password: string, stored: string): boolean {
-  // stored format: scrypt:salt:hash
-  try {
-    const parts = stored.split(':');
-    if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
-    const salt = parts[1];
-    const expectedHex = parts[2];
-	//on rehash avec le meme salt donc on compare les 2 meme choses
-    const actualHex = scryptSync(password, salt, 64).toString('hex');
-    const a = Buffer.from(actualHex, 'hex');
-    const b = Buffer.from(expectedHex, 'hex');
-    if (a.length !== b.length)
-		return false;
-    return timingSafeEqual(a, b);
-  } catch {
-    return false;
-  }
-}
+// Alias pour les fonctions du service (pour compatibilité avec le code existant)
+const hashPassword = hashPasswordService;
+const verifyPassword = verifyPasswordService;
 
 function fmtSqliteDate(d: Date): string {
   // YYYY-MM-DD HH:MM:SS (UTC)
@@ -183,73 +166,55 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   }
 
+  /**
+   * POST /auth/register
+   * Inscription d'un nouvel utilisateur
+   * 
+   * Flux :
+   * 1. Validation des inputs (validateRegisterInput)
+   * 2. Création du user dans la DB (createUser)
+   * 3. Génération du JWT (generateJwt)
+   * 4. Stockage du token actif (storeActiveToken)
+   * 5. Envoi du cookie + réponse
+   */
   fastify.post('/auth/register', async (request, reply) => {
-    const { email, username, password } = (request.body as RegisterBody) || {};
+    // Étape 1 : Validation et sanitization des inputs
+    
+    const validation = validateRegisterInput(request.body as any);
+    if (!validation.success)
+      return reply.code(400).send({ error: validation.error });
 
-    // SECURITY: Validate input lengths to prevent DoS
-    if (!validateLength(email || '', 1, 255) || 
-        !validateLength(username || '', 1, 50) || 
-        !validateLength(password || '', 1, 255)) {
-      return reply.code(400).send({ error: 'Input length validation failed.' });
-    }
-
-    // SECURITY: Sanitize inputs to prevent XSS
-    const sanitizedEmail = sanitizeEmail(email || '');
-    const sanitizedUsername = sanitizeUsername(username || '');
-
-    // Validations
-    if (!sanitizedEmail || !isValidEmail(sanitizedEmail)) {
-      return reply.code(400).send({ error: 'Invalid email.' });
-    }
-    if (!sanitizedUsername || !isValidUsername(sanitizedUsername)) {
-      return reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore).' });
-    }
-    if (!password || !isValidPassword(password)) {
-      return reply.code(400).send({ error: 'Password too short (min 8 characters).' });
-    }
+    const { email, username, password } = validation.data;
 
     try {
-      const password_hash = hashPassword(password);
-      const stmt = db.prepare(
-        'INSERT INTO users (email, username, password_hash, avatar_url) VALUES (?, ?, ?, ?)' 
-      );
-      const info = stmt.run(sanitizedEmail, sanitizedUsername, password_hash, null);
+      const user = createUser({ email, username, password });
 
-      const created = db.prepare('SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?').get(info.lastInsertRowid) as Omit<DbUser, 'password_hash'>;
+      const jwtToken = generateJwt(user);
+      storeActiveToken(user.id, jwtToken);
 
-      // Générer le JWT
-      const maxAge = 60 * 60 * 24 * 7; // 7 jours
-      const jwtToken = jwt.sign(
-        { userId: created.id, username: created.username, email: created.email },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-      // Invalidate previous tokens for user
-      db.prepare('DELETE FROM active_tokens WHERE user_id = ?').run(created.id);
-      // Store new token
-      const exp = getJwtExpiry(jwtToken);
-      db.prepare('INSERT INTO active_tokens (user_id, token, expires_at) VALUES (?, ?, ?)').run(
-        created.id,
-        jwtToken,
-        exp ? fmtSqliteDate(new Date(exp * 1000)) : null
-      );
       reply.setCookie('jwt', jwtToken, {
-        httpOnly: true,
-        secure: true,
-        path: '/',
-        sameSite: 'strict',
-        maxAge: maxAge
+        httpOnly: true,    // empeche l acces javscript, personne peut lire le cookie
+        secure: true,      // https only
+        path: '/',         // dispo sur tout le site
+        sameSite: 'strict',// protection, evite de pouvoir s'envoyer le cookie vers un site malveillant
+        maxAge: getJwtMaxAge() // 7 jours
       });
 
-      return reply.code(201).send({ user: created });
+      //  Reponse avec les données du user (sans password_hash)
+      return reply.code(201).send({ user });
+
     } catch (e: any) {
+      // Gestion des erreurs d'unicité (email ou username déjà pris)
       const msg = typeof e?.message === 'string' ? e.message : '';
+      
       if (msg.includes('UNIQUE') && msg.includes('users.email')) {
         return reply.code(409).send({ error: 'Email already in use.' });
       }
       if (msg.includes('UNIQUE') && msg.includes('users.username')) {
         return reply.code(409).send({ error: 'Username already taken.' });
       }
+      
+      // Erreur serveur inconnue
       request.log.error(e);
       return reply.code(500).send({ error: 'Server error.' });
     }
