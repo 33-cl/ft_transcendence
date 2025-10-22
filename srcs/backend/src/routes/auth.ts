@@ -200,7 +200,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         maxAge: getJwtMaxAge() // 7 jours
       });
 
-      // Étape 6 : Réponse avec les données du user (sans password_hash)
+      //  Reponse avec les données du user (sans password_hash)
       return reply.code(201).send({ user });
 
     } catch (e: any) {
