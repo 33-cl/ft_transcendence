@@ -11,14 +11,14 @@ import { movePaddle } from './paddle.js';
  */
 const DIFFICULTY_SETTINGS = {
     easy: {
-        reactionTime: 2200,         // Réaction extrêmement lente
-        errorMargin: 80,            // Énormément d'erreurs
-        keyHoldDuration: 600,       // Maintient très longtemps (lenteur)
-        keyReleaseChance: 0.85,     // Relâche constamment les touches
-        panicThreshold: 450,        // Panique très tôt
-        microcorrectionChance: 0.01, // Presque aucune correction
-        persistanceTime: 100,       // Change d'avis constamment
-        maxErrorFrequency: 0.8      // Erreurs extrêmement fréquentes
+        reactionTime: 1200,         // Réaction lente mais cohérente
+        errorMargin: 30,            // Erreurs modestes (petits offsets)
+        keyHoldDuration: 500,       // Maintient un peu plus longtemps
+        keyReleaseChance: 0.6,      // Relâche parfois les touches
+        panicThreshold: 300,        // Panique modérée
+        microcorrectionChance: 0.08, // Quelques micro-corrections
+        persistanceTime: 250,       // Persistance raisonnable
+        maxErrorFrequency: 0.35     // Erreurs modérées
     },
     medium: {
         reactionTime: 800,          // Réaction modérée
@@ -51,14 +51,15 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     
     // Ajustement de la vitesse du paddle en fonction de la difficulté
+    // Réduction drastique pour le mode facile
     let paddleSpeed = 24; // Vitesse de base
     
     if (difficulty === 'easy') {
-        paddleSpeed = 17;  // Plus lent que le joueur
+        paddleSpeed = 12;  // Beaucoup plus lent (50% de la vitesse du joueur)
     } else if (difficulty === 'medium') {
-        paddleSpeed = 22;  // Légèrement plus lent
+        paddleSpeed = 18;  // Sensiblement plus lent (75% de la vitesse du joueur)
     } else if (difficulty === 'hard') {
-        paddleSpeed = 24;  // Même vitesse que le joueur
+        paddleSpeed = 23;  // Légèrement plus lent que le joueur (96%)
     }
     
     return {
@@ -146,7 +147,12 @@ export function updateAITarget(state: GameState): void {
     const ai = state.aiConfig;
     
     // Vérifier si c'est le moment de mettre à jour (1 fois par seconde max)
-    if (now - ai.lastUpdate < 1000) return;
+    // Moins de mises à jour en mode facile pour un comportement plus "humain"
+    const updateInterval = ai.difficulty === 'easy' ? 2000 : // 2 secondes en mode facile 
+                          ai.difficulty === 'medium' ? 1200 : // 1.2 secondes en mode moyen
+                          800; // 0.8 secondes en mode difficile
+                          
+    if (now - ai.lastUpdate < updateInterval) return;
     
     // Détecter le mode panique selon la distance de la balle
     const ballDistance = Math.abs(state.ballX - (state.paddleMargin + state.paddleWidth));
@@ -162,7 +168,21 @@ export function updateAITarget(state: GameState): void {
     }
     
     // Prédire où la balle va atterrir
-    const predictedY = predictBallLanding(state);
+    let predictedY = predictBallLanding(state);
+    
+    // En mode facile, appliquer principalement de petits offsets pour paraître humain
+    if (ai.difficulty === 'easy') {
+        // Petit offset fréquent
+        const smallOffset = (Math.random() - 0.5) * ai.errorMargin; // ± errorMargin/2
+        predictedY += smallOffset;
+
+        // Très rarement, faire une grosse erreur (miss) pour varier le comportement
+        if (Math.random() < 0.05) { // 5% chance
+            const bigMiss = (Math.random() < 0.5 ? -1 : 1) * (ai.errorMargin * 3 + Math.random() * ai.errorMargin * 2);
+            predictedY += bigMiss;
+            if (ai.debugMode) console.log(`[IA-easy] Grosse erreur (miss): ${bigMiss.toFixed(1)}px`);
+        }
+    }
     
     if (ai.debugMode) {
         console.log(`🎯 [IA-${ai.difficulty}] Prédiction: Y=${predictedY.toFixed(1)} | Balle: X=${state.ballX.toFixed(1)}, SpeedX=${state.ballSpeedX.toFixed(2)}`);
@@ -222,24 +242,25 @@ export function updateAITarget(state: GameState): void {
 }
 
 /**
- * Simule les inputs clavier de l'IA (appelé chaque frame)
- * L'IA appelle movePaddle() exactement comme un joueur humain
- * Intègre les comportements avancés : panique, micro-corrections, persistance
- * @param state État actuel du jeu
- */
+    // Simuler les inputs clavier de l'IA (appelé chaque frame)
+    // L'IA appelle movePaddle() exactement comme un joueur humain
+    // Intègre les comportements avancés : panique, micro-corrections, persistance
+    // @param state État actuel du jeu
+    */
 export function simulateKeyboardInput(state: GameState): void {
     if (!state.aiConfig || !state.aiConfig.enabled) return;
     const ai = state.aiConfig;
     const now = Date.now();
+
+    // L'IA ne s'endort plus : elle peut se tromper mais restera cohérente dans ses réactions
 
     // Mettre à jour la position actuelle basée sur le paddle réel
     if (state.paddles && state.paddles.length >= 1) {
         ai.currentY = state.paddles[0].y;
     }
     
-    // S'assurer que la vitesse spécifique de l'IA est utilisée
-    const originalPaddleSpeed = state.paddleSpeed;
-    state.paddleSpeed = ai.paddleSpeed; // Utiliser la vitesse de l'IA pour ses mouvements
+    // La vitesse est maintenant gérée directement dans movePaddle()
+    // Nous n'avons plus besoin de modifier temporairement state.paddleSpeed
 
     // Gestion du timer de micro-corrections
     if (ai.microcorrectionTimer > 0) {
@@ -326,7 +347,4 @@ export function simulateKeyboardInput(state: GameState): void {
             movePaddle(state, 'A', requiredDirection);
         }
     }
-    
-    // Restaurer la vitesse originale du paddle après le mouvement
-    state.paddleSpeed = originalPaddleSpeed;
 }
