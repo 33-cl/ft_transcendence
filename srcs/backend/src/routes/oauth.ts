@@ -52,7 +52,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
     app.get('/auth/google/callback', async (request, reply) => {
         try {
         const token = await (app as any).google.getAccessTokenFromAuthorizationCodeFlow(request);
-        
+
         app.log.info({ tokenKeys: Object.keys(token), token }, 'Token received from Google');
 
         const accessToken = token.access_token || token.token?.access_token;
@@ -81,10 +81,9 @@ export default async function oauthRoutes(app: FastifyInstance) {
             name: string;
             picture: string;
         };
-        
+   
         app.log.info({ userId: googleUser.id, email: googleUser.email }, 'Utilisateur Google authentifié');
 
-        
         let user = db.prepare(
             'SELECT * FROM users WHERE google_id = ?'
         ).get(googleUser.id) as any;
@@ -123,10 +122,10 @@ export default async function oauthRoutes(app: FastifyInstance) {
             JWT_SECRET,
             { expiresIn: '7d' }
         );
-        
+
         // Invalidate previous tokens for user
         db.prepare('DELETE FROM active_tokens WHERE user_id = ?').run(user.id);
-        
+
         // Store new token
         const exp = getJwtExpiry(jwtToken);
         db.prepare('INSERT INTO active_tokens (user_id, token, expires_at) VALUES (?, ?, ?)').run(
@@ -134,7 +133,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
             jwtToken,
             exp ? fmtSqliteDate(new Date(exp * 1000)) : null
         );
-        
+
         reply.setCookie('jwt', jwtToken, {
             httpOnly: true,
             secure: true,

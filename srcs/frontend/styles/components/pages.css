@@ -71,11 +71,6 @@
         @apply text-2xl pb-4; /* Search status text styling */
     }
 
-    #tips {
-        @apply text-gray-400 w-[60vw] mx-[20vw];     /* Full width and margin */
-        @apply fixed bottom-0 left-0;                 /* Positioning */
-    } 
-
     #tipText {
         @apply text-xl my-8 italic; /* Tip text size, margins, and italic */
     }
