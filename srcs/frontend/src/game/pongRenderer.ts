@@ -4,6 +4,9 @@
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 
+// Importer le système d'interpolation
+import './pongInterpolation.js';
+
 // Fonction pour obtenir la couleur selon le paddle
 function getColorForSide(side: string): string {
     const colors: Record<string, string> = {
@@ -40,13 +43,15 @@ export function resetPongRenderer(): void {
 // Expose la fonction de reset globalement pour le cleanup
 (window as any).resetPongRenderer = resetPongRenderer;
 
+// Exposer la fonction de dessin pour être utilisée par le système d'interpolation
+(window as any).drawPongGame = draw;
+
 export function draw(gameState: any)
 {   
     if (!ctx || !canvas) {
         return;
     }
-    
-    
+
     // Clear le canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
