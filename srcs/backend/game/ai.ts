@@ -11,24 +11,24 @@ import { movePaddle } from './paddle.js';
  */
 const DIFFICULTY_SETTINGS = {
     easy: {
-        reactionTime: 1500,         // Réaction très lente
-        errorMargin: 50,            // Beaucoup d'erreurs
-        keyHoldDuration: 400,       // Maintient longtemps
-        keyReleaseChance: 0.7,      // Relâche très souvent
-        panicThreshold: 400,        // Panique très tôt
-        microcorrectionChance: 0.02, // Presque pas de corrections
-        persistanceTime: 150,       // Change d'avis constamment
-        maxErrorFrequency: 0.6      // Beaucoup d'erreurs
+        reactionTime: 2200,         // Réaction extrêmement lente
+        errorMargin: 80,            // Énormément d'erreurs
+        keyHoldDuration: 600,       // Maintient très longtemps (lenteur)
+        keyReleaseChance: 0.85,     // Relâche constamment les touches
+        panicThreshold: 450,        // Panique très tôt
+        microcorrectionChance: 0.01, // Presque aucune correction
+        persistanceTime: 100,       // Change d'avis constamment
+        maxErrorFrequency: 0.8      // Erreurs extrêmement fréquentes
     },
     medium: {
-        reactionTime: 500,          // Réaction modérée
-        errorMargin: 15,            // Erreurs modérées
-        keyHoldDuration: 180,       // Durée normale
-        keyReleaseChance: 0.2,      // Relâche occasionnellement
-        panicThreshold: 210,        // Panique modérée
+        reactionTime: 800,          // Réaction modérée
+        errorMargin: 25,            // Erreurs modérées
+        keyHoldDuration: 250,       // Durée normale
+        keyReleaseChance: 0.35,     // Relâche occasionnellement
+        panicThreshold: 250,        // Panique modérée
         microcorrectionChance: 0.25, // Quelques corrections
         persistanceTime: 500,       // Persistance modérée
-        maxErrorFrequency: 0.15     // Quelques erreurs
+        maxErrorFrequency: 0.25     // Quelques erreurs
     },
     hard: {
         reactionTime: 100,          // Réaction ultra-rapide
@@ -50,6 +50,17 @@ const DIFFICULTY_SETTINGS = {
 export function createAIConfig(difficulty: AIDifficulty): AIConfig {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     
+    // Ajustement de la vitesse du paddle en fonction de la difficulté
+    let paddleSpeed = 24; // Vitesse de base
+    
+    if (difficulty === 'easy') {
+        paddleSpeed = 17;  // Plus lent que le joueur
+    } else if (difficulty === 'medium') {
+        paddleSpeed = 22;  // Légèrement plus lent
+    } else if (difficulty === 'hard') {
+        paddleSpeed = 24;  // Même vitesse que le joueur
+    }
+    
     return {
         enabled: true,
         difficulty: difficulty,
@@ -60,7 +71,7 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         currentY: 400,                    // Position actuelle (sera mise à jour)
         isMoving: false,                  // Pas en mouvement au début
         reactionStartTime: 0,             // Initialisé à 0 (aucun délai en cours)
-        paddleSpeed: 24,                  // Même vitesse que les joueurs humains (ajusté pour canvas plus grand)
+        paddleSpeed: paddleSpeed,         // Vitesse ajustée selon la difficulté
         
         // Simulation des touches clavier
         keyPressed: null,                 // Aucune touche pressée au début
@@ -225,6 +236,10 @@ export function simulateKeyboardInput(state: GameState): void {
     if (state.paddles && state.paddles.length >= 1) {
         ai.currentY = state.paddles[0].y;
     }
+    
+    // S'assurer que la vitesse spécifique de l'IA est utilisée
+    const originalPaddleSpeed = state.paddleSpeed;
+    state.paddleSpeed = ai.paddleSpeed; // Utiliser la vitesse de l'IA pour ses mouvements
 
     // Gestion du timer de micro-corrections
     if (ai.microcorrectionTimer > 0) {
@@ -311,4 +326,7 @@ export function simulateKeyboardInput(state: GameState): void {
             movePaddle(state, 'A', requiredDirection);
         }
     }
+    
+    // Restaurer la vitesse originale du paddle après le mouvement
+    state.paddleSpeed = originalPaddleSpeed;
 }
