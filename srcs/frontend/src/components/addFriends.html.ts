@@ -19,7 +19,7 @@ export async function addFriendsHTML() {
     let requestsHTML = '';
     if (friendRequests.length > 0) {
         requestsHTML = friendRequests.map((request: any) => `
-            <div class="flex items-center p-2 border-b border-gray-700 gap-2">
+            <div class="flex items-center p-2 border-b border-gray-700 gap-2 pointer-events-auto">
                 <img src="${request.avatar_url || './img/planet.gif'}" 
                      alt="${request.username}" 
                      class="w-10 h-10 rounded-full"
@@ -42,7 +42,7 @@ export async function addFriendsHTML() {
     return /*html*/`
         <div id="addFriends" class="user-list">
             <div class="relative">
-                <h2 class="m-0">Friends</h2>
+                <h2>Friends</h2>
                 <button id="backToFriendsBtn" class="absolute top-0 right-0 w-8 h-8 bg-black hover:bg-gray-900 border border-gray-600 rounded flex items-center justify-center transition-colors p-1.5" title="Back to Friends">
                     <img src="./img/back-to-list-arrow.svg" alt="Back to Friends" class="w-full h-full">
                 </button>
@@ -52,7 +52,8 @@ export async function addFriendsHTML() {
                     type="text" 
                     id="friendSearch" 
                     placeholder="Search users..." 
-                    class="search-input w-full px-2 py-2 border border-gray-600 rounded bg-gray-800 text-white text-sm"
+                    class="search-input w-full px-2 py-2 border border-gray-600 rounded bg-gray-800 text-white text-sm pointer-events-auto"
+                    autocomplete="off"
                 >
                 <div id="searchResults" class="search-results max-h-48 overflow-y-auto mt-1.5 bg-gray-900 rounded hidden"></div>
             </div>

@@ -30,7 +30,6 @@
     .game-finished-overlay {
         @apply fixed inset-0 z-[60];
         @apply flex items-center justify-center;
-        @apply bg-black bg-opacity-95;
         animation: fadeIn 0.3s ease-in-out;
     }
 

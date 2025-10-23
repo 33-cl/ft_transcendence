@@ -32,6 +32,7 @@
     .friend {
         @apply flex items-center gap-4 p-2 relative;        /* Layout and spacing */
         @apply hover:bg-gray-600 transition-colors;        /* Hover effects */
+        @apply pointer-events-auto;
     }
 
     #goToProfile-component {
