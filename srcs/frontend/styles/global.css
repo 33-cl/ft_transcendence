@@ -20,6 +20,7 @@
         @apply w-full h-full m-0;
         @apply font-press-start text-white text-center;
         @apply flex flex-col items-center min-h-screen;
+        @apply overflow-hidden;
     }
 
     * {
@@ -33,6 +34,7 @@
 
     h2 {
         @apply text-2xl my-[2vh];
+        @apply pointer-events-auto;
     }
 
     a {

@@ -84,6 +84,12 @@ export function isDOMReady(): boolean {
 export function getPageFromURL(): string {
     const path = window.location.pathname;
     // Enlever le slash initial et utiliser la première partie du chemin
-    const pageName = path.replace(/^\//, '') || 'signIn';
+    let pageName = path.replace(/^\//, '') || 'signIn';
+    
+    // Si on reload pendant une page de jeu, rediriger vers le main menu
+    if (pageName === 'game' || pageName === 'game4' || pageName === 'spectatorGameFinished' || pageName === 'gameFinished') {
+        pageName = 'mainMenu';
+    }
+    
     return pageName;
 }
