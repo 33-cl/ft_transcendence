@@ -4,6 +4,7 @@
         @apply bg-black opacity-80;
         @apply relative;
         @apply pointer-events-auto;
+        @apply cursor-pointer;
     }
 
     #textInfos {
