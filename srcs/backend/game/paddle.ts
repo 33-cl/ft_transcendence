@@ -8,7 +8,13 @@ export function movePaddle(
     direction: 'up' | 'down'
 ): void {
     console.log('[BACKEND] movePaddle called:', player, direction, 'paddles.length=', state.paddles?.length);
-    const speed = state.paddleSpeed;
+    
+    // Déterminer la vitesse - utiliser aiConfig.paddleSpeed si c'est l'IA (paddle A/left) et que l'IA est activée
+    let speed = state.paddleSpeed;
+    if ((player === 'A' || player === 'left') && state.aiConfig && state.aiConfig.enabled) {
+        speed = state.aiConfig.paddleSpeed;
+        console.log(`[BACKEND] Using AI paddle speed: ${speed} (difficulty: ${state.aiConfig.difficulty})`);
+    }
     
     // Mode 1v1 : paddles[0] = A (gauche), paddles[1] = C (droite)
     if (state.paddles && state.paddles.length === 2) {
