@@ -19,6 +19,11 @@ export class PongGame {
         pointScored: false,
         lastContact: -1
     };
+    
+    // Nouvelles propriétés pour la boucle de jeu à pas fixe
+    private lastUpdateTime: number = 0;
+    private accumulator: number = 0;
+    private readonly fixedDeltaTime: number = 1000 / 120; // 120Hz pour la simulation physique
 
     constructor(numPlayers: number = 2, onGameEnd?: (winner: { side: string; score: number }, loser: { side: string; score: number }) => void) {
         this.state = createInitialGameState(numPlayers);
@@ -31,8 +36,15 @@ export class PongGame {
     start() {
         if (this.interval) return;
         this.state.running = true;
-        this.ballStartTime = Date.now(); // Enregistre le moment où le jeu commence
-        this.interval = setInterval(() => this.update(), 1000 / 60); // 60 FPS
+        
+        // Initialisation des timers pour la boucle à pas fixe
+        const now = Date.now();
+        this.ballStartTime = now; // Enregistre le moment où le jeu commence
+        this.lastUpdateTime = now; // Pour le calcul du deltaTime
+        this.accumulator = 0;      // Réinitialiser l'accumulateur
+        
+        // Toujours 60 FPS pour le rendu, mais la physique sera mise à jour à 120Hz
+        this.interval = setInterval(() => this.gameLoop(), 1000 / 60);
     }
 
     stop() {
@@ -45,7 +57,29 @@ export class PongGame {
         movePaddle(this.state, player, direction);
     }
 
-    update() {
+    gameLoop() {
+        // Calculer le deltaTime depuis la dernière mise à jour
+        const currentTime = Date.now();
+        let deltaTime = currentTime - this.lastUpdateTime;
+        this.lastUpdateTime = currentTime;
+        
+        // Limiter deltaTime pour éviter les "spiral of death" lors de retards
+        if (deltaTime > 200) deltaTime = 200;
+        
+        // Accumulation du temps pour des pas de simulation fixes
+        this.accumulator += deltaTime;
+        
+        // Mise à jour à pas fixe (peut exécuter plusieurs fois si nécessaire)
+        while (this.accumulator >= this.fixedDeltaTime) {
+            this.update(this.fixedDeltaTime / 1000); // Convertir ms en secondes pour la physique
+            this.accumulator -= this.fixedDeltaTime;
+        }
+        
+        // Mettre à jour le timestamp dans l'état du jeu pour l'interpolation client
+        this.state.timestamp = currentTime;
+    }
+
+    update(dt: number = 1/60) { // dt par défaut à 1/60 seconde pour rétrocompatibilité
         // Vérifier si le délai de 3 secondes est écoulé avant de faire bouger la balle
         const currentTime = Date.now();
         const timeElapsed = currentTime - this.ballStartTime;
