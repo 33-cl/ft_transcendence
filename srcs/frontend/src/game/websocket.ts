@@ -463,7 +463,19 @@ function setupGameEventListeners() {
     // Event listener pour les états de jeu
     if (!gameStateListenerActive) {
         socket.on('gameState', (state: any) => {
-            draw(state);
+            // Utiliser le système d'interpolation si disponible
+            if (typeof (window as any).addGameState === 'function') {
+                // Ajouter l'état au buffer d'interpolation
+                (window as any).addGameState(state);
+                
+                // Démarrer la boucle de rendu si pas déjà active
+                if (typeof (window as any).startRenderLoop === 'function') {
+                    (window as any).startRenderLoop();
+                }
+            } else {
+                // Fallback: dessiner directement avec la fonction standard
+                draw(state);
+            }
         });
         gameStateListenerActive = true;
     }
