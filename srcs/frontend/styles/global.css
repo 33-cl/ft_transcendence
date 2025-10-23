@@ -39,6 +39,7 @@
 
     a {
         @apply text-blue-700;
+        @apply cursor-pointer;
     }
 
     a:hover {

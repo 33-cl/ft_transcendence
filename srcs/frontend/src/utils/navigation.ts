@@ -48,7 +48,7 @@ export function setupPopStateHandler(): void {
             targetPage = 'mainMenu';
         }
         
-        await load(targetPage, false);
+        await load(targetPage, undefined, false);
     });
 }
 
