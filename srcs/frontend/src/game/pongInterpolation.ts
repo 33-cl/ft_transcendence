@@ -26,7 +26,6 @@ const stateBuffer: GameState[] = [];
 const BUFFER_SIZE = 3; // Nombre d'états à conserver pour l'interpolation
 const INTERPOLATION_DELAY = 100; // Délai d'interpolation en ms (ajuster selon latence)
 
-let lastRenderTime = 0;
 let isRenderLoopRunning = false;
 
 /**
@@ -55,7 +54,6 @@ export function startRenderLoop(): void {
     if (isRenderLoopRunning) return;
     
     isRenderLoopRunning = true;
-    lastRenderTime = performance.now();
     requestAnimationFrame(renderLoop);
 }
 
@@ -77,7 +75,7 @@ export function getCurrentInterpolatedState(): GameState | null {
     
     // Si un seul état, le retourner directement
     if (stateBuffer.length === 1) {
-        return stateBuffer[0];
+        return stateBuffer[0] || null;
     }
     
     // Recherche des deux états entourant le temps cible
@@ -88,7 +86,8 @@ export function getCurrentInterpolatedState(): GameState | null {
     let state2Index = -1;
     
     for (let i = 0; i < stateBuffer.length; i++) {
-        if (stateBuffer[i].timestamp! <= targetTime) {
+        const state = stateBuffer[i];
+        if (state && state.timestamp !== undefined && state.timestamp <= targetTime) {
             state1Index = i;
         } else {
             state2Index = i;
@@ -110,6 +109,10 @@ export function getCurrentInterpolatedState(): GameState | null {
     
     const state1 = stateBuffer[state1Index];
     const state2 = stateBuffer[state2Index];
+    
+    if (!state1 || !state2) {
+        return stateBuffer[stateBuffer.length - 1] || null;
+    }
     
     // Calculer le facteur d'interpolation
     let alpha = 0;
@@ -135,11 +138,12 @@ function interpolateStates(state1: GameState, state2: GameState, alpha: number):
     
     // Interpolation des positions des raquettes
     result.paddles = state1.paddles.map((paddle, index) => {
-        if (index < state2.paddles.length) {
+        if (index < state2.paddles.length && state2.paddles[index]) {
+            const paddle2 = state2.paddles[index];
             return {
                 ...paddle,
-                x: paddle.x + alpha * (state2.paddles[index].x - paddle.x),
-                y: paddle.y + alpha * (state2.paddles[index].y - paddle.y)
+                x: paddle.x + alpha * (paddle2.x - paddle.x),
+                y: paddle.y + alpha * (paddle2.y - paddle.y)
             };
         }
         return paddle;
@@ -151,12 +155,8 @@ function interpolateStates(state1: GameState, state2: GameState, alpha: number):
 /**
  * Boucle de rendu avec requestAnimationFrame
  */
-function renderLoop(timestamp: number): void {
+function renderLoop(_timestamp: number): void {
     if (!isRenderLoopRunning) return;
-    
-    // Calculer le temps écoulé
-    const deltaTime = timestamp - lastRenderTime;
-    lastRenderTime = timestamp;
     
     // Obtenir l'état interpolé actuel
     const currentState = getCurrentInterpolatedState();
