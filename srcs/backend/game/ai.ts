@@ -11,34 +11,34 @@ import { movePaddle } from './paddle.js';
  */
 const DIFFICULTY_SETTINGS = {
     easy: {
-        reactionTime: 800,          // Réaction très lente (800ms)
-        errorMargin: 25,            // Beaucoup d'erreurs (±25 pixels, ajusté pour canvas plus grand)
-        keyHoldDuration: 250,       // Maintient les touches longtemps (250ms)
-        keyReleaseChance: 0.4,      // 40% de chance de relâcher prématurément
-        panicThreshold: 280,        // Panique quand la balle est à 280px (200 -> 280, ratio 1.4x)
-        microcorrectionChance: 0.1, // 10% de chance de micro-corrections
-        persistanceTime: 300,       // Change d'avis facilement (300ms)
-        maxErrorFrequency: 0.3      // 30% de chances d'erreur importante
+        reactionTime: 1500,         // Réaction très lente
+        errorMargin: 50,            // Beaucoup d'erreurs
+        keyHoldDuration: 400,       // Maintient longtemps
+        keyReleaseChance: 0.7,      // Relâche très souvent
+        panicThreshold: 400,        // Panique très tôt
+        microcorrectionChance: 0.02, // Presque pas de corrections
+        persistanceTime: 150,       // Change d'avis constamment
+        maxErrorFrequency: 0.6      // Beaucoup d'erreurs
     },
     medium: {
-        reactionTime: 500,          // Réaction modérée (500ms)
-        errorMargin: 15,            // Erreurs modérées (±15 pixels, ajusté)
-        keyHoldDuration: 180,       // Durée normale de maintien (180ms)
-        keyReleaseChance: 0.2,      // 20% de chance de relâcher prématurément
-        panicThreshold: 210,        // Panique quand la balle est à 210px (150 -> 210, ratio 1.4x)
-        microcorrectionChance: 0.25, // 25% de chance de micro-corrections
-        persistanceTime: 500,       // Persistance modérée (500ms)
-        maxErrorFrequency: 0.15     // 15% de chances d'erreur importante
+        reactionTime: 500,          // Réaction modérée
+        errorMargin: 15,            // Erreurs modérées
+        keyHoldDuration: 180,       // Durée normale
+        keyReleaseChance: 0.2,      // Relâche occasionnellement
+        panicThreshold: 210,        // Panique modérée
+        microcorrectionChance: 0.25, // Quelques corrections
+        persistanceTime: 500,       // Persistance modérée
+        maxErrorFrequency: 0.15     // Quelques erreurs
     },
     hard: {
-        reactionTime: 250,          // Réaction rapide (250ms)
-        errorMargin: 8,             // Peu d'erreurs (±8 pixels, ajusté)
-        keyHoldDuration: 120,       // Maintient les touches précisément (120ms)
-        keyReleaseChance: 0.08,     // 8% de chance de relâcher prématurément
-        panicThreshold: 140,        // Panique tard, quand balle à 140px (100 -> 140, ratio 1.4x)
-        microcorrectionChance: 0.4, // 40% de chance de micro-corrections
-        persistanceTime: 800,       // Très persistant dans ses décisions (800ms)
-        maxErrorFrequency: 0.05     // 5% de chances d'erreur importante
+        reactionTime: 100,          // Réaction ultra-rapide
+        errorMargin: 3,             // Presque pas d'erreurs
+        keyHoldDuration: 60,        // Très précis
+        keyReleaseChance: 0.01,     // Relâche rarement
+        panicThreshold: 80,         // Panique tard
+        microcorrectionChance: 0.8, // Beaucoup de corrections
+        persistanceTime: 1500,      // Très persistant
+        maxErrorFrequency: 0.01     // Erreurs rarissimes
     }
 };
 
