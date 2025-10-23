@@ -6,7 +6,7 @@ import { initSettingsHandlers } from './settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
-import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL } from '../utils/navigation.js';
+import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../utils/navigation.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -480,7 +480,9 @@ initNavigationOnLoad(async () => {
         }
     }
     
-    load(targetPage);
+    // Remplacer l'état initial dans l'historique au lieu de le pusher
+    replaceHistoryState(targetPage);
+    load(targetPage, undefined, false); // Ne pas pusher l'historique car on vient de le remplacer
     initializeComponents();
     setupRoomJoinedHandler();
 });
