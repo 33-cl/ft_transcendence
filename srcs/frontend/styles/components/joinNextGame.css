@@ -1,0 +1,14 @@
+@layer components {
+    #joinNextGame {
+        @apply border-2 rounded-md py-16;
+        @apply bg-black opacity-80;
+        @apply relative;
+        @apply pointer-events-auto;
+    }
+
+    #textInfos {
+        @apply absolute top-1 right-2;
+        @apply text-right;
+        @apply m-0;
+    }
+}
