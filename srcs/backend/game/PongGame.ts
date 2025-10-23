@@ -100,8 +100,10 @@ export class PongGame {
         if (this.isFirstLaunch && !ballShouldMove) {
             return; // Attendre le countdown uniquement au premier lancement
         } else if (!this.isFirstLaunch || ballShouldMove) {
-            this.state.ballX += this.state.ballSpeedX;
-            this.state.ballY += this.state.ballSpeedY;
+            // Utiliser dt pour un mouvement indépendant du framerate (normaliser par rapport à 60FPS)
+            const moveFactor = dt * 60; // normalisation par rapport à 60FPS
+            this.state.ballX += this.state.ballSpeedX * moveFactor;
+            this.state.ballY += this.state.ballSpeedY * moveFactor;
         }
 
         // Les collisions et buts ne se déclenchent que si la balle bouge
