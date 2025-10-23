@@ -82,6 +82,9 @@ export interface GameState{
     running:        boolean;   // Indique si la partie est en cours
     ballCountdown:  number;    // Compte à rebours avant que la balle commence à bouger
     
+    // Timestamp pour l'interpolation client
+    timestamp?:     number;    // Temps serveur (ms) au moment de l'émission de l'état
+    
     // Configuration IA (pour le 1v1, undefined pour les autre mode)
     aiConfig: AIConfig | undefined;
 }
@@ -178,6 +181,9 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         win:            3,                // Nombre de points pour gagner
         running:        false,            // Partie non démarrée au début
         ballCountdown:  3,                // Délai de 3 secondes avant que la balle commence
+        
+        // Timestamp de création de l'état
+        timestamp:      Date.now(),       // Temps de création pour l'interpolation client
         
         // Configuration IA (désactivée par défaut)
         aiConfig:       undefined,        // Pas d'IA par défaut (mode 2 joueurs humains)
