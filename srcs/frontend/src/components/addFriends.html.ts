@@ -53,6 +53,7 @@ export async function addFriendsHTML() {
                     id="friendSearch" 
                     placeholder="Search users..." 
                     class="search-input w-full px-2 py-2 border border-gray-600 rounded bg-gray-800 text-white text-sm pointer-events-auto"
+                    autocomplete="off"
                 >
                 <div id="searchResults" class="search-results max-h-48 overflow-y-auto mt-1.5 bg-gray-900 rounded hidden"></div>
             </div>
