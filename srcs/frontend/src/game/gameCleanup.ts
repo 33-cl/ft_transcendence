@@ -74,6 +74,11 @@ export function cleanupGameState(): void {
     cleanupState.ctx = null;
     cleanupState.sessionId = sessionId;
     
+    // 6b. Arrêter la boucle d'interpolation si elle existe
+    if (typeof (window as any).stopRenderLoop === 'function') {
+        (window as any).stopRenderLoop();
+    }
+    
     // 7. Reset des listeners WebSocket partiels
     (window as any)._pongControlsRoomJoinedListener = false;
     (window as any)._roomJoinedHandlerSet = false;
