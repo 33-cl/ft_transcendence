@@ -50,16 +50,13 @@ const DIFFICULTY_SETTINGS = {
 export function createAIConfig(difficulty: AIDifficulty): AIConfig {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     
-    // Ajustement de la vitesse du paddle en fonction de la difficulté
-    // Réduction drastique pour le mode facile
-    let paddleSpeed = 24; // Vitesse de base
+    // ⚖️ FAIRNESS RULE (Subject v18.0): All players share the same paddle speed
+    // Difficulty is controlled ONLY by reaction time, error margin, and decision jitter
+    const paddleSpeed = 24; // Same speed as human players (enforced in paddle.ts via state.paddleSpeed)
     
-    if (difficulty === 'easy') {
-        paddleSpeed = 12;  // Beaucoup plus lent (50% de la vitesse du joueur)
-    } else if (difficulty === 'medium') {
-        paddleSpeed = 18;  // Sensiblement plus lent (75% de la vitesse du joueur)
-    } else if (difficulty === 'hard') {
-        paddleSpeed = 23;  // Légèrement plus lent que le joueur (96%)
+    // Runtime self-check: ensure AI speed matches human speed (should always be 24)
+    if (paddleSpeed !== 24) {
+        console.warn('⚠️ WARNING: AI paddle speed is', paddleSpeed, 'instead of 24. Fairness violation!');
     }
     
     return {
@@ -72,7 +69,7 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         currentY: 400,                    // Position actuelle (sera mise à jour)
         isMoving: false,                  // Pas en mouvement au début
         reactionStartTime: 0,             // Initialisé à 0 (aucun délai en cours)
-        paddleSpeed: paddleSpeed,         // Vitesse ajustée selon la difficulté
+        paddleSpeed: paddleSpeed,         // Same speed as humans (fairness requirement)
         
         // Simulation des touches clavier
         keyPressed: null,                 // Aucune touche pressée au début
