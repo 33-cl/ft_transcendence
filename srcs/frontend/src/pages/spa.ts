@@ -207,6 +207,18 @@ function initializeComponents(): void
                         window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
                     }
                 }
+            } else if (lastGameType === 'multiplayer4p') {
+                // Pour les jeux multiplayer 4 joueurs, aller au matchmaking
+                await load('matchmaking');
+                // Démarrer automatiquement la recherche d'un nouveau jeu
+                try {
+                    await window.joinOrCreateRoom(4);
+                } catch (error) {
+                    console.error('Error in joinOrCreateRoom(4):', error);
+                    if (window.socket) {
+                        window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                    }
+                }
             } else {
                 // Par défaut, relancer un jeu local 2 joueurs
                 await window.joinOrCreateRoom(2, true);
@@ -298,10 +310,29 @@ function initializeComponents(): void
                 }
             }
         }
-        if (target.id === 'customCreateBtn')
-            await window.joinOrCreateRoom(4);
-        if (target.id === 'customJoinBtn')
-            await window.joinOrCreateRoom(4);
+        if (target.id === 'multiplayer4pBtn') {
+            // Sauvegarder le type de jeu pour restart
+            (window as any).lastGameType = 'multiplayer4p';
+            
+            // Ensure any previous room is cleaned up first
+            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+                try {
+                    await (window as any).leaveCurrentRoomAsync();
+                } catch (error) {
+                    console.warn('Pre-cleanup failed, proceeding anyway:', error);
+                }
+            }
+            
+            try {
+                await window.joinOrCreateRoom(4);
+            } catch (error) {
+                console.error('Error in joinOrCreateRoom(4):', error);
+                // Show error to user
+                if (window.socket) {
+                    window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                }
+            }
+        }
         if (target.id === 'cancelSearchBtn')
         {
             if (window.socket && (window as any).leaveCurrentRoomAsync) {
