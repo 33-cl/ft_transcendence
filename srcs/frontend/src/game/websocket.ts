@@ -106,7 +106,9 @@ function setupGlobalSocketListeners() {
             
             // Si c'est un spectateur, aller directement à la page de jeu
             if ((window as any).isSpectator) {
-                if (data.maxPlayers === 3) {
+                if (data.maxPlayers === 4) {
+                    load('game4');
+                } else if (data.maxPlayers === 3) {
                     load('game3');
                 } else {
                     load('game');
@@ -131,7 +133,9 @@ function setupGlobalSocketListeners() {
                 if (data.players < data.maxPlayers) {
                     load('matchmaking');
                 } else {
-                    if (data.maxPlayers === 3) {
+                    if (data.maxPlayers === 4) {
+                        load('game4');
+                    } else if (data.maxPlayers === 3) {
                         load('game3');
                     } else {
                         load('game');
