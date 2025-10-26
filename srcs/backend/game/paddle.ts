@@ -2,19 +2,20 @@
 
 import { GameState } from './gameState.js';
 
+// Tiny logger - only logs in dev mode
+const isDev = process.env.NODE_ENV !== 'production';
+const log = (...args: any[]) => { if (isDev) console.log(...args); };
+
 export function movePaddle(
     state: GameState, 
     player: 'left' | 'right' | 'A' | 'B' | 'C' | 'D', 
     direction: 'up' | 'down'
 ): void {
-    console.log('[BACKEND] movePaddle called:', player, direction, 'paddles.length=', state.paddles?.length);
+    log('[BACKEND] movePaddle called:', player, direction, 'paddles.length=', state.paddles?.length);
     
-    // Déterminer la vitesse - utiliser aiConfig.paddleSpeed si c'est l'IA (paddle A/left) et que l'IA est activée
-    let speed = state.paddleSpeed;
-    if ((player === 'A' || player === 'left') && state.aiConfig && state.aiConfig.enabled) {
-        speed = state.aiConfig.paddleSpeed;
-        console.log(`[BACKEND] Using AI paddle speed: ${speed} (difficulty: ${state.aiConfig.difficulty})`);
-    }
+    // ⚖️ All players (including AI) use the same paddle speed for fairness (subject v18.0)
+    // AI difficulty is controlled by reaction time and error margin, NOT by speed
+    const speed = state.paddleSpeed;
     
     // Mode 1v1 : paddles[0] = A (gauche), paddles[1] = C (droite)
     if (state.paddles && state.paddles.length === 2) {
@@ -36,7 +37,7 @@ export function movePaddle(
         else if (player === 'C') idx = 2;
         else if (player === 'D') idx = 3;
         
-        console.log(`[BACKEND] Mode 4 joueurs - player=${player}, idx=${idx}, paddles count=${state.paddles.length}`);
+        log(`[BACKEND] Mode 4 joueurs - player=${player}, idx=${idx}, paddles count=${state.paddles.length}`);
         
         if (idx !== -1) {
             // Paddle A et C : verticaux (y bouge)
@@ -44,7 +45,7 @@ export function movePaddle(
                 const oldY = state.paddles[idx].y;
                 if (direction === 'up') state.paddles[idx].y = Math.max(0, state.paddles[idx].y - speed);
                 else state.paddles[idx].y = Math.min(state.canvasHeight - state.paddles[idx].height, state.paddles[idx].y + speed);
-                console.log(`[BACKEND] Paddle ${player} (vertical) moved from y=${oldY} to y=${state.paddles[idx].y} (direction=${direction})`);
+                log(`[BACKEND] Paddle ${player} (vertical) moved from y=${oldY} to y=${state.paddles[idx].y} (direction=${direction})`);
             }
             // Paddle B et D : horizontaux (x bouge)
             else if (player === 'B' || player === 'D') {
@@ -54,7 +55,7 @@ export function movePaddle(
                 else state.paddles[idx].x = Math.min(maxX, state.paddles[idx].x + speed); // right
             }
         } else {
-            console.log(`[BACKEND] ERREUR: Paddle ${player} non trouvé en mode 4 joueurs !`);
+            log(`[BACKEND] ERREUR: Paddle ${player} non trouvé en mode 4 joueurs !`);
         }
     }
 }
