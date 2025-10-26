@@ -96,10 +96,10 @@ export interface GameState{
  */
 export function createInitialGameState(numPlayers: number = 2): GameState {
     // Constantes de configuration du jeu - Canvas adapté selon le mode
-    const canvasHeight  = 800;   // Hauteur du terrain de jeu (650 -> 800)
+    const canvasHeight  = 800;   // Hauteur du terrain de jeu
     const canvasWidth   = numPlayers === 4 ? 800 : 1200;  // Canvas carré pour 4 joueurs (800x800), rectangulaire pour 2 (1200x800)
-    const paddleHeight  = 135;   // Hauteur des raquettes verticales (110 -> 135)
-    const paddleWidth   = 12;    // Largeur des raquettes verticales (10 -> 12)
+    const paddleHeight  = 115;   // Hauteur des raquettes verticales (réduit de 135 -> 115)
+    const paddleWidth   = 10;    // Largeur des raquettes verticales (réduit de 12 -> 10)
     const paddleMargin  = 12;    // Marge entre raquettes et bords (10 -> 12)
     const paddleY       = canvasHeight / 2 - paddleHeight / 2; // Position Y par défaut (centré)
 
@@ -137,7 +137,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
                 // Paddle B : bas (horizontal)
                 x = canvasWidth / 2 - paddleHeight / 2;
                 y = canvasHeight - paddleMargin - paddleWidth;
-                width = paddleHeight; // 110 pixels de largeur (horizontale)
+                width = paddleHeight; // 115 pixels de largeur (horizontale)
                 height = paddleWidth; // 10 pixels de hauteur (horizontale)
             } else if (side === 'C') {
                 // Paddle C : droite (vertical)
@@ -149,7 +149,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
                 // Paddle D : haut (horizontal) - même taille que B
                 x = canvasWidth / 2 - paddleHeight / 2;
                 y = paddleMargin;
-                width = paddleHeight; // 110 pixels de largeur (même que B)
+                width = paddleHeight; // 115 pixels de largeur (même que B)
                 height = paddleWidth; // 10 pixels de hauteur (même que B)
             }
         }
@@ -173,7 +173,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         // Configuration de la balle
         ballX:          canvasWidth / 2,  // Position initiale au centre X
         ballY:          canvasHeight / 2, // Position initiale au centre Y
-        ballRadius:     18,               // Rayon de la balle ajusté (15 -> 18)
+        ballRadius:     15,               // Rayon de la balle (réduit de 18 -> 15)
         ballSpeedX:     6.5,              // Vitesse horizontale initiale ajustée (4 -> 5.5)
         ballSpeedY:     6.5,              // Vitesse verticale initiale ajustée (4 -> 5.5)
         
