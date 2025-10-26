@@ -13,9 +13,9 @@ export function movePaddle(
 ): void {
     log('[BACKEND] movePaddle called:', player, direction, 'paddles.length=', state.paddles?.length);
     
-    // ⚖️ All players (including AI) use the same paddle speed for fairness (subject v18.0)
-    // AI difficulty is controlled by reaction time and error margin, NOT by speed
-    const speed = state.paddleSpeed;
+    // ⚖️ Tous les joueurs (y compris l'IA) utilisent la même vitesse de paddle pour l'équité
+    // La difficulté IA est contrôlée par le temps de réaction et la marge d'erreur, PAS par la vitesse
+    const speed = Math.max(1, Math.floor(state.paddleSpeed));
     
     // Mode 1v1 : paddles[0] = A (gauche), paddles[1] = C (droite)
     if (state.paddles && state.paddles.length === 2) {

@@ -50,13 +50,14 @@ const DIFFICULTY_SETTINGS = {
 export function createAIConfig(difficulty: AIDifficulty): AIConfig {
     const settings = DIFFICULTY_SETTINGS[difficulty];
     
-    // ⚖️ FAIRNESS RULE (Subject v18.0): All players share the same paddle speed
-    // Difficulty is controlled ONLY by reaction time, error margin, and decision jitter
-    const paddleSpeed = 24; // Same speed as human players (enforced in paddle.ts via state.paddleSpeed)
+    // ⚖️ FAIRNESS RULE: Tous les joueurs partagent la même vitesse de paddle
+    // La difficulté est contrôlée uniquement par le temps de réaction, la marge d'erreur et la variation de décision
+    // La valeur effective doit provenir de state.paddleSpeed ; on initialise ici pour clarté.
+    const paddleSpeed = 10;
     
-    // Runtime self-check: ensure AI speed matches human speed (should always be 24)
-    if (paddleSpeed !== 24) {
-        console.warn('⚠️ WARNING: AI paddle speed is', paddleSpeed, 'instead of 24. Fairness violation!');
+    // Vérification runtime: s'assurer que la vitesse IA correspond à la vitesse humaine (doit être 10)
+    if (paddleSpeed !== 10) {
+        console.warn('⚠️ WARNING: AI paddle speed is', paddleSpeed, 'instead of 10. Fairness violation!');
     }
     
     return {
@@ -69,7 +70,7 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         currentY: 400,                    // Position actuelle (sera mise à jour)
         isMoving: false,                  // Pas en mouvement au début
         reactionStartTime: 0,             // Initialisé à 0 (aucun délai en cours)
-        paddleSpeed: paddleSpeed,         // Same speed as humans (fairness requirement)
+        paddleSpeed: paddleSpeed,         // Même vitesse que les humains (exigence d'équité)
         
         // Simulation des touches clavier
         keyPressed: null,                 // Aucune touche pressée au début
@@ -316,7 +317,7 @@ export function simulateKeyboardInput(state: GameState): void {
         // Durée de maintien adaptative : plus courte en mode panique
         const adaptiveHoldDuration = ai.panicMode ? ai.keyHoldDuration * 0.6 : ai.keyHoldDuration;
         
-        // Chance de relâchement adaptative : plus élevée en mode panique pour easy/medium
+        // Chance de relâchement adapative : plus élevée en mode panique pour easy/medium
         let adaptiveReleaseChance = ai.keyReleaseChance;
         if (ai.panicMode && ai.difficulty !== 'hard') {
             adaptiveReleaseChance *= 1.5; // Augmente les erreurs en mode panique
