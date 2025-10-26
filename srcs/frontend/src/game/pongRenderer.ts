@@ -22,11 +22,13 @@ export function initPongRenderer(canvasId: string = 'map')
 {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
+        console.error(`❌ Canvas #${canvasId} not found in DOM!`);
         return;
     }
     
     ctx = canvas.getContext('2d');
     if (!ctx) {
+        console.error(`❌ Could not get 2D context from canvas`);
         return;
     }
 }
@@ -52,25 +54,31 @@ export function draw(gameState: any)
         return;
     }
 
-    // Clear le canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     // Obtenir les dimensions du terrain de jeu depuis le gameState
     const gameWidth = gameState.canvasWidth || canvas.width;
     const gameHeight = gameState.canvasHeight || canvas.height;
 
+    // Mettre à jour les dimensions du canvas si nécessaire
+    if (canvas.width !== gameWidth || canvas.height !== gameHeight) {
+        canvas.width = gameWidth;
+        canvas.height = gameHeight;
+    }
+
+    // Clear le canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     // --- DESSIN DU TERRAIN ---
     if (gameState.paddles && gameState.paddles.length === 4) {
-        // Mode 1v1v1v1 : carré avec bordures
+        // Mode 1v1v1v1 : carré avec bordures ROUGES
         ctx.save();
-        ctx.strokeStyle = '#888';
+        ctx.strokeStyle = '#ff0000';  // Rouge pour mode 4 joueurs
         ctx.lineWidth = 4;
         ctx.strokeRect(0, 0, gameWidth, gameHeight);
         ctx.restore();
     } else {
-        // Mode 1v1 : rectangle classique
+        // Mode 1v1 : rectangle classique avec bordures BLEUES
         ctx.save();
-        ctx.strokeStyle = '#888';
+        ctx.strokeStyle = '#0000ff';  // Bleu pour mode 2 joueurs
         ctx.lineWidth = 4;
         ctx.strokeRect(0, 0, gameWidth, gameHeight);
         ctx.restore();

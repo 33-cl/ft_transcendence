@@ -95,9 +95,9 @@ export interface GameState{
  * @returns L'état initial du jeu avec les raquettes positionnées correctement
  */
 export function createInitialGameState(numPlayers: number = 2): GameState {
-    // Constantes de configuration du jeu - Canvas agrandi pour meilleure visibilité
+    // Constantes de configuration du jeu - Canvas adapté selon le mode
     const canvasHeight  = 800;   // Hauteur du terrain de jeu (650 -> 800)
-    const canvasWidth   = 1200;  // Largeur du terrain de jeu (850 -> 1200)
+    const canvasWidth   = numPlayers === 4 ? 800 : 1200;  // Canvas carré pour 4 joueurs (800x800), rectangulaire pour 2 (1200x800)
     const paddleHeight  = 135;   // Hauteur des raquettes verticales (110 -> 135)
     const paddleWidth   = 12;    // Largeur des raquettes verticales (10 -> 12)
     const paddleMargin  = 12;    // Marge entre raquettes et bords (10 -> 12)
