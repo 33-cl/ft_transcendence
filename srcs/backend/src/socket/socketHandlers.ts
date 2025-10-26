@@ -1116,11 +1116,18 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
     // Mutex global pour les opérations critiques
     globalIo = io; // Stocker l'instance io globalement
     
-    // Tick rate à 120 FPS pour un gameplay fluide
+    // Tick rate configurable (env: TICK_RATE, default: 120 FPS for smooth gameplay)
+    const tickRate = Number(process.env.TICK_RATE ?? 120);
+    const intervalMs = Math.max(1, Math.floor(1000 / tickRate));
+    
+    if (fastify.log) {
+        fastify.log.info(`🎮 Game tick rate: ${tickRate} FPS (interval: ${intervalMs}ms)`);
+    }
+    
     setInterval(() =>
 	{
         handleGameTick(io, fastify);
-    }, 1000 / 60);
+    }, intervalMs);
 
     io.on('connection', (socket: Socket) =>
 	{

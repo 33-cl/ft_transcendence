@@ -3,6 +3,7 @@ import 'dotenv/config';
 import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
  // Importe le framework Fastify (serveur HTTP)
 import fastifyCors from '@fastify/cors'; // Plugin CORS pour Fastify
+import fastifyRateLimit from '@fastify/rate-limit'; // Plugin rate limiting
 import fs from 'fs'; // Pour lire les fichiers SSL (clé/certificat)
 import path from 'path'; // Pour gérer les chemins de fichiers
 import { Server as SocketIOServer } from 'socket.io';
@@ -56,8 +57,18 @@ app.addHook('onSend', (request, reply, payload, done) => {
     ensureAvatarDirectory();
 
     // Enregistre le plugin CORS pour Fastify
+    const allowedOrigins = process.env.CORS_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean);
+    const corsOrigin = process.env.NODE_ENV === 'production' 
+      ? (allowedOrigins && allowedOrigins.length > 0 ? allowedOrigins : [])
+      : true; // Dev mode: allow all
+    
+    if (process.env.NODE_ENV === 'production' && (!allowedOrigins || allowedOrigins.length === 0)) {
+      app.log.error('❌ CORS_ORIGINS env var is required in production mode');
+      throw new Error('CORS_ORIGINS environment variable is required in production');
+    }
+    
     await app.register(fastifyCors, {
-      origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
+      origin: corsOrigin,
       credentials: true // Autorise les cookies/headers d'authentification
     });
 
@@ -65,6 +76,20 @@ app.addHook('onSend', (request, reply, payload, done) => {
     await app.register(fastifyCookie, {
       // options par défaut, peut être personnalisé si besoin
     });
+
+    // Enregistre le plugin Rate Limiting global (DoS protection)
+    const rateWindowMs = Number(process.env.RATE_WINDOW_MS ?? 60000); // Default: 1 minute
+    const rateMax = Number(process.env.RATE_MAX ?? 100); // Default: 100 requests per window
+    await app.register(fastifyRateLimit, {
+      max: rateMax,
+      timeWindow: rateWindowMs,
+      addHeaders: {
+        'x-ratelimit-limit': true,
+        'x-ratelimit-remaining': true,
+        'x-ratelimit-reset': true
+      }
+    });
+    app.log.info(`🛡️ Rate limiting configured: ${rateMax} requests per ${rateWindowMs}ms`);
 
     // Enregistre le plugin multipart pour l'upload d'avatar
     await app.register(fastifyMultipart, {
@@ -133,7 +158,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
   // Configuration de socket.io avec le serveur HTTP(S) (WSS)
   const io = new SocketIOServer(app.server as any, {
     cors: {
-      origin: true, // Autorise toutes les origines (à restreindre en prod réelle)
+      origin: corsOrigin, // Use same CORS policy as Fastify (restricts in production)
       methods: ["GET", "POST"], // Autorise les méthodes GET et POST
       credentials: true // Autorise les cookies/headers d'authentification
     }
