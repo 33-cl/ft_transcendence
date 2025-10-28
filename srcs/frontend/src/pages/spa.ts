@@ -509,6 +509,11 @@ initNavigationOnLoad(async () => {
         if (targetPage === 'signIn' || targetPage === 'signUp') {
             targetPage = 'mainMenu';
         }
+        
+        const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished'];
+        if (gamePages.includes(targetPage)) {
+            targetPage = 'mainMenu';
+        }
     }
     
     // Remplacer l'état initial dans l'historique au lieu de le pusher
