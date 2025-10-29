@@ -43,6 +43,11 @@ export function setupPopStateHandler(): void {
     window.addEventListener('popstate', async function(event) {
         let targetPage = event.state?.page || 'signIn';
         
+        // Protection: empêcher l'accès à landing via l'historique
+        if (targetPage === 'landing') {
+            targetPage = window.currentUser ? 'mainMenu' : 'signIn';
+        }
+        
         // Protection: si connecté et tentative d'accès aux pages d'auth → rediriger
         if (window.currentUser && (targetPage === 'signIn' || targetPage === 'signUp')) {
             targetPage = 'mainMenu';

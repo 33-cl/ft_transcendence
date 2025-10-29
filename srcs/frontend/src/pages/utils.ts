@@ -96,6 +96,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         return; // Don't allow navigation
     }
     
+    // Nettoyer les event listeners de la page landing si on la quitte
+    if ((window as any).cleanupLandingHandlers) {
+        (window as any).cleanupLandingHandlers();
+        (window as any).cleanupLandingHandlers = null;
+    }
+    
     hideAllPages();
     
     // Arrêter les mises à jour WebSocket si on quitte le menu principal

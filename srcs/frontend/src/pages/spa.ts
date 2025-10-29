@@ -8,6 +8,7 @@ import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import s
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../utils/navigation.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
+import './landing.js'; // Import pour charger les handlers Landing
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
@@ -499,14 +500,33 @@ initNavigationOnLoad(async () => {
     // Déterminer la page à charger : soit depuis l'URL, soit page par défaut selon authentification
     let targetPage = getPageFromURL();
     
+    const isFirstVisit = !sessionStorage.getItem('hasVisited') && 
+                         (targetPage === 'signIn' || targetPage === '') && 
+                         !window.currentUser;
+    
+    if (isFirstVisit) {
+        // Marquer que l'utilisateur a visité
+        sessionStorage.setItem('hasVisited', 'true');
+        // Afficher la landing page
+        replaceHistoryState('landing');
+        await load('landing', undefined, false);
+        initializeComponents();
+        setupRoomJoinedHandler();
+        return;
+    }
+    
     if (!window.currentUser || !window.currentUser.username) {
         // Non connecté : forcer signIn ou signUp
-        if (targetPage !== 'signIn' && targetPage !== 'signUp') {
+        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing') {
+            targetPage = 'signIn';
+        }
+        // Empêcher l'accès à landing après la première visite
+        if (targetPage === 'landing') {
             targetPage = 'signIn';
         }
     } else {
-        // Connecté : empêcher l'accès aux pages d'authentification
-        if (targetPage === 'signIn' || targetPage === 'signUp') {
+        // Connecté : empêcher l'accès aux pages d'authentification et landing
+        if (targetPage === 'signIn' || targetPage === 'signUp' || targetPage === 'landing') {
             targetPage = 'mainMenu';
         }
         
