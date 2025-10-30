@@ -1,5 +1,5 @@
 import { show, load , hideAllPages, hide } from './utils.js';
-import { spectateFreind } from '../components/friendList.html.js';
+import { spectateFreind } from '../friends/friendList.html.js';
 import { checkSessionOnce } from './auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from './settings.js';
@@ -9,7 +9,7 @@ import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch g
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../utils/navigation.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 import './landing.js'; // Import pour charger les handlers Landing
-import './friends.js'; // Import pour charger les handlers Friends (AddFriends page)
+import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window

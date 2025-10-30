@@ -9,7 +9,7 @@ export {
     initLoadingIcons,
     destroyLoadingIcons,
     updateFriendRequestsBadge
-} from '../pages/friends.js';
+} from './friends.js';
 
 export async function friendListHTML() {
     try {

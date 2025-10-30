@@ -1,5 +1,5 @@
-// Export des fonctions depuis friends.ts pour compatibilité
-export { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from '../pages/friends.js';
+// Export functions from friends.ts
+export { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from './friends.js';
 
 export async function addFriendsHTML() {
     

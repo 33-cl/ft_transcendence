@@ -1,5 +1,3 @@
-// friends.ts - Logique pour la gestion des amis et demandes d'amis
-
 /**
  * Ajoute un ami en envoyant une demande
  */
@@ -42,11 +40,11 @@ async function acceptFriendRequest(requestId: number): Promise<void> {
             throw new Error(errorData.error || 'Failed to accept friend request');
         }
 
-        // Rafraîchir la liste des demandes d'amis
+        // Refresh friend requests list
         await refreshFriendRequests();
 
-        // Mettre à jour le badge dans la friend list
-        const { updateFriendRequestsBadge } = await import('../components/friendList.html.js');
+        // Update badge in friend list
+        const { updateFriendRequestsBadge } = await import('./friendList.html.js');
         await updateFriendRequestsBadge();
     } catch (error) {
         console.error('Error accepting friend request:', error);
@@ -68,11 +66,11 @@ async function rejectFriendRequest(requestId: number): Promise<void> {
             throw new Error(errorData.error || 'Failed to reject friend request');
         }
 
-        // Rafraîchir la liste des demandes d'amis
+        // Refresh friend requests list
         await refreshFriendRequests();
 
-        // Mettre à jour le badge dans la friend list
-        const { updateFriendRequestsBadge } = await import('../components/friendList.html.js');
+        // Update badge in friend list
+        const { updateFriendRequestsBadge } = await import('./friendList.html.js');
         await updateFriendRequestsBadge();
     } catch (error) {
         console.error('Error rejecting friend request:', error);
@@ -239,10 +237,10 @@ export function initializeBackToFriendsButton(): void {
     const backBtn = document.getElementById('backToFriendsBtn');
     if (backBtn) {
         backBtn.addEventListener('click', async () => {
-            const { show, hide } = await import('./utils.js');
-            const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListRealtimeUpdates, fetchInitialFriendStatuses } = await import('../components/friendList.html.js');
+            const { show, hide } = await import('../pages/utils.js');
+            const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListRealtimeUpdates, fetchInitialFriendStatuses } = await import('./friendList.html.js');
             
-            // Cacher addFriends et afficher friendList
+            // Hide addFriends and show friendList
             hide('addFriends');
             await show('friendList');
             
@@ -250,13 +248,13 @@ export function initializeBackToFriendsButton(): void {
             setTimeout(async () => {
                 initializeAddFriendsButton();
                 initializeFriendListEventListeners();
-                startFriendListRealtimeUpdates(); // 🚀 Activer les mises à jour temps réel via WebSocket
+                startFriendListRealtimeUpdates(); // Enable real-time updates via WebSocket
                 
-                // 🎯 Toujours rafraîchir les statuts quand on retourne à friendList
+                // Always refresh statuses when returning to friendList
                 await fetchInitialFriendStatuses();
                 
-                // 🔔 Mettre à jour le badge dès qu'on affiche friendList
-                const { updateFriendRequestsBadge } = await import('../components/friendList.html.js');
+                // Update badge when showing friendList
+                const { updateFriendRequestsBadge } = await import('./friendList.html.js');
                 await updateFriendRequestsBadge();
             }, 100);
         });
@@ -315,7 +313,7 @@ export function initializeAddFriendsButton(): void {
         (addFriendsBtn as any)._addFriendsListenerSet = true;
         
         addFriendsBtn.addEventListener('click', async () => {
-            const { show, hide } = await import('./utils.js');
+            const { show, hide } = await import('../pages/utils.js');
             
             hide('friendList');
             await show('addFriends');
@@ -467,7 +465,7 @@ async function reloadFriendList(): Promise<void> {
     }
 
     try {
-        const { friendListHTML } = await import('../components/friendList.html.js');
+        const { friendListHTML } = await import('./friendList.html.js');
         const newHTML = await friendListHTML();
         friendListContainer.innerHTML = newHTML;
         initializeAddFriendsButton();
@@ -516,7 +514,7 @@ export async function spectateFreind(username: string): Promise<void> {
                 spectator: true 
             });
             
-            const { load } = await import('./utils.js');
+            const { load } = await import('../pages/utils.js');
             await load('game');
         } else {
             alert('WebSocket connection not available');
