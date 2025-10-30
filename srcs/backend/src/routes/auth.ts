@@ -364,18 +364,18 @@ export default async function authRoutes(fastify: FastifyInstance) {
    * 11. Réponse de confirmation
    */
   fastify.put('/auth/profile', async (request, reply) => {
-    // Étape 1 : Authentification JWT
+    // Authentification JWT
     const jwtToken = getJwtFromRequest(request);
     const userId = authenticateProfileRequest(jwtToken, reply);
     if (!userId)
       return;
 
-    // Étape 2 : Récupération de la session utilisateur
+    // Récupération de la session utilisateur
     const sessionRow = getUserSession(userId, reply);
     if (!sessionRow)
       return;
 
-    // Étape 3 : Extraction du body
+    // Extraction du body
     const { username, email, currentPassword, newPassword } = (request.body as {
       username?: string;
       email?: string;
@@ -383,43 +383,50 @@ export default async function authRoutes(fastify: FastifyInstance) {
       newPassword?: string;
     }) || {};
 
-    // Étape 4 : Validation des longueurs
+    // Validation des longueurs
     if (!validateProfileInputLengths({ username, email, currentPassword, newPassword }, reply))
       return;
 
-    // Étape 5 : Sanitization et validation des données
+    // Sanitization et validation des données (renvoie les valeurs sanitized)
     const sanitized = sanitizeAndValidateProfileData({ username, email, newPassword }, reply);
     if (!sanitized)
       return;
 
+    // Use sanitized values from now on. Keep original variables for fallback if needed.
+    const sanitizedUsername = sanitized.sanitizedUsername ?? undefined;
+    const sanitizedEmail = sanitized.sanitizedEmail ?? undefined;
+
     try {
-      // Étape 6 : Vérification du mot de passe actuel si changement
+      // Vérification du mot de passe actuel si changement
       if (!verifyCurrentPassword(newPassword, currentPassword, sessionRow.id, reply))
         return;
 
-      // Étape 7 : Vérification unicité email
-      if (!checkEmailUniqueness(email, sessionRow.email, sessionRow.id, reply))
+      // Vérification unicité email (utilise la valeur sanitized)
+      if (!checkEmailUniqueness(sanitizedEmail, sessionRow.email, sessionRow.id, reply))
         return;
 
-      // Étape 8 : Vérification unicité username
-      if (!checkUsernameUniqueness(username, sessionRow.username, sessionRow.id, reply))
+      // Vérification unicité username (utilise la valeur sanitized)
+      if (!checkUsernameUniqueness(sanitizedUsername, sessionRow.username, sessionRow.id, reply))
         return;
 
-      // Étape 9 : Construction et exécution de l'UPDATE
-      if (!updateUserProfile({ username, email, newPassword }, sessionRow.id, reply))
+      //  Construction et exécution de l'UPDATE (n'insère dans le SET que les infos fournies)
+      if (!updateUserProfile({ username: sanitizedUsername, email: sanitizedEmail, newPassword }, sessionRow.id, reply))
         return;
 
-      // Étape 10 : Notification WebSocket aux amis (si changement de username)
-      if (username)
-        notifyProfileUpdated(sessionRow.id, { username }, fastify);
+      // Récupérer les valeurs réellement enregistrées en base pour la réponse et notifications
+      const updatedRow = db.prepare('SELECT username, email FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string } | undefined;
 
-      // Étape 11 : Réponse de confirmation
-      return reply.send({ 
-        ok: true, 
+      // Notification WebSocket aux amis (si changement de username)
+      if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
+        notifyProfileUpdated(sessionRow.id, { username: updatedRow.username }, fastify);
+
+      // Réponse de confirmation — retourner les valeurs effectivement en base
+      return reply.send({
+        ok: true,
         message: 'Profile updated successfully',
         updated: {
-          username: username || sessionRow.username,
-          email: email || sessionRow.email,
+          username: (updatedRow && updatedRow.username) || sessionRow.username,
+          email: (updatedRow && updatedRow.email) || sessionRow.email,
           passwordChanged: !!newPassword
         }
       });
