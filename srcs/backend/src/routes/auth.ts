@@ -6,9 +6,6 @@ import { notifyProfileUpdated, broadcastUserStatusChange, getGlobalIo } from '..
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
-import { fileTypeFromBuffer } from 'file-type';//detecte le vrai type d un fichier en analisant ses octets
-import sharp from 'sharp';//lib de traitement d img securise (resize, reencode, strip metadata))
-import { v4 as uuidv4 } from 'uuid';//genere des id unique pour les noms de fichier securises
 import { pipeline } from 'stream/promises';
 import { sanitizeUsername, sanitizeEmail, validateLength, checkRateLimit } from '../security.js';
 
@@ -43,15 +40,10 @@ import {
   verifyPasswordAndUniqueness,
   updateUserProfile
 } from '../helpers/auth.helper.js';
-
-// Utilitaire pour convertir un stream en buffer
-async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
-}
+import { 
+  streamToBuffer,
+  processAvatarUpload
+} from '../helpers/avatar.helper.js';
 
 // Function to clean up old temporary avatar files (older than 1 hour)
 function cleanupTempAvatars() {
@@ -126,28 +118,6 @@ function fmtSqliteDate(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
-
-// function setSessionCookie(reply: any, token: string, maxAgeSec: number) {
-//   const expires = new Date(Date.now() + maxAgeSec * 1000);
-//   const cookie = [
-//     `sid=${token}`,
-//     'Path=/',
-//     'HttpOnly',
-//     'Secure',
-//     'SameSite=Lax',
-//     `Max-Age=${maxAgeSec}`,
-//     `Expires=${expires.toUTCString()}`
-//   ].join('; ');
-  
-//   // Pour permettre plusieurs sessions simultanées, on peut utiliser un approach plus flexible
-//   // En utilisant des cookies avec des noms uniques par session
-//   reply.header('Set-Cookie', cookie);
-// }
-
-// function clearSessionCookie(reply: any) {
-//   const cookie = 'sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
-//   reply.header('Set-Cookie', cookie);
-// }
 
 function parseCookies(header?: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -412,125 +382,52 @@ export default async function authRoutes(fastify: FastifyInstance) {
   });
 
   // POST /auth/avatar/upload -> upload avatar sécurisé avec validation
-  fastify.post('/auth/avatar/upload', async (request, reply) => {
+  /**
+   * POST /auth/avatar/upload
+   * Upload et traitement sécurisé d'un avatar temporaire
+   * - Authentification JWT requise
+   * - Validation de taille et type de fichier
+   * - Réencodage sécurisé de l'image
+   * - Sauvegarde temporaire (préfixe temp_)
+   */
+  fastify.post('/auth/avatar/upload', async (request, reply) =>
+  {
     const jwtToken = getJwtFromRequest(request);
-    let userId: number | undefined;
-    if (jwtToken) {
-      try {
-        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-        if (!active) return reply.code(401).send({ error: 'Session expired or logged out' });
-        userId = payload.userId;
-      } catch (err) {
-        return reply.code(401).send({ error: 'JWT invalide ou expiré' });
-      }
-    }
-    if (!userId) {
-      return reply.code(401).send({ error: 'Not authenticated' });
-    }
+    const session = authenticateAndGetSession(jwtToken, reply);
+    if (!session)
+      return;
 
     try {
-      // Récupérer le fichier avatar
+      //Récupération du fichier uploadé
       const avatarFile = await request.file();
-      if (!avatarFile) {
+      if (!avatarFile)
         return reply.code(400).send({ error: 'No avatar file uploaded' });
-      }
 
-      // Convertir le stream en buffer pour analyse
       const fileBuffer = await streamToBuffer(avatarFile.file);
       
-      // Vérifications de sécurité
-      
-      // 1. Taille maximum (5MB)
-      const maxSize = 5 * 1024 * 1024;
-      if (fileBuffer.length > maxSize) {
-        return reply.code(400).send({ error: 'File too large (max 5MB)' });
-      }
+      //Traitement complet de l'avatar (validation + traitement sécurisé + sauvegarde)
+      const { tempAvatarUrl, info } = await processAvatarUpload(session.id, fileBuffer);
 
-      // 2. Détection du type réel du fichier (pas le mimetype client)
-      const detectedType = await fileTypeFromBuffer(fileBuffer);
-      if (!detectedType) {
-        return reply.code(400).send({ error: 'Unable to detect file type' });
-      }
-
-      // 3. Types autorisés 
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-      if (!allowedTypes.includes(detectedType.mime)) {
-        return reply.code(400).send({ 
-          error: `Invalid file type. Allowed: ${allowedTypes.join(', ')}. Detected: ${detectedType.mime}` 
-        });
-      }
-
-      // 4. Traitement sécurisé avec Sharp (decode + reencode seulement, pas de resize)
-      let processedBuffer: Buffer;
-      try {
-        // Créer un pipeline Sharp de base - seulement pour re-encoder (sécurité)
-        const sharpPipeline = sharp(fileBuffer, detectedType.mime === 'image/gif' ? { animated: true } : {});
-        
-        if (detectedType.mime === 'image/gif') {
-          // Pour les GIFs: réencoder avec animation préservée
-          processedBuffer = await sharpPipeline
-            .gif({
-              effort: 7 // Compression optimale
-            })
-            .toBuffer();
-        } else if (detectedType.mime === 'image/png') {
-          // Pour PNG: réencoder en PNG (préserve transparence)
-          processedBuffer = await sharpPipeline
-            .png({ 
-              quality: 90,
-              progressive: true
-            })
-            .toBuffer();
-        } else if (detectedType.mime === 'image/webp') {
-          // Pour WebP: réencoder en WebP
-          processedBuffer = await sharpPipeline
-            .webp({ 
-              quality: 90
-            })
-            .toBuffer();
-        } else {
-          // Pour JPEG: réencoder en JPEG
-          processedBuffer = await sharpPipeline
-            .jpeg({ 
-              quality: 90,
-              mozjpeg: true
-            })
-            .toBuffer();
-        }
-      } catch (sharpError) {
-        console.error('Sharp processing error:', sharpError);
-        return reply.code(400).send({ error: 'Invalid or corrupted image file' });
-      }
-
-      // 5. Génération nom de fichier sécurisé avec extension correcte
-      const extension = detectedType.mime === 'image/gif' ? 'gif' : 
-                       detectedType.mime === 'image/png' ? 'png' :
-                       detectedType.mime === 'image/webp' ? 'webp' : 'jpg';
-      const secureFilename = `temp_${userId}_${uuidv4()}.${extension}`;
-      const tempPath = path.join(process.cwd(), 'public', 'avatars', secureFilename);
-
-      // 6. Sauvegarder le fichier traité
-      await fs.promises.writeFile(tempPath, processedBuffer);
-
-      // 7. Réponse avec URL temporaire
-      const tempAvatarUrl = `/avatars/${secureFilename}`;
-      
-      
+      //Réponse avec URL temporaire et informations
       return reply.send({ 
         ok: true, 
         message: 'Avatar uploaded securely and processed, click Save to confirm', 
         temp_avatar_url: tempAvatarUrl,
-        info: {
-          originalType: detectedType.mime,
-          originalSize: fileBuffer.length,
-          processedSize: processedBuffer.length,
-          format: extension.toUpperCase(),
-          animated: detectedType.mime === 'image/gif'
-        }
+        info
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Avatar upload error:', error);
+      
+      // Retourner l'erreur spécifique si elle provient de la validation
+      if (error.message && error.message.includes('File too large'))
+        return reply.code(400).send({ error: error.message });
+      if (error.message && error.message.includes('Unable to detect file type'))
+        return reply.code(400).send({ error: error.message });
+      if (error.message && error.message.includes('Invalid file type'))
+        return reply.code(400).send({ error: error.message });
+      if (error.message && error.message.includes('Invalid or corrupted image'))
+        return reply.code(400).send({ error: error.message });
+      
       return reply.code(500).send({ error: 'Internal server error during upload' });
     }
   });
