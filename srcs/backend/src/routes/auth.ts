@@ -379,27 +379,23 @@ export default async function authRoutes(fastify: FastifyInstance) {
     if (!sanitized)
       return;
 
-    // Use sanitized values from now on. Keep original variables for fallback if needed.
-    const sanitizedUsername = sanitized.sanitizedUsername ?? undefined;
-    const sanitizedEmail = sanitized.sanitizedEmail ?? undefined;
+    const sanitizedUsername = sanitized.sanitizedUsername;
+    const sanitizedEmail = sanitized.sanitizedEmail;
 
     try {
       // Vérification (mot de passe courant + unicité email + unicité username)
       if (!verifyPasswordAndUniqueness(newPassword, currentPassword, sanitizedEmail, sanitizedUsername, sessionRow.email, sessionRow.username, sessionRow.id, reply))
         return;
 
-      //  Construction et exécution de l'UPDATE (n'insère dans le SET que les infos fournies)
       if (!updateUserProfile({ username: sanitizedUsername, email: sanitizedEmail, newPassword }, sessionRow.id, reply))
         return;
 
       // Récupérer les valeurs réellement enregistrées en base pour la réponse et notifications
       const updatedRow = db.prepare('SELECT username, email, avatar_url FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string; avatar_url: string | null } | undefined;
 
-      // Notification WebSocket aux amis (si changement de username)
       if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
         notifyProfileUpdated(sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
 
-      // Réponse de confirmation — retourner les valeurs effectivement en base
       return reply.send({
         ok: true,
         message: 'Profile updated successfully',
