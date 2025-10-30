@@ -141,19 +141,20 @@ export function notifyProfileUpdated(userId: number, updates: { username?: strin
         
         
         // Notifier chaque ami du changement de profil
-        for (const friend of friends) {
+        for (const friend of friends)
+        {
             const friendSocketId = getSocketIdForUser(friend.id);
-            if (friendSocketId) {
+            if (friendSocketId)
+            {
                 const friendSocket = globalIo.sockets.sockets.get(friendSocketId);
-                if (friendSocket) {
-                    const payload = {
+                if (friendSocket)
+                {
+                    friendSocket.emit('profileUpdated', {
                         userId: user.id,
                         username: updates.username || user.username,
                         avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : user.avatar_url,
                         timestamp: Date.now()
-                    };
-                    console.log(`[DEBUG] Sending profileUpdated to friend ${friend.id}:`, payload);
-                    friendSocket.emit('profileUpdated', payload);
+                    });
                 }
             }
         }

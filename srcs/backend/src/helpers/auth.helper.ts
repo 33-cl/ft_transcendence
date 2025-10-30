@@ -484,3 +484,70 @@ export function updateUserProfile(
   
   return true;
 }
+
+/**
+ * Valide les longueurs + sanitize et valide les données du profil.
+ * Regroupe validateProfileInputLengths + sanitizeAndValidateProfileData.
+ * @returns Les valeurs sanitized ou undefined (et envoie la réponse d'erreur)
+ */
+export function validateAndSanitizeProfileInput(
+  data: ProfileUpdateData,
+  reply: FastifyReply
+): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined
+{
+  // Validation des longueurs
+  if (!validateProfileInputLengths(data, reply))
+    return undefined;
+
+  // Sanitization et validation des données
+  const sanitized = sanitizeAndValidateProfileData(data, reply);
+  if (!sanitized)
+    return undefined;
+
+  return sanitized;
+}
+
+/**
+ * Authentifie via JWT et récupère la session utilisateur en une seule étape.
+ * Regroupe authenticateProfileRequest + getUserSession.
+ * @returns La session utilisateur ou undefined (et envoie la réponse d'erreur)
+ */
+export function authenticateAndGetSession(jwtToken: string | undefined, reply: FastifyReply): UserSession | undefined {
+  const userId = authenticateProfileRequest(jwtToken, reply);
+  if (!userId) return undefined;
+
+  const sessionRow = getUserSession(userId, reply);
+  if (!sessionRow) return undefined;
+
+  return sessionRow;
+}
+
+/**
+ * Vérifie le mot de passe actuel + l'unicité de l'email + l'unicité du username.
+ * Regroupe verifyCurrentPassword + checkEmailUniqueness + checkUsernameUniqueness.
+ * @returns true si toutes les vérifications passent, false sinon (et envoie la réponse d'erreur)
+ */
+export function verifyPasswordAndUniqueness(
+  newPassword: string | undefined,
+  currentPassword: string | undefined,
+  sanitizedEmail: string | undefined,
+  sanitizedUsername: string | undefined,
+  sessionEmail: string,
+  sessionUsername: string,
+  userId: number,
+  reply: FastifyReply
+): boolean {
+  // Vérification du mot de passe actuel si changement
+  if (!verifyCurrentPassword(newPassword, currentPassword, userId, reply))
+    return false;
+
+  // Vérification unicité email
+  if (!checkEmailUniqueness(sanitizedEmail, sessionEmail, userId, reply))
+    return false;
+
+  // Vérification unicité username
+  if (!checkUsernameUniqueness(sanitizedUsername, sessionUsername, userId, reply))
+    return false;
+
+  return true;
+}
