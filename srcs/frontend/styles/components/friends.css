@@ -64,4 +64,193 @@
     .friend-stats {
         @apply text-sm text-gray-400 m-0;
     }
+
+    /* AddFriends page styles */
+    .add-friends-back-btn {
+        @apply absolute top-0 right-0 w-8 h-8;
+        @apply bg-black hover:bg-gray-900;
+        @apply border border-gray-600 rounded;
+        @apply flex items-center justify-center;
+        @apply transition-colors p-1.5;
+    }
+
+    .add-friends-back-btn img {
+        @apply w-full h-full;
+    }
+
+    .add-friends-search-container {
+        @apply my-2.5;
+    }
+
+    .add-friends-search-input {
+        @apply w-full px-2 py-2;
+        @apply border border-gray-600 rounded;
+        @apply bg-gray-800 text-white text-sm;
+        @apply pointer-events-auto;
+    }
+
+    .add-friends-search-results {
+        @apply max-h-48 overflow-y-auto mt-1.5;
+        @apply bg-gray-900 rounded;
+    }
+    
+    .add-friends-search-results.hidden {
+        display: none;
+    }
+
+    .add-friends-section-title {
+        @apply text-sm font-bold mt-3 mb-2;
+    }
+
+    .add-friends-requests-list {
+        @apply max-h-64 overflow-y-auto;
+    }
+
+    .friend-request-item {
+        @apply flex items-center p-2;
+        @apply border-b border-gray-700 gap-2;
+        @apply pointer-events-auto;
+    }
+
+    .friend-request-item img {
+        @apply w-10 h-10 rounded-full;
+    }
+
+    .friend-request-item span {
+        @apply flex-1 text-sm;
+    }
+
+    .friend-request-accept-btn {
+        @apply bg-green-600 text-white;
+        @apply px-2 py-1 rounded text-xs;
+        @apply hover:bg-green-700;
+    }
+
+    .friend-request-reject-btn {
+        @apply bg-red-600 text-white;
+        @apply px-2 py-1 rounded text-xs;
+        @apply hover:bg-red-700;
+    }
+
+    .search-result-item {
+        @apply flex items-center p-2;
+        @apply border-b border-gray-700;
+        @apply cursor-pointer hover:bg-gray-700;
+    }
+
+    .search-result-item img {
+        @apply w-8 h-8 rounded-full mr-2.5;
+    }
+
+    .search-result-item span {
+        @apply flex-1;
+    }
+
+    .add-friend-btn {
+        @apply text-white border-none;
+        @apply px-2 py-1 rounded text-xs;
+    }
+
+    .add-friend-btn.active {
+        @apply bg-green-600 hover:bg-green-700;
+    }
+
+    .add-friend-btn.sent {
+        @apply bg-gray-600 cursor-default;
+    }
+
+    .search-no-results {
+        @apply p-2.5 text-center text-gray-400;
+    }
+
+    .search-error {
+        @apply p-2.5 text-center text-red-500;
+    }
+
+    .friend-requests-empty {
+        @apply text-center text-gray-400 text-sm mt-2;
+    }
+
+    /* FriendList page styles */
+    .friend-list-add-btn {
+        @apply absolute top-0 right-0 w-8 h-8;
+        @apply bg-black hover:bg-gray-900;
+        @apply border border-gray-600 rounded;
+        @apply flex items-center justify-center;
+        @apply transition-colors p-1.5;
+    }
+
+    .friend-list-add-btn img {
+        @apply w-full h-full;
+    }
+
+    .friend-list-empty {
+        @apply text-center text-gray-400 mt-5;
+    }
+
+    .friend-list-error {
+        @apply text-center text-red-500 mt-5;
+    }
+
+    .friend-item {
+        @apply relative;
+    }
+
+    .friend-avatar-container {
+        @apply relative inline-block;
+    }
+
+    .friend-avatar {
+        @apply rounded-md;
+        width: 75px;
+        height: 75px;
+    }
+
+    .friend-status-indicator {
+        @apply absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full;
+        @apply border-2 border-gray-900 z-10;
+    }
+
+    .friend-username {
+        @apply flex items-center justify-start;
+    }
+
+    .crown-icon {
+        @apply absolute z-10;
+        top: -5px;
+        right: -5px;
+        width: 20px;
+        height: 20px;
+    }
+
+    .mini-pong-animation {
+        @apply inline-block ml-3 w-8 h-5;
+        animation: spin 3s linear infinite;
+    }
+
+    .mini-pong-container {
+        @apply relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden;
+    }
+
+    .mini-pong-paddle-left {
+        @apply absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2;
+    }
+
+    .mini-pong-paddle-right {
+        @apply absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2;
+    }
+
+    .mini-pong-ball {
+        @apply absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2;
+        animation: ballMove 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes ballMove {
+        from {
+            left: 10%;
+        }
+        to {
+            left: 85%;
+        }
+    }
 }

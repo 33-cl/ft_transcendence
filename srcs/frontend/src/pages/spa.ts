@@ -9,6 +9,7 @@ import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch g
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../utils/navigation.js';
 import './aiConfig.js'; // Import pour charger les handlers AI Config
 import './landing.js'; // Import pour charger les handlers Landing
+import './friends.js'; // Import pour charger les handlers Friends (AddFriends page)
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
 // Declare global interface for Window
