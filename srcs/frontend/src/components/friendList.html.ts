@@ -226,6 +226,7 @@ export function startFriendListRealtimeUpdates() {
 
     // 4️⃣ Écouter les mises à jour de profil (pseudo/avatar)
     window.socket.on('profileUpdated', (data: { userId: number; username: string; avatar_url: string; timestamp: number }) => {
+        console.log(`📡 [WebSocket] profileUpdated received:`, data);
         updateFriendProfile(data.userId, data.username, data.avatar_url);
     });
 
@@ -346,6 +347,7 @@ function updateFriendStatus(username: string, status: string) {
 
 // Fonction helper pour mettre à jour le profil d'un ami
 function updateFriendProfile(userId: number, newUsername: string, newAvatarUrl: string) {
+    console.log(`🔍 [updateFriendProfile] Called with:`, { userId, newUsername, newAvatarUrl });
     
     const friendElement = document.querySelector(`#friendsList [data-user-id="${userId}"]`);
     if (!friendElement) {
@@ -362,17 +364,21 @@ function updateFriendProfile(userId: number, newUsername: string, newAvatarUrl: 
         if (animation) {
             friendNameElement.appendChild(animation);
         }
+        console.log(`✅ [updateFriendProfile] Username updated to: ${newUsername}`);
     }
 
     // Mettre à jour l'avatar
     const avatarElement = friendElement.querySelector('.profile-pic') as HTMLImageElement;
     if (avatarElement && newAvatarUrl) {
+        console.log(`✅ [updateFriendProfile] Updating avatar to: ${newAvatarUrl}`);
         avatarElement.src = newAvatarUrl;
+    } else {
+        console.warn(`⚠️ [updateFriendProfile] Avatar NOT updated. avatarElement:`, avatarElement, 'newAvatarUrl:', newAvatarUrl);
     }
 
     // Mettre à jour l'attribut data-username
     friendElement.setAttribute('data-username', newUsername);
-    
+    console.log(`✅ [updateFriendProfile] Profile update complete for userId ${userId}`);
 }
 
 // Fonction helper pour recharger toute la liste d'amis

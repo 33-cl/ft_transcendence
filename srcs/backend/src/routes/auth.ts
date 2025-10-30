@@ -414,11 +414,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
         return;
 
       // Récupérer les valeurs réellement enregistrées en base pour la réponse et notifications
-      const updatedRow = db.prepare('SELECT username, email FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string } | undefined;
+      const updatedRow = db.prepare('SELECT username, email, avatar_url FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string; avatar_url: string | null } | undefined;
 
       // Notification WebSocket aux amis (si changement de username)
-      if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
-        notifyProfileUpdated(sessionRow.id, { username: updatedRow.username }, fastify);
+      if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username) {
+        console.log(`[DEBUG] Notifying profile update for user ${sessionRow.id}:`, {
+          username: updatedRow.username,
+          avatar_url: updatedRow.avatar_url
+        });
+        notifyProfileUpdated(sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
+      }
 
       // Réponse de confirmation — retourner les valeurs effectivement en base
       return reply.send({
@@ -649,7 +654,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const user = db.prepare('SELECT avatar_url FROM users WHERE id = ?').get(userId) as { avatar_url: string | null };
       
       // Mettre à jour l'URL de l'avatar dans la base de données avec l'avatar par défaut
-      const defaultAvatarUrl = '/img/default-pp.jpg';
+      const defaultAvatarUrl = './img/planet.gif';
       db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(
         defaultAvatarUrl, 
         new Date().toISOString().slice(0, 19).replace('T', ' '), 

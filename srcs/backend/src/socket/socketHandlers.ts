@@ -146,12 +146,14 @@ export function notifyProfileUpdated(userId: number, updates: { username?: strin
             if (friendSocketId) {
                 const friendSocket = globalIo.sockets.sockets.get(friendSocketId);
                 if (friendSocket) {
-                    friendSocket.emit('profileUpdated', {
+                    const payload = {
                         userId: user.id,
                         username: updates.username || user.username,
                         avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : user.avatar_url,
                         timestamp: Date.now()
-                    });
+                    };
+                    console.log(`[DEBUG] Sending profileUpdated to friend ${friend.id}:`, payload);
+                    friendSocket.emit('profileUpdated', payload);
                 }
             }
         }
