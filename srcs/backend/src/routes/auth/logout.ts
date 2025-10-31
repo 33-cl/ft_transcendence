@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { getJwtFromRequest } from '../../helpers/cookie.helper.js';
-import { handleLogout } from '../../helpers/auth.helper.js';
+import { handleLogout } from '../../helpers/logout.helper.js';
 
 /**
  * POST /auth/logout

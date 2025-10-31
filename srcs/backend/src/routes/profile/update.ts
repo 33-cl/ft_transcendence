@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/cookie.helper.js';
-import { authenticateAndGetSession, validateAndSanitizeProfileInput, verifyPasswordAndUniqueness, updateUserProfile } from '../../helpers/auth.helper.js';
+import { authenticateAndGetSession } from '../../helpers/session.helper.js';
+import { validateAndSanitizeProfileInput, verifyPasswordAndUniqueness, updateUserProfile } from '../../helpers/profile.helper.js';
 import { notifyProfileUpdated } from '../../socket/socketHandlers.js';
 
 /**

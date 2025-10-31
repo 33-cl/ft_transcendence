@@ -5,7 +5,8 @@ import fs from 'fs';
  * Nettoie les fichiers avatars temporaires de plus d'1 heure
  * À appeler au démarrage du serveur
  */
-export function cleanupTempAvatars(): void {
+export function cleanupTempAvatars(): void
+{
   const avatarDir = path.join(process.cwd(), 'public', 'avatars');
   const oneHourAgo = Date.now() - (60 * 60 * 1000);
 

@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/cookie.helper.js';
-import { authenticateAndGetSession } from '../../helpers/auth.helper.js';
+import { authenticateAndGetSession } from '../../helpers/session.helper.js';
 import { processAvatarSave } from '../../helpers/avatar.helper.js';
 import { notifyProfileUpdated } from '../../socket/socketHandlers.js';
 
@@ -18,7 +18,7 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
 {
   const jwtToken = getJwtFromRequest(request);
   const session = authenticateAndGetSession(jwtToken, reply);
-  
+
   if (!session)
     return;
 

@@ -38,7 +38,8 @@ export async function validateFileType(buffer: Buffer): Promise<FileTypeResult> 
 export async function processImageSecurely(
   buffer: Buffer,
   mimeType: string
-): Promise<Buffer> {
+): Promise<Buffer>
+{
   try {
     const isAnimatedGif = mimeType === 'image/gif';
     const sharpPipeline = sharp(buffer, isAnimatedGif ? { animated: true } : {});

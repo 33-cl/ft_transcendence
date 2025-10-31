@@ -7,19 +7,11 @@ import { createInitialGameState } from '../../game/gameState.js';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { validateLength, sanitizeUsername, validateRoomName, validateMaxPlayers, checkRateLimit } from '../security.js';
+import { parseCookies } from '../helpers/cookie.helper.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
-function parseCookies(header?: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!header) return out;
-  header.split(';').forEach(part => {
-    const [k, ...v] = part.trim().split('=');
-    if (!k) return;
-    out[k] = decodeURIComponent(v.join('='));
-  });
-  return out;
-}
+// cookie parsing is provided by helpers/cookie.helper.ts
 
 // Supprime le compteur local, on utilise le compteur global partagé
 

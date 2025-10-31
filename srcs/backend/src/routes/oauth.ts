@@ -3,17 +3,9 @@ import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { sanitizeUsername } from '../security.js';
 import { isValidUsername } from '../services/validation.service.js';
+import { getJwtExpiry } from '../services/auth.service.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
-
-function getJwtExpiry(token: string): number | null {
-  try {
-    const decoded = jwt.decode(token) as { exp?: number };
-    return decoded?.exp || null;
-  } catch {
-    return null;
-  }
-}
 
 // Format date for SQLite
 function fmtSqliteDate(d: Date): string {

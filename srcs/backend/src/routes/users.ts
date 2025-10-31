@@ -6,22 +6,12 @@ import jwt from 'jsonwebtoken';
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
+import { parseCookies, getJwtFromRequest } from '../helpers/cookie.helper.js';
 import { notifyFriendAdded, notifyFriendRemoved } from '../socket/socketHandlers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 
-// Helper pour extraire les cookies
-function parseCookies(cookieString?: string): { [key: string]: string } {
-  const out: { [key: string]: string } = {};
-  if (!cookieString) return out;
-  for (const cookie of cookieString.split(';')) {
-    const [key, value] = cookie.trim().split('=');
-    if (key && value) {
-      out[key] = decodeURIComponent(value);
-    }
-  }
-  return out;
-}
+// Cookie parsing is provided by helpers/cookie.helper.ts
 
 // Helper pour notifier qu'une nouvelle demande d'ami a été reçue
 function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance) {

@@ -26,7 +26,8 @@ import {
 /**
  * Utilitaire pour convertir un stream en buffer
  */
-export async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+export async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer>
+{
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
     chunks.push(Buffer.from(chunk));
@@ -48,7 +49,8 @@ export async function saveAvatarFile(
   userId: number,
   buffer: Buffer,
   extension: string
-): Promise<string> {
+): Promise<string>
+{
   const secureFilename = generateSecureFilename(userId, extension);
   const tempPath = path.join(process.cwd(), 'public', 'avatars', secureFilename);
   
@@ -64,7 +66,8 @@ export function createAvatarUploadInfo(
   originalBuffer: Buffer,
   processedBuffer: Buffer,
   detectedType: FileTypeResult
-): AvatarUploadInfo {
+): AvatarUploadInfo
+{
   return {
     originalType: detectedType.mime,
     originalSize: originalBuffer.length,
@@ -85,7 +88,8 @@ export function createAvatarUploadInfo(
 export async function processAvatarUpload(
   userId: number,
   fileBuffer: Buffer
-): Promise<{ tempAvatarUrl: string; info: AvatarUploadInfo }> {
+): Promise<{ tempAvatarUrl: string; info: AvatarUploadInfo }>
+{
   // 1. Validation de la taille
   validateFileSize(fileBuffer);
 
