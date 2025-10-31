@@ -74,6 +74,7 @@
         @apply grid grid-cols-1 md:grid-cols-3 gap-6 mb-20;
     }
 
+    
     .game-config-button {
         @apply flex flex-col items-center justify-center;
         @apply p-6 rounded-lg border-2 transition-all duration-300;
@@ -129,6 +130,19 @@
 
     .difficulty-desc {
         @apply text-sm text-gray-300;
+    }
+
+    .game-mode-options {
+        @apply flex gap-5 justify-center;
+    }
+
+    .difficulty-section.hidden,
+    .game-mode-section.hidden {
+        display: none;
+    }
+
+    .game-mode-section h2 {
+        @apply text-2xl mb-8 text-white;
     }
 
     .action-buttons {

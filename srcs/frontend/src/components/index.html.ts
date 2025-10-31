@@ -14,5 +14,5 @@ export { gameFinishedHTML } from './gameFinished.html.js';
 export { profileHTML } from './profile.html.js';
 export { goToProfileHTML } from './goToProfile.html.js';
 export { settingsHTML } from './settings.html.js';
-export { aiConfigHTML } from './aiConfig.html.js';
+export { aiConfigHTML } from '../config/aiConfig.html.js';
 export { spectatorGameFinishedHTML } from './spectatorGameFinished.html.js';

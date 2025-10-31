@@ -14,7 +14,7 @@
 @import 'components/matchmaking.css';
 @import 'components/overlays.css';
 @import 'components/game.css';
-@import 'components/ai-config.css';
+@import '../src/config/config.css';
 @import 'components/forms.css';
 @import 'components/layout.css';
 @import 'components/google-button.css';

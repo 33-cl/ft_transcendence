@@ -1,11 +1,10 @@
-// import { load } from './utils.js'; // Non utilisé maintenant que goToMain gère la navigation
 import { setStarsHoverColor, getColorRgb } from '../utils/background.js';
 
-// Variables globales pour la configuration de l'IA (plus nécessaire car on lance directement)
-
-// Fonction pour initialiser les gestionnaires d'événements de la page aiConfig
+/**
+ * Initialize event handlers for the AI config page
+ */
 export function initAIConfigManagers(): void {
-    // Sélecteurs de mode de jeu
+    // Game mode selectors
     const vsAiBtn = document.getElementById('vs-ai');
     const vsPlayerBtn = document.getElementById('vs-player');
     
@@ -14,59 +13,60 @@ export function initAIConfigManagers(): void {
     const difficultySection = document.getElementById('difficulty-section');
     const mainActions = document.getElementById('main-actions');
     
-    // Sélecteurs de difficulté
+    // Difficulty selectors
     const easyBtn = document.getElementById('ai-easy');
     const mediumBtn = document.getElementById('ai-medium');
     const hardBtn = document.getElementById('ai-hard');
     
-    // Gestion des modes de jeu
+    // Game mode handlers
     if (vsAiBtn) {
         vsAiBtn.addEventListener('click', () => {
-            // Cacher les options de mode de jeu et afficher les options de difficulté
-            gameModeSection.style.display = 'none';
-            if (difficultySection) difficultySection.style.display = 'block';
-            if (mainActions) mainActions.style.display = 'none';
+            // Hide game mode options and show difficulty options
+            gameModeSection.classList.add('hidden');
+            if (difficultySection) difficultySection.classList.remove('hidden');
+            if (mainActions) mainActions.classList.add('hidden');
         });
     }
     
     if (vsPlayerBtn) {
         vsPlayerBtn.addEventListener('click', async () => {
-            // Désactiver le mode IA
+            // Disable AI mode
             (window as any).aiMode = false;
             (window as any).lastGameType = 'local2P';
             
             try {
-                // Rejoindre une room en mode local
+                // Join room in local mode
                 await (window as any).joinOrCreateRoom(2, true);
             } catch (error) {
-                console.error('Erreur lors du démarrage du jeu local:', error);
-                alert('Erreur lors du démarrage du jeu. Veuillez réessayer.');
+                console.error('Error starting local game:', error);
+                alert('Error starting game. Please try again.');
             }
         });
     }
     
-    // Fonction pour lancer un jeu IA avec une difficulté donnée
+    /**
+     * Start an AI game with given difficulty
+     */
     async function startAIGame(difficulty: 'easy' | 'medium' | 'hard') {
-        // Activer le mode IA et s'assurer que la difficulté est bien définie
+        // Enable AI mode and set difficulty
         (window as any).aiMode = true;
         (window as any).aiDifficulty = difficulty;
-        (window as any).lastGameType = 'soloAI'; // Sauvegarder le type de jeu pour restart
+        (window as any).lastGameType = 'soloAI';
         
-        // Sauvegarder aussi dans localStorage pour cohérence
+        // Save in localStorage for consistency
         localStorage.setItem('aiDifficulty', difficulty);
         
-        
         try {
-            // Rejoindre une room en mode local avec IA
+            // Join room in local mode with AI
             await (window as any).joinOrCreateRoom(2, true);
-            // La navigation vers la page de jeu sera gérée par le handler roomJoined
+            // Navigation to game page will be handled by roomJoined handler
         } catch (error) {
-            console.error('Erreur lors du démarrage du jeu IA:', error);
-            alert('Erreur lors du démarrage du jeu. Veuillez réessayer.');
+            console.error('Error starting AI game:', error);
+            alert('Error starting game. Please try again.');
         }
     }
     
-    // Event listeners pour les boutons de difficulté - lancent directement le jeu
+    // Event listeners for difficulty buttons - start game directly
     if (easyBtn) {
         easyBtn.addEventListener('click', () => startAIGame('easy'));
         
@@ -101,12 +101,12 @@ export function initAIConfigManagers(): void {
     }
 }
 
-// Exporter la fonction pour qu'elle soit accessible globalement
+// Export function to be globally accessible
 declare global {
     interface Window {
         initAIConfigManagers: () => void;
     }
 }
 
-// Rendre la fonction accessible globalement
+// Make function globally accessible
 (window as any).initAIConfigManagers = initAIConfigManagers;

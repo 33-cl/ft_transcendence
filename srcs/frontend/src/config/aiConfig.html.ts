@@ -1,10 +1,12 @@
+export { initAIConfigManagers } from './config.js';
+
 export const aiConfigHTML = /*html*/`
 <div id="ai-config-page" class="ai-config-container">
     <h1>Game Configuration</h1>
     <div class="ai-config-content">
         <div class="game-mode-section">
             <h2>Choose game mode:</h2>
-            <div class="game-mode-options" style="display: flex; gap: 20px; justify-content: center;">
+            <div class="game-mode-options">
                 <button id="vs-ai" class="game-config-button">
                     <span class="difficulty-icon">🤖</span>
                     <span class="difficulty-name">VS AI</span>
@@ -18,7 +20,7 @@ export const aiConfigHTML = /*html*/`
             </div>
         </div>
         
-        <div id="difficulty-section" class="difficulty-section" style="display: none;">
+        <div id="difficulty-section" class="difficulty-section hidden">
             <h2>Choose AI difficulty level:</h2>
             <div class="difficulty-options">
                 <button id="ai-easy" class="game-config-button easy-button">
@@ -39,4 +41,3 @@ export const aiConfigHTML = /*html*/`
     </div>
 </div>
 `;
-
