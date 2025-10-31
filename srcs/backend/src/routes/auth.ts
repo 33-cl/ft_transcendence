@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { cleanupTempAvatars } from '../helpers/avatar.cleanup.helper.js';
+import { cleanupTempAvatars } from '../helpers/avatar/avatar.cleanup.helper.js';
 
 // Import des routes d'authentification
 import { registerRoute } from './auth/register.js';

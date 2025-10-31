@@ -7,7 +7,7 @@ import { createInitialGameState } from '../../game/gameState.js';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { validateLength, sanitizeUsername, validateRoomName, validateMaxPlayers, checkRateLimit } from '../security.js';
-import { parseCookies } from '../helpers/cookie.helper.js';
+import { parseCookies } from '../helpers/http/cookie.helper.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
 

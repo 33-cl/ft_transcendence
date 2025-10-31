@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
-import { validateAndGetUser, checkPassword, checkAlreadyConnected, authenticateUser, createSafeUser } from '../../helpers/login.helper.js';
+import { validateAndGetUser, checkPassword, checkAlreadyConnected, authenticateUser, createSafeUser } from '../../helpers/auth/login.helper.js';
 
 /**
  * POST /auth/login

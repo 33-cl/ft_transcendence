@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
-import { parseCookies, getJwtFromRequest } from '../helpers/cookie.helper.js';
+import { parseCookies, getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 import { notifyFriendAdded, notifyFriendRemoved } from '../socket/socketHandlers.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';

@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import jwt from 'jsonwebtoken';
 import db from '../../db.js';
-import { getJwtFromRequest } from '../../helpers/cookie.helper.js';
+import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 
 /**
  * GET /auth/me

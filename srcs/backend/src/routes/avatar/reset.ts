@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
-import { getJwtFromRequest } from '../../helpers/cookie.helper.js';
-import { authenticateAndGetSession } from '../../helpers/session.helper.js';
-import { performAvatarReset } from '../../helpers/avatar.reset.helper.js';
+import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
+import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js';
+import { performAvatarReset } from '../../helpers/avatar/avatar.reset.helper.js';
 
 /**
  * POST /auth/avatar/reset
