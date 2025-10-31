@@ -42,7 +42,8 @@ import {
 } from '../helpers/auth.helper.js';
 import { 
   streamToBuffer,
-  processAvatarUpload
+  processAvatarUpload,
+  processAvatarSave
 } from '../helpers/avatar.helper.js';
 
 // Function to clean up old temporary avatar files (older than 1 hour)
@@ -433,65 +434,54 @@ export default async function authRoutes(fastify: FastifyInstance) {
   });
 
   // POST /auth/avatar/save -> appliquer l'avatar temporaire sécurisé
-  fastify.post('/auth/avatar/save', async (request, reply) => {
+  /**
+   * POST /auth/avatar/save
+   * Sauvegarde définitive d'un avatar temporaire
+   * - Authentification JWT requise
+   * - Validation de l'ownership du fichier temporaire
+   * - Renommage du fichier (temp → final)
+   * - Mise à jour de la base de données
+   * - Notification WebSocket aux amis
+   */
+  fastify.post('/auth/avatar/save', async (request, reply) =>
+  {
     const jwtToken = getJwtFromRequest(request);
-    let userId: number | undefined;
-    if (jwtToken) {
-      try {
-        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-        if (!active) return reply.code(401).send({ error: 'Session expired or logged out' });
-        userId = payload.userId;
-      } catch (err) {
-        return reply.code(401).send({ error: 'JWT invalide ou expiré' });
-      }
-    }
-    if (!userId) {
-      return reply.code(401).send({ error: 'Not authenticated' });
-    }
+    const session = authenticateAndGetSession(jwtToken, reply);
+    if (!session)
+      return;
 
+    // Extraction de l'URL temporaire depuis le body
     const { temp_avatar_url } = (request.body as { temp_avatar_url?: string }) || {};
-    if (!temp_avatar_url) {
+    if (!temp_avatar_url)
       return reply.code(400).send({ error: 'No temporary avatar URL provided' });
-    }
 
     try {
-      // Extraire le nom de fichier temporaire et vérifier ownership
-      const tempFilename = temp_avatar_url.split('/').pop();
-      if (!tempFilename || !tempFilename.startsWith(`temp_${userId}_`)) {
-        return reply.code(400).send({ error: 'Invalid temporary avatar URL or not owned by user' });
-      }
+      // Traitement complet de la sauvegarde (validation + renommage)
+      const finalAvatarUrl = processAvatarSave(temp_avatar_url, session.id);
 
-      // Vérifier que le fichier temp existe
-      const tempPath = path.join(process.cwd(), 'public', 'avatars', tempFilename);
-      if (!fs.existsSync(tempPath)) {
-        return reply.code(404).send({ error: 'Temporary avatar file not found' });
-      }
-
-      // Renommer le fichier (enlever le prefix "temp_userId_")
-      const finalFilename = tempFilename.replace(`temp_${userId}_`, '');
-      const finalPath = path.join(process.cwd(), 'public', 'avatars', finalFilename);
-      
-      fs.renameSync(tempPath, finalPath);
-
-      // Mettre à jour l'URL dans la base
-      const finalAvatarUrl = `/avatars/${finalFilename}`;
       db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(
         finalAvatarUrl, 
         new Date().toISOString().slice(0, 19).replace('T', ' '), 
-        userId
+        session.id
       );
       
-      // Notifier les amis du changement d'avatar
-      notifyProfileUpdated(userId, { avatar_url: finalAvatarUrl }, fastify);
+      notifyProfileUpdated(session.id, { avatar_url: finalAvatarUrl }, fastify);
       
       return reply.send({ 
         ok: true, 
         message: 'Avatar saved successfully', 
         avatar_url: finalAvatarUrl 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Avatar save error:', error);
+      
+      if (error.message && error.message.includes('Invalid temporary avatar URL'))
+        return reply.code(400).send({ error: error.message });
+      if (error.message && error.message.includes('not owned by user'))// si un user tente de voler l avatar d un autre
+        return reply.code(400).send({ error: error.message });
+      if (error.message && error.message.includes('not found'))
+        return reply.code(404).send({ error: error.message });
+      
       return reply.code(500).send({ error: 'Internal server error during save' });
     }
   });

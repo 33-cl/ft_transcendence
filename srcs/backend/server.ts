@@ -79,7 +79,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
 
     // Enregistre le plugin Rate Limiting global (DoS protection)
     const rateWindowMs = Number(process.env.RATE_WINDOW_MS ?? 60000); // Default: 1 minute
-    const rateMax = Number(process.env.RATE_MAX ?? 100); // Default: 100 requests per window
+    const rateMax = Number(process.env.RATE_MAX ?? 200); // Default: 200 requests per window
     await app.register(fastifyRateLimit, {
       max: rateMax,
       timeWindow: rateWindowMs,
