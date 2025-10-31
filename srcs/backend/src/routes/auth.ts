@@ -45,6 +45,7 @@ import {
   processAvatarUpload,
   processAvatarSave
 } from '../helpers/avatar.helper.js';
+import { performAvatarReset } from '../helpers/avatar.reset.helper.js';
 
 // Function to clean up old temporary avatar files (older than 1 hour)
 function cleanupTempAvatars() {
@@ -345,7 +346,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
       newPassword?: string;
     }) || {};
 
-    // Validation des longueurs + sanitization et validation des données
     const sanitized = validateAndSanitizeProfileInput({ username, email, currentPassword, newPassword }, reply);
     if (!sanitized)
       return;
@@ -354,14 +354,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
     const sanitizedEmail = sanitized.sanitizedEmail;
 
     try {
-      // Vérification (mot de passe courant + unicité email + unicité username)
       if (!verifyPasswordAndUniqueness(newPassword, currentPassword, sanitizedEmail, sanitizedUsername, sessionRow.email, sessionRow.username, sessionRow.id, reply))
         return;
 
       if (!updateUserProfile({ username: sanitizedUsername, email: sanitizedEmail, newPassword }, sessionRow.id, reply))
         return;
 
-      // Récupérer les valeurs réellement enregistrées en base pour la réponse et notifications
       const updatedRow = db.prepare('SELECT username, email, avatar_url FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string; avatar_url: string | null } | undefined;
 
       if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
@@ -487,43 +485,27 @@ export default async function authRoutes(fastify: FastifyInstance) {
   });
 
   // POST /auth/avatar/reset -> réinitialiser l'avatar à la valeur par défaut
-  fastify.post('/auth/avatar/reset', async (request, reply) => {
-    // Vérification JWT comme les autres routes
-    const jwtToken = request.cookies.jwt;
-    let userId: number | undefined;
-    
-    try {
-      const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-      const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-      if (active) {
-        userId = payload.userId;
-      }
-    } catch (error) {
-      // Invalid token
-    }
-
-    if (!userId) {
-      return reply.code(401).send({ error: 'Unauthorized' });
-    }
+  /**
+   * POST /auth/avatar/reset
+   * Réinitialise l'avatar à la valeur par défaut
+   * - Authentification JWT requise
+   * - Mise à jour de la base de données
+   * - Notification WebSocket aux amis
+   */
+  fastify.post('/auth/avatar/reset', async (request, reply) =>
+  {
+    const jwtToken = getJwtFromRequest(request);
+    const session = authenticateAndGetSession(jwtToken, reply);
+    if (!session)
+      return;
 
     try {
-      // Récupérer l'ancienne URL de l'avatar
-      const user = db.prepare('SELECT avatar_url FROM users WHERE id = ?').get(userId) as { avatar_url: string | null };
-      
-      // Mettre à jour l'URL de l'avatar dans la base de données avec l'avatar par défaut
-      const defaultAvatarUrl = './img/planet.gif';
-      db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(
-        defaultAvatarUrl, 
-        new Date().toISOString().slice(0, 19).replace('T', ' '), 
-        userId
-      );
+      // Effectue la mise à jour en base et notifie les amis
+      const avatarUrl = performAvatarReset(session.id, fastify);
 
-      // Notifier les amis du changement d'avatar
-      notifyProfileUpdated(userId, { avatar_url: defaultAvatarUrl }, fastify);
-
-      return reply.send({ 
+      return reply.send({
         message: 'Avatar reset successfully',
-        avatar_url: defaultAvatarUrl
+        avatar_url: avatarUrl
       });
     } catch (error) {
       console.error('Error resetting avatar:', error);
