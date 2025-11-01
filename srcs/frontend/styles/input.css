@@ -10,8 +10,8 @@
 @import '../src/friends/friends.css';
 @import 'components/menu.css';
 @import '../src/mainMenu/mainMenu.css';
-@import 'components/profile.css';
-@import 'components/settings.css';
+@import '../src/profile/profile.css';
+@import '../src/settings/settings.css';
 @import 'components/overlays.css';
 @import '../src/config/config.css';
 @import '../src/game/game.css';

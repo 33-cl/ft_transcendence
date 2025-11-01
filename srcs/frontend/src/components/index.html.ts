@@ -11,8 +11,8 @@ export { matchmakingHTML } from '../game/matchmaking.html.js'
 export { gameHTML } from '../game/game.html.js';
 export { game4HTML } from '../game/game4.html.js';
 export { gameFinishedHTML } from '../game/gameFinished.html.js';
-export { profileHTML } from './profile.html.js';
-export { profileCardHTML } from './profileCard.html.js';
-export { settingsHTML } from './settings.html.js';
+export { profileHTML } from '../profile/profile.html.js';
+export { profileCardHTML } from '../profile/profileCard.html.js';
+export { settingsHTML } from '../settings/settings.html.js';
 export { aiConfigHTML } from '../config/aiConfig.html.js';
 export { spectatorGameFinishedHTML } from '../game/spectatorGameFinished.html.js';

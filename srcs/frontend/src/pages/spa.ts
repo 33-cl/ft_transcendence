@@ -2,7 +2,7 @@ import { show, load , hideAllPages, hide } from './utils.js';
 import { spectateFreind } from '../friends/friendList.html.js';
 import { checkSessionOnce } from '../auth/auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
-import { initSettingsHandlers } from './settings.js';
+import { initSettingsHandlers } from '../settings/settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
