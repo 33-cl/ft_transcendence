@@ -1,4 +1,4 @@
-import { load } from './utils.js';
+import { load } from '../pages/utils.js';
 import { isSessionBlocked, markSessionActive, markSessionInactive } from '../utils/sessionBroadcast.js';
 import { guardFunction } from '../utils/securityGuard.js';
 import { validateRegisterInputs } from '../utils/validation.client.js';

@@ -1,29 +1,4 @@
 @layer components {
-
-    #mainMenu {
-        @apply pointer-events-none;
-    }
-
-    .menu-container {
-        @apply mt-[7vh] pointer-events-none; /* Menu container spacing */
-    }
-
-    .menu-section {
-        @apply my-[15vh]; /* Menu section spacing */
-    }
-
-    #mainMenu h1 {
-        @apply text-[42px] mb-[2vh]; /* Menu text size */
-    }
-
-    #mainMenu button {
-        @apply text-3xl; /* Button text size */
-    }
-
-    .button-group {
-        @apply pointer-events-none;
-    }
-
     .bottom-left {
         @apply fixed bottom-[20px] left-[20px] m-0 z-[100] bg-none shadow-none;
     }

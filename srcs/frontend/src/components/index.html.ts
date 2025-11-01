@@ -1,12 +1,12 @@
 export { landingHTML } from '../landing/landing.html.js';
-export { signInHTML } from './signIn.html.js';
-export { signUpHTML } from './signUp.html.js';
+export { signInHTML } from '../auth/signIn.html.js';
+export { signUpHTML } from '../auth/signUp.html.js';
 export { goToMainHTML } from './goToMain.html.js';
 export { leaderboardHTML } from './leaderboard.html.js';
 export { friendListHTML, spectateFreind, initLoadingIcons, destroyLoadingIcons, initializeFriendListEventListeners, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, initializeAddFriendsButton, updateFriendRequestsBadge, fetchInitialFriendStatuses } from '../friends/friendList.html.js';
 export { addFriendsHTML, initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from '../friends/addFriends.html.js';
 export { contextMenuHTML } from '../friends/contextMenu.html.js';
-export { mainMenuHTML } from './mainMenu.html.js';
+export { mainMenuHTML } from '../mainMenu/mainMenu.html.js';
 export { matchmakingHTML } from '../game/matchmaking.html.js'
 export { gameHTML } from '../game/game.html.js';
 export { game4HTML } from '../game/game4.html.js';

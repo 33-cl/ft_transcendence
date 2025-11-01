@@ -1,0 +1,25 @@
+@layer components {
+    #mainMenu {
+        @apply pointer-events-none;
+    }
+
+    .menu-container {
+        @apply mt-[7vh] pointer-events-none;
+    }
+
+    .menu-section {
+        @apply my-[15vh];
+    }
+
+    #mainMenu h1 {
+        @apply text-[42px] mb-[2vh];
+    }
+
+    #mainMenu button {
+        @apply text-3xl;
+    }
+
+    .button-group {
+        @apply pointer-events-none;
+    }
+}

@@ -6,9 +6,10 @@
 @import 'components/buttons.css';
 @import 'components/pages.css';
 @import '../src/landing/landing.css';
-@import 'components/auth.css';
+@import '../src/auth/auth.css';
 @import '../src/friends/friends.css';
 @import 'components/menu.css';
+@import '../src/mainMenu/mainMenu.css';
 @import 'components/profile.css';
 @import 'components/settings.css';
 @import 'components/overlays.css';
@@ -16,7 +17,7 @@
 @import '../src/game/game.css';
 @import 'components/forms.css';
 @import 'components/layout.css';
-@import 'components/google-button.css';
+@import '../src/auth/google-button.css';
 
 @tailwind base;
 @tailwind components;
