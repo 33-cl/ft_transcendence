@@ -1,0 +1,42 @@
+@layer components {
+    /* Game canvas */
+    #map {
+        @apply border-2 border-white rounded-md;
+    }
+    
+    /* Force 4-player mode canvas to be square */
+    #game4 #map {
+        width: 800px;
+        height: 800px;
+        max-width: 800px;
+        max-height: 800px;
+        aspect-ratio: 1 / 1;
+    }
+
+    /* Matchmaking page */
+    #matchmaking-page {
+        @apply w-full;
+    }
+
+    #matchmaking h1 {
+        @apply text-4xl;
+    }
+
+    #matchmaking button {
+        @apply text-xl pt-2;
+    }
+
+    #searchingText {
+        @apply text-2xl pb-4;
+        @apply block min-w-[50rem];
+    }
+
+    #tips {
+        @apply text-gray-400 w-full;
+        @apply fixed bottom-0 left-0;
+    } 
+
+    #tipText {
+        @apply text-xl my-8 italic;
+    }
+}

@@ -8,7 +8,7 @@ import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import s
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../utils/navigation.js';
 import '../config/config.js'; // Import to load AI Config handlers
-import './landing.js'; // Import pour charger les handlers Landing
+import '../landing/landing.js'; // Import to load Landing handlers
 import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)
 // import { waitForSocketConnection } from './utils/socketLoading.js';
 
@@ -163,7 +163,7 @@ function initializeComponents(): void
             
             await load('mainMenu');
         }
-        if (target.id === 'goToProfile')
+        if (target.id === 'profileCard')
             await load('profile');
         if (target.id === 'settingsBtn' || isSettingsBtn)
         {

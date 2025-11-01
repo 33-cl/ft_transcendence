@@ -1,5 +1,5 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, goToProfileHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
-import { animateDots, switchTips } from '../components/matchmaking.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
+import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from '../utils/sessionBroadcast.js';
 import { guardFunction } from '../utils/securityGuard.js';
 import { pushHistoryState } from '../utils/navigation.js';
@@ -8,7 +8,7 @@ const components = {
     landing: {id: 'landing', html: landingHTML},
     mainMenu: {id: 'mainMenu', html: mainMenuHTML},
     goToMain: {id: 'goToMain', html: goToMainHTML},
-    goToProfile: {id: 'goToProfile', html: goToProfileHTML}, // stocke la fonction
+    profileCard: {id: 'profileCard', html: profileCardHTML},
     leaderboard: {id: 'leaderboard', html: leaderboardHTML},
     friendList: {id: 'friendList', html: friendListHTML},
     addFriends: {id: 'addFriends', html: addFriendsHTML},
@@ -135,7 +135,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                     await updateFriendRequestsBadge();
                 }, 100);
                 await show('leaderboard');
-                await show('goToProfile');
+                await show('profileCard');
             }).catch(async (error: any) => {
                 console.warn('Failed to refresh user stats before main menu:', error);
                 // Still show components even if refresh fails
@@ -143,17 +143,16 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('friendList');
                 // Wait for HTML to be rendered before initialization
                 setTimeout(async () => {
-                    initializeAddFriendsButton(); // Initialize Add Friends button
-                    initializeFriendListEventListeners(); // Initialize event listeners
-                    startFriendListRealtimeUpdates(); // Enable real-time updates via WebSocket
-                    initLoadingIcons(); // Initialize loading icons
+                    initializeAddFriendsButton(); // Initialiser le bouton Add Friends
+                    initializeFriendListEventListeners();
+                    startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
                     
                     // Update friend requests badge on display
                     const { updateFriendRequestsBadge } = await import('../friends/friendList.html.js');
                     await updateFriendRequestsBadge();
                 }, 100);
                 await show('leaderboard');
-                await show('goToProfile');
+                await show('profileCard');
             });
         } else {
             // No user or refresh function available, show components directly
@@ -171,7 +170,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await updateFriendRequestsBadge();
             }, 100);
             await show('leaderboard');
-            await show('goToProfile');
+            await show('profileCard');
         }
     }
 

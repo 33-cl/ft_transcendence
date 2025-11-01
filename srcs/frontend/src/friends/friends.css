@@ -253,4 +253,17 @@
             left: 85%;
         }
     }
+
+    /* Context menu for friend list */
+    #contextMenu {
+        @apply fixed z-[1000] bg-gray-600 text-base;
+    }
+
+    #contextMenu li {
+        @apply p-4 cursor-pointer;
+    }
+
+    #contextMenu li:hover {
+        @apply bg-gray-400;
+    }
 }

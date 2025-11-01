@@ -35,20 +35,20 @@
         @apply pointer-events-auto;
     }
 
-    #goToProfile-component {
-        @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 z-[100]; /* Position, border, arrondi, fond, layout */
+    #profileCard-component {
+        @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 z-[100];
     }
 
-    #goToProfile img {
-        @apply w-[75px] h-[75px] rounded-md mr-4; /* Photo à gauche, taille et arrondi */
+    #profileCard img {
+        @apply w-[75px] h-[75px] rounded-md mr-4;
     }
 
-    .goToProfile-info {
-        @apply flex flex-col items-start; /* Colonne pseudo + bouton */
+    .profileCard-info {
+        @apply flex flex-col items-start;
     }
 
-    .goToProfile-username {
-        @apply text-xl font-bold mb-2; /* Pseudo en haut */
+    .profileCard-username {
+        @apply text-xl font-bold mb-2;
     }
 
     .settingsBtn {

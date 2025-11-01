@@ -1,8 +1,8 @@
-export async function goToProfileHTML() {
+export async function profileCardHTML() {
     const username = window.currentUser?.username || 'a';
     const avatarUrl = window.currentUser?.avatar_url || './img/planet.gif';
     
-    // Vérifier si l'utilisateur est premier du leaderboard
+    // Check if user is first in leaderboard
     let crown = '';
     try {
         const response = await fetch('/users/leaderboard', {
@@ -14,7 +14,7 @@ export async function goToProfileHTML() {
             const data = await response.json();
             const leaderboard = data.leaderboard || [];
             
-            // Si l'utilisateur actuel est premier du leaderboard
+            // If current user is first in leaderboard
             if (leaderboard.length > 0 && leaderboard[0].username === username) {
                 crown = '<img src="./img/gold-crown.png" alt="Gold Crown" class="crown" />';
             }
@@ -24,14 +24,14 @@ export async function goToProfileHTML() {
     }
     
     return /*html*/ `
-        <div id="goToProfile-component">
+        <div id="profileCard-component">
             <div class="profile-pic" style="display: inline-block;">
                 <!-- ${crown} -->
-                <img id="goToProfile" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/planet.gif';" style="cursor: pointer;" />
+                <img id="profileCard" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/planet.gif';" style="cursor: pointer;" />
             </div>
-            <div class="goToProfile-info">
-                <div class="goToProfile-username">${username}</div>
-                <button class="goToProfile-logout default-button" id="logOutBtn">Log out</button>
+            <div class="profileCard-info">
+                <div class="profileCard-username">${username}</div>
+                <button class="profileCard-logout default-button" id="logOutBtn">Log out</button>
             </div>
             <button id="settingsBtn" class="settingsBtn">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

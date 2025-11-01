@@ -1,6 +1,6 @@
 // spectatorGameFinished.ts
 
-import { spectatorGameFinishedHTML } from '../components/spectatorGameFinished.html.js';
+import { spectatorGameFinishedHTML } from '../game/spectatorGameFinished.html.js';
 
 export async function spectatorGameFinishedPage(data?: any): Promise<void> {
     

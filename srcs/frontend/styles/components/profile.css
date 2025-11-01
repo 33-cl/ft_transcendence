@@ -3,28 +3,28 @@
         @apply relative z-0; /* Profile picture layering */
     }
 
-    #goToProfile-component {
-        @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 pr-12 z-[100] min-w-fit; /* Position, border, arrondi, fond, layout - s'adapte à la longueur du contenu */
+    #profileCard-component {
+        @apply fixed top-[50px] right-[50px] flex items-center bg-black border-2 border-white rounded-lg p-4 pr-12 z-[100] min-w-fit;
     }
 
-    #goToProfile .profile-pic {
-        @apply w-[75px] h-[75px] rounded-md mr-4 relative flex-shrink-0; /* Photo à gauche, taille et arrondi, position relative pour la couronne, ne se réduit pas */
+    #profileCard .profile-pic {
+        @apply w-[75px] h-[75px] rounded-md mr-4 relative flex-shrink-0;
     }
 
-    .goToProfile-info {
-        @apply flex flex-col items-start whitespace-nowrap; /* Colonne pseudo + bouton, pas de retour à la ligne */
+    .profileCard-info {
+        @apply flex flex-col items-start whitespace-nowrap;
     }
 
-    .goToProfile-username {
-        @apply text-xl font-bold mb-2 mr-8; /* Pseudo en haut, plus de truncate pour permettre l'expansion */
+    .profileCard-username {
+        @apply text-xl font-bold mb-2 mr-8;
     }
 
-    .goToProfile-logout {
-        @apply bg-red-800 text-white px-6 py-2 rounded-md border-none text-base ; /* Bouton déconnexion taille normale */
+    .profileCard-logout {
+        @apply bg-red-800 text-white px-6 py-2 rounded-md border-none text-base;
     }
 
-    .goToProfile-logout:hover {
-        @apply bg-red-900; /* Bouton déconnexion hover */
+    .profileCard-logout:hover {
+        @apply bg-red-900;
     }
 
     /* Profile page styling */
