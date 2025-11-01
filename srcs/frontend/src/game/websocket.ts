@@ -5,7 +5,7 @@ declare var io: any;
 
 // Pre-import load to avoid dynamic imports in event handlers
 import { load } from '../pages/utils.js';
-import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../components/sessionDisconnected.html.js';
+import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../navigation/sessionDisconnected.html.js';
 
 // NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
 // pour centraliser la gestion des mises à jour de la friendlist et éviter les conflits

@@ -11,7 +11,7 @@ import {
     showErrorMessage, 
     showCriticalError,
     addEnterKeyListeners 
-} from '../utils/ui.helpers.js';
+} from '../shared/ui/ui.helpers.js';
 
 export async function checkSessionOnce() {
     if (isSessionBlocked())

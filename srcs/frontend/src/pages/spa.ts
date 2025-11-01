@@ -6,7 +6,7 @@ import { initSettingsHandlers } from '../settings/settings.js';
 import { setStarsHoverColor } from '../utils/background.js';
 import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
 import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
-import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../utils/navigation.js';
+import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../navigation/navigation.js';
 import '../config/config.js'; // Import to load AI Config handlers
 import '../landing/landing.js'; // Import to load Landing handlers
 import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)

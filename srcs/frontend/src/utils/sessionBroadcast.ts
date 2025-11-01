@@ -1,6 +1,6 @@
 // Session Broadcast - Communication entre onglets pour bloquer les connexions multiples
 
-import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../components/sessionDisconnected.html.js';
+import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../navigation/sessionDisconnected.html.js';
 
 const CHANNEL_NAME = 'ft_transcendence_session';
 

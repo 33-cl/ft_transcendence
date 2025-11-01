@@ -2,7 +2,7 @@ import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, a
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from '../utils/sessionBroadcast.js';
 import { guardFunction } from '../utils/securityGuard.js';
-import { pushHistoryState } from '../utils/navigation.js';
+import { pushHistoryState } from '../navigation/navigation.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},
