@@ -19,8 +19,10 @@ interface ProfileUpdateData {
   newPassword?: string;
 }
 
-export function validateProfileInputLengths(data: ProfileUpdateData, reply: FastifyReply): boolean {
-  if (data.username && !validateLength(data.username, 1, 50)) {
+export function validateProfileInputLengths(data: ProfileUpdateData, reply: FastifyReply): boolean
+{
+  if (data.username && !validateLength(data.username, 1, 50))
+  {
     reply.code(400).send({ error: 'Username length invalid' });
     return false;
   }
@@ -28,35 +30,38 @@ export function validateProfileInputLengths(data: ProfileUpdateData, reply: Fast
     reply.code(400).send({ error: 'Email length invalid' });
     return false;
   }
-  if (data.currentPassword && !validateLength(data.currentPassword, 1, 255)) {
+  if (data.currentPassword && !validateLength(data.currentPassword, 1, 255))
+  {
     reply.code(400).send({ error: 'Password length invalid' });
     return false;
   }
-  if (data.newPassword && !validateLength(data.newPassword, 1, 255)) {
+  if (data.newPassword && !validateLength(data.newPassword, 1, 255))
+  {
     reply.code(400).send({ error: 'Password length invalid' });
     return false;
   }
   return true;
 }
 
-export function sanitizeAndValidateProfileData(
-  data: ProfileUpdateData, 
-  reply: FastifyReply
-): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined {
+export function sanitizeAndValidateProfileData(data: ProfileUpdateData, reply: FastifyReply): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined
+{
   const sanitizedUsername = data.username ? sanitizeUsernameUtil(data.username) : undefined;
   const sanitizedEmail = data.email ? sanitizeEmailUtil(data.email) : undefined;
 
-  if (sanitizedUsername !== undefined && !isValidUsernameService(sanitizedUsername)) {
+  if (sanitizedUsername !== undefined && !isValidUsernameService(sanitizedUsername))
+  {
     reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore)' });
     return undefined;
   }
 
-  if (sanitizedEmail !== undefined && !isValidEmailService(sanitizedEmail)) {
+  if (sanitizedEmail !== undefined && !isValidEmailService(sanitizedEmail))
+  {
     reply.code(400).send({ error: 'Invalid email format' });
     return undefined;
   }
 
-  if (data.newPassword !== undefined && !isValidPasswordService(data.newPassword)) {
+  if (data.newPassword !== undefined && !isValidPasswordService(data.newPassword))
+  {
     reply.code(400).send({ error: 'New password too short (min 8 characters)' });
     return undefined;
   }
@@ -69,18 +74,20 @@ export function verifyCurrentPassword(
   currentPassword: string | undefined,
   userId: number,
   reply: FastifyReply
-): boolean {
-  if (!newPassword || !currentPassword) {
+): boolean
+{
+  if (!newPassword || !currentPassword)
     return true;
-  }
 
   const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId) as { password_hash: string } | undefined;
-  if (!user) {
+  if (!user)
+  {
     reply.code(404).send({ error: 'User not found' });
     return false;
   }
 
-  if (!verifyPasswordService(currentPassword, user.password_hash)) {
+  if (!verifyPasswordService(currentPassword, user.password_hash))
+  {
     reply.code(400).send({ error: 'Current password is incorrect' });
     return false;
   }
@@ -93,10 +100,13 @@ export function checkEmailUniqueness(
   currentEmail: string,
   userId: number,
   reply: FastifyReply
-): boolean {
-  if (!email || email === currentEmail) return true;
+): boolean
+{
+  if (!email || email === currentEmail)
+    return true;
   const existingEmailUser = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, userId);
-  if (existingEmailUser) {
+  if (existingEmailUser)
+  {
     reply.code(409).send({ error: 'Email already taken' });
     return false;
   }
@@ -108,34 +118,59 @@ export function checkUsernameUniqueness(
   currentUsername: string,
   userId: number,
   reply: FastifyReply
-): boolean {
-  if (!username || username === currentUsername) return true;
+): boolean
+{
+  if (!username || username === currentUsername)
+    return true;
   const existingUsernameUser = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, userId);
-  if (existingUsernameUser) {
+  if (existingUsernameUser)
+  {
     reply.code(409).send({ error: 'Username already taken' });
     return false;
   }
   return true;
 }
 
-export function updateUserProfile(data: ProfileUpdateData, userId: number, reply: FastifyReply): boolean {
+export function updateUserProfile(data: ProfileUpdateData, userId: number, reply: FastifyReply): boolean
+{
   const updates: string[] = [];
   const values: any[] = [];
-  if (data.username) { updates.push('username = ?'); values.push(data.username); }
-  if (data.email) { updates.push('email = ?'); values.push(data.email); }
-  if (data.newPassword) { const passwordHash = hashPasswordService(data.newPassword); updates.push('password_hash = ?'); values.push(passwordHash); }
-  updates.push('updated_at = ?'); values.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
-  if (updates.length === 1) { reply.code(400).send({ error: 'No changes provided' }); return false; }
+  if (data.username)
+  {
+    updates.push('username = ?');
+    values.push(data.username);
+  }
+  if (data.email)
+  {
+    updates.push('email = ?');
+    values.push(data.email);
+  }
+  if (data.newPassword)
+  {
+    const passwordHash = hashPasswordService(data.newPassword);
+    updates.push('password_hash = ?');
+    values.push(passwordHash);
+  }
+  updates.push('updated_at = ?');
+  values.push(new Date().toISOString().slice(0, 19).replace('T', ' '));
+  if (updates.length === 1)
+  {
+    reply.code(400).send({ error: 'No changes provided' });
+    return false;
+  }
   const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
   values.push(userId);
   db.prepare(query).run(...values);
   return true;
 }
 
-export function validateAndSanitizeProfileInput(data: ProfileUpdateData, reply: FastifyReply): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined {
-  if (!validateProfileInputLengths(data, reply)) return undefined;
+export function validateAndSanitizeProfileInput(data: ProfileUpdateData, reply: FastifyReply): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined
+{
+  if (!validateProfileInputLengths(data, reply))
+    return undefined;
   const sanitized = sanitizeAndValidateProfileData(data, reply);
-  if (!sanitized) return undefined;
+  if (!sanitized)
+    return undefined;
   return sanitized;
 }
 
@@ -148,9 +183,13 @@ export function verifyPasswordAndUniqueness(
   sessionUsername: string,
   userId: number,
   reply: FastifyReply
-): boolean {
-  if (!verifyCurrentPassword(newPassword, currentPassword, userId, reply)) return false;
-  if (!checkEmailUniqueness(sanitizedEmail, sessionEmail, userId, reply)) return false;
-  if (!checkUsernameUniqueness(sanitizedUsername, sessionUsername, userId, reply)) return false;
+): boolean
+{
+  if (!verifyCurrentPassword(newPassword, currentPassword, userId, reply))
+    return false;
+  if (!checkEmailUniqueness(sanitizedEmail, sessionEmail, userId, reply))
+    return false;
+  if (!checkUsernameUniqueness(sanitizedUsername, sessionUsername, userId, reply))
+    return false;
   return true;
 }

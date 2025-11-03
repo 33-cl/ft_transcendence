@@ -20,26 +20,31 @@ import {
   generateFinalAvatarUrl
 } from './avatar.save.helper.js';
 
-export async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+export async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer>
+{
   const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
+  for await (const chunk of stream)
+  {
     chunks.push(Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
 }
 
-export function generateSecureFilename(userId: number, extension: string): string {
+export function generateSecureFilename(userId: number, extension: string): string
+{
   return `temp_${userId}_${uuidv4()}.${extension}`;
 }
 
-export async function saveAvatarFile(userId: number, buffer: Buffer, extension: string): Promise<string> {
+export async function saveAvatarFile(userId: number, buffer: Buffer, extension: string): Promise<string>
+{
   const secureFilename = generateSecureFilename(userId, extension);
   const tempPath = path.join(process.cwd(), 'public', 'avatars', secureFilename);
   await fs.promises.writeFile(tempPath, buffer);
   return `/avatars/${secureFilename}`;
 }
 
-export function createAvatarUploadInfo(originalBuffer: Buffer, processedBuffer: Buffer, detectedType: FileTypeResult): AvatarUploadInfo {
+export function createAvatarUploadInfo(originalBuffer: Buffer, processedBuffer: Buffer, detectedType: FileTypeResult): AvatarUploadInfo
+{
   return {
     originalType: detectedType.mime,
     originalSize: originalBuffer.length,
@@ -49,7 +54,8 @@ export function createAvatarUploadInfo(originalBuffer: Buffer, processedBuffer: 
   };
 }
 
-export async function processAvatarUpload(userId: number, fileBuffer: Buffer): Promise<{ tempAvatarUrl: string; info: AvatarUploadInfo }> {
+export async function processAvatarUpload(userId: number, fileBuffer: Buffer): Promise<{ tempAvatarUrl: string; info: AvatarUploadInfo }>
+{
   validateFileSize(fileBuffer);
   const detectedType = await validateFileType(fileBuffer);
   const processedBuffer = await processImageSecurely(fileBuffer, detectedType.mime);
@@ -59,7 +65,8 @@ export async function processAvatarUpload(userId: number, fileBuffer: Buffer): P
   return { tempAvatarUrl, info };
 }
 
-export function processAvatarSave(tempAvatarUrl: string, userId: number): string {
+export function processAvatarSave(tempAvatarUrl: string, userId: number): string
+{
   const tempFilename = extractFilenameFromUrl(tempAvatarUrl);
   validateAvatarOwnership(tempFilename, userId);
   const tempPath = validateTempFileExists(tempFilename);

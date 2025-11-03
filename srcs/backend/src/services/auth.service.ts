@@ -50,7 +50,8 @@ export interface JwtPayload {
  * @param password - Le mot de passe en clair
  * @returns Le hash au format "scrypt:salt:hash"
  */
-export function hashPassword(password: string): string {
+export function hashPassword(password: string): string
+{
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(password, salt, 64).toString('hex');
   return `scrypt:${salt}:${hash}`;
@@ -62,7 +63,8 @@ export function hashPassword(password: string): string {
  * @param stored - Le hash stocké (format "scrypt:salt:hash")
  * @returns true si le mot de passe correspond
  */
-export function verifyPassword(password: string, stored: string): boolean {
+export function verifyPassword(password: string, stored: string): boolean
+{
   try {
     const parts = stored.split(':');
     if (parts.length !== 3 || parts[0] !== 'scrypt') return false;

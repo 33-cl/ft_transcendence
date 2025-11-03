@@ -1,4 +1,5 @@
-export function parseCookies(header?: string): Record<string, string> {
+export function parseCookies(header?: string): Record<string, string>
+{
   const out: Record<string, string> = {};
   if (!header) return out;
   header.split(';').forEach(part => {
@@ -9,7 +10,8 @@ export function parseCookies(header?: string): Record<string, string> {
   return out;
 }
 
-export function getJwtFromRequest(request: any): string | undefined {
+export function getJwtFromRequest(request: any): string | undefined
+{
   const cookies = parseCookies(request.headers['cookie'] as string | undefined);
   return cookies['jwt'];
 }

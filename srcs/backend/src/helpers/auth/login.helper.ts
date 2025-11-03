@@ -36,8 +36,10 @@ interface SafeUser {
 
 // verifyPassword is imported from services/auth.service.js to avoid duplication
 
-export function checkPassword(password: string, user: DbUser, reply: FastifyReply): boolean {
-  if (!verifyPassword(password, user.password_hash)) {
+export function checkPassword(password: string, user: DbUser, reply: FastifyReply): boolean
+{
+  if (!verifyPassword(password, user.password_hash))
+  {
     reply.code(401).send({ error: 'Invalid credentials.' });
     return false;
   }
@@ -49,8 +51,10 @@ export function checkAlreadyConnected(
   username: string, 
   reply: FastifyReply, 
   fastify: FastifyInstance
-): boolean {
-  if (isUserAlreadyConnected(userId)) {
+): boolean
+{
+  if (isUserAlreadyConnected(userId))
+  {
     fastify.log.warn(`User ${username} (${userId}) attempted to login but is already connected`);
     reply.code(403).send({ 
       error: 'This account is already connected elsewhere.',
@@ -61,7 +65,8 @@ export function checkAlreadyConnected(
   return true;
 }
 
-export function authenticateUser(user: DbUser, reply: FastifyReply): string {
+export function authenticateUser(user: DbUser, reply: FastifyReply): string
+{
   const jwtToken = generateJwt(user);
   storeActiveToken(user.id, jwtToken);
   const maxAge = getJwtMaxAge();
@@ -75,7 +80,8 @@ export function authenticateUser(user: DbUser, reply: FastifyReply): string {
   return jwtToken;
 }
 
-export function createSafeUser(user: DbUser): SafeUser {
+export function createSafeUser(user: DbUser): SafeUser
+{
   return {
     id: user.id,
     email: user.email,
@@ -88,25 +94,30 @@ export function createSafeUser(user: DbUser): SafeUser {
   };
 }
 
-export function validateAndGetUser(login: string, password: string, clientIp: string, reply: FastifyReply): DbUser | null {
-  if (!checkRateLimit(`login:${clientIp}`, 5, 60 * 1000)) {
+export function validateAndGetUser(login: string, password: string, clientIp: string, reply: FastifyReply): DbUser | null
+{
+  if (!checkRateLimit(`login:${clientIp}`, 5, 60 * 1000))
+  {
     reply.code(429).send({ error: 'Too many login attempts. Please try again later.' });
     return null;
   }
 
-  if (!validateLength(login, 1, 255) || !validateLength(password, 1, 255)) {
+  if (!validateLength(login, 1, 255) || !validateLength(password, 1, 255))
+  {
     reply.code(400).send({ error: 'Input length validation failed.' });
     return null;
   }
 
-  if (!login || !password) {
+  if (!login || !password)
+  {
     reply.code(400).send({ error: 'Missing credentials.' });
     return null;
   }
 
   const user = getUserByLoginCredential(login);
 
-  if (!user) {
+  if (!user)
+  {
     reply.code(401).send({ error: 'Invalid credentials.' });
     return null;
   }
@@ -114,13 +125,15 @@ export function validateAndGetUser(login: string, password: string, clientIp: st
   return user;
 }
 
-function getUserByLoginCredential(login: string): DbUser | undefined {
+function getUserByLoginCredential(login: string): DbUser | undefined
+{
   const cleanLogin = login.replace(/<[^>]*>/g, '');
   const looksLikeEmail = isValidEmail(cleanLogin);
-  if (looksLikeEmail) {
+  if (looksLikeEmail)
+  {
     const normalizedEmail = cleanLogin.toLowerCase();
     return getUserByEmail(normalizedEmail) as DbUser | undefined;
-  } else {
-    return getUserByUsername(cleanLogin) as DbUser | undefined;
   }
+  else
+    return getUserByUsername(cleanLogin) as DbUser | undefined;
 }
