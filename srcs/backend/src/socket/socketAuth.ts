@@ -61,7 +61,10 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
     if (jwtToken) {
       // JWT authentication
       try {
-        const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
+        if (!process.env.JWT_SECRET) {
+          throw new Error('JWT_SECRET environment variable is not set');
+        }
+        const JWT_SECRET = process.env.JWT_SECRET;
         const payload = jwt.verify(jwtToken, JWT_SECRET);
         
         if (payload && typeof payload === 'object' && 'userId' in payload) {

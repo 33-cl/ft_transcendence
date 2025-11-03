@@ -7,7 +7,10 @@ import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRY_DAYS = 7;
 
 // ============================================

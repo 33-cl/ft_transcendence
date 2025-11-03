@@ -9,7 +9,10 @@ import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMI
 import { parseCookies, getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 import { notifyFriendAdded, notifyFriendRemoved } from '../socket/socketHandlers.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret';
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Cookie parsing is provided by helpers/cookie.helper.ts
 
