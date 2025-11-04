@@ -19,7 +19,8 @@ export function initAIConfigManagers(): void {
     const hardBtn = document.getElementById('ai-hard');
     
     // Game mode handlers
-    if (vsAiBtn) {
+    if (vsAiBtn && !(vsAiBtn as any)._listenerSet) {
+        (vsAiBtn as any)._listenerSet = true;
         vsAiBtn.addEventListener('click', () => {
             // Hide game mode options and show difficulty options
             gameModeSection.classList.add('hidden');
@@ -28,7 +29,8 @@ export function initAIConfigManagers(): void {
         });
     }
     
-    if (vsPlayerBtn) {
+    if (vsPlayerBtn && !(vsPlayerBtn as any)._listenerSet) {
+        (vsPlayerBtn as any)._listenerSet = true;
         vsPlayerBtn.addEventListener('click', async () => {
             // Disable AI mode
             (window as any).aiMode = false;
@@ -64,7 +66,8 @@ export function initAIConfigManagers(): void {
     }
     
     // Event listeners for difficulty buttons - start game directly
-    if (easyBtn) {
+    if (easyBtn && !(easyBtn as any)._listenerSet) {
+        (easyBtn as any)._listenerSet = true;
         easyBtn.addEventListener('click', () => startAIGame('easy'));
         
         easyBtn.addEventListener('mouseenter', () => {
@@ -75,7 +78,8 @@ export function initAIConfigManagers(): void {
         });
     }
     
-    if (mediumBtn) {
+    if (mediumBtn && !(mediumBtn as any)._listenerSet) {
+        (mediumBtn as any)._listenerSet = true;
         mediumBtn.addEventListener('click', () => startAIGame('medium'));
         
         mediumBtn.addEventListener('mouseenter', () => {
@@ -86,7 +90,8 @@ export function initAIConfigManagers(): void {
         });
     }
     
-    if (hardBtn) {
+    if (hardBtn && !(hardBtn as any)._listenerSet) {
+        (hardBtn as any)._listenerSet = true;
         hardBtn.addEventListener('click', () => startAIGame('hard'));
         
         hardBtn.addEventListener('mouseenter', () => {
