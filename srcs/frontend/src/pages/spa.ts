@@ -1,16 +1,16 @@
-import { show, load , hideAllPages, hide } from './utils.js';
+import { show, load , hideAllPages, hide } from '../navigation/utils.js';
 import { spectateFreind } from '../friends/friendList.html.js';
 import { checkSessionOnce } from '../auth/auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from '../settings/settings.js';
-import { setStarsHoverColor } from '../utils/background.js';
-import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
-import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
+import { setStarsHoverColor } from '../background/background.js';
+import { initSessionBroadcast } from '../navigation/sessionBroadcast.js'; // Import session broadcast
+import { installFetchGuard } from '../navigation/securityGuard.js'; // Import fetch guard
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../navigation/navigation.js';
 import '../config/config.js'; // Import to load AI Config handlers
 import '../landing/landing.js'; // Import to load Landing handlers
 import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)
-// import { waitForSocketConnection } from './utils/socketLoading.js';
+// import { waitForSocketConnection } from '../game/socketLoading.js';
 
 // Declare global interface for Window
 declare global {
@@ -111,18 +111,22 @@ function initializeComponents(): void
     let lastClickTime = 0;
     const CLICK_DEBOUNCE_MS = 300; // 300ms debounce
     
-    // Ajoute la navigation SPA pour le clic gauche
-    document.addEventListener('click', async (e) => {
-        const now = Date.now();
-        if (now - lastClickTime < CLICK_DEBOUNCE_MS) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-        }
-        lastClickTime = now;
+    // Vérifier si les listeners SPA ne sont pas déjà ajoutés
+    if (!(document as any)._spaClickListenerSet) {
+        (document as any)._spaClickListenerSet = true;
         
-        const target = e.target as HTMLElement;
-        if (!target) return;
+        // Ajoute la navigation SPA pour le clic gauche
+        document.addEventListener('click', async (e) => {
+            const now = Date.now();
+            if (now - lastClickTime < CLICK_DEBOUNCE_MS) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            lastClickTime = now;
+            
+            const target = e.target as HTMLElement;
+            if (!target) return;
         
         // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
         let currentElement: HTMLElement | null = target;
@@ -279,8 +283,6 @@ function initializeComponents(): void
                 }
             }
 
-            // Vider le localStorage et sessionStorage
-            localStorage.clear();
             sessionStorage.clear();
             
             // When logout, prevent back navigation to protected pages
@@ -355,95 +357,105 @@ function initializeComponents(): void
         {
             await load('matchmaking');
         }
-    });
+        });
+    }
     
     // Ajoute un gestionnaire pour le clic droit (contextmenu)
-    document.addEventListener('contextmenu', (e) => {
-        // Empêcher le menu contextuel par défaut du navigateur
-        e.preventDefault();
+    if (!(document as any)._spaContextMenuListenerSet) {
+        (document as any)._spaContextMenuListenerSet = true;
         
-        const target = e.target as HTMLElement;
-        if (!target) return;
-        
-        // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
-        let currentElement: HTMLElement | null = target;
-        let isProfileBtn = false;
-        
-        while (currentElement && !isProfileBtn) {
-            if (currentElement.id === 'profileBtn') {
-                isProfileBtn = true;
-            } else {
-                currentElement = currentElement.parentElement;
-            }
-        }
-        
-        // Exemple: action spécifique pour le clic droit sur un profil
-        if (isProfileBtn) {
-            // Vérifier si l'élément profileBtn est dans le leaderboard
-            const leaderboardContainer = document.getElementById('leaderboard');
-            if (leaderboardContainer && leaderboardContainer.contains(currentElement)) {
-                // Ne pas afficher le menu contextuel pour les éléments du leaderboard
-                return;
+        document.addEventListener('contextmenu', (e) => {
+            // Empêcher le menu contextuel par défaut du navigateur
+            e.preventDefault();
+            
+            const target = e.target as HTMLElement;
+            if (!target) return;
+            
+            // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
+            let currentElement: HTMLElement | null = target;
+            let isProfileBtn = false;
+            
+            while (currentElement && !isProfileBtn) {
+                if (currentElement.id === 'profileBtn') {
+                    isProfileBtn = true;
+                } else {
+                    currentElement = currentElement.parentElement;
+                }
             }
             
-            // Stocker les informations de l'utilisateur sélectionné
-            const username = currentElement?.getAttribute('data-username');
-            const userId = currentElement?.getAttribute('data-user-id');
-            const isInGame = currentElement?.getAttribute('data-is-in-game') === 'true';
-            
-            if (username && userId) {
-                (window as any).selectedContextUser = { username, userId: parseInt(userId), isInGame };
-            }
+            // Exemple: action spécifique pour le clic droit sur un profil
+            if (isProfileBtn) {
+                // Vérifier si l'élément profileBtn est dans le leaderboard
+                const leaderboardContainer = document.getElementById('leaderboard');
+                if (leaderboardContainer && leaderboardContainer.contains(currentElement)) {
+                    // Ne pas afficher le menu contextuel pour les éléments du leaderboard
+                    return;
+                }
+                
+                // Stocker les informations de l'utilisateur sélectionné
+                const username = currentElement?.getAttribute('data-username');
+                const userId = currentElement?.getAttribute('data-user-id');
+                const isInGame = currentElement?.getAttribute('data-is-in-game') === 'true';
+                
+                if (username && userId) {
+                    (window as any).selectedContextUser = { username, userId: parseInt(userId), isInGame };
+                }
 
-            // Régénérer le menu contextuel avec ou sans le bouton Spectate
-            (window as any).contextMenuIsInGame = isInGame;
-            show('contextMenu');
-            
-            // Positionner le menu contextuel
+                // Régénérer le menu contextuel avec ou sans le bouton Spectate
+                (window as any).contextMenuIsInGame = isInGame;
+                show('contextMenu');
+                
+                // Positionner le menu contextuel
+                const menu = document.getElementById('contextMenu');
+                if (menu) {
+                    menu.style.left = `${e.clientX}px`;
+                    menu.style.top = `${e.clientY}px`;
+                }
+
+            }
+        });
+    }
+    
+    if (!(document as any)._spaMenuClickListenerSet) {
+        (document as any)._spaMenuClickListenerSet = true;
+        
+        document.addEventListener('click', (e) => {
             const menu = document.getElementById('contextMenu');
-            if (menu) {
-                menu.style.left = `${e.clientX}px`;
-                menu.style.top = `${e.clientY}px`;
-            }
-
-        }
-    });
-    document.addEventListener('click', (e) => {
-        const menu = document.getElementById('contextMenu');
-        if (!menu) return;
-    
-        // Si le menu n'est pas affiché, rien à faire
-        if (!menu.innerHTML.trim()) return;
-    
-        const target = e.target as HTMLElement;
+            if (!menu) return;
         
-        // Gérer les clics sur les boutons du menu contextuel
-        if (menu.contains(target)) {
-            if (target.id === 'removeFriendBtn') {
-                // Gérer la suppression d'ami
-                const selectedUser = (window as any).selectedContextUser;
-                if (selectedUser && selectedUser.userId) {
-                    removeFriend(selectedUser.userId, selectedUser.username);
+            // Si le menu n'est pas affiché, rien à faire
+            if (!menu.innerHTML.trim()) return;
+        
+            const target = e.target as HTMLElement;
+            
+            // Gérer les clics sur les boutons du menu contextuel
+            if (menu.contains(target)) {
+                if (target.id === 'removeFriendBtn') {
+                    // Gérer la suppression d'ami
+                    const selectedUser = (window as any).selectedContextUser;
+                    if (selectedUser && selectedUser.userId) {
+                        removeFriend(selectedUser.userId, selectedUser.username);
+                    }
+                    hide('contextMenu');
+                    return;
                 }
-                hide('contextMenu');
+                if (target.id === 'spectateBtn') {
+                    // Gérer le spectate
+                    const selectedUser = (window as any).selectedContextUser;
+                    if (selectedUser && selectedUser.username) {
+                        spectateFreind(selectedUser.username);
+                    }
+                    hide('contextMenu');
+                    return;
+                }
+                // Les autres boutons peuvent être gérés ici
                 return;
             }
-            if (target.id === 'spectateBtn') {
-                // Gérer le spectate
-                const selectedUser = (window as any).selectedContextUser;
-                if (selectedUser && selectedUser.username) {
-                    spectateFreind(selectedUser.username);
-                }
-                hide('contextMenu');
-                return;
-            }
-            // Les autres boutons peuvent être gérés ici
-            return;
-        }
-    
-        // Sinon, masquer le menu contextuel
-        hide('contextMenu');
-    });
+        
+            // Sinon, masquer le menu contextuel
+            hide('contextMenu');
+        });
+    }
 }
 
 // Handler global pour l'event roomJoined (affichage matchmaking/game)

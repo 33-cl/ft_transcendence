@@ -1,6 +1,6 @@
 // navigation.ts - Gestion centralisée de la navigation et de l'historique du navigateur
 
-import { load } from '../pages/utils.js';
+import { load } from './utils.js';
 
 /**
  * Met à jour l'historique du navigateur avec une nouvelle page
@@ -26,13 +26,18 @@ export function preventBackNavigationAfterLogout(): void {
     replaceHistoryState('signin');
     pushHistoryState('signin');
     
-    window.addEventListener('popstate', function preventBack() {
-        if (!window.currentUser) {
-            // Forcer le retour à signin
-            pushHistoryState('signin');
-            load('signIn');
-        }
-    });
+    // Vérifier si le listener n'est pas déjà ajouté
+    if (!(window as any)._preventBackListenerSet) {
+        (window as any)._preventBackListenerSet = true;
+        
+        window.addEventListener('popstate', function preventBack() {
+            if (!window.currentUser) {
+                // Forcer le retour à signin
+                pushHistoryState('signin');
+                load('signIn');
+            }
+        });
+    }
 }
 
 /**
@@ -40,6 +45,10 @@ export function preventBackNavigationAfterLogout(): void {
  * Gère la navigation dans l'historique et protège l'accès aux pages d'authentification
  */
 export function setupPopStateHandler(): void {
+    // Vérifier si le listener n'est pas déjà ajouté
+    if ((window as any)._popStateListenerSet) return;
+    (window as any)._popStateListenerSet = true;
+    
     window.addEventListener('popstate', async function(event) {
         let targetPage = event.state?.page || 'signIn';
         

@@ -48,7 +48,6 @@ frontend/
 │   │   ├── user.ts        → Gestion des données utilisateur
 │   │   ├── validation.ts  → Validation des formulaires
 │   │   ├── change_avatar.ts → Changement d'avatar
-│   │   ├── passwordMasking.ts → Masquage des mots de passe
 │   │   ├── socketLoading.ts → États de chargement WebSocket
 │   │   ├── background.ts  → Gestion du fond d'écran
 │   │   └── background-optimised.ts → Version optimisée du fond

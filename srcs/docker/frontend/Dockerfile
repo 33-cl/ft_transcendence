@@ -7,7 +7,7 @@ RUN npm install && \
     npm install -D tailwindcss postcss autoprefixer
 COPY ./srcs/frontend/ ./
 RUN npx tsc --build --force && \
-    npx tailwindcss -i ./styles/input.css -o ./styles/output.css
+    npx tailwindcss -i ./src/shared/styles/input.css -o ./src/shared/styles/output.css
 
 # Stage 2: Nginx static server
 FROM nginx:alpine
@@ -17,7 +17,6 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/index.html /app/index.html
-COPY --from=builder /app/styles /app/styles
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/img /app/img
 

@@ -136,7 +136,9 @@ export function initializeAddFriendSearch(): void {
     const searchResults = document.getElementById('searchResults');
     let searchTimeout: number;
 
-    if (searchInput && searchResults) {
+    if (searchInput && searchResults && !(searchInput as any)._listenerSet) {
+        (searchInput as any)._listenerSet = true;
+        
         searchInput.addEventListener('input', async (e) => {
             const query = (e.target as HTMLInputElement).value.trim();
             
@@ -166,7 +168,7 @@ export function initializeAddFriendSearch(): void {
                     const users = data.users || [];
 
                     // Import security utilities
-                    const { escapeHtml, sanitizeUrl } = await import('../utils/security.js');
+                    const { escapeHtml, sanitizeUrl } = await import('../navigation/security.js');
 
                     if (users.length === 0) {
                         searchResults.innerHTML = '<div class="search-no-results">No users found</div>';
@@ -221,12 +223,16 @@ export function initializeAddFriendSearch(): void {
         });
 
         // Masquer les résultats quand on clique ailleurs
-        document.addEventListener('click', (e) => {
-            const target = e.target as HTMLElement;
-            if (!searchInput.contains(target) && !searchResults.contains(target)) {
-                searchResults.classList.add('hidden');
-            }
-        });
+        if (!(document as any)._friendSearchClickListenerSet) {
+            (document as any)._friendSearchClickListenerSet = true;
+            
+            document.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                if (!searchInput.contains(target) && !searchResults.contains(target)) {
+                    searchResults.classList.add('hidden');
+                }
+            });
+        }
     }
 }
 
@@ -235,9 +241,11 @@ export function initializeAddFriendSearch(): void {
  */
 export function initializeBackToFriendsButton(): void {
     const backBtn = document.getElementById('backToFriendsBtn');
-    if (backBtn) {
+    if (backBtn && !(backBtn as any)._listenerSet) {
+        (backBtn as any)._listenerSet = true;
+        
         backBtn.addEventListener('click', async () => {
-            const { show, hide } = await import('../pages/utils.js');
+            const { show, hide } = await import('../navigation/utils.js');
             const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListRealtimeUpdates, fetchInitialFriendStatuses } = await import('./friendList.html.js');
             
             // Hide addFriends and show friendList
@@ -313,7 +321,7 @@ export function initializeAddFriendsButton(): void {
         (addFriendsBtn as any)._addFriendsListenerSet = true;
         
         addFriendsBtn.addEventListener('click', async () => {
-            const { show, hide } = await import('../pages/utils.js');
+            const { show, hide } = await import('../navigation/utils.js');
             
             hide('friendList');
             await show('addFriends');
@@ -514,7 +522,7 @@ export async function spectateFreind(username: string): Promise<void> {
                 spectator: true 
             });
             
-            const { load } = await import('../pages/utils.js');
+            const { load } = await import('../navigation/utils.js');
             await load('game');
         } else {
             alert('WebSocket connection not available');

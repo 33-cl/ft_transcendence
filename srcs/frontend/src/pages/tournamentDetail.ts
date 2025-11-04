@@ -119,3 +119,11 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     // Assurer que la page est visible
     container.style.display = 'block';
 }
+
+// Helper pour obtenir l'alias d'un joueur (robuste)
+function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, string>): string {
+    if (!playerId || playerId === 0) return 'BYE';
+    const alias = playerAliasMap.get(playerId);
+    if (!alias || alias.trim() === '') return `Unknown (ID: ${playerId})`;
+    return alias;
+}

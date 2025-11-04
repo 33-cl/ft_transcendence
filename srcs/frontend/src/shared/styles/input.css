@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@import 'global.css';
+
+@import '../../background/background.css';
+@import '../ui/buttons.css';
+@import '../ui/pages.css';
+@import '../../landing/landing.css';
+@import '../../auth/auth.css';
+@import '../../friends/friends.css';
+@import '../ui/menu.css';
+@import '../../mainMenu/mainMenu.css';
+@import '../../profile/profile.css';
+@import '../../settings/settings.css';
+@import '../ui/overlays.css';
+@import '../../config/config.css';
+@import '../../game/game.css';
+@import '../ui/forms.css';
+@import '../ui/layout.css';
+@import '../../auth/google-button.css';
+@import '../../leaderboard/leaderboard.css';
+@import '../../navigation/navigation.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

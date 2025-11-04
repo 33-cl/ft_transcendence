@@ -8,25 +8,12 @@
         pointer-events: none; /* Click-through for empty pages */
     }
 
-    #leaderboard {
-        @apply left-[2%]; /* Left panel positioning */
-    }
-
     #friendList {
         @apply right-[2%]; /* Right panel positioning */
     }
 
     #addFriends {
         @apply right-[2%]; /* Right panel positioning */
-    }
-
-    .user-list {
-        @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
-        @apply overflow-y-auto p-[1vh];            /* Scroll and padding */
-    }
-
-    .user-list img {
-        @apply w-[75px] h-[75px] rounded-md; /* User avatar styling - same as main menu avatar */
     }
 
     .friend {

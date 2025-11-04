@@ -8,24 +8,30 @@ export function initAvatarChange(): void {
     }
     
     // Ouvrir le sélecteur de fichiers au clic sur [Change]
-    changeButton.addEventListener('click', (): void => {
-        fileInput.click();
-    });
+    if (!(changeButton as any)._listenerSet) {
+        (changeButton as any)._listenerSet = true;
+        changeButton.addEventListener('click', (): void => {
+            fileInput.click();
+        });
+    }
     
     // Écouter le changement de fichier avec vérification de nullité
-    fileInput.addEventListener('change', (event: Event): void => {
-        const target = event.target as HTMLInputElement;
-        
-        // Vérifications de sécurité
-        if (!target || !target.files || target.files.length === 0) {
-            return;
-        }
-        
-        const file = target.files[0];
-        if (file) {
+    if (!(fileInput as any)._listenerSet) {
+        (fileInput as any)._listenerSet = true;
+        fileInput.addEventListener('change', (event: Event): void => {
+            const target = event.target as HTMLInputElement;
             
-            // Stocker temporairement le fichier pour traitement ultérieur
-            window.temporaryAvatarFile = file;
-        }
-    });
+            // Vérifications de sécurité
+            if (!target || !target.files || target.files.length === 0) {
+                return;
+            }
+            
+            const file = target.files[0];
+            if (file) {
+                
+                // Stocker temporairement le fichier pour traitement ultérieur
+                window.temporaryAvatarFile = file;
+            }
+        });
+    }
 }

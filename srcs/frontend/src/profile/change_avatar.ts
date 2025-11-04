@@ -116,87 +116,96 @@ export function initAvatarHandlers(): void {
     if (!changeBtn || !fileInput) return;
 
     // Quand on clique sur [Change], on ouvre le file picker
-    changeBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
+    if (!(changeBtn as any)._listenerSet) {
+        (changeBtn as any)._listenerSet = true;
+        changeBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+    }
 
     // Quand un fichier est choisi
-    fileInput.addEventListener('change', async () => {
-        const file = fileInput.files?.[0];
-        if (!file) return; // sécurité
+    if (!(fileInput as any)._listenerSet) {
+        (fileInput as any)._listenerSet = true;
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files?.[0];
+            if (!file) return; // sécurité
 
-        window.temporaryAvatarFile = file;
+            window.temporaryAvatarFile = file;
 
-        // Afficher le message de chargement
-        const messageEl = document.getElementById('settings-message');
-        const saveButton = document.querySelector('#settings-buttons button:first-child') as HTMLButtonElement;
-        
-        if (messageEl) {
-            messageEl.style.display = 'block';
-            messageEl.style.color = '#fbbf24'; // couleur ambre pour le chargement
-            messageEl.textContent = 'Uploading avatar... Please wait';
-        }
-        
-        // Désactiver le bouton Save pendant l'upload
-        if (saveButton) {
-            saveButton.disabled = true;
-            saveButton.style.opacity = '0.5';
-            saveButton.style.cursor = 'not-allowed';
-        }
-
-        // Upload temporairement au serveur
-        const result = await uploadTempAvatar(file);
-
-        // Réactiver le bouton Save
-        if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.style.opacity = '1';
-            saveButton.style.cursor = 'pointer';
-        }
-
-        if (messageEl) {
-            messageEl.style.display = 'block';
-            if (result.ok) {
-                messageEl.style.color = '#22c55e';
-                messageEl.textContent = 'Photo uploaded, click Save to confirm';
-                // Store temporary avatar URL for later confirmation
-                if (result.temp_avatar_url) {
-                    window.tempAvatarUrl = result.temp_avatar_url;
-                    window.hasPendingAvatar = true;
-                }
-            } else {
-                messageEl.style.color = '#ef4444';
-                messageEl.textContent = result.error!;
-                window.hasPendingAvatar = false;
-            }
-        }
-
-        // Reset input pour pouvoir reuploader la même image plus tard si besoin
-        fileInput.value = '';
-    });
-
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async () => {
-            const result = await resetAvatar();
-            
+            // Afficher le message de chargement
             const messageEl = document.getElementById('settings-message');
+            const saveButton = document.querySelector('#settings-buttons button:first-child') as HTMLButtonElement;
+            
+            if (messageEl) {
+                messageEl.style.display = 'block';
+                messageEl.style.color = '#fbbf24'; // couleur ambre pour le chargement
+                messageEl.textContent = 'Uploading avatar... Please wait';
+            }
+            
+            // Désactiver le bouton Save pendant l'upload
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.style.opacity = '0.5';
+                saveButton.style.cursor = 'not-allowed';
+            }
+
+            // Upload temporairement au serveur
+            const result = await uploadTempAvatar(file);
+
+            // Réactiver le bouton Save
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.style.opacity = '1';
+                saveButton.style.cursor = 'pointer';
+            }
+
             if (messageEl) {
                 messageEl.style.display = 'block';
                 if (result.ok) {
                     messageEl.style.color = '#22c55e';
-                    messageEl.textContent = 'Avatar reset to default';
-                    if (result.avatar_url && window.currentUser) {
-                        window.currentUser.avatar_url = result.avatar_url;
-                    }
-                    // Force refresh des composants qui utilisent l'avatar
-                    if ((window as any).refreshUserStats) {
-                        (window as any).refreshUserStats();
+                    messageEl.textContent = 'Photo uploaded, click Save to confirm';
+                    // Store temporary avatar URL for later confirmation
+                    if (result.temp_avatar_url) {
+                        window.tempAvatarUrl = result.temp_avatar_url;
+                        window.hasPendingAvatar = true;
                     }
                 } else {
                     messageEl.style.color = '#ef4444';
                     messageEl.textContent = result.error!;
+                    window.hasPendingAvatar = false;
                 }
             }
+
+            // Reset input pour pouvoir reuploader la même image plus tard si besoin
+            fileInput.value = '';
         });
+    }
+
+    if (deleteBtn) {
+        if (!(deleteBtn as any)._listenerSet) {
+            (deleteBtn as any)._listenerSet = true;
+            deleteBtn.addEventListener('click', async () => {
+                const result = await resetAvatar();
+                
+                const messageEl = document.getElementById('settings-message');
+                if (messageEl) {
+                    messageEl.style.display = 'block';
+                    if (result.ok) {
+                        messageEl.style.color = '#22c55e';
+                        messageEl.textContent = 'Avatar reset to default';
+                        if (result.avatar_url && window.currentUser) {
+                            window.currentUser.avatar_url = result.avatar_url;
+                        }
+                        // Force refresh des composants qui utilisent l'avatar
+                        if ((window as any).refreshUserStats) {
+                            (window as any).refreshUserStats();
+                        }
+                    } else {
+                        messageEl.style.color = '#ef4444';
+                        messageEl.textContent = result.error!;
+                    }
+                }
+            });
+        }
     }
 }

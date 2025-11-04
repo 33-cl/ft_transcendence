@@ -1,5 +1,5 @@
-// import { load } from '../pages/utils.js';
-import { isValidEmail, isValidUsername, isValidPassword } from '../utils/validation.js';
+// import { load } from '../navigation/utils.js';
+import { isValidEmail, isValidUsername, isValidPassword } from '../services/validation.js';
 import { initAvatarHandlers, saveAvatar } from '../profile/change_avatar.js';
 
 // Mettre à jour le profil utilisateur
@@ -159,7 +159,9 @@ function setupInputBehavior(): void {
         input.style.width = `${Math.max(minWidth, Math.min(maxWidth, textWidth))}px`;
     };
 
-    if (usernameInput) {
+    if (usernameInput && !(usernameInput as any)._listenerSet) {
+        (usernameInput as any)._listenerSet = true;
+        
         // Stocker la valeur originale
         const originalUsername = window.currentUser?.username || '';
         
@@ -196,7 +198,9 @@ function setupInputBehavior(): void {
         });
     }
 
-    if (emailInput) {
+    if (emailInput && !(emailInput as any)._listenerSet) {
+        (emailInput as any)._listenerSet = true;
+        
         // Stocker la valeur originale
         const originalEmail = window.currentUser?.email || '';
         
@@ -233,7 +237,9 @@ function setupInputBehavior(): void {
         });
     }
 
-    if (passwordInput) {
+    if (passwordInput && !(passwordInput as any)._listenerSet) {
+        (passwordInput as any)._listenerSet = true;
+        
         // Ajuster la largeur initiale
         adjustInputWidth(passwordInput);
         

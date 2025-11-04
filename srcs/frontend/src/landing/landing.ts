@@ -1,12 +1,16 @@
 // landing.ts - Gestion de la page landing
 
-import { load } from '../pages/utils.js';
+import { load } from '../navigation/utils.js';
 
 // Initialiser les handlers de la page landing
 export function initLandingHandlers(): void {
     const landingElement = document.getElementById('landing');
     
     if (!landingElement) return;
+    
+    // Vérifier si déjà initialisé pour éviter les listeners multiples
+    if ((landingElement as any)._landingListenersSet) return;
+    (landingElement as any)._landingListenersSet = true;
     
     // Ajouter un gestionnaire de clic sur toute la page landing
     const handleLandingClick = async (event: MouseEvent) => {
@@ -30,6 +34,7 @@ export function initLandingHandlers(): void {
     const cleanup = () => {
         landingElement.removeEventListener('click', handleLandingClick);
         document.removeEventListener('keypress', handleLandingKeypress);
+        (landingElement as any)._landingListenersSet = false;
     };
     
     // Stocker la fonction de nettoyage

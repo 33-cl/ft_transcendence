@@ -18,7 +18,9 @@ function setupSpectatorGameFinishedEventListeners(): void {
     
     // Main Menu button
     const mainMenuBtn = document.getElementById('spectator-main-menu-btn') as HTMLButtonElement;
-    if (mainMenuBtn) {
+    if (mainMenuBtn && !(mainMenuBtn as any)._listenerSet) {
+        (mainMenuBtn as any)._listenerSet = true;
+        
         mainMenuBtn.addEventListener('click', async () => {
              // Clean up any game-related state
             if ((window as any).leaveCurrentRoomAsync) {
@@ -31,7 +33,7 @@ function setupSpectatorGameFinishedEventListeners(): void {
             }
 
             // Navigate to main menu
-            const { load } = await import('./utils.js');
+            const { load } = await import('../navigation/utils.js');
             await load('mainMenu');
         });
     }
