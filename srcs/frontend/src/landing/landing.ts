@@ -1,6 +1,6 @@
 // landing.ts - Gestion de la page landing
 
-import { load } from '../pages/utils.js';
+import { load } from '../navigation/utils.js';
 
 // Initialiser les handlers de la page landing
 export function initLandingHandlers(): void {

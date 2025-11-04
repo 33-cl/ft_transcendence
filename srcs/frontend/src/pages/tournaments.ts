@@ -1,4 +1,4 @@
-import { show, load } from './utils.js';
+import { show, load } from '../navigation/utils.js';
 
 // Page tournaments: liste minimale (fetch /tournaments)
 export default async function tournamentsPage() {

@@ -166,7 +166,7 @@ export function initializeAddFriendSearch(): void {
                     const users = data.users || [];
 
                     // Import security utilities
-                    const { escapeHtml, sanitizeUrl } = await import('../utils/security.js');
+                    const { escapeHtml, sanitizeUrl } = await import('../navigation/security.js');
 
                     if (users.length === 0) {
                         searchResults.innerHTML = '<div class="search-no-results">No users found</div>';
@@ -237,7 +237,7 @@ export function initializeBackToFriendsButton(): void {
     const backBtn = document.getElementById('backToFriendsBtn');
     if (backBtn) {
         backBtn.addEventListener('click', async () => {
-            const { show, hide } = await import('../pages/utils.js');
+            const { show, hide } = await import('../navigation/utils.js');
             const { initializeAddFriendsButton, initializeFriendListEventListeners, startFriendListRealtimeUpdates, fetchInitialFriendStatuses } = await import('./friendList.html.js');
             
             // Hide addFriends and show friendList
@@ -313,7 +313,7 @@ export function initializeAddFriendsButton(): void {
         (addFriendsBtn as any)._addFriendsListenerSet = true;
         
         addFriendsBtn.addEventListener('click', async () => {
-            const { show, hide } = await import('../pages/utils.js');
+            const { show, hide } = await import('../navigation/utils.js');
             
             hide('friendList');
             await show('addFriends');
@@ -514,7 +514,7 @@ export async function spectateFreind(username: string): Promise<void> {
                 spectator: true 
             });
             
-            const { load } = await import('../pages/utils.js');
+            const { load } = await import('../navigation/utils.js');
             await load('game');
         } else {
             alert('WebSocket connection not available');

@@ -1,6 +1,6 @@
 // navigation.ts - Gestion centralisée de la navigation et de l'historique du navigateur
 
-import { load } from '../pages/utils.js';
+import { load } from './utils.js';
 
 /**
  * Met à jour l'historique du navigateur avec une nouvelle page

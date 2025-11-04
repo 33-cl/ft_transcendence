@@ -1,4 +1,4 @@
-import { setStarsHoverColor, getColorRgb } from '../utils/background.js';
+import { setStarsHoverColor, getColorRgb } from '../background/background.js';
 
 /**
  * Initialize event handlers for the AI config page

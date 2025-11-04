@@ -4,7 +4,7 @@
 declare var io: any;
 
 // Pre-import load to avoid dynamic imports in event handlers
-import { load } from '../pages/utils.js';
+import { load } from '../navigation/utils.js';
 import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../navigation/sessionDisconnected.html.js';
 
 // NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
@@ -178,7 +178,7 @@ function setupGlobalSocketListeners() {
                 console.log('⚠️ WebSocket: USER_ALREADY_CONNECTED received');
                 
                 // Import isSessionBlocked dynamically to check if BroadcastChannel already handled this
-                import('../utils/sessionBroadcast.js').then(({ isSessionBlocked }) => {
+                import('../navigation/sessionBroadcast.js').then(({ isSessionBlocked }) => {
                     // Check if already blocked by BroadcastChannel OR if overlay already exists
                     const alreadyBlocked = isSessionBlocked();
                     const overlayExists = document.getElementById('sessionDisconnectedOverlay');

@@ -1,8 +1,8 @@
 import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
-import { initSessionBroadcast, isSessionBlocked } from '../utils/sessionBroadcast.js';
-import { guardFunction } from '../utils/securityGuard.js';
-import { pushHistoryState } from '../navigation/navigation.js';
+import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
+import { guardFunction } from './securityGuard.js';
+import { pushHistoryState } from './navigation.js';
 
 const components = {
     landing: {id: 'landing', html: landingHTML},

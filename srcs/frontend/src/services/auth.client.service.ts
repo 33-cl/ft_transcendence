@@ -8,7 +8,7 @@ import {
     markSessionInactive, 
     broadcastSessionCreated, 
     broadcastSessionDestroyed 
-} from '../utils/sessionBroadcast.js';
+} from '../navigation/sessionBroadcast.js';
 
 /**
  * Interface pour la réponse de registration/login

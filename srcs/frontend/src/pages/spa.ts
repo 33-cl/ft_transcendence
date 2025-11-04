@@ -1,16 +1,16 @@
-import { show, load , hideAllPages, hide } from './utils.js';
+import { show, load , hideAllPages, hide } from '../navigation/utils.js';
 import { spectateFreind } from '../friends/friendList.html.js';
 import { checkSessionOnce } from '../auth/auth.js'; // <- import moved function
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from '../settings/settings.js';
-import { setStarsHoverColor } from '../utils/background.js';
-import { initSessionBroadcast } from '../utils/sessionBroadcast.js'; // Import session broadcast
-import { installFetchGuard } from '../utils/securityGuard.js'; // Import fetch guard
+import { setStarsHoverColor } from '../background/background.js';
+import { initSessionBroadcast } from '../navigation/sessionBroadcast.js'; // Import session broadcast
+import { installFetchGuard } from '../navigation/securityGuard.js'; // Import fetch guard
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../navigation/navigation.js';
 import '../config/config.js'; // Import to load AI Config handlers
 import '../landing/landing.js'; // Import to load Landing handlers
 import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)
-// import { waitForSocketConnection } from './utils/socketLoading.js';
+// import { waitForSocketConnection } from '../game/socketLoading.js';
 
 // Declare global interface for Window
 declare global {

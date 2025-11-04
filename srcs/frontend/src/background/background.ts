@@ -1,4 +1,4 @@
-import { hideAllPages, show } from '../pages/utils.js';
+import { hideAllPages, show } from '../navigation/utils.js';
 
 // Configuration globale
 const BASE_STAR_COUNT = 2000; // Nombre de référence pour une fenêtre de taille standard

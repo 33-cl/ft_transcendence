@@ -31,7 +31,7 @@ function setupSpectatorGameFinishedEventListeners(): void {
             }
 
             // Navigate to main menu
-            const { load } = await import('./utils.js');
+            const { load } = await import('../navigation/utils.js');
             await load('mainMenu');
         });
     }

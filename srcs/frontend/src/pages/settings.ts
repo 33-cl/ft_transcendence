@@ -1,5 +1,5 @@
-// import { load } from '../pages/utils.js';
-import { isValidEmail, isValidUsername, isValidPassword } from '../utils/validation.js';
+// import { load } from '../navigation/utils.js';
+import { isValidEmail, isValidUsername, isValidPassword } from '../services/validation.js';
 import { initAvatarHandlers, saveAvatar } from '../profile/change_avatar.js';
 
 // Mettre à jour le profil utilisateur

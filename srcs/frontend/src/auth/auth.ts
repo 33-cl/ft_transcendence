@@ -1,7 +1,7 @@
-import { load } from '../pages/utils.js';
-import { isSessionBlocked, markSessionActive, markSessionInactive } from '../utils/sessionBroadcast.js';
-import { guardFunction } from '../utils/securityGuard.js';
-import { validateRegisterInputs } from '../utils/validation.client.js';
+import { load } from '../navigation/utils.js';
+import { isSessionBlocked, markSessionActive, markSessionInactive } from '../navigation/sessionBroadcast.js';
+import { guardFunction } from '../navigation/securityGuard.js';
+import { validateRegisterInputs } from '../services/validation.client.js';
 import { registerUser, loginUser, logoutUser } from '../services/auth.client.service.js';
 import { 
     getInputValue, 
