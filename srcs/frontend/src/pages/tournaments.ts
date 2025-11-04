@@ -52,9 +52,8 @@ export default async function tournamentsPage() {
                 (btn as HTMLElement).addEventListener('click', async (e) => {
                     const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
                     if (id) {
-                        // Pour l'instant, on load la page detail si elle existe
-                        // TODO: implémenter load('tournamentDetail') plus tard
-                        alert('Ouvrir le tournoi: ' + id);
+                        // Navigation vers la page de détail du tournoi
+                        await load(`tournaments/${id}`);
                     }
                 });
             });

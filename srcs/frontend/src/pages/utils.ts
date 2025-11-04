@@ -238,6 +238,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             if ((window as any).initAIConfigManagers) (window as any).initAIConfigManagers();
         }, 100);
     }
+    else if (pageName === 'tournaments') {
+        // Load the tournaments list page
+        const tournamentsPage = await import('./tournaments.js');
+        await tournamentsPage.default();
+    }
     else if (pageName === 'gameFinished')
         await show('gameFinished', data);
     else if (pageName === 'spectatorGameFinished')
