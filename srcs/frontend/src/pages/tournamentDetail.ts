@@ -120,6 +120,35 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     container.style.display = 'block';
 }
 
+// Helper pour créer la map user_id -> alias (robuste)
+function createPlayerAliasMap(participants: TournamentParticipant[]): Map<number, string> {
+    const playerAliasMap = new Map<number, string>();
+    if (participants && Array.isArray(participants)) {
+        participants.forEach(participant => {
+            if (participant && participant.user_id && participant.alias) {
+                playerAliasMap.set(participant.user_id, participant.alias.trim());
+            }
+        });
+    }
+    return playerAliasMap;
+}
+
+// Helper pour grouper les matchs par round (robuste)
+function groupMatchesByRound(matches: TournamentMatch[]): Map<number, TournamentMatch[]> {
+    const matchesByRound = new Map<number, TournamentMatch[]>();
+    if (matches && Array.isArray(matches)) {
+        matches.forEach(match => {
+            if (match && typeof match.round === 'number' && match.round > 0) {
+                if (!matchesByRound.has(match.round)) {
+                    matchesByRound.set(match.round, []);
+                }
+                matchesByRound.get(match.round)!.push(match);
+            }
+        });
+    }
+    return matchesByRound;
+}
+
 // Helper pour obtenir l'alias d'un joueur (robuste)
 function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, string>): string {
     if (!playerId || playerId === 0) return 'BYE';
