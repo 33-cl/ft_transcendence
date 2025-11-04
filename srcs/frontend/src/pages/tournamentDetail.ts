@@ -19,3 +19,14 @@ interface TournamentMatch {
     status: 'scheduled' | 'finished' | 'cancelled';
     scheduled_at: string | null;
 }
+
+interface Tournament {
+    id: string;
+    name: string;
+    status: 'registration' | 'active' | 'completed' | 'cancelled';
+    max_players: number;
+    current_players: number;
+    created_at: string;
+    started_at: string | null;
+    completed_at: string | null;
+}
