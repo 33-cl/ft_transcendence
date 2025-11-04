@@ -242,6 +242,16 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('gameFinished', data);
     else if (pageName === 'spectatorGameFinished')
         await show('spectatorGameFinished', data);
+    else if (pageName.startsWith('tournaments/')) {
+        // Handle tournament detail pages: /tournaments/:id
+        const tournamentId = pageName.split('/')[1];
+        if (tournamentId) {
+            const tournamentDetail = await import('./tournamentDetail.js');
+            await tournamentDetail.default(tournamentId);
+        } else {
+            console.warn('Tournament ID missing in URL');
+        }
+    }
     else
         console.warn(`Page ${pageName} not found`);
 

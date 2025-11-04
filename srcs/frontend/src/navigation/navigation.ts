@@ -88,7 +88,14 @@ export function isDOMReady(): boolean {
  */
 export function getPageFromURL(): string {
     const path = window.location.pathname;
-    // Enlever le slash initial et utiliser la première partie du chemin
-    const pageName = path.replace(/^\//, '') || 'signIn';
-    return pageName;
+    // Enlever le slash initial
+    const cleanPath = path.replace(/^\//, '') || 'signIn';
+    
+    // Handle tournament detail URLs: /tournaments/:id
+    if (cleanPath.startsWith('tournaments/') && cleanPath.split('/').length === 2) {
+        return cleanPath; // Return full path for tournament details
+    }
+    
+    // For other pages, return just the page name
+    return cleanPath.split('/')[0] || 'signIn';
 }
