@@ -149,6 +149,22 @@ function groupMatchesByRound(matches: TournamentMatch[]): Map<number, Tournament
     return matchesByRound;
 }
 
+// Helper pour générer le HTML des participants (robuste)
+function renderParticipantsHtml(participants: TournamentParticipant[]): string {
+    if (!participants || participants.length === 0) {
+        return '<p class="text-gray-500">Aucun participant</p>';
+    }
+    
+    return participants
+        .filter(p => p && p.alias) // Filtrer les participants invalides
+        .map(p => `
+            <div class="bg-gray-50 px-3 py-2 rounded border">
+                <span class="font-medium">${p.alias.trim() || 'Alias vide'}</span>
+                <span class="text-sm text-gray-500 ml-2">(ID: ${p.user_id || 'N/A'})</span>
+            </div>
+        `).join('');
+}
+
 // Helper pour obtenir l'alias d'un joueur (robuste)
 function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, string>): string {
     if (!playerId || playerId === 0) return 'BYE';
