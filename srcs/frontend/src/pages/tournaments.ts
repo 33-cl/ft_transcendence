@@ -22,7 +22,11 @@ export default async function tournamentsPage() {
     `;
 
     const backBtn = document.getElementById('tournaments-back');
-    if (backBtn) backBtn.addEventListener('click', async () => { await load('mainMenu'); });
+    if (backBtn && !(backBtn as any)._listenerSet) {
+        (backBtn as any)._listenerSet = true;
+        
+        backBtn.addEventListener('click', async () => { await load('mainMenu'); });
+    }
 
     const listContainer = document.getElementById('tournaments-list');
     try {
@@ -49,14 +53,18 @@ export default async function tournamentsPage() {
 
             // Attach click handlers
             document.querySelectorAll('.view-tournament').forEach(btn => {
-                (btn as HTMLElement).addEventListener('click', async (e) => {
-                    const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
-                    if (id) {
-                        // Pour l'instant, on load la page detail si elle existe
-                        // TODO: implémenter load('tournamentDetail') plus tard
-                        alert('Ouvrir le tournoi: ' + id);
-                    }
-                });
+                if (!(btn as any)._listenerSet) {
+                    (btn as any)._listenerSet = true;
+                    
+                    (btn as HTMLElement).addEventListener('click', async (e) => {
+                        const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+                        if (id) {
+                            // Pour l'instant, on load la page detail si elle existe
+                            // TODO: implémenter load('tournamentDetail') plus tard
+                            alert('Ouvrir le tournoi: ' + id);
+                        }
+                    });
+                }
             });
         }
     } catch (error) {
