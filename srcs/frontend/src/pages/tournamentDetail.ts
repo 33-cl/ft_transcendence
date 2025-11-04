@@ -152,14 +152,14 @@ function groupMatchesByRound(matches: TournamentMatch[]): Map<number, Tournament
 // Helper pour générer le HTML des participants (robuste)
 function renderParticipantsHtml(participants: TournamentParticipant[]): string {
     if (!participants || participants.length === 0) {
-        return '<p class="text-gray-500">Aucun participant</p>';
+        return '<p class="text-gray-500">No participants</p>';
     }
     
     return participants
         .filter(p => p && p.alias) // Filtrer les participants invalides
         .map(p => `
             <div class="bg-gray-50 px-3 py-2 rounded border">
-                <span class="font-medium">${p.alias.trim() || 'Alias vide'}</span>
+                <span class="font-medium">${p.alias.trim() || 'Empty alias'}</span>
                 <span class="text-sm text-gray-500 ml-2">(ID: ${p.user_id || 'N/A'})</span>
             </div>
         `).join('');
@@ -168,7 +168,7 @@ function renderParticipantsHtml(participants: TournamentParticipant[]): string {
 // Helper pour générer le HTML du bracket par rounds
 function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playerAliasMap: Map<number, string>): string {
     if (matchesByRound.size === 0) {
-        return '<p class="text-gray-500">Aucun match programmé</p>';
+        return '<p class="text-gray-500">No matches scheduled</p>';
     }
     
     return Array.from(matchesByRound.entries())
@@ -183,13 +183,13 @@ function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playe
                 let statusClass = 'text-gray-600';
                 
                 if (match.status === 'finished' && winner) {
-                    statusDisplayText = `Terminé - Gagnant: ${winner}`;
+                    statusDisplayText = `Finished - Winner: ${winner}`;
                     statusClass = 'text-green-600 font-medium';
                 } else if (match.status === 'scheduled') {
-                    statusDisplayText = 'Programmé';
+                    statusDisplayText = 'Scheduled';
                     statusClass = 'text-blue-600';
                 } else if (match.status === 'cancelled') {
-                    statusDisplayText = 'Annulé';
+                    statusDisplayText = 'Cancelled';
                     statusClass = 'text-red-600';
                 }
 
@@ -216,6 +216,79 @@ function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playe
                 </div>
             `;
         }).join('');
+}
+
+// Fonction principale de rendu du contenu du tournoi
+function renderTournamentContent(data: TournamentDetailResponse): string {
+    const { tournament, participants, matches } = data;
+    
+    // Utiliser les helpers pour traiter les données
+    const playerAliasMap = createPlayerAliasMap(participants);
+    const matchesByRound = groupMatchesByRound(matches);
+    const participantsHtml = renderParticipantsHtml(participants);
+    const bracketHtml = renderBracketHtml(matchesByRound, playerAliasMap);
+    
+    // Statut du tournoi avec couleur
+    let statusClass = 'text-gray-600';
+    let statusDisplayText: string = tournament.status;
+    
+    switch (tournament.status) {
+        case 'registration':
+            statusClass = 'text-blue-600';
+            statusDisplayText = 'Registration Open';
+            break;
+        case 'active':
+            statusClass = 'text-green-600';
+            statusDisplayText = 'In Progress';
+            break;
+        case 'completed':
+            statusClass = 'text-purple-600';
+            statusDisplayText = 'Completed';
+            break;
+        case 'cancelled':
+            statusClass = 'text-red-600';
+            statusDisplayText = 'Cancelled';
+            break;
+    }
+
+    return `
+        <div class="space-y-6">
+            <!-- En-tête du tournoi -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">${tournament.name}</h1>
+                <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                    <span class="px-3 py-1 rounded-full bg-gray-100">
+                        ID: ${tournament.id}
+                    </span>
+                    <span class="px-3 py-1 rounded-full ${statusClass.replace('text-', 'bg-').replace('-600', '-100')} ${statusClass}">
+                        ${statusDisplayText}
+                    </span>
+                    <span class="px-3 py-1 rounded-full bg-gray-100">
+                        ${tournament.current_players || 0}/${tournament.max_players || 0} players
+                    </span>
+                    <span class="px-3 py-1 rounded-full bg-gray-100">
+                        Created: ${tournament.created_at ? new Date(tournament.created_at).toLocaleDateString('en-US') : 'Unknown date'}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Section Participants -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Participants</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    ${participantsHtml}
+                </div>
+            </div>
+
+            <!-- Section Bracket -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Bracket</h2>
+                <div class="space-y-4">
+                    ${bracketHtml}
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // Helper pour obtenir l'alias d'un joueur (robuste)
