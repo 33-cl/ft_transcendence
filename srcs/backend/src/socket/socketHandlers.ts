@@ -22,6 +22,7 @@ import { RoomType } from '../types.js';
 import { authenticateSocket, getSocketUser, removeSocketUser, isSocketAuthenticated, getSocketIdForUser } from './socketAuth.js';
 import { updateUserStats, getUserByUsername, getUserById } from '../user.js';
 import db from '../db.js';
+import { notifyFriendAdded, notifyFriendRemoved, notifyProfileUpdated, broadcastUserStatusChange } from './notificationHandlers.js';
 
 // Mutex to prevent concurrent joinRoom for the same socket
 const joinRoomLocks = new Set<string>();
@@ -30,182 +31,9 @@ const joinRoomLocks = new Set<string>();
 let globalIo: Server | null = null;
 
 // Export a function to get the global io instance
-export function getGlobalIo(): Server | null {
+export function getGlobalIo(): Server | null
+{
     return globalIo;
-}
-
-// Fonction pour notifier qu'un nouvel ami a été ajouté
-export function notifyFriendAdded(user1Id: number, user2Id: number, fastify: FastifyInstance) {
-    if (!globalIo) return;
-    
-    try {
-        // Récupérer les informations des deux utilisateurs
-        const user1 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user1Id) as { id: number; username: string } | undefined;
-        const user2 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user2Id) as { id: number; username: string } | undefined;
-        
-        if (!user1 || !user2) return;
-        
-        // Notifier user1 que user2 a été ajouté comme ami
-        const user1SocketId = getSocketIdForUser(user1.id);
-        if (user1SocketId) {
-            const user1Socket = globalIo.sockets.sockets.get(user1SocketId);
-            if (user1Socket) {
-                user1Socket.emit('friendAdded', {
-                    friend: {
-                        id: user2.id,
-                        username: user2.username
-                    },
-                    timestamp: Date.now()
-                });
-            }
-        }
-        
-        // Notifier user2 que user1 a été ajouté comme ami
-        const user2SocketId = getSocketIdForUser(user2.id);
-        if (user2SocketId) {
-            const user2Socket = globalIo.sockets.sockets.get(user2SocketId);
-            if (user2Socket) {
-                user2Socket.emit('friendAdded', {
-                    friend: {
-                        id: user1.id,
-                        username: user1.username
-                    },
-                    timestamp: Date.now()
-                });
-            }
-        }
-    } catch (error) {
-        fastify.log.error(`Error notifying friend added: ${error}`);
-    }
-}
-
-// Fonction pour notifier qu'un ami a été supprimé
-export function notifyFriendRemoved(user1Id: number, user2Id: number, fastify: FastifyInstance) {
-    if (!globalIo) return;
-    
-    try {
-        // Récupérer les informations des deux utilisateurs
-        const user1 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user1Id) as { id: number; username: string } | undefined;
-        const user2 = db.prepare('SELECT id, username FROM users WHERE id = ?').get(user2Id) as { id: number; username: string } | undefined;
-        
-        if (!user1 || !user2) return;
-        
-        // Notifier user1 que user2 a été supprimé de ses amis
-        const user1SocketId = getSocketIdForUser(user1.id);
-        if (user1SocketId) {
-            const user1Socket = globalIo.sockets.sockets.get(user1SocketId);
-            if (user1Socket) {
-                user1Socket.emit('friendRemoved', {
-                    friendId: user2.id,
-                    timestamp: Date.now()
-                });
-            }
-        }
-        
-        // Notifier user2 que user1 a été supprimé de ses amis
-        const user2SocketId = getSocketIdForUser(user2.id);
-        if (user2SocketId) {
-            const user2Socket = globalIo.sockets.sockets.get(user2SocketId);
-            if (user2Socket) {
-                user2Socket.emit('friendRemoved', {
-                    friendId: user1.id,
-                    timestamp: Date.now()
-                });
-            }
-        }
-    } catch (error) {
-        fastify.log.error(`Error notifying friend removed: ${error}`);
-    }
-}
-
-// Fonction pour notifier qu'un profil utilisateur a été mis à jour
-export function notifyProfileUpdated(userId: number, updates: { username?: string; avatar_url?: string }, fastify: FastifyInstance) {
-    if (!globalIo) return;
-    
-    try {
-        // Récupérer les informations actuelles de l'utilisateur
-        const user = db.prepare('SELECT id, username, avatar_url FROM users WHERE id = ?').get(userId) as { id: number; username: string; avatar_url: string | null } | undefined;
-        
-        if (!user) return;
-        
-        // Récupérer tous les amis de cet utilisateur (dans les deux sens)
-        const friends = db.prepare(`
-            SELECT DISTINCT u.id, u.username
-            FROM users u
-            WHERE u.id IN (
-                SELECT friend_id FROM friendships WHERE user_id = ?
-                UNION
-                SELECT user_id FROM friendships WHERE friend_id = ?
-            )
-        `).all(userId, userId) as Array<{ id: number; username: string }>;
-        
-        
-        // Notifier chaque ami du changement de profil
-        for (const friend of friends)
-        {
-            const friendSocketId = getSocketIdForUser(friend.id);
-            if (friendSocketId)
-            {
-                const friendSocket = globalIo.sockets.sockets.get(friendSocketId);
-                if (friendSocket)
-                {
-                    friendSocket.emit('profileUpdated', {
-                        userId: user.id,
-                        username: updates.username || user.username,
-                        avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : user.avatar_url,
-                        timestamp: Date.now()
-                    });
-                }
-            }
-        }
-    } catch (error) {
-        fastify.log.error(`Error notifying profile updated: ${error}`);
-    }
-}
-
-// Fonction pour notifier un changement de statut utilisateur à ses amis
-export function broadcastUserStatusChange(userId: number, status: 'online' | 'in-game' | 'offline', io: Server, fastify: FastifyInstance) {
-    if (!globalIo) return;
-    
-    try {
-        // Récupérer l'utilisateur
-        const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(userId) as { id: number; username: string } | undefined;
-        
-        if (!user) return;
-        
-        
-        // Récupérer tous les amis de cet utilisateur
-        const friends = db.prepare(`
-            SELECT DISTINCT u.id, u.username
-            FROM users u
-            WHERE u.id IN (
-                SELECT friend_id FROM friendships WHERE user_id = ?
-                UNION
-                SELECT user_id FROM friendships WHERE friend_id = ?
-            )
-        `).all(userId, userId) as Array<{ id: number; username: string }>;
-        
-        
-        // Notifier chaque ami du changement de statut
-        let notifiedCount = 0;
-        for (const friend of friends) {
-            const friendSocketId = getSocketIdForUser(friend.id);
-            if (friendSocketId) {
-                const friendSocket = globalIo.sockets.sockets.get(friendSocketId);
-                if (friendSocket) {
-                    friendSocket.emit('friendStatusChanged', {
-                        username: user.username,
-                        status: status,
-                        timestamp: Date.now()
-                    });
-                    notifiedCount++;
-                }
-            }
-        }
-        
-    } catch (error) {
-        fastify.log.error(`Error broadcasting user status change: ${error}`);
-    }
 }
 
 // Vérifie si le client peut rejoindre la room (nom valide et room existante)
@@ -565,7 +393,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
                     for (const [socketId, username] of Object.entries(room.playerUsernames)) {
                         const player = getUserByUsername(username) as any;
                         if (player) {
-                            broadcastUserStatusChange(player.id, 'in-game', io, fastify);
+                            broadcastUserStatusChange(globalIo, player.id, 'in-game', fastify);
                             fastify.log.info(`🎮 Notified friends that ${username} is now in-game`);
                         }
                     }
@@ -776,7 +604,7 @@ function handleGameEnd(roomName: string, room: RoomType, winner: { side: string;
 				if (room.players.includes(socketId)) {
 					const user = getUserByUsername(username) as any;
 					if (user) {
-						broadcastUserStatusChange(user.id, 'online', io, fastify);
+						broadcastUserStatusChange(globalIo, user.id, 'online', fastify);
 					}
 				}
 			}
@@ -966,8 +794,8 @@ function handleSocketDisconnect(socket: Socket, io: Server, fastify: FastifyInst
                         fastify.log.info(`[FORFAIT] gameFinished émis pour room ${playerRoom}: ${winnerUsername} bat ${disconnectedUsername} par forfait (${winningScore}-${disconnectedScore})`);
                         
                         // Notifier les amis que les DEUX joueurs ne sont plus en jeu
-                        broadcastUserStatusChange(winnerUser.id, 'online', io, fastify);
-                        broadcastUserStatusChange(loserUser.id, 'offline', io, fastify); // Le perdant s'est déconnecté
+                        broadcastUserStatusChange(globalIo, winnerUser.id, 'online', fastify);
+                        broadcastUserStatusChange(globalIo, loserUser.id, 'offline', fastify); // Le perdant s'est déconnecté
                     }
                 }
                 
@@ -985,7 +813,7 @@ function handleSocketDisconnect(socket: Socket, io: Server, fastify: FastifyInst
     
     // Notifier les amis que l'utilisateur est maintenant offline
     if (user) {
-        broadcastUserStatusChange(user.id, 'offline', io, fastify);
+        broadcastUserStatusChange(globalIo, user.id, 'offline', fastify);
     }
 }
 
@@ -1068,8 +896,8 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
                         fastify.log.info(`[FORFAIT] gameFinished émis pour room ${previousRoom}: ${winnerUsername} bat ${leavingUsername} par forfait (${winningScore}-${leavingScore})`);
                         
                         // Notifier les amis que les DEUX joueurs ne sont plus en jeu
-                        broadcastUserStatusChange(winnerUser.id, 'online', io, fastify);
-                        broadcastUserStatusChange(loserUser.id, 'online', io, fastify); // Le perdant quitte aussi
+                        broadcastUserStatusChange(globalIo, winnerUser.id, 'online', fastify);
+                        broadcastUserStatusChange(globalIo, loserUser.id, 'online', fastify); // Le perdant quitte aussi
                     }
                 }
                 
@@ -1142,7 +970,7 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
             fastify.log.info(`Socket ${socket.id} authentifié pour l'utilisateur ${user.username} (${user.id})`);
             
             // 🚀 NOUVEAU : Notifier les amis que l'utilisateur est maintenant en ligne
-            broadcastUserStatusChange(user.id, 'online', io, fastify);
+            broadcastUserStatusChange(globalIo, user.id, 'online', fastify);
         } else if (user === 'USER_ALREADY_CONNECTED') {
             // Utilisateur déjà connecté ailleurs
             socket.emit('error', { 

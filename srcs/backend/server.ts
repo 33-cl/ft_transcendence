@@ -56,16 +56,8 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Ensure avatar directory exists before starting the server
     ensureAvatarDirectory();
 
-    // Enregistre le plugin CORS pour Fastify
-    const allowedOrigins = process.env.CORS_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean);
-    const corsOrigin = process.env.NODE_ENV === 'production' 
-      ? (allowedOrigins && allowedOrigins.length > 0 ? allowedOrigins : [])
-      : true; // Dev mode: allow all
-    
-    if (process.env.NODE_ENV === 'production' && (!allowedOrigins || allowedOrigins.length === 0)) {
-      app.log.error('❌ CORS_ORIGINS env var is required in production mode');
-      throw new Error('CORS_ORIGINS environment variable is required in production');
-    }
+    // Enregistre le plugin CORS pour Fastify (Liste blanche stricte)
+    const corsOrigin = ['https://localhost:3000']; // Ajoute tes autres domaines ici si besoin
     
     await app.register(fastifyCors, {
       origin: corsOrigin,
@@ -158,7 +150,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
   // Configuration de socket.io avec le serveur HTTP(S) (WSS)
   const io = new SocketIOServer(app.server as any, {
     cors: {
-      origin: corsOrigin, // Use same CORS policy as Fastify (restricts in production)
+      origin: ['https://localhost:3000'], // Liste blanche stricte (même config que Fastify)
       methods: ["GET", "POST"], // Autorise les méthodes GET et POST
       credentials: true // Autorise les cookies/headers d'authentification
     }

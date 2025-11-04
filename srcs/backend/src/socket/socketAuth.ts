@@ -31,7 +31,8 @@ const socketUsers = new Map<string, SocketUser>();
 const activeUsers = new Map<number, string>();
 
 // Parse cookies from socket handshake
-function parseCookiesFromSocket(socket: Socket): Record<string, string> {
+function parseCookiesFromSocket(socket: Socket): Record<string, string>
+{
   const cookies: Record<string, string> = {};
   const cookieHeader = socket.handshake.headers.cookie;
   
@@ -61,9 +62,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
     if (jwtToken) {
       // JWT authentication
       try {
-        if (!process.env.JWT_SECRET) {
+        if (!process.env.JWT_SECRET)
           throw new Error('JWT_SECRET environment variable is not set');
-        }
         const JWT_SECRET = process.env.JWT_SECRET;
         const payload = jwt.verify(jwtToken, JWT_SECRET);
         
@@ -73,7 +73,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
           // Vérifier que le token est actif dans active_tokens
           const activeToken = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(userId, jwtToken);
           
-          if (activeToken) {
+          if (activeToken)
+          {
             const userRow = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get(userId) as { id: number, username: string, email: string } | undefined;
             if (userRow) {
               user = {

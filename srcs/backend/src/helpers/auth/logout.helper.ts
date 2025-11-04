@@ -2,7 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { verifyJwt } from '../../services/auth.service.js';
 import { removeActiveToken } from '../../services/auth.service.js';
 import { removeUserFromActiveList } from '../../socket/socketAuth.js';
-import { getGlobalIo, broadcastUserStatusChange } from '../../socket/socketHandlers.js';
+import { getGlobalIo } from '../../socket/socketHandlers.js';
+import { broadcastUserStatusChange } from '../../socket/notificationHandlers.js';
 
 export function handleLogout(jwtToken: string, fastify: FastifyInstance): void
 {
@@ -12,7 +13,7 @@ export function handleLogout(jwtToken: string, fastify: FastifyInstance): void
     {
       removeUserFromActiveList(decodedToken.userId);
       const io = getGlobalIo();
-      if (io) broadcastUserStatusChange(decodedToken.userId, 'offline', io, fastify);
+      if (io) broadcastUserStatusChange(io, decodedToken.userId, 'offline', fastify);
     }
     removeActiveToken(jwtToken);
   } catch (err) {

@@ -3,7 +3,8 @@ import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js';
 import { processAvatarSave } from '../../helpers/avatar/avatar.helper.js';
-import { notifyProfileUpdated } from '../../socket/socketHandlers.js';
+import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
+import { getGlobalIo } from '../../socket/socketHandlers.js';
 
 /**
  * POST /auth/avatar/save
@@ -37,7 +38,7 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
       session.id
     );
     
-    notifyProfileUpdated(session.id, { avatar_url: finalAvatarUrl }, fastify);
+    notifyProfileUpdated(getGlobalIo(), session.id, { avatar_url: finalAvatarUrl }, fastify);
     
     return reply.send({ 
       ok: true, 

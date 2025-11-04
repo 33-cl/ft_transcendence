@@ -7,7 +7,8 @@ import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
 import { parseCookies, getJwtFromRequest } from '../helpers/http/cookie.helper.js';
-import { notifyFriendAdded, notifyFriendRemoved } from '../socket/socketHandlers.js';
+import { notifyFriendAdded, notifyFriendRemoved } from '../socket/notificationHandlers.js';
+import { getGlobalIo } from '../socket/socketHandlers.js';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set');
@@ -369,7 +370,7 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       
       
       // Notifier les deux utilisateurs qu'ils sont maintenant amis
-      notifyFriendAdded(currentUserId, friendRequest.sender_id, fastify);
+      notifyFriendAdded(getGlobalIo(), currentUserId, friendRequest.sender_id, fastify);
       
       // 🆕 Notifier l'utilisateur que son compteur de demandes a changé
       notifyFriendRequestCountChanged(currentUserId, fastify);
@@ -503,7 +504,7 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
 
       // Notifier les deux utilisateurs en temps réel
-      notifyFriendRemoved(currentUserId, friendId, fastify);
+      notifyFriendRemoved(getGlobalIo(), currentUserId, friendId, fastify);
       
 
       return { success: true, message: 'Friend removed successfully' };

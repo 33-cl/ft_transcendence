@@ -1,5 +1,6 @@
 import db from '../../db.js';
-import { notifyProfileUpdated } from '../../socket/socketHandlers.js';
+import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
+import { getGlobalIo } from '../../socket/socketHandlers.js';
 
 export function performAvatarReset(userId: number, fastifyInstance: any): string
 {
@@ -9,6 +10,6 @@ export function performAvatarReset(userId: number, fastifyInstance: any): string
     new Date().toISOString().slice(0, 19).replace('T', ' '),
     userId
   );
-  notifyProfileUpdated(userId, { avatar_url: defaultAvatarUrl }, fastifyInstance);
+  notifyProfileUpdated(getGlobalIo(), userId, { avatar_url: defaultAvatarUrl }, fastifyInstance);
   return defaultAvatarUrl;
 }

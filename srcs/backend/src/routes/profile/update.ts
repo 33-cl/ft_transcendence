@@ -3,7 +3,8 @@ import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js';
 import { validateAndSanitizeProfileInput, verifyPasswordAndUniqueness, updateUserProfile } from '../../helpers/auth/profile.helper.js';
-import { notifyProfileUpdated } from '../../socket/socketHandlers.js';
+import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
+import { getGlobalIo } from '../../socket/socketHandlers.js';
 
 /**
  * PUT /auth/profile
@@ -54,7 +55,7 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
     const updatedRow = db.prepare('SELECT username, email, avatar_url FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string; avatar_url: string | null } | undefined;
 
     if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
-      notifyProfileUpdated(sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
+      notifyProfileUpdated(getGlobalIo(), sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
 
     return reply.send({
       ok: true,

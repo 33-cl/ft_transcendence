@@ -50,6 +50,7 @@ export function getFileExtension(mimeType: string): string
       return 'png';
     case 'image/webp':
       return 'webp';
-    default: return 'jpg';
+    default:
+      return 'jpg';
   }
 }
