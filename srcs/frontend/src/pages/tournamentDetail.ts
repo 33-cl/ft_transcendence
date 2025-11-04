@@ -165,6 +165,59 @@ function renderParticipantsHtml(participants: TournamentParticipant[]): string {
         `).join('');
 }
 
+// Helper pour générer le HTML du bracket par rounds
+function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playerAliasMap: Map<number, string>): string {
+    if (matchesByRound.size === 0) {
+        return '<p class="text-gray-500">Aucun match programmé</p>';
+    }
+    
+    return Array.from(matchesByRound.entries())
+        .sort(([a], [b]) => a - b) // Trier par numéro de round
+        .map(([round, roundMatches]) => {
+            const matchesHtml = roundMatches.map(match => {
+                const player1 = getPlayerAlias(match.player1_id, playerAliasMap);
+                const player2 = getPlayerAlias(match.player2_id, playerAliasMap);
+                const winner = match.winner_id ? getPlayerAlias(match.winner_id, playerAliasMap) : null;
+                
+                let statusDisplayText: string = match.status;
+                let statusClass = 'text-gray-600';
+                
+                if (match.status === 'finished' && winner) {
+                    statusDisplayText = `Terminé - Gagnant: ${winner}`;
+                    statusClass = 'text-green-600 font-medium';
+                } else if (match.status === 'scheduled') {
+                    statusDisplayText = 'Programmé';
+                    statusClass = 'text-blue-600';
+                } else if (match.status === 'cancelled') {
+                    statusDisplayText = 'Annulé';
+                    statusClass = 'text-red-600';
+                }
+
+                return `
+                    <div class="bg-white border rounded p-3 mb-2">
+                        <div class="flex justify-between items-center">
+                            <div class="font-medium">
+                                ${player1} <span class="text-gray-400">vs</span> ${player2}
+                            </div>
+                            <div class="text-sm ${statusClass}">
+                                ${statusDisplayText}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 text-blue-800">Round ${round}</h3>
+                    <div class="space-y-2">
+                        ${matchesHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+}
+
 // Helper pour obtenir l'alias d'un joueur (robuste)
 function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, string>): string {
     if (!playerId || playerId === 0) return 'BYE';
