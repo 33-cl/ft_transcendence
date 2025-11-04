@@ -30,3 +30,10 @@ interface Tournament {
     started_at: string | null;
     completed_at: string | null;
 }
+
+interface TournamentDetailResponse {
+    success: boolean;
+    tournament: Tournament;
+    participants: TournamentParticipant[];
+    matches: TournamentMatch[];
+}
