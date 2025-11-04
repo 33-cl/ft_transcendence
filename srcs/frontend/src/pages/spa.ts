@@ -279,8 +279,6 @@ function initializeComponents(): void
                 }
             }
 
-            // Vider le localStorage et sessionStorage
-            localStorage.clear();
             sessionStorage.clear();
             
             // When logout, prevent back navigation to protected pages

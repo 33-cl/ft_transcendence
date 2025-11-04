@@ -53,9 +53,6 @@ export function initAIConfigManagers(): void {
         (window as any).aiDifficulty = difficulty;
         (window as any).lastGameType = 'soloAI';
         
-        // Save in localStorage for consistency
-        localStorage.setItem('aiDifficulty', difficulty);
-        
         try {
             // Join room in local mode with AI
             await (window as any).joinOrCreateRoom(2, true);
