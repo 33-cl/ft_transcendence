@@ -122,6 +122,21 @@
 
     .difficulty-icon {
         @apply text-4xl mb-3;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .difficulty-icon svg {
+        width: 48px;
+        height: 48px;
+        stroke: currentColor;
+    }
+
+    .game-mode-icon {
+        width: 48px;
+        height: 48px;
+        filter: invert(1) brightness(1);
     }
 
     .difficulty-name {
