@@ -54,9 +54,6 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
     const cookies = parseCookiesFromSocket(socket);
     const jwtToken = cookies['jwt'];
 
-    if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} cookies: ${Object.keys(cookies).join(', ')}`);
-    if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} jwt: ${jwtToken ? jwtToken.substring(0, 10) + '...' : 'none'}`);
-
     let user: SocketUser | undefined;
     
     if (jwtToken) {
@@ -67,7 +64,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
         const JWT_SECRET = process.env.JWT_SECRET;
         const payload = jwt.verify(jwtToken, JWT_SECRET);
         
-        if (payload && typeof payload === 'object' && 'userId' in payload) {
+        if (payload && typeof payload === 'object' && 'userId' in payload)
+        {
           const userId = (payload as any).userId;
           
           // Vérifier que le token est actif dans active_tokens
@@ -90,7 +88,6 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
       }
     }
 
-    if (fastify) fastify.log.info(`[DEBUG] Socket ${socket.id} found user in DB: ${user ? `${user.username} (${user.id})` : 'null'}`);
 
     if (user) {
       // Vérifier si cet utilisateur est déjà connecté ailleurs
@@ -128,7 +125,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
 }
 
 // Get authenticated user for a socket
-export function getSocketUser(socketId: string): SocketUser | null {
+export function getSocketUser(socketId: string): SocketUser | null
+{
   return socketUsers.get(socketId) || null;
 }
 

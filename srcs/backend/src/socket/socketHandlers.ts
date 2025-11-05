@@ -150,28 +150,53 @@ function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io: 
     }
 }
 
+// Valide que la room est accessible et non pleine
+function validateRoomAccess(socket: Socket, roomName: string, room: RoomType, params: any, fastify: FastifyInstance): boolean
+{
+    if (!canJoinRoom(socket, roomName))
+        return false;
+    
+    if (handleRoomFull(socket, room, fastify))
+        return false;
+    
+    return true;
+}
+
+// Gère l'authentification et les notifications pour les jeux en ligne
+function handleOnlineGamePreparation(socket: Socket, roomName: string, room: RoomType, fastify: FastifyInstance): boolean
+{
+    const user = authenticateOnlinePlayer(socket, roomName, room, fastify);
+    if (!user)
+        return false;
+    
+    // Notifier les amis qu une game démarre
+    notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, globalIo);
+    return true;
+}
+
+// Démarre le jeu si les conditions sont remplies
+function tryStartGame(room: RoomType, roomName: string, params: any, fastify: FastifyInstance, io: Server): void
+{
+    if (params.isLocalGame && !room.pongGame)
+        startLocalGame(room, roomName, params, io, fastify);
+    else if (!room.pongGame && room.players.length === room.maxPlayers)
+        startOnlineGame(room, roomName, handleGameEnd, fastify, io);
+}
+
 // Handler pour rejoindre ou créer une room
 async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstance, io: Server)
 {
-    // empeche de join plusieurs fois en meme temps
     if (joinRoomLocks.has(socket.id))
     {
         socket.emit('error', { error: 'joinRoom already in progress', code: 'JOIN_IN_PROGRESS' });
         return;
     }
-    
     joinRoomLocks.add(socket.id);
-    
     try
     {
         const params = parseJoinRoomData(data);
-        //ne pas se retrouver a controller les paddle de 2 games en meme temps
         cleanupPreviousRoom(socket);
-
         const roomName = findOrCreateRoom(params);
-        
-        if (!canJoinRoom(socket, roomName))
-            return;
         
         const room = rooms[roomName] as RoomType;
         room.isLocalGame = params.isLocalGame;
@@ -182,47 +207,17 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
             return;
         }
         
-        if (handleRoomFull(socket, room, fastify))
+        if (!validateRoomAccess(socket, roomName, room, params, fastify))
             return;
-        
-        // === ÉTAPE 7 : CLEANUP DÉFENSIF (À TESTER) ===
-        // ⚠️ CODE DÉFENSIF COMMENTÉ POUR TESTS
-        // Si des bugs apparaissent (joueur dans 2 rooms, paddle corrompu), décommenter
-        
-        // Double cleanup pour sécurité (probablement redondant avec ligne 169)
-        // cleanupPreviousRoom(socket);
-        
-        // Triple vérification manuelle (fait déjà par cleanupPreviousRoom)
-        // const stillInRoom = getPlayerRoom(socket.id);
-        // if (stillInRoom)
-        // {
-        //     removePlayerFromRoom(socket.id);
-        //     socket.leave(stillInRoom);
-        // }
-        
-        // Cleanup agressif qui boucle sur TOUTES les rooms (très lourd)
-        // cleanUpPlayerRooms(socket, fastify, io);
         
         joinPlayerToRoom(socket, roomName, room, io);
         
         if (!params.isLocalGame)
         {
-            const user = authenticateOnlinePlayer(socket, roomName, room, fastify);
-            if (!user) return; // Authentication failed
-            
-            // Notifier les amis quand la room est pleine
-            notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, globalIo);
+            if (!handleOnlineGamePreparation(socket, roomName, room, fastify))
+                return;
         }
-        
-        // === ÉTAPE 10 : DÉMARRAGE DU JEU ===
-        if (params.isLocalGame && !room.pongGame)
-        {
-            startLocalGame(room, roomName, params, io, fastify);
-        }
-        else if (!room.pongGame && room.players.length === room.maxPlayers)
-        {
-            startOnlineGame(room, roomName, handleGameEnd, fastify, io);
-        }
+        tryStartGame(room, roomName, params, fastify, io);
     }
     finally
     {
@@ -231,14 +226,18 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
 }
 
 // Helper pour initialiser paddleInputs avec toutes les clés nécessaires
-function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean; down: boolean }> {
+function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean; down: boolean }>
+{
     const inputs: any = {};
     
-    if (maxPlayers === 2) {
+    if (maxPlayers === 2)
+    {
         // Mode 1v1 : utiliser A (gauche) et C (droite)
         inputs['A'] = { up: false, down: false };
         inputs['C'] = { up: false, down: false };
-    } else if (maxPlayers === 4) {
+    }
+    else if (maxPlayers === 4)
+    {
         // Mode 1v1v1v1 : utiliser A, B, C et D
         inputs['A'] = { up: false, down: false };
         inputs['B'] = { up: false, down: false };
@@ -250,7 +249,8 @@ function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: boolean;
 }
 
 // Handle game end for online multiplayer games
-function handleGameEnd(roomName: string, room: RoomType, winner: { side: string; score: number }, loser: { side: string; score: number }, fastify: FastifyInstance, io: Server) {
+function handleGameEnd(roomName: string, room: RoomType, winner: { side: string; score: number }, loser: { side: string; score: number }, fastify: FastifyInstance, io: Server)
+{
     // For local games, just send the gameFinished event without processing stats
     if (room.isLocalGame) {
         // Send gameFinished event to show end screen for local/AI games

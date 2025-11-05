@@ -126,15 +126,17 @@ export function authenticateOnlinePlayer(
     fastify: FastifyInstance
 ): any | null
 {
-    let user = getSocketUser(socket.id);
+    //qui est ce joueur? n'est il pas deja co ailleurs?
+    const user = authenticateSocket(socket, fastify);
     
-    // Toujours réauthentifier depuis les cookies pour vérifier les connexions concurrentes
-    const freshUser = authenticateSocket(socket, fastify);
-    if (freshUser && typeof freshUser === 'object')
+    if (user && typeof user === 'object')
     {
-        user = freshUser;
+        if (!room.playerUsernames)
+            room.playerUsernames = {};
+        room.playerUsernames[socket.id] = user.username;
+        return user;
     }
-    else if (freshUser === 'USER_ALREADY_CONNECTED')
+    else if (user === 'USER_ALREADY_CONNECTED')
     {
         // Utilisateur déjà connecté ailleurs
         socket.emit('error', { 
@@ -145,23 +147,13 @@ export function authenticateOnlinePlayer(
         socket.leave(roomName);
         return null;
     }
-    
-    if (!user)
+    else
     {
-        // Rejeter les sockets non authentifiés pour les jeux en ligne
-        fastify.log.warn(`Socket ${socket.id} failed authentication for online game`);
         socket.emit('error', { error: 'Authentication failed. Please login again to play online multiplayer games.' });
         removePlayerFromRoom(socket.id);
         socket.leave(roomName);
         return null;
     }
-    
-    // Ajouter le username du joueur à la room
-    if (!room.playerUsernames) room.playerUsernames = {};
-    room.playerUsernames[socket.id] = user.username;
-    fastify.log.info(`Socket ${socket.id} authenticated user ${user.username} added to room ${roomName}`);
-    
-    return user;
 }
 
 /**
@@ -172,17 +164,18 @@ export function notifyFriendsGameStarted(
     fastify: FastifyInstance,
     broadcastUserStatusChange: Function,
     globalIo: any
-): void {
-    if (room.players.length !== room.maxPlayers) return;
-    if (!room.playerUsernames) return;
+): void
+{
+    if (room.players.length !== room.maxPlayers)
+        return;
+    if (!room.playerUsernames)
+        return;
     
-    // Notifier pour TOUS les joueurs dans la room
-    for (const [socketId, username] of Object.entries(room.playerUsernames)) {
+    for (const [socketId, username] of Object.entries(room.playerUsernames))
+    {
         const player = getUserByUsername(username) as any;
-        if (player) {
+        if (player)
             broadcastUserStatusChange(globalIo, player.id, 'in-game', fastify);
-            fastify.log.info(`🎮 Notified friends that ${username} is now in-game`);
-        }
     }
 }
 
@@ -195,7 +188,8 @@ export function startLocalGame(
     params: JoinRoomParams,
     io: Server,
     fastify: FastifyInstance
-): void {
+): void
+{
     // Callback pour la fin du jeu local
     const localGameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
         io.to(roomName).emit('gameFinished', {
@@ -203,7 +197,6 @@ export function startLocalGame(
             loser,
             mode: params.enableAI ? 'ai' : 'local'
         });
-        fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu ${params.enableAI ? 'IA' : 'local'} room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
     };
     
     room.pongGame = new PongGame(room.maxPlayers!, localGameEndCallback);
@@ -212,7 +205,6 @@ export function startLocalGame(
     if (params.enableAI && room.maxPlayers === 2) {
         room.pongGame.enableAI(params.aiDifficulty as 'easy' | 'medium' | 'hard');
     }
-    
     room.pongGame.start();
 }
 
@@ -225,7 +217,8 @@ export function startOnlineGame(
     handleGameEnd: Function,
     fastify: FastifyInstance,
     io: Server
-): void {
+): void
+{
     // Callback pour la fin du jeu en ligne
     const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
         handleGameEnd(roomName, room, winner, loser, fastify, io);
