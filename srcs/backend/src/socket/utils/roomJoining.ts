@@ -131,7 +131,6 @@ export function authenticateOnlinePlayer(
     
     if (user && typeof user === 'object')
     {
-        // Utilisateur authentifié avec succès
         if (!room.playerUsernames)
             room.playerUsernames = {};
         room.playerUsernames[socket.id] = user.username;
@@ -150,7 +149,6 @@ export function authenticateOnlinePlayer(
     }
     else
     {
-        // Échec d'authentification (user === null)
         socket.emit('error', { error: 'Authentication failed. Please login again to play online multiplayer games.' });
         removePlayerFromRoom(socket.id);
         socket.leave(roomName);
@@ -168,16 +166,16 @@ export function notifyFriendsGameStarted(
     globalIo: any
 ): void
 {
-    if (room.players.length !== room.maxPlayers) return;
-    if (!room.playerUsernames) return;
+    if (room.players.length !== room.maxPlayers)
+        return;
+    if (!room.playerUsernames)
+        return;
     
-    // Notifier pour TOUS les joueurs dans la room
-    for (const [socketId, username] of Object.entries(room.playerUsernames)) {
+    for (const [socketId, username] of Object.entries(room.playerUsernames))
+    {
         const player = getUserByUsername(username) as any;
-        if (player) {
+        if (player)
             broadcastUserStatusChange(globalIo, player.id, 'in-game', fastify);
-            fastify.log.info(`🎮 Notified friends that ${username} is now in-game`);
-        }
     }
 }
 
@@ -190,7 +188,8 @@ export function startLocalGame(
     params: JoinRoomParams,
     io: Server,
     fastify: FastifyInstance
-): void {
+): void
+{
     // Callback pour la fin du jeu local
     const localGameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
         io.to(roomName).emit('gameFinished', {
@@ -198,7 +197,6 @@ export function startLocalGame(
             loser,
             mode: params.enableAI ? 'ai' : 'local'
         });
-        fastify.log.info(`[SOCKET] gameFinished envoyé pour jeu ${params.enableAI ? 'IA' : 'local'} room ${roomName}: ${winner.side} beat ${loser.side} (${winner.score}-${loser.score})`);
     };
     
     room.pongGame = new PongGame(room.maxPlayers!, localGameEndCallback);
@@ -207,7 +205,6 @@ export function startLocalGame(
     if (params.enableAI && room.maxPlayers === 2) {
         room.pongGame.enableAI(params.aiDifficulty as 'easy' | 'medium' | 'hard');
     }
-    
     room.pongGame.start();
 }
 
@@ -220,7 +217,8 @@ export function startOnlineGame(
     handleGameEnd: Function,
     fastify: FastifyInstance,
     io: Server
-): void {
+): void
+{
     // Callback pour la fin du jeu en ligne
     const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
         handleGameEnd(roomName, room, winner, loser, fastify, io);
