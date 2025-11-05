@@ -1,4 +1,4 @@
-import { load } from './utils.js';
+import { load } from '../navigation/utils.js';
 
 // Types pour les données du tournoi
 interface TournamentParticipant {

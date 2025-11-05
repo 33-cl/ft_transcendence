@@ -240,7 +240,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'tournaments') {
         // Load the tournaments list page
-        const tournamentsPage = await import('./tournaments.js');
+        const tournamentsPage = await import('../pages/tournaments.js');
         await tournamentsPage.default();
     }
     else if (pageName === 'gameFinished')
@@ -251,7 +251,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         // Handle tournament detail pages: /tournaments/:id
         const tournamentId = pageName.split('/')[1];
         if (tournamentId) {
-            const tournamentDetail = await import('./tournamentDetail.js');
+            const tournamentDetail = await import('../pages/tournamentDetail.js');
             await tournamentDetail.default(tournamentId);
         } else {
             console.warn('Tournament ID missing in URL');
