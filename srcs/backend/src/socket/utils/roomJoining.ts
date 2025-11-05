@@ -126,15 +126,18 @@ export function authenticateOnlinePlayer(
     fastify: FastifyInstance
 ): any | null
 {
-    let user = getSocketUser(socket.id);
+    //qui est ce joueur? n'est il pas deja co ailleurs?
+    const user = authenticateSocket(socket, fastify);
     
-    // Toujours réauthentifier depuis les cookies pour vérifier les connexions concurrentes
-    const freshUser = authenticateSocket(socket, fastify);
-    if (freshUser && typeof freshUser === 'object')
+    if (user && typeof user === 'object')
     {
-        user = freshUser;
+        // Utilisateur authentifié avec succès
+        if (!room.playerUsernames)
+            room.playerUsernames = {};
+        room.playerUsernames[socket.id] = user.username;
+        return user;
     }
-    else if (freshUser === 'USER_ALREADY_CONNECTED')
+    else if (user === 'USER_ALREADY_CONNECTED')
     {
         // Utilisateur déjà connecté ailleurs
         socket.emit('error', { 
@@ -145,23 +148,14 @@ export function authenticateOnlinePlayer(
         socket.leave(roomName);
         return null;
     }
-    
-    if (!user)
+    else
     {
-        // Rejeter les sockets non authentifiés pour les jeux en ligne
-        fastify.log.warn(`Socket ${socket.id} failed authentication for online game`);
+        // Échec d'authentification (user === null)
         socket.emit('error', { error: 'Authentication failed. Please login again to play online multiplayer games.' });
         removePlayerFromRoom(socket.id);
         socket.leave(roomName);
         return null;
     }
-    
-    // Ajouter le username du joueur à la room
-    if (!room.playerUsernames) room.playerUsernames = {};
-    room.playerUsernames[socket.id] = user.username;
-    fastify.log.info(`Socket ${socket.id} authenticated user ${user.username} added to room ${roomName}`);
-    
-    return user;
 }
 
 /**
@@ -172,7 +166,8 @@ export function notifyFriendsGameStarted(
     fastify: FastifyInstance,
     broadcastUserStatusChange: Function,
     globalIo: any
-): void {
+): void
+{
     if (room.players.length !== room.maxPlayers) return;
     if (!room.playerUsernames) return;
     

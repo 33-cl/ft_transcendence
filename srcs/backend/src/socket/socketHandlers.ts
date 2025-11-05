@@ -165,7 +165,7 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
     try
     {
         const params = parseJoinRoomData(data);
-        //ne pas se retrouver a controller les paddle de 2 games en meme temps
+        //a cause des op asynchrones on fait le cleanup si jamais on est deja dans une room
         cleanupPreviousRoom(socket);
 
         const roomName = findOrCreateRoom(params);
@@ -185,24 +185,6 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         if (handleRoomFull(socket, room, fastify))
             return;
         
-        // === ÉTAPE 7 : CLEANUP DÉFENSIF (À TESTER) ===
-        // ⚠️ CODE DÉFENSIF COMMENTÉ POUR TESTS
-        // Si des bugs apparaissent (joueur dans 2 rooms, paddle corrompu), décommenter
-        
-        // Double cleanup pour sécurité (probablement redondant avec ligne 169)
-        // cleanupPreviousRoom(socket);
-        
-        // Triple vérification manuelle (fait déjà par cleanupPreviousRoom)
-        // const stillInRoom = getPlayerRoom(socket.id);
-        // if (stillInRoom)
-        // {
-        //     removePlayerFromRoom(socket.id);
-        //     socket.leave(stillInRoom);
-        // }
-        
-        // Cleanup agressif qui boucle sur TOUTES les rooms (très lourd)
-        // cleanUpPlayerRooms(socket, fastify, io);
-        
         joinPlayerToRoom(socket, roomName, room, io);
         
         if (!params.isLocalGame)
@@ -216,13 +198,9 @@ async function handleJoinRoom(socket: Socket, data: any, fastify: FastifyInstanc
         
         // === ÉTAPE 10 : DÉMARRAGE DU JEU ===
         if (params.isLocalGame && !room.pongGame)
-        {
             startLocalGame(room, roomName, params, io, fastify);
-        }
         else if (!room.pongGame && room.players.length === room.maxPlayers)
-        {
             startOnlineGame(room, roomName, handleGameEnd, fastify, io);
-        }
     }
     finally
     {
