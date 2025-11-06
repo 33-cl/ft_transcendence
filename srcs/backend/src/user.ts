@@ -1,6 +1,7 @@
 import db from './db.js';
 
-export function getUserById(id: string) {
+export function getUserById(id: string)
+{
   return db.prepare('SELECT id, username, email, avatar_url, wins, losses, created_at FROM users WHERE id = ?').get(id);
 }
 
@@ -11,21 +12,15 @@ export function getUserByUsername(username: string) {
 // Fonction pour mettre à jour les statistiques des utilisateurs après un match
 export function updateUserStats(winnerId: number, loserId: number, winnerScore: number, loserScore: number, matchType: string = 'online') {
   try {
-    // Protection anti-triche : vérifier que ce ne sont pas le même utilisateur
-    if (winnerId === loserId) {
-      console.log(`[BACKEND] Même utilisateur détecté - pas d'enregistrement de statistiques (winnerId=${winnerId}, loserId=${loserId})`);
+
+    if (winnerId === loserId)
       return;
-    }
 
     const winner = getUserById(winnerId.toString()) as any;
     const loser = getUserById(loserId.toString()) as any;
 
-    if (!winner || !loser) {
-      console.error(`[BACKEND] Utilisateur(s) non trouvé(s) pour les statistiques: winner=${winner}, loser=${loser}`);
+    if (!winner || !loser)
       return;
-    }
-
-    console.log(`[BACKEND] Enregistrement match: ${winner.username} (${winnerScore}) vs ${loser.username} (${loserScore}) - type: ${matchType}`);
 
     // Créer la table matches si elle n'existe pas
     db.exec(`
@@ -50,7 +45,7 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    // Transaction pour s'assurer que tout se passe bien
+    // Transaction -> toutes les opérations réussissent ou aucune
     const transaction = db.transaction(() => {
       updateWinner.run(winnerId);
       updateLoser.run(loserId);

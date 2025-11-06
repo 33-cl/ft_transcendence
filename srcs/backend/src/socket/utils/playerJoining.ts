@@ -12,11 +12,10 @@ export function assignAllPaddlesToSocket(room: RoomType, socketId: string): void
 {
     if (!room.paddleBySocket) room.paddleBySocket = {};
     
-    if (room.maxPlayers === 2) {
-        room.paddleBySocket[socketId] = ['A', 'C']; // A = gauche, C = droite
-    } else if (room.maxPlayers === 4) {
+    if (room.maxPlayers === 2)
+        room.paddleBySocket[socketId] = ['A', 'C'];
+    else if (room.maxPlayers === 4)
         room.paddleBySocket[socketId] = ['A', 'B', 'C', 'D'];
-    }
 }
 
 /**

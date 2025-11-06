@@ -108,20 +108,16 @@ export function emitToUser(
     userId: number,
     eventName: string,
     data: any
-): boolean {
-    // 1. Trouver la socket de l'utilisateur
+): boolean
+{
     const socketId = getSocketIdForUser(userId);
-    if (!socketId) {
-        return false; // L'utilisateur n'est pas connecté
-    }
+    if (!socketId)
+        return false;
 
-    // 2. Récupérer l'objet socket
     const socket = io.sockets.sockets.get(socketId);
-    if (!socket) {
-        return false; // La socket n'existe plus
-    }
+    if (!socket)
+        return false;
 
-    // 3. Envoyer l'événement
     socket.emit(eventName, data);
     return true;
 }
