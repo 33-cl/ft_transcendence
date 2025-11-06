@@ -4,6 +4,13 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
 import { validateLength, sanitizeUsername, validateId } from '../security.js';
+import jwt from 'jsonwebtoken';
+import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
+
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not set');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Typages minimaux pour les résultats SQL utilisés ici
 interface TournamentRow {
@@ -29,7 +36,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
             const body = request.body as CreateTournamentBody;
-            const { name, maxPlayers = 8 } = body;
+            const { name, maxPlayers = 4 } = body;
 
             // SECURITY: Validation du nom du tournoi
             if (!name || name.trim().length === 0) {
@@ -120,26 +127,50 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     });
 
     // POST /tournaments/:id/join - Inscrire un utilisateur à un tournoi
-    interface JoinTournamentBody {
-        userId: number;
-        alias: string;
-    }
+    interface JoinTournamentBody {} // Empty body, we use authenticated user
 
     fastify.post('/tournaments/:id/join', async (request: FastifyRequest<{ Params: { id: string }, Body: JoinTournamentBody }>, reply: FastifyReply) => {
         try {
-            const { id } = request.params as { id: string };
-            const body = request.body as JoinTournamentBody;
-            const { userId, alias } = body;
+            // SECURITY: Require authentication - get user from JWT
+            const jwtToken = getJwtFromRequest(request);
+            if (!jwtToken) {
+                return reply.status(401).send({ error: 'Authentication required' });
+            }
 
-            // SECURITY: Validate userId
+            let userId: number;
+            let alias: string;
+            try {
+                const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+                
+                // Verify token is in active_tokens table
+                const activeToken = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+                if (!activeToken) {
+                    return reply.status(401).send({ error: 'Session expired or logged out' });
+                }
+                
+                // Get user info to use username as alias
+                const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(payload.userId) as { id: number; username: string } | undefined;
+                if (!user) {
+                    return reply.status(401).send({ error: 'User not found' });
+                }
+                
+                userId = user.id;
+                alias = user.username; // Force alias = username
+            } catch (jwtError) {
+                return reply.status(401).send({ error: 'Invalid or expired JWT' });
+            }
+
+            const { id } = request.params as { id: string };
+
+            // SECURITY: Validate userId (already validated from JWT/DB)
             const validUserId = validateId(userId);
             if (!validUserId) {
                 return reply.status(400).send({ error: 'Invalid userId' });
             }
 
-            // SECURITY: Validate alias
+            // SECURITY: Validate alias (username from DB is already sanitized)
             if (!alias || !validateLength(alias, 1, 30)) {
-                return reply.status(400).send({ error: 'Alias must be between 1 and 30 characters' });
+                return reply.status(400).send({ error: 'Username must be between 1 and 30 characters' });
             }
             
             const sanitizedAlias = sanitizeUsername(alias);
