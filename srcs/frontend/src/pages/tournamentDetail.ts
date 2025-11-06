@@ -78,34 +78,90 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
 
     try {
         // Fetch des données du tournoi
-        const response = await fetch(`/tournaments/${tournamentId}`, {
-            method: 'GET',
-            credentials: 'include'
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('Tournoi non trouvé');
-            }
-            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-        }
-
-        const data: TournamentDetailResponse = await response.json();
+        // TEMPORAIRE: Données de test pour pouvoir tester la page
+        // TODO: Remettre l'appel API une fois nginx configuré correctement
+        const useTestData = true; // Changer à false quand l'API fonctionne
         
-        if (!data.success) {
-            throw new Error('Réponse invalide du serveur');
+        if (useTestData && tournamentId.startsWith('test-')) {
+            console.log('🧪 Using test data for tournament detail');
+            
+            // Simuler un délai d'API
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const testData: TournamentDetailResponse = {
+                success: true,
+                tournament: {
+                    id: tournamentId,
+                    name: tournamentId === 'test-1' ? 'Tournament Test 1' : 
+                          tournamentId === 'test-2' ? 'Tournament Test 2' : 'Tournament Test 3',
+                    status: tournamentId === 'test-1' ? 'registration' : 
+                           tournamentId === 'test-2' ? 'active' : 'completed',
+                    max_players: 8,
+                    current_players: tournamentId === 'test-1' ? 3 : 8,
+                    created_at: new Date().toISOString(),
+                    started_at: tournamentId !== 'test-1' ? new Date().toISOString() : null,
+                    completed_at: tournamentId === 'test-3' ? new Date().toISOString() : null
+                },
+                participants: [
+                    { id: 1, tournament_id: tournamentId, user_id: 1, alias: 'Player1', joined_at: new Date().toISOString() },
+                    { id: 2, tournament_id: tournamentId, user_id: 2, alias: 'Player2', joined_at: new Date().toISOString() },
+                    { id: 3, tournament_id: tournamentId, user_id: 3, alias: 'Player3', joined_at: new Date().toISOString() },
+                    ...(tournamentId !== 'test-1' ? [
+                        { id: 4, tournament_id: tournamentId, user_id: 4, alias: 'Player4', joined_at: new Date().toISOString() },
+                        { id: 5, tournament_id: tournamentId, user_id: 5, alias: 'Player5', joined_at: new Date().toISOString() },
+                        { id: 6, tournament_id: tournamentId, user_id: 6, alias: 'Player6', joined_at: new Date().toISOString() },
+                        { id: 7, tournament_id: tournamentId, user_id: 7, alias: 'Player7', joined_at: new Date().toISOString() },
+                        { id: 8, tournament_id: tournamentId, user_id: 8, alias: 'Player8', joined_at: new Date().toISOString() }
+                    ] : [])
+                ],
+                matches: tournamentId !== 'test-1' ? [
+                    // Round 1
+                    { id: 1, tournament_id: tournamentId, round: 1, player1_id: 1, player2_id: 2, winner_id: tournamentId === 'test-3' ? 1 : null, status: tournamentId === 'test-3' ? 'finished' : 'scheduled', scheduled_at: new Date().toISOString() },
+                    { id: 2, tournament_id: tournamentId, round: 1, player1_id: 3, player2_id: 4, winner_id: tournamentId === 'test-3' ? 3 : null, status: tournamentId === 'test-3' ? 'finished' : 'scheduled', scheduled_at: new Date().toISOString() },
+                    { id: 3, tournament_id: tournamentId, round: 1, player1_id: 5, player2_id: 6, winner_id: tournamentId === 'test-3' ? 5 : null, status: tournamentId === 'test-3' ? 'finished' : 'scheduled', scheduled_at: new Date().toISOString() },
+                    { id: 4, tournament_id: tournamentId, round: 1, player1_id: 7, player2_id: 8, winner_id: tournamentId === 'test-3' ? 7 : null, status: tournamentId === 'test-3' ? 'finished' : 'scheduled', scheduled_at: new Date().toISOString() },
+                    // Round 2 (demi-finales)
+                    ...(tournamentId === 'test-3' ? [
+                        { id: 5, tournament_id: tournamentId, round: 2, player1_id: 1, player2_id: 3, winner_id: 1, status: 'finished' as const, scheduled_at: new Date().toISOString() },
+                        { id: 6, tournament_id: tournamentId, round: 2, player1_id: 5, player2_id: 7, winner_id: 7, status: 'finished' as const, scheduled_at: new Date().toISOString() },
+                        // Round 3 (finale)
+                        { id: 7, tournament_id: tournamentId, round: 3, player1_id: 1, player2_id: 7, winner_id: 1, status: 'finished' as const, scheduled_at: new Date().toISOString() }
+                    ] : [])
+                ] : []
+            };
+            
+            console.log('Test tournament data:', testData);
+            contentContainer.innerHTML = renderTournamentContent(testData);
+        } else {
+            // Code original avec appel API
+            const response = await fetch(`/tournaments/${tournamentId}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Tournoi non trouvé');
+                }
+                throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+            }
+
+            const data: TournamentDetailResponse = await response.json();
+            
+            if (!data.success) {
+                throw new Error('Réponse invalide du serveur');
+            }
+
+            console.log('Tournament data received:', data);
+
+            // Validation des données critiques
+            if (!data.tournament || !data.tournament.id) {
+                throw new Error('Données de tournoi invalides');
+            }
+
+            // Construire la page avec les données
+            contentContainer.innerHTML = renderTournamentContent(data);
         }
-
-        console.log('Tournament data received:', data);
-
-        // Validation des données critiques
-        if (!data.tournament || !data.tournament.id) {
-            throw new Error('Données de tournoi invalides');
-        }
-
-        // Construire la page avec les données
-        contentContainer.innerHTML = renderTournamentContent(data);
-
     } catch (error) {
         console.error('Erreur lors du chargement du tournoi:', error);
         contentContainer.innerHTML = `

@@ -30,15 +30,40 @@ export default async function tournamentsPage() {
 
     const listContainer = document.getElementById('tournaments-list');
     try {
-        const res = await fetch('/tournaments', { method: 'GET', credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to fetch tournaments');
-        const data = await res.json();
-        const tournaments = data.tournaments || [];
-
-        if (tournaments.length === 0) {
-            listContainer!.innerHTML = '<p>Aucun tournoi disponible.</p>';
-        } else {
-            const rows = tournaments.map((t: any) => `
+        // TEMPORAIRE: Données de test pour pouvoir tester la page de détail
+        // TODO: Remettre l'appel API une fois nginx configuré correctement
+        const useTestData = true; // Changer à false quand l'API fonctionne
+        
+        if (useTestData) {
+            console.log('🧪 Using test data for tournaments');
+            const testTournaments = [
+                {
+                    id: 'test-1',
+                    name: 'Tournament Test 1',
+                    status: 'registration',
+                    current_players: 3,
+                    max_players: 8,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'test-2', 
+                    name: 'Tournament Test 2',
+                    status: 'active',
+                    current_players: 8,
+                    max_players: 8,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'test-3',
+                    name: 'Tournament Test 3',
+                    status: 'completed',
+                    current_players: 8,
+                    max_players: 8,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            const rows = testTournaments.map((t: any) => `
                 <div class="p-3 border-b flex justify-between items-center">
                     <div>
                         <div class="font-medium">${t.name}</div>
@@ -50,25 +75,45 @@ export default async function tournamentsPage() {
                 </div>
             `).join('');
             listContainer!.innerHTML = `<div class="bg-white shadow rounded">${rows}</div>`;
+        } else {
+            // Code original avec appel API
+            const res = await fetch('/tournaments', { method: 'GET', credentials: 'include' });
+            if (!res.ok) throw new Error('Failed to fetch tournaments');
+            const data = await res.json();
+            const tournaments = data.tournaments || [];
 
-            // Attach click handlers
-            document.querySelectorAll('.view-tournament').forEach(btn => {
-                if (!(btn as any)._listenerSet) {
-                    (btn as any)._listenerSet = true;
-                    
-                    (btn as HTMLElement).addEventListener('click', async (e) => {
-                        const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
-                        if (id) {
-                            // Pour l'instant, on load la page detail si elle existe
-                            // TODO: implémenter load('tournamentDetail') plus tard
-                            alert('Ouvrir le tournoi: ' + id);
-                             // Navigation vers la page de détail du tournoi
-                            await load(`tournaments/${id}`);
-                        }
-                    });
-                }
-            });
+            if (tournaments.length === 0) {
+                listContainer!.innerHTML = '<p>Aucun tournoi disponible.</p>';
+            } else {
+                const rows = tournaments.map((t: any) => `
+                    <div class="p-3 border-b flex justify-between items-center">
+                        <div>
+                            <div class="font-medium">${t.name}</div>
+                            <div class="text-sm text-gray-400">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
+                        </div>
+                        <div>
+                            <button data-id="${t.id}" class="view-tournament px-3 py-1 bg-blue-600 text-white rounded">Voir</button>
+                        </div>
+                    </div>
+                `).join('');
+                listContainer!.innerHTML = `<div class="bg-white shadow rounded">${rows}</div>`;
+            }
         }
+
+        // Attach click handlers
+        document.querySelectorAll('.view-tournament').forEach(btn => {
+            if (!(btn as any)._listenerSet) {
+                (btn as any)._listenerSet = true;
+                
+                (btn as HTMLElement).addEventListener('click', async (e) => {
+                    const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+                    if (id) {
+                        // Navigation vers la page de détail du tournoi
+                        await load(`tournaments/${id}`);
+                    }
+                });
+            }
+        });
     } catch (error) {
         console.error('Error loading tournaments:', error);
         listContainer!.innerHTML = '<p>Erreur lors du chargement des tournois.</p>';
