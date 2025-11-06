@@ -357,6 +357,12 @@ function initializeComponents(): void
         {
             await load('matchmaking');
         }
+
+        // Bouton "8 Player" pour accéder à la liste des tournois
+        if (target.id === 'tournamentCreateBtn')
+        {
+            await load('tournaments');
+        }
         });
     }
     
