@@ -66,12 +66,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS tournaments (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
+    creator_id INTEGER NOT NULL,
     status TEXT NOT NULL CHECK(status IN ('registration', 'active', 'completed', 'cancelled')),
     max_players INTEGER NOT NULL DEFAULT 8,
     current_players INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     started_at DATETIME,
-    completed_at DATETIME
+    completed_at DATETIME,
+    FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
   -- Table pour lister les participants d'un tournoi
@@ -171,6 +173,33 @@ try {
   }
 } catch (err) {
   console.error('Migration error:', err);
+}
+
+// Migration pour ajouter creator_id à la table tournaments
+try {
+  const hasCreatorId = db.prepare(`PRAGMA table_info(tournaments)`).all()
+    .some((col: any) => col.name === 'creator_id');
+    
+  if (!hasCreatorId) {
+    console.log('Adding creator_id column to tournaments table...');
+    db.exec(`
+      BEGIN TRANSACTION;
+      
+      -- Add creator_id column with a default value (we'll update it below)
+      ALTER TABLE tournaments ADD COLUMN creator_id INTEGER;
+      
+      -- Set a default creator_id for existing tournaments (first user in db)
+      UPDATE tournaments SET creator_id = (SELECT id FROM users LIMIT 1) WHERE creator_id IS NULL;
+      
+      -- Now we can't easily add the NOT NULL constraint and FOREIGN KEY to existing table
+      -- We'll handle the constraint in the application logic for now
+      
+      COMMIT;
+    `);
+    console.log('creator_id column added successfully');
+  }
+} catch (err) {
+  console.error('Creator_id migration error:', err);
 }
 
 export default db;

@@ -78,17 +78,22 @@ async function loadTournamentsList() {
                         <div class="text-sm text-gray-400">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
                         ${t.max_players === 4 ? '<span class="text-xs bg-green-600 text-green-100 px-2 py-1 rounded-full mt-2 inline-block">4-Player</span>' : ''}
                     </div>
-                    <div>
+                    <div class="flex gap-2">
                         <button data-id="${t.id}" class="view-tournament px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                             Voir
                         </button>
+                        ${t.status === 'registration' ? `
+                            <button data-id="${t.id}" class="delete-tournament px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                🗑️ Supprimer
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
             listContainer!.innerHTML = `<div class="bg-gray-800 border border-gray-600 rounded-lg overflow-hidden">${rows}</div>`;
         }
 
-        // Attach click handlers
+        // Attach click handlers for view buttons
         document.querySelectorAll('.view-tournament').forEach(btn => {
             if (!(btn as any)._listenerSet) {
                 (btn as any)._listenerSet = true;
@@ -98,6 +103,42 @@ async function loadTournamentsList() {
                     if (id) {
                         // Navigation vers la page de détail du tournoi
                         await load(`tournaments/${id}`);
+                    }
+                });
+            }
+        });
+
+        // Attach click handlers for delete buttons
+        document.querySelectorAll('.delete-tournament').forEach(btn => {
+            if (!(btn as any)._listenerSet) {
+                (btn as any)._listenerSet = true;
+                
+                (btn as HTMLElement).addEventListener('click', async (e) => {
+                    const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+                    if (id) {
+                        const tournamentName = (e.currentTarget as HTMLElement).closest('.p-4')?.querySelector('.font-medium')?.textContent;
+                        
+                        if (confirm(`Êtes-vous sûr de vouloir supprimer le tournoi "${tournamentName}" ?\n\nCette action est irréversible.`)) {
+                            try {
+                                const response = await fetch(`/tournaments/${id}`, {
+                                    method: 'DELETE',
+                                    credentials: 'include'
+                                });
+                                
+                                if (response.ok) {
+                                    const result = await response.json();
+                                    alert(result.message || 'Tournoi supprimé avec succès');
+                                    // Recharger la liste des tournois
+                                    await loadTournamentsList();
+                                } else {
+                                    const error = await response.json();
+                                    alert(`Erreur: ${error.error || 'Impossible de supprimer le tournoi'}`);
+                                }
+                            } catch (error) {
+                                alert('Erreur lors de la suppression du tournoi');
+                                console.error('Tournament deletion error:', error);
+                            }
+                        }
                     }
                 });
             }

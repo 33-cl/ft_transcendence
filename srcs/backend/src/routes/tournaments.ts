@@ -3,7 +3,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
-import { validateLength, sanitizeUsername, validateId } from '../security.js';
+import { validateLength, sanitizeUsername, validateId, validateUUID } from '../security.js';
 import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 
@@ -35,6 +35,20 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     // POST /tournaments - Créer un nouveau tournoi
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
+            // SECURITY: Validation de l'utilisateur
+            const token = getJwtFromRequest(request);
+            if (!token) {
+                return reply.status(401).send({ error: 'Unauthorized' });
+            }
+
+            let userId: number;
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET) as any;
+                userId = decoded.userId;
+            } catch (error) {
+                return reply.status(401).send({ error: 'Invalid token' });
+            }
+
             const body = request.body as CreateTournamentBody;
             const { name, maxPlayers = 4 } = body;
 
@@ -58,13 +72,13 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // Générer un ID unique
             const tournamentId = uuidv4();
 
-            // Insérer en base de données
+            // Insérer en base de données avec le creator_id
             const stmt = db.prepare(`
-                INSERT INTO tournaments (id, name, status, max_players, current_players)
-                VALUES (?, ?, 'registration', ?, 0)
+                INSERT INTO tournaments (id, name, creator_id, status, max_players, current_players)
+                VALUES (?, ?, ?, 'registration', ?, 0)
             `);
 
-            stmt.run(tournamentId, sanitizedName, maxPlayers);
+            stmt.run(tournamentId, sanitizedName, userId, maxPlayers);
 
             // Indique l'URL de la ressource nouvellement créée
             reply.header('Location', `/tournaments/${tournamentId}`);
@@ -91,7 +105,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         try {
             const { id } = request.params as { id: string };
 
-            if (!id || id.length < 10 || id.length > 50) {
+            if (!validateUUID(id)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
@@ -176,7 +190,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const sanitizedAlias = sanitizeUsername(alias);
             
             // SECURITY: Validate tournament ID format (UUID)
-            if (!id || id.length < 10 || id.length > 50) {
+            if (!validateUUID(id)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
@@ -266,7 +280,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const { id } = request.params as { id: string };
             
             // SECURITY: Validate tournament ID
-            if (!id || id.length < 10 || id.length > 50) {
+            if (!validateUUID(id)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
@@ -334,7 +348,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const { id, matchId } = request.params as { id: string, matchId: string };
             const body = request.body as MatchResultBody;
 
-            if (!id || id.length < 10 || id.length > 50) {
+            if (!validateUUID(id)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
@@ -401,6 +415,75 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             reply.send({ success: true });
         } catch (error) {
             fastify.log.error(`Error recording tournament match result: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
+    // DELETE /tournaments/:id - Supprimer un tournoi
+    fastify.delete('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        try {
+            const tournamentId = request.params.id;
+
+            // SECURITY: Validation de l'utilisateur
+            const token = getJwtFromRequest(request);
+            if (!token) {
+                return reply.status(401).send({ error: 'Unauthorized' });
+            }
+
+            let userId: number;
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET) as any;
+                userId = decoded.userId;
+            } catch (error) {
+                return reply.status(401).send({ error: 'Invalid token' });
+            }
+
+            // Validation de l'ID du tournoi (UUID)
+            if (!validateUUID(tournamentId)) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            // Vérifier que le tournoi existe
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow | undefined;
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            // SECURITY: Seuls les tournois en statut 'registration' peuvent être supprimés
+            if (tournament.status !== 'registration') {
+                return reply.status(403).send({ error: 'Cannot delete tournament that has already started' });
+            }
+
+            // Vérifier si l'utilisateur est le créateur du tournoi (ou admin)
+            const creatorCheck = db.prepare(`
+                SELECT creator_id FROM tournaments WHERE id = ?
+            `).get(tournamentId) as { creator_id: number } | undefined;
+
+            if (creatorCheck && creatorCheck.creator_id !== userId) {
+                return reply.status(403).send({ error: 'Only the tournament creator can delete it' });
+            }
+
+            // Supprimer le tournoi et ses données associées (cascade)
+            const deleteResult = db.transaction(() => {
+                // Supprimer les participations
+                db.prepare(`DELETE FROM tournament_participants WHERE tournament_id = ?`).run(tournamentId);
+                // Supprimer les matches (si il y en a)
+                db.prepare(`DELETE FROM tournament_matches WHERE tournament_id = ?`).run(tournamentId);
+                // Supprimer le tournoi
+                const result = db.prepare(`DELETE FROM tournaments WHERE id = ?`).run(tournamentId);
+                return result;
+            })();
+
+            if (deleteResult.changes === 0) {
+                return reply.status(404).send({ error: 'Tournament not found or already deleted' });
+            }
+
+            reply.send({ 
+                success: true, 
+                message: `Tournament "${tournament.name || 'Unknown'}" has been deleted` 
+            });
+        } catch (error) {
+            fastify.log.error(`Error deleting tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });

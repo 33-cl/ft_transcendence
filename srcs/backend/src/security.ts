@@ -141,6 +141,20 @@ export function validateId(id: any): number | null {
 }
 
 /**
+ * Validate UUID format for tournament IDs
+ */
+export function validateUUID(id: any): boolean {
+    if (typeof id !== 'string') {
+        return false;
+    }
+    
+    // UUID v4 regex pattern
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    
+    return uuidRegex.test(id);
+}
+
+/**
  * Validate room name format
  * Only allows alphanumeric, hyphens, and underscores
  */
