@@ -13,7 +13,12 @@ export default async function tournamentsPage() {
 
     container.innerHTML = `
         <div class="max-w-3xl mx-auto">
-            <h1 class="text-3xl font-bold mb-4">Tournois</h1>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold">Tournois 4-Player</h1>
+                <button id="create-tournament-btn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
+                    ➕ Créer Tournoi
+                </button>
+            </div>
             <div id="tournaments-list">Chargement...</div>
             <div class="mt-4">
                 <button id="tournaments-back" class="px-4 py-2 bg-gray-700 text-white rounded">Retour</button>
@@ -24,80 +29,69 @@ export default async function tournamentsPage() {
     const backBtn = document.getElementById('tournaments-back');
     if (backBtn && !(backBtn as any)._listenerSet) {
         (backBtn as any)._listenerSet = true;
-        
         backBtn.addEventListener('click', async () => { await load('mainMenu'); });
+    }
+
+    const createBtn = document.getElementById('create-tournament-btn');
+    if (createBtn && !(createBtn as any)._listenerSet) {
+        (createBtn as any)._listenerSet = true;
+        createBtn.addEventListener('click', async () => {
+            const name = prompt('Nom du tournoi 4-player:');
+            if (name && name.trim()) {
+                try {
+                    const response = await fetch('/tournaments', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ name: name.trim(), maxPlayers: 4 })
+                    });
+                    
+                    if (response.ok) {
+                        // Recharger la page pour afficher le nouveau tournoi
+                        await tournamentsPage();
+                    } else {
+                        const error = await response.json();
+                        alert(`Erreur: ${error.error || 'Impossible de créer le tournoi'}`);
+                    }
+                } catch (error) {
+                    alert('Erreur lors de la création du tournoi');
+                    console.error('Tournament creation error:', error);
+                }
+            }
+        });
     }
 
     const listContainer = document.getElementById('tournaments-list');
     try {
-        // TEMPORAIRE: Données de test pour pouvoir tester la page de détail
-        // TODO: Remettre l'appel API une fois nginx configuré correctement
-        const useTestData = true; // Changer à false quand l'API fonctionne
-        
-        if (useTestData) {
-            console.log('🧪 Using test data for tournaments');
-            const testTournaments = [
-                {
-                    id: 'test-1',
-                    name: 'Tournament Test 1',
-                    status: 'registration',
-                    current_players: 3,
-                    max_players: 8,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'test-2', 
-                    name: 'Tournament Test 2',
-                    status: 'active',
-                    current_players: 8,
-                    max_players: 8,
-                    created_at: new Date().toISOString()
-                },
-                {
-                    id: 'test-3',
-                    name: 'Tournament Test 3',
-                    status: 'completed',
-                    current_players: 8,
-                    max_players: 8,
-                    created_at: new Date().toISOString()
-                }
-            ];
-            
-            const rows = testTournaments.map((t: any) => `
+        // Appel API pour récupérer les tournois 4-player
+        const res = await fetch('/tournaments', { method: 'GET', credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to fetch tournaments');
+        const data = await res.json();
+        const tournaments = data.tournaments || [];
+
+        if (tournaments.length === 0) {
+            listContainer!.innerHTML = `
+                <div class="text-center py-8 bg-white shadow rounded">
+                    <p class="text-gray-500 mb-4">Aucun tournoi disponible pour le moment.</p>
+                    <p class="text-sm text-gray-400">Les tournois 4-player apparaîtront ici une fois créés.</p>
+                </div>
+            `;
+        } else {
+            const rows = tournaments.map((t: any) => `
                 <div class="p-3 border-b flex justify-between items-center">
                     <div>
                         <div class="font-medium">${t.name}</div>
                         <div class="text-sm text-gray-400">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
+                        ${t.max_players === 4 ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">4-Player</span>' : ''}
                     </div>
                     <div>
-                        <button data-id="${t.id}" class="view-tournament px-3 py-1 bg-blue-600 text-white rounded">Voir</button>
+                        <button data-id="${t.id}" class="view-tournament px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Voir
+                        </button>
                     </div>
                 </div>
             `).join('');
             listContainer!.innerHTML = `<div class="bg-white shadow rounded">${rows}</div>`;
-        } else {
-            // Code original avec appel API
-            const res = await fetch('/tournaments', { method: 'GET', credentials: 'include' });
-            if (!res.ok) throw new Error('Failed to fetch tournaments');
-            const data = await res.json();
-            const tournaments = data.tournaments || [];
-
-            if (tournaments.length === 0) {
-                listContainer!.innerHTML = '<p>Aucun tournoi disponible.</p>';
-            } else {
-                const rows = tournaments.map((t: any) => `
-                    <div class="p-3 border-b flex justify-between items-center">
-                        <div>
-                            <div class="font-medium">${t.name}</div>
-                            <div class="text-sm text-gray-400">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
-                        </div>
-                        <div>
-                            <button data-id="${t.id}" class="view-tournament px-3 py-1 bg-blue-600 text-white rounded">Voir</button>
-                        </div>
-                    </div>
-                `).join('');
-                listContainer!.innerHTML = `<div class="bg-white shadow rounded">${rows}</div>`;
-            }
         }
 
         // Attach click handlers
