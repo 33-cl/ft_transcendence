@@ -42,14 +42,27 @@ interface TournamentDetailResponse {
 export default async function renderTournamentDetail(tournamentId: string): Promise<void> {
     console.log(`📄 Rendering tournament detail for ID: ${tournamentId}`);
     
+    // Masquer le contenu existant sans casser la structure
+    const mainContent = document.querySelector('main') || document.body;
+    
     const containerId = 'tournamentDetailPage';
     let container = document.getElementById(containerId);
     if (!container) {
         container = document.createElement('div');
         container.id = containerId;
         container.className = 'p-4 max-w-6xl mx-auto';
-        document.body.appendChild(container);
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.backgroundColor = 'white';
+        container.style.zIndex = '1000';
+        mainContent.appendChild(container);
     }
+    
+    // Afficher le conteneur
+    container.style.display = 'block';
 
     // Affichage initial avec loading
     container.innerHTML = `
@@ -67,8 +80,14 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
 
     // Event listener pour le bouton retour
     const backBtn = document.getElementById('tournament-back');
-    if (backBtn) {
+    if (backBtn && !(backBtn as any)._listenerSet) {
+        (backBtn as any)._listenerSet = true;
         backBtn.addEventListener('click', async () => {
+            // Supprimer complètement la page tournament detail
+            const detailPage = document.getElementById('tournamentDetailPage');
+            if (detailPage) {
+                detailPage.remove();
+            }
             await load('tournaments');
         });
     }

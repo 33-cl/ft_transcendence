@@ -240,9 +240,15 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         }, 100);
     }
     else if (pageName === 'tournaments') {
-        // Load the tournaments list page directly
-        const tournamentsPage = await import('../pages/tournaments.js');
-        await tournamentsPage.default();
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+        console.log('📺 Showing tournaments component...');
+        await show('tournaments');
+        // Initialize tournaments functionality after component is rendered
+        setTimeout(async () => {
+            console.log('🚀 Loading tournaments functionality...');
+            const tournamentsPage = await import('../pages/tournaments.js');
+            await tournamentsPage.initTournaments();
+        }, 100);
     }
     else if (pageName === 'gameFinished')
         await show('gameFinished', data);
