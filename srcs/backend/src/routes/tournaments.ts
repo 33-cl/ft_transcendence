@@ -50,9 +50,9 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // Sanitize le nom pour éviter les injections
             const sanitizedName = name.replace(/<[^>]*>/g, '').trim();
 
-            // SECURITY: Validation stricte du nombre de joueurs
-            if (![4, 6, 8].includes(maxPlayers)) {
-                return reply.status(400).send({ error: 'Max players must be 4, 6, or 8' });
+            // SECURITY: Validation stricte - 4 joueurs uniquement pour les specs
+            if (maxPlayers !== 4) {
+                return reply.status(400).send({ error: 'Max players must be 4 for tournament specs' });
             }
 
             // Générer un ID unique
