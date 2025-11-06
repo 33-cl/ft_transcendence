@@ -352,13 +352,7 @@ function initializeComponents(): void
             await load('mainMenu');
         }
 
-        // TEST
-        if (target.id === 'tournamentJoinBtn')
-        {
-            await load('matchmaking');
-        }
-
-        // Bouton "8 Player" pour accéder à la liste des tournois
+        // Bouton "4 Player Tournaments" pour accéder à la liste des tournois
         if (target.id === 'tournamentCreateBtn')
         {
             await load('tournaments');

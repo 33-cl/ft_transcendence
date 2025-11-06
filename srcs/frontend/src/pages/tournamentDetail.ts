@@ -314,3 +314,82 @@ function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, str
     if (!alias || alias.trim() === '') return `Unknown (ID: ${playerId})`;
     return alias;
 }
+
+// Attacher les event listeners pour les boutons d'action du tournoi
+function attachTournamentActionListeners(tournament: Tournament): void {
+    // Bouton "Join Tournament"
+    const joinBtn = document.getElementById('join-tournament-btn');
+    if (joinBtn && !(joinBtn as any)._listenerSet) {
+        (joinBtn as any)._listenerSet = true;
+        
+        joinBtn.addEventListener('click', async () => {
+            try {
+                joinBtn.textContent = 'Inscription...';
+                (joinBtn as HTMLButtonElement).disabled = true;
+                
+                const response = await fetch(`/tournaments/${tournament.id}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    // Recharger la page pour afficher la mise à jour
+                    await renderTournamentDetail(tournament.id);
+                } else {
+                    const error = await response.json();
+                    alert(`Erreur: ${error.error || 'Impossible de rejoindre le tournoi'}`);
+                    joinBtn.textContent = `➕ Join Tournament (${tournament.current_players}/${tournament.max_players})`;
+                    (joinBtn as HTMLButtonElement).disabled = false;
+                }
+            } catch (error) {
+                console.error('Tournament join error:', error);
+                alert('Erreur lors de l\'inscription au tournoi');
+                joinBtn.textContent = `➕ Join Tournament (${tournament.current_players}/${tournament.max_players})`;
+                (joinBtn as HTMLButtonElement).disabled = false;
+            }
+        });
+    }
+
+    // Bouton "Start Tournament" 
+    const startBtn = document.getElementById('start-tournament-btn');
+    if (startBtn && !(startBtn as any)._listenerSet) {
+        (startBtn as any)._listenerSet = true;
+        
+        startBtn.addEventListener('click', async () => {
+            if (!confirm('Êtes-vous sûr de vouloir démarrer ce tournoi ? Cette action est irréversible.')) {
+                return;
+            }
+            
+            try {
+                startBtn.textContent = 'Démarrage...';
+                (startBtn as HTMLButtonElement).disabled = true;
+                
+                // Appel à la route de démarrage manuel
+                const response = await fetch(`/tournaments/${tournament.id}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    // Recharger la page pour voir le tournoi démarré
+                    await renderTournamentDetail(tournament.id);
+                } else {
+                    const error = await response.json();
+                    alert(`Erreur: ${error.error || 'Impossible de démarrer le tournoi'}`);
+                    startBtn.textContent = '🚀 Start Tournament';
+                    (startBtn as HTMLButtonElement).disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Tournament start error:', error);
+                alert('Erreur lors du démarrage du tournoi');
+                startBtn.textContent = '🚀 Start Tournament';
+                (startBtn as HTMLButtonElement).disabled = false;
+            }
+        });
+    }
+}

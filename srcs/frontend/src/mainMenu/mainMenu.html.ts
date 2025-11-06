@@ -17,8 +17,7 @@ export const mainMenuHTML = /*html*/`
         <div class="menu-section">
             <h1><span class="clickable">Tournaments</span></h1>
             <div class="button-group">
-                <button id="tournamentCreateBtn" class="default-button">8 Player</button>
-                <button id="tournamentJoinBtn" class="default-button">Battle Royale</button>
+                <button id="tournamentCreateBtn" class="default-button">4 Player Tournaments</button>
             </div>
         </div>
     </div>

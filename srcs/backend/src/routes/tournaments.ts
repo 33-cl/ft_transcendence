@@ -260,6 +260,67 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // POST /tournaments/:id/start - Démarrer manuellement un tournoi (si 4 joueurs)
+    fastify.post('/tournaments/:id/start', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        try {
+            const { id } = request.params as { id: string };
+            
+            // SECURITY: Validate tournament ID
+            if (!id || id.length < 10 || id.length > 50) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            // Vérifier que le tournoi existe et est en registration
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            if (tournament.status !== 'registration') {
+                return reply.status(400).send({ error: 'Tournament is not in registration phase' });
+            }
+
+            if (tournament.current_players < tournament.max_players) {
+                return reply.status(400).send({ error: `Tournament needs ${tournament.max_players} players to start (current: ${tournament.current_players})` });
+            }
+
+            // Récupérer les participants pour créer le bracket
+            const participants = db.prepare(
+                `SELECT user_id FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
+            ).all(id) as Array<{ user_id: number }>;
+
+            // Shuffle participants (Fisher-Yates)
+            for (let i = participants.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = participants[i];
+                participants[i] = participants[j];
+                participants[j] = tmp;
+            }
+
+            // Créer les matchs du premier round
+            const insertMatch = db.prepare(`
+                INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
+                VALUES (?, ?, ?, ?, 'scheduled')
+            `);
+
+            for (let i = 0; i < participants.length; i += 2) {
+                const p1 = participants[i].user_id;
+                const p2 = i + 1 < participants.length ? participants[i + 1].user_id : null;
+                insertMatch.run(id, 1, p1, p2);
+            }
+
+            // Marquer le tournoi comme actif
+            db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
+
+            fastify.log.info(`Tournament ${id} started manually with ${participants.length} players`);
+            
+            reply.send({ success: true, message: 'Tournament started successfully' });
+        } catch (error) {
+            fastify.log.error(`Error starting tournament: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
     // POST /tournaments/:id/matches/:matchId/result - Enregistrer le résultat d'un match de tournoi
     interface MatchResultBody {
         winnerId: number;
