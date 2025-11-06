@@ -22,10 +22,11 @@ import { handleGameTick } from './handlers/gameTickHandlers.js';
 import { handleGameEnd } from './handlers/gameEndHandlers.js';
 import { initPaddleInputs } from './handlers/gameTickHandlers.js';
 import { getUserByUsername } from '../user.js';
-import { PaddleSide } from '../../game/gameState.js';
 import { RoomType } from '../types.js';
 import { updateUserStats } from '../user.js';
 import { removePlayerFromRoom } from './roomManager.js';
+import { parseClientMessage, isKeyboardEvent } from './utils/messageHandling.js';
+import { handleLocalGamePaddleControl, handleOnlineGamePaddleControl } from './utils/paddleControl.js';
 
 // Global io instance for use in other modules
 let globalIo: Server | null = null;
@@ -36,51 +37,37 @@ export function getGlobalIo(): Server | null
     return globalIo;
 }
 
-// Handler pour les messages relayés dans la room (adapté pour paddleInputs dynamiques)
-function handleSocketMessage(socket: Socket, msg: string)
+/**
+ * Handler principal pour les messages du client
+ * Gere les inputs clavier pour controler les paddles
+ */
+function handleSocketMessage(socket: Socket, msg: string): void
 {
-    let message: any;
-    try {
-        message = JSON.parse(msg);
-    } catch (e) { return; }
+    // json -> object
+    const message = parseClientMessage(msg);
+    if (!message)
+        return;
     
     const playerRoom = getPlayerRoom(socket.id);
-    if (!playerRoom) return;
+    if (!playerRoom)
+        return;
+    
     const room = rooms[playerRoom] as RoomType;
-    if (!room.paddleInputs) {
+    
+    if (!room.paddleInputs)
         room.paddleInputs = initPaddleInputs(room.maxPlayers);
-    }
-    // Ajout : en local, le client peut contrôler tous les paddles
-    if ((message.type === 'keydown' || message.type === 'keyup') && room.pongGame && room.paddleBySocket) {
-        const { player, direction } = message.data || {};
-        const allowedPaddle = room.paddleBySocket[socket.id];
-        if (room.isLocalGame) {
-            let mappedPlayer = player;
-            if (player === 'left') mappedPlayer = 'A';
-            else if (player === 'right') mappedPlayer = 'C';
-            
-            if (Array.isArray(allowedPaddle) && allowedPaddle.includes(mappedPlayer)) {
-                if ((mappedPlayer === 'A' || mappedPlayer === 'B' || mappedPlayer === 'C' || mappedPlayer === 'D' || mappedPlayer === 'left' || mappedPlayer === 'right') && (direction === 'up' || direction === 'down')) {
-                    room.paddleInputs[mappedPlayer as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
-                    if (message.type === 'keydown') {
-                        try {
-                            room.pongGame.movePaddle(mappedPlayer, direction);
-                        } catch (error) {
-                            // Log supprimé pour améliorer les performances
-                        }
-                    }
-                }
-            }
-        } else {
-            if (player !== allowedPaddle) return;
-            if ((player === 'A' || player === 'B' || player === 'C' || player === 'D') && (direction === 'up' || direction === 'down')) {
-                room.paddleInputs[player as PaddleSide][direction as 'up' | 'down'] = (message.type === 'keydown');
-                if (message.type === 'keydown') {
-                    room.pongGame.movePaddle(player, direction);
-                }
-            }
-        }
-    }
+    
+    if (!isKeyboardEvent(message) || !room.pongGame || !room.paddleBySocket)
+        return;
+    
+    const { player, direction } = message.data || {};
+    if (!player || !direction)
+        return;
+    
+    if (room.isLocalGame)
+        handleLocalGamePaddleControl(room, socket.id, player, direction, message.type);
+    else
+        handleOnlineGamePaddleControl(room, socket.id, player, direction, message.type);
 }
 
 // Handler pour la déconnexion du client
