@@ -17,3 +17,4 @@ export { settingsHTML } from '../settings/settings.html.js';
 export { aiConfigHTML } from '../config/aiConfig.html.js';
 export { spectatorGameFinishedHTML } from '../game/spectatorGameFinished.html.js';
 export { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.js';
+export { tournamentsHTML } from '../pages/tournaments.html.js';

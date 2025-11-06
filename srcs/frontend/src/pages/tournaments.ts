@@ -1,15 +1,28 @@
-import { show, load } from '../navigation/utils.js';
+import { load } from '../navigation/utils.js';
 
-// Page tournaments: liste minimale (fetch /tournaments)
+// Page tournaments: liste des tournois 4-player
 export default async function tournamentsPage() {
+    // Masquer le contenu existant sans casser la structure
+    const mainContent = document.querySelector('main') || document.body;
+    
     const containerId = 'tournamentsPage';
     let container = document.getElementById(containerId);
     if (!container) {
         container = document.createElement('div');
         container.id = containerId;
         container.className = 'p-4';
-        document.body.appendChild(container);
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.backgroundColor = 'white';
+        container.style.zIndex = '1000';
+        mainContent.appendChild(container);
     }
+    
+    // Afficher le conteneur
+    container.style.display = 'block';
 
     container.innerHTML = `
         <div class="max-w-3xl mx-auto">
@@ -19,17 +32,42 @@ export default async function tournamentsPage() {
                     ➕ Créer Tournoi
                 </button>
             </div>
-            <div id="tournaments-list">Chargement...</div>
+            <div id="tournaments-list">
+                <div class="text-center py-8">
+                    <p class="text-gray-500">Chargement des tournois...</p>
+                </div>
+            </div>
             <div class="mt-4">
-                <button id="tournaments-back" class="px-4 py-2 bg-gray-700 text-white rounded">Retour</button>
+                <button id="tournaments-back" class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">Retour</button>
             </div>
         </div>
     `;
 
+    // Attendre que le DOM soit prêt
+    setTimeout(async () => {
+        await loadTournamentsList();
+        setupTournamentEventListeners();
+    }, 100);
+}
+
+// Initialize tournaments functionality after HTML is rendered
+export async function initTournaments() {
+    await loadTournamentsList();
+    setupTournamentEventListeners();
+}
+
+function setupTournamentEventListeners() {
     const backBtn = document.getElementById('tournaments-back');
     if (backBtn && !(backBtn as any)._listenerSet) {
         (backBtn as any)._listenerSet = true;
-        backBtn.addEventListener('click', async () => { await load('mainMenu'); });
+        backBtn.addEventListener('click', async () => {
+            // Supprimer complètement la page tournaments
+            const tournamentsPage = document.getElementById('tournamentsPage');
+            if (tournamentsPage) {
+                tournamentsPage.remove();
+            }
+            await load('mainMenu');
+        });
     }
 
     const createBtn = document.getElementById('create-tournament-btn');
@@ -47,8 +85,8 @@ export default async function tournamentsPage() {
                     });
                     
                     if (response.ok) {
-                        // Recharger la page pour afficher le nouveau tournoi
-                        await tournamentsPage();
+                        // Recharger la liste des tournois
+                        await loadTournamentsList();
                     } else {
                         const error = await response.json();
                         alert(`Erreur: ${error.error || 'Impossible de créer le tournoi'}`);
@@ -60,8 +98,12 @@ export default async function tournamentsPage() {
             }
         });
     }
+}
 
+async function loadTournamentsList() {
     const listContainer = document.getElementById('tournaments-list');
+    if (!listContainer) return;
+    
     try {
         // Appel API pour récupérer les tournois 4-player
         const res = await fetch('/tournaments', { method: 'GET', credentials: 'include' });
@@ -110,9 +152,6 @@ export default async function tournamentsPage() {
         });
     } catch (error) {
         console.error('Error loading tournaments:', error);
-        listContainer!.innerHTML = '<p>Erreur lors du chargement des tournois.</p>';
+        listContainer!.innerHTML = '<p class="text-red-500 text-center py-4">Erreur lors du chargement des tournois.</p>';
     }
-
-    // Ensure the page is shown via existing SPA helpers
-    show(containerId as any);
 }

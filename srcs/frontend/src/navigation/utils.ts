@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -23,6 +23,7 @@ const components = {
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
     settings: {id: 'settings', html: settingsHTML},
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
+    tournaments: {id: 'tournaments', html: tournamentsHTML},
 };
 
 async function show(pageName: keyof typeof components, data?: any)
@@ -239,7 +240,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         }, 100);
     }
     else if (pageName === 'tournaments') {
-        // Load the tournaments list page
+        // Load the tournaments list page directly
         const tournamentsPage = await import('../pages/tournaments.js');
         await tournamentsPage.default();
     }

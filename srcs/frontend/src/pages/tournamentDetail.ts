@@ -97,11 +97,16 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
         }
 
         console.log('Tournament data received:', data);
+        console.log('Tournament object:', data.tournament);
+        console.log('Participants:', data.participants);
 
         // Validation des données critiques
         if (!data.tournament || !data.tournament.id) {
+            console.error('❌ Données de tournoi invalides:', data);
             throw new Error('Données de tournoi invalides');
         }
+        
+        console.log('✅ Données valides, rendering...');
 
         // Construire la page avec les données
         contentContainer.innerHTML = renderTournamentContent(data);
