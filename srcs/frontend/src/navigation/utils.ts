@@ -246,7 +246,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         // Initialize tournaments functionality after component is rendered
         setTimeout(async () => {
             console.log('🚀 Loading tournaments functionality...');
-            const tournamentsPage = await import('../pages/tournaments.js');
+            const tournamentsPage = await import('../tournament/tournaments.js');
             await tournamentsPage.initTournaments();
         }, 100);
     }
@@ -258,7 +258,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         // Handle tournament detail pages: /tournaments/:id
         const tournamentId = pageName.split('/')[1];
         if (tournamentId) {
-            const tournamentDetail = await import('../pages/tournamentDetail.js');
+            const tournamentDetail = await import('../tournament/tournamentDetail.js');
             await tournamentDetail.default(tournamentId);
         } else {
             console.warn('Tournament ID missing in URL');

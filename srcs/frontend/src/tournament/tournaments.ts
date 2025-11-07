@@ -64,12 +64,7 @@ async function loadTournamentsList() {
         const tournaments = data.tournaments || [];
 
         if (tournaments.length === 0) {
-            listContainer!.innerHTML = `
-                <div class="text-center py-8 bg-gray-800 border border-gray-600 rounded-lg">
-                    <p class="text-gray-300 mb-4">Aucun tournoi disponible pour le moment.</p>
-                    <p class="text-sm text-gray-500">Les tournois 4-player apparaîtront ici une fois créés.</p>
-                </div>
-            `;
+            listContainer!.innerHTML = '';
         } else {
             const rows = tournaments.map((t: any) => `
                 <div class="p-4 border-b border-gray-600 flex justify-between items-center">
