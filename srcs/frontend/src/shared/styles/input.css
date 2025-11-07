@@ -20,6 +20,7 @@
 @import '../../auth/google-button.css';
 @import '../../leaderboard/leaderboard.css';
 @import '../../navigation/navigation.css';
+@import '../../tournament/tournament.css';
 
 @tailwind base;
 @tailwind components;

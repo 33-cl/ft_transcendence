@@ -243,6 +243,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         console.log('📺 Showing tournaments component...');
         await show('tournaments');
+        await show('goToMain');
         // Initialize tournaments functionality after component is rendered
         setTimeout(async () => {
             console.log('🚀 Loading tournaments functionality...');

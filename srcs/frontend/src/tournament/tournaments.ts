@@ -13,15 +13,6 @@ export async function initTournaments() {
 }
 
 function setupTournamentEventListeners() {
-    const backBtn = document.getElementById('tournaments-back');
-    if (backBtn && !(backBtn as any)._listenerSet) {
-        (backBtn as any)._listenerSet = true;
-        backBtn.addEventListener('click', async () => {
-            console.log('🔙 Tournaments back button clicked');
-            await load('mainMenu');
-        });
-    }
-
     const createBtn = document.getElementById('create-tournament-btn');
     if (createBtn && !(createBtn as any)._listenerSet) {
         (createBtn as any)._listenerSet = true;
@@ -67,25 +58,25 @@ async function loadTournamentsList() {
             listContainer!.innerHTML = '';
         } else {
             const rows = tournaments.map((t: any) => `
-                <div class="p-4 border-b border-gray-600 flex justify-between items-center">
-                    <div class="text-left">
-                        <div class="font-medium text-white text-lg">${t.name}</div>
-                        <div class="text-sm text-gray-400">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
-                        ${t.max_players === 4 ? '<span class="text-xs bg-green-600 text-green-100 px-2 py-1 rounded-full mt-2 inline-block">4-Player</span>' : ''}
+                <div class="tournament-item">
+                    <div class="tournament-item-info">
+                        <div class="tournament-item-name">${t.name}</div>
+                        <div class="tournament-item-status">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
+                        ${t.max_players === 4 ? '<span class="tournament-badge-4player">4-Player</span>' : ''}
                     </div>
-                    <div class="flex gap-2">
-                        <button data-id="${t.id}" class="view-tournament px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <div class="tournament-actions">
+                        <button data-id="${t.id}" class="view-tournament tournament-view-btn">
                             Voir
                         </button>
                         ${t.status === 'registration' ? `
-                            <button data-id="${t.id}" class="delete-tournament px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            <button data-id="${t.id}" class="delete-tournament tournament-delete-btn">
                                 🗑️ Supprimer
                             </button>
                         ` : ''}
                     </div>
                 </div>
             `).join('');
-            listContainer!.innerHTML = `<div class="bg-gray-800 border border-gray-600 rounded-lg overflow-hidden">${rows}</div>`;
+            listContainer!.innerHTML = `<div class="tournament-list-container">${rows}</div>`;
         }
 
         // Attach click handlers for view buttons
