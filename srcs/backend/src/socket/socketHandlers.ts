@@ -80,6 +80,80 @@ function isActiveOnlineGame(room: RoomType): boolean
 }
 
 /**
+ * Gere l'authentification d'un socket a la connexion
+ * Retourne true si la connexion doit etre interrompue
+ */
+function handleSocketAuthentication(socket: Socket, fastify: FastifyInstance): boolean
+{
+    const user = authenticateSocket(socket, fastify);
+    
+    if (user && typeof user === 'object')
+    {
+        broadcastUserStatusChange(globalIo, user.id, 'online', fastify);
+        return false; // Continuer la connexion
+    }
+    
+    if (user === 'USER_ALREADY_CONNECTED')
+    {
+        socket.emit('error', { 
+            error: 'User is already connected on another browser/tab. Please close other connections first.', 
+            code: 'USER_ALREADY_CONNECTED' 
+        });
+        socket.disconnect(true);
+        return true; // Interrompre la connexion
+    }
+    
+    return false; // Connexion non authentifiee mais autorisee (jeux locaux)
+}
+
+/**
+ * Handler pour rejoindre un match de tournoi
+ */
+function handleTournamentJoinMatch(socket: Socket, data: any, fastify: FastifyInstance): void
+{
+    try
+    {
+        const tournamentId = data?.tournamentId;
+        const matchId = data?.matchId;
+        
+        if (!tournamentId || !matchId)
+        {
+            socket.emit('tournament:join_match:error', { error: 'tournamentId and matchId required' });
+            return;
+        }
+
+        const user = getSocketUser(socket.id);
+        if (!user)
+        {
+            socket.emit('tournament:join_match:error', { error: 'Authentication required' });
+            return;
+        }
+
+        const roomName = `tournament:${tournamentId}:match:${matchId}`;
+        socket.join(roomName);
+        socket.emit('tournament:join_match:ok', { room: roomName });
+        fastify.log.info(`Socket ${socket.id} (user=${user.username}) joined ${roomName}`);
+    }
+    catch (err)
+    {
+        socket.emit('tournament:join_match:error', { error: 'Internal server error' });
+    }
+}
+
+/**
+ * Enregistre tous les event listeners sur un socket
+ */
+function registerSocketEventListeners(socket: Socket, io: Server, fastify: FastifyInstance): void
+{
+    socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
+    socket.on('tournament:join_match', (data: any) => handleTournamentJoinMatch(socket, data, fastify));
+    socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
+    socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
+    socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));
+    socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));
+}
+
+/**
  * Handler pour la deconnexion du client
  * Gere le cleanup et les forfaits si le joueur etait en partie
  */
@@ -188,77 +262,22 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
 // Fonction principale qui enregistre tous les handlers socket.io
 export default function registerSocketHandlers(io: Server, fastify: FastifyInstance)
 {
-    // Mutex global pour les opérations critiques
-    globalIo = io; // Stocker l'instance io globalement
+    globalIo = io;
     
     // Tick rate configurable (env: TICK_RATE, default: 120 FPS for smooth gameplay)
     const tickRate = Number(process.env.TICK_RATE ?? 120);
-    const intervalMs = Math.max(1, Math.floor(1000 / tickRate));
+    const intervalMs = Math.max(1, Math.floor(1000 / tickRate));//convertir fps en ms entre chaque tick
     
-    if (fastify.log) {
-        fastify.log.info(`🎮 Game tick rate: ${tickRate} FPS (interval: ${intervalMs}ms)`);
-    }
-    
-    setInterval(() =>
-	{
-        handleGameTick(io, fastify);
-    }, intervalMs);
+    setInterval(() => handleGameTick(io, fastify), intervalMs);
 
     io.on('connection', (socket: Socket) =>
-	{
-        fastify.log.info(`Client connecté : ${socket.id}`);
-        
-        // Authentifier le socket à la connexion
-        const user = authenticateSocket(socket, fastify);
-        if (user && typeof user === 'object') {
-            fastify.log.info(`Socket ${socket.id} authentifié pour l'utilisateur ${user.username} (${user.id})`);
-            
-            // 🚀 NOUVEAU : Notifier les amis que l'utilisateur est maintenant en ligne
-            broadcastUserStatusChange(globalIo, user.id, 'online', fastify);
-        } else if (user === 'USER_ALREADY_CONNECTED') {
-            // Utilisateur déjà connecté ailleurs
-            socket.emit('error', { 
-                error: 'User is already connected on another browser/tab. Please close other connections first.', 
-                code: 'USER_ALREADY_CONNECTED' 
-            });
-            socket.disconnect(true);
+    {
+        // Authentifier et verifier si la connexion doit continuer
+        const shouldDisconnect = handleSocketAuthentication(socket, fastify);
+        if (shouldDisconnect)
             return;
-        } else {
-            // Pour les connexions non authentifiées, permettre quand même la connexion (jeux locaux)
-            fastify.log.warn(`Socket ${socket.id} non authentifié - connexion autorisée pour jeux locaux`);
-        }
         
-        socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
-        // Minimal handler for tournament match room joining
-        // Client payload: { tournamentId: string, matchId: number }
-        socket.on('tournament:join_match', (data: any) => {
-            try {
-                const tournamentId = data?.tournamentId;
-                const matchId = data?.matchId;
-                if (!tournamentId || !matchId) {
-                    socket.emit('tournament:join_match:error', { error: 'tournamentId and matchId required' });
-                    return;
-                }
-
-                const user = getSocketUser(socket.id);
-                if (!user) {
-                    socket.emit('tournament:join_match:error', { error: 'Authentication required' });
-                    return;
-                }
-
-                const roomName = `tournament:${tournamentId}:match:${matchId}`;
-                socket.join(roomName);
-                socket.emit('tournament:join_match:ok', { room: roomName });
-                fastify.log.info(`Socket ${socket.id} (user=${user.username}) joined ${roomName}`);
-            } catch (err) {
-                socket.emit('tournament:join_match:error', { error: 'Internal server error' });
-            }
-        });
-        
-        
-        socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
-        socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
-        socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));
-        socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));
+        // Enregistrer tous les event listeners
+        registerSocketEventListeners(socket, io, fastify);
     });
 }

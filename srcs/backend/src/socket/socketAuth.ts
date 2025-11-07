@@ -36,13 +36,13 @@ function parseCookiesFromSocket(socket: Socket): Record<string, string>
   const cookies: Record<string, string> = {};
   const cookieHeader = socket.handshake.headers.cookie;
   
-  if (!cookieHeader) return cookies;
+  if (!cookieHeader)
+    return cookies;
   
   cookieHeader.split(';').forEach(cookie => {
     const [key, ...values] = cookie.trim().split('=');
-    if (key && values.length > 0) {
+    if (key && values.length > 0)
       cookies[key] = decodeURIComponent(values.join('='));
-    }
   });
   
   return cookies;
@@ -56,7 +56,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
 
     let user: SocketUser | undefined;
     
-    if (jwtToken) {
+    if (jwtToken)
+    {
       // JWT authentication
       try {
         if (!process.env.JWT_SECRET)
@@ -74,7 +75,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
           if (activeToken)
           {
             const userRow = db.prepare('SELECT id, username, email FROM users WHERE id = ?').get(userId) as { id: number, username: string, email: string } | undefined;
-            if (userRow) {
+            if (userRow)
+            {
               user = {
                 id: userRow.id,
                 username: userRow.username,
@@ -84,7 +86,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
           }
         }
       } catch (err) {
-        if (fastify) fastify.log.warn(`[DEBUG] Socket ${socket.id} JWT invalid: ${err}`);
+        if (fastify)
+          fastify.log.warn(`[DEBUG] Socket ${socket.id} JWT invalid: ${err}`);
       }
     }
 
