@@ -97,7 +97,7 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
 
     try {
         // Fetch des données du tournoi via API
-        const response = await fetch(`/tournaments/${tournamentId}`, {
+        const response = await fetch(`/api/tournaments/${tournamentId}`, {
             method: 'GET',
             credentials: 'include'
         });
@@ -351,7 +351,7 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                 joinBtn.textContent = 'Inscription...';
                 (joinBtn as HTMLButtonElement).disabled = true;
                 
-                const response = await fetch(`/tournaments/${tournament.id}/join`, {
+                const response = await fetch(`/api/tournaments/${tournament.id}/join`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -391,7 +391,7 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                 (startBtn as HTMLButtonElement).disabled = true;
                 
                 // Appel à la route de démarrage manuel
-                const response = await fetch(`/tournaments/${tournament.id}/start`, {
+                const response = await fetch(`/api/tournaments/${tournament.id}/start`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',

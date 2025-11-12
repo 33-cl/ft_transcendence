@@ -20,7 +20,7 @@ function setupTournamentEventListeners() {
             const name = prompt('Nom du tournoi 4-player:');
             if (name && name.trim()) {
                 try {
-                    const response = await fetch('/tournaments', {
+                    const response = await fetch('/api/tournaments', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
@@ -49,7 +49,7 @@ async function loadTournamentsList() {
     
     try {
         // Appel API pour récupérer les tournois 4-player
-        const res = await fetch('/tournaments', { method: 'GET', credentials: 'include' });
+        const res = await fetch('/api/tournaments', { method: 'GET', credentials: 'include' });
         if (!res.ok) throw new Error('Failed to fetch tournaments');
         const data = await res.json();
         const tournaments = data.tournaments || [];
