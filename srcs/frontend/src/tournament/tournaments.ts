@@ -1,5 +1,3 @@
-import { load } from '../navigation/utils.js';
-
 // Page tournaments: liste des tournois 4-player (legacy, not used anymore)
 export default async function tournamentsPage() {
     console.warn('tournamentsPage() is deprecated, use initTournaments() instead');
@@ -10,6 +8,48 @@ export async function initTournaments() {
     console.log('🎾 Initializing tournaments functionality...');
     await loadTournamentsList();
     setupTournamentEventListeners();
+}
+
+async function handleJoinTournament(tournamentId: string) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({})
+        });
+        
+        if (response.ok) {
+            await loadTournamentsList();
+        } else {
+            const error = await response.json();
+            alert(`Erreur: ${error.error || 'Impossible de rejoindre le tournoi'}`);
+        }
+    } catch (error) {
+        alert('Erreur lors de l\'inscription au tournoi');
+        console.error('Tournament join error:', error);
+    }
+}
+
+async function handleLeaveTournament(tournamentId: string) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/leave`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({})
+        });
+        
+        if (response.ok) {
+            await loadTournamentsList();
+        } else {
+            const error = await response.json();
+            alert(`Erreur: ${error.error || 'Impossible de quitter le tournoi'}`);
+        }
+    } catch (error) {
+        alert('Erreur lors de la désinscription du tournoi');
+        console.error('Tournament leave error:', error);
+    }
 }
 
 async function handleCreateTournament() {
@@ -149,30 +189,53 @@ async function loadTournamentsList() {
                         ${t.max_players === 4 ? '<span class="tournament-badge-4player">4-Player</span>' : ''}
                     </div>
                     <div class="tournament-actions">
-                        <button data-id="${t.id}" class="view-tournament tournament-view-btn">
-                            Voir
-                        </button>
                         ${t.status === 'registration' ? `
+                            ${t.is_participant ? `
+                                <button data-id="${t.id}" class="leave-tournament tournament-leave-btn">
+                                    ✕ Quitter
+                                </button>
+                            ` : `
+                                <button data-id="${t.id}" class="join-tournament tournament-join-btn">
+                                    ➕ Rejoindre
+                                </button>
+                            `}
                             <button data-id="${t.id}" class="delete-tournament tournament-delete-btn">
                                 🗑️ Supprimer
                             </button>
-                        ` : ''}
+                        ` : `
+                            <button disabled class="tournament-view-btn tournament-disabled">
+                                ${t.status === 'active' ? 'En cours' : 'Terminé'}
+                            </button>
+                        `}
                     </div>
                 </div>
             `).join('');
             listContainer!.innerHTML = `<div class="tournament-list-container">${rows}</div>`;
         }
 
-        // Attach click handlers for view buttons
-        document.querySelectorAll('.view-tournament').forEach(btn => {
+        // Attach click handlers for join buttons
+        document.querySelectorAll('.join-tournament').forEach(btn => {
             if (!(btn as any)._listenerSet) {
                 (btn as any)._listenerSet = true;
                 
                 (btn as HTMLElement).addEventListener('click', async (e) => {
                     const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
                     if (id) {
-                        // Navigation vers la page de détail du tournoi
-                        await load(`tournaments/${id}`);
+                        await handleJoinTournament(id);
+                    }
+                });
+            }
+        });
+
+        // Attach click handlers for leave buttons
+        document.querySelectorAll('.leave-tournament').forEach(btn => {
+            if (!(btn as any)._listenerSet) {
+                (btn as any)._listenerSet = true;
+                
+                (btn as HTMLElement).addEventListener('click', async (e) => {
+                    const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+                    if (id) {
+                        await handleLeaveTournament(id);
                     }
                 });
             }

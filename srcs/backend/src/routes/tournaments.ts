@@ -130,10 +130,36 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     });
 
     // GET /tournaments - Récupérer la liste des tournois
-    fastify.get('/tournaments', async (_request: FastifyRequest, reply: FastifyReply) => {
+    fastify.get('/tournaments', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const tournaments = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC`).all() as TournamentRow[];
-            reply.send({ success: true, tournaments });
+            
+            // Get current user if authenticated
+            const token = getJwtFromRequest(request);
+            let userId: number | null = null;
+            if (token) {
+                try {
+                    const decoded = jwt.verify(token, JWT_SECRET) as any;
+                    userId = decoded.userId;
+                } catch (error) {
+                    // Token invalid, continue without user
+                }
+            }
+            
+            // Add is_participant flag to each tournament
+            const tournamentsWithParticipation = tournaments.map(t => {
+                let is_participant = false;
+                if (userId) {
+                    const participant = db.prepare(`
+                        SELECT id FROM tournament_participants 
+                        WHERE tournament_id = ? AND user_id = ?
+                    `).get(t.id, userId);
+                    is_participant = !!participant;
+                }
+                return { ...t, is_participant };
+            });
+            
+            reply.send({ success: true, tournaments: tournamentsWithParticipation });
         } catch (error) {
             fastify.log.error(`Error fetching tournaments: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
@@ -270,6 +296,63 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             reply.status(201).send({ success: true, participant });
         } catch (error) {
             fastify.log.error(`Error joining tournament: ${error}`);
+            reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
+    // POST /tournaments/:id/leave - Quitter un tournoi
+    fastify.post('/tournaments/:id/leave', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+        try {
+            // SECURITY: Validation de l'utilisateur
+            const token = getJwtFromRequest(request);
+            if (!token) {
+                return reply.status(401).send({ error: 'Unauthorized' });
+            }
+
+            let userId: number;
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET) as any;
+                userId = decoded.userId;
+            } catch (error) {
+                return reply.status(401).send({ error: 'Invalid token' });
+            }
+
+            const { id } = request.params as { id: string };
+            
+            // SECURITY: Validate tournament ID
+            if (!validateUUID(id)) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            // Vérifier que le tournoi existe et est en phase d'inscription
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            if (tournament.status !== 'registration') {
+                return reply.status(400).send({ error: 'Cannot leave tournament: registration is closed' });
+            }
+
+            // Vérifier que l'utilisateur est bien participant
+            const participant = db.prepare(`
+                SELECT id FROM tournament_participants 
+                WHERE tournament_id = ? AND user_id = ?
+            `).get(id, userId);
+
+            if (!participant) {
+                return reply.status(400).send({ error: 'You are not a participant of this tournament' });
+            }
+
+            // Supprimer le participant
+            db.prepare(`DELETE FROM tournament_participants WHERE tournament_id = ? AND user_id = ?`).run(id, userId);
+            
+            // Décrémenter le compteur de participants
+            db.prepare(`UPDATE tournaments SET current_players = current_players - 1 WHERE id = ?`).run(id);
+
+            reply.send({ success: true, message: 'Left tournament successfully' });
+        } catch (error) {
+            fastify.log.error(`Error leaving tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
