@@ -12,32 +12,116 @@ export async function initTournaments() {
     setupTournamentEventListeners();
 }
 
+async function handleCreateTournament() {
+    const createForm = document.getElementById('tournament-create-form');
+    const nameInput = document.getElementById('tournament-name-input') as HTMLInputElement;
+    const createBtn = document.getElementById('create-tournament-btn');
+    const name = nameInput?.value.trim();
+    
+    if (!name) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/tournaments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ name, maxPlayers: 4 })
+        });
+        
+        if (response.ok) {
+            // Cacher le formulaire et réafficher le bouton
+            if (createForm) createForm.style.display = 'none';
+            if (createBtn) createBtn.style.display = 'inline-block';
+            nameInput.value = '';
+            await loadTournamentsList();
+        } else {
+            const error = await response.json();
+            alert(`Erreur: ${error.error || 'Impossible de créer le tournoi'}`);
+            nameInput?.focus();
+        }
+    } catch (error) {
+        alert('Erreur lors de la création du tournoi');
+        console.error('Tournament creation error:', error);
+    }
+}
+
+function cancelCreateTournament() {
+    const createForm = document.getElementById('tournament-create-form');
+    const createBtn = document.getElementById('create-tournament-btn');
+    const nameInput = document.getElementById('tournament-name-input') as HTMLInputElement;
+    
+    if (createForm) createForm.style.display = 'none';
+    if (createBtn) createBtn.style.display = 'inline-block';
+    if (nameInput) nameInput.value = '';
+}
+
+async function handleDeleteTournament(tournamentId: string) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            await loadTournamentsList();
+        } else {
+            const error = await response.json();
+            alert(`Erreur: ${error.error || 'Impossible de supprimer le tournoi'}`);
+        }
+    } catch (error) {
+        alert('Erreur lors de la suppression du tournoi');
+        console.error('Tournament deletion error:', error);
+    }
+}
+
 function setupTournamentEventListeners() {
     const createBtn = document.getElementById('create-tournament-btn');
+    const createForm = document.getElementById('tournament-create-form');
+    const nameInput = document.getElementById('tournament-name-input') as HTMLInputElement;
+    const confirmBtn = document.getElementById('confirm-create-btn');
+    const cancelBtn = document.getElementById('cancel-create-btn');
+    
+    // Afficher le formulaire de création
     if (createBtn && !(createBtn as any)._listenerSet) {
         (createBtn as any)._listenerSet = true;
-        createBtn.addEventListener('click', async () => {
-            const name = prompt('Nom du tournoi 4-player:');
-            if (name && name.trim()) {
-                try {
-                    const response = await fetch('/api/tournaments', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ name: name.trim(), maxPlayers: 4 })
-                    });
-                    
-                    if (response.ok) {
-                        // Recharger la liste des tournois
-                        await loadTournamentsList();
-                    } else {
-                        const error = await response.json();
-                        alert(`Erreur: ${error.error || 'Impossible de créer le tournoi'}`);
-                    }
-                } catch (error) {
-                    alert('Erreur lors de la création du tournoi');
-                    console.error('Tournament creation error:', error);
-                }
+        createBtn.addEventListener('click', () => {
+            if (createForm) createForm.style.display = 'flex';
+            createBtn.style.display = 'none';
+            setTimeout(() => nameInput?.focus(), 100);
+        });
+    }
+    
+    // Confirmer avec le bouton ✓
+    if (confirmBtn && !(confirmBtn as any)._listenerSet) {
+        (confirmBtn as any)._listenerSet = true;
+        confirmBtn.addEventListener('click', async () => {
+            await handleCreateTournament();
+        });
+    }
+    
+    // Annuler avec le bouton ✕
+    if (cancelBtn && !(cancelBtn as any)._listenerSet) {
+        (cancelBtn as any)._listenerSet = true;
+        cancelBtn.addEventListener('click', () => {
+            cancelCreateTournament();
+        });
+    }
+    
+    // Confirmer avec Enter
+    if (nameInput && !(nameInput as any)._listenerSet) {
+        (nameInput as any)._listenerSet = true;
+        nameInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await handleCreateTournament();
+            }
+        });
+        
+        // Annuler avec Escape
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cancelCreateTournament();
             }
         });
     }
@@ -102,29 +186,7 @@ async function loadTournamentsList() {
                 (btn as HTMLElement).addEventListener('click', async (e) => {
                     const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
                     if (id) {
-                        const tournamentName = (e.currentTarget as HTMLElement).closest('.p-4')?.querySelector('.font-medium')?.textContent;
-                        
-                        if (confirm(`Êtes-vous sûr de vouloir supprimer le tournoi "${tournamentName}" ?\n\nCette action est irréversible.`)) {
-                            try {
-                                const response = await fetch(`/tournaments/${id}`, {
-                                    method: 'DELETE',
-                                    credentials: 'include'
-                                });
-                                
-                                if (response.ok) {
-                                    const result = await response.json();
-                                    alert(result.message || 'Tournoi supprimé avec succès');
-                                    // Recharger la liste des tournois
-                                    await loadTournamentsList();
-                                } else {
-                                    const error = await response.json();
-                                    alert(`Erreur: ${error.error || 'Impossible de supprimer le tournoi'}`);
-                                }
-                            } catch (error) {
-                                alert('Erreur lors de la suppression du tournoi');
-                                console.error('Tournament deletion error:', error);
-                            }
-                        }
+                        await handleDeleteTournament(id);
                     }
                 });
             }

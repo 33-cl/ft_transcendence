@@ -16,6 +16,31 @@
     @apply px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors;
 }
 
+/* Formulaire de création inline */
+.tournament-create-form {
+    @apply mb-6 bg-gray-800 border-2 border-green-500 rounded-lg p-4 flex items-center gap-3;
+}
+
+.tournament-name-input {
+    @apply flex-1 px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all;
+}
+
+.tournament-create-actions {
+    @apply flex gap-2;
+}
+
+.tournament-btn-small {
+    @apply w-10 h-10 rounded-lg font-bold text-lg flex items-center justify-center transition-colors;
+}
+
+.tournament-btn-small.tournament-btn-confirm {
+    @apply bg-green-600 text-white hover:bg-green-700;
+}
+
+.tournament-btn-small.tournament-btn-cancel {
+    @apply bg-gray-700 text-white hover:bg-gray-600;
+}
+
 .tournament-list {
     @apply mb-6 min-h-[200px];
 }
@@ -188,4 +213,73 @@
 
 .tournament-no-matches {
     @apply text-gray-500;
+}
+
+/* Modal Styles */
+.tournament-modal {
+    @apply hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center;
+}
+
+.tournament-modal.active {
+    @apply flex;
+}
+
+.tournament-modal-content {
+    @apply bg-gray-900 border-2 border-purple-500 rounded-lg w-full max-w-md mx-4 shadow-2xl;
+}
+
+.tournament-modal-small {
+    @apply max-w-sm;
+}
+
+.tournament-modal-header {
+    @apply flex justify-between items-center p-6 border-b border-gray-700;
+}
+
+.tournament-modal-title {
+    @apply text-xl font-bold text-white;
+}
+
+.tournament-modal-close {
+    @apply text-gray-400 hover:text-white text-3xl font-bold leading-none transition-colors;
+}
+
+.tournament-modal-body {
+    @apply p-6;
+}
+
+.tournament-input-label {
+    @apply block text-white font-medium mb-2;
+}
+
+.tournament-input {
+    @apply w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all;
+}
+
+.tournament-input-hint {
+    @apply text-sm text-gray-500 mt-2;
+}
+
+.tournament-delete-message {
+    @apply text-white text-center mb-2;
+}
+
+.tournament-delete-warning {
+    @apply text-red-400 text-center text-sm font-medium;
+}
+
+.tournament-modal-footer {
+    @apply flex justify-end gap-3 p-6 border-t border-gray-700;
+}
+
+.tournament-btn-cancel {
+    @apply px-5 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 font-medium transition-colors;
+}
+
+.tournament-btn-confirm {
+    @apply px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors;
+}
+
+.tournament-btn-delete {
+    @apply px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors;
 }
