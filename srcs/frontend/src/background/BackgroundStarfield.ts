@@ -7,9 +7,6 @@ import {
   calculateStarCount,
   CollapseState,
   ATTRACTION_RADIUS_INITIAL,
-  ATTRACTION_RADIUS_MAX,
-  ATTRACTION_RADIUS_EXP_FACTOR,
-  INACTIVITY_THRESHOLD,
   SHOOTING_STAR_COUNT,
   SHOOTING_STAR_SPAWN_RATE,
   PLANET_COUNT,
@@ -18,7 +15,6 @@ import {
   LONG_PRESS_DURATION,
   RING_RADIUS,
   LONG_PRESS_MOVE_TOLERANCE,
-  getLastMouseMoveTime,
   updateLastMouseMoveTime,
   getAttractionRadius,
   setAttractionRadius
@@ -358,21 +354,6 @@ export class BackgroundStarfield {
 
     // Handle reset if necessary
     this.handleReset();
-
-    // Check inactivity time and exponentially increase radius
-    const now = Date.now();
-    const lastMouseMoveTime = getLastMouseMoveTime();
-    let ATTRACTION_RADIUS = getAttractionRadius();
-    
-    if (now - lastMouseMoveTime > INACTIVITY_THRESHOLD) {
-      if (ATTRACTION_RADIUS < ATTRACTION_RADIUS_MAX) {
-        ATTRACTION_RADIUS *= ATTRACTION_RADIUS_EXP_FACTOR;
-        if (ATTRACTION_RADIUS > ATTRACTION_RADIUS_MAX) {
-          ATTRACTION_RADIUS = ATTRACTION_RADIUS_MAX;
-        }
-        setAttractionRadius(ATTRACTION_RADIUS);
-      }
-    }
 
     // Apply normal attraction if not in collapse or reset mode
     if (!this.blackHole || (!this.blackHole.shouldCollapseStars() && !this.blackHole.shouldReset())) {
