@@ -146,17 +146,21 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 }
             }
             
-            // Add is_participant flag to each tournament
+            // Add is_participant and is_creator flags to each tournament
             const tournamentsWithParticipation = tournaments.map(t => {
                 let is_participant = false;
+                let is_creator = false;
                 if (userId) {
                     const participant = db.prepare(`
                         SELECT id FROM tournament_participants 
                         WHERE tournament_id = ? AND user_id = ?
                     `).get(t.id, userId);
                     is_participant = !!participant;
+                    
+                    // Check if current user is the creator
+                    is_creator = (t as any).creator_id === userId;
                 }
-                return { ...t, is_participant };
+                return { ...t, is_participant, is_creator };
             });
             
             reply.send({ success: true, tournaments: tournamentsWithParticipation });

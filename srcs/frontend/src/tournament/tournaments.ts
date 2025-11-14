@@ -185,7 +185,7 @@ async function loadTournamentsList() {
                 <div class="tournament-item">
                     <div class="tournament-item-info">
                         <div class="tournament-item-name">${t.name}</div>
-                        <div class="tournament-item-status">Status: ${t.status} — ${t.current_players}/${t.max_players} joueurs</div>
+                        <div class="tournament-item-status">Status: ${t.status} — ${t.current_players}/${t.max_players}</div>
                         ${t.max_players === 4 ? '<span class="tournament-badge-4player">4-Player</span>' : ''}
                     </div>
                     <div class="tournament-actions">
@@ -199,9 +199,11 @@ async function loadTournamentsList() {
                                     ➕ Rejoindre
                                 </button>
                             `}
-                            <button data-id="${t.id}" class="delete-tournament tournament-delete-btn">
-                                🗑️ Supprimer
-                            </button>
+                            ${t.is_creator ? `
+                                <button data-id="${t.id}" class="delete-tournament tournament-delete-btn">
+                                    🗑️ Supprimer
+                                </button>
+                            ` : ''}
                         ` : `
                             <button disabled class="tournament-view-btn tournament-disabled">
                                 ${t.status === 'active' ? 'En cours' : 'Terminé'}

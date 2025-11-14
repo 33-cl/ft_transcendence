@@ -62,7 +62,7 @@
 }
 
 .tournament-item-info {
-    @apply text-left;
+    @apply text-left flex-1 mr-4;
 }
 
 .tournament-item-name {
