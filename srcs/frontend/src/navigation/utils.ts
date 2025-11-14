@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -20,6 +20,8 @@ const components = {
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
     spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
+    profileDashboard: {id: 'profileDashboard', html: profileDashboardHTML},
+    profileWinRateHistory: {id: 'profileWinRateHistory', html: profileWinRateHistoryHTML},
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
     settings: {id: 'settings', html: settingsHTML},
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
@@ -51,7 +53,13 @@ async function show(pageName: keyof typeof components, data?: any)
             if (pageName === 'profile') {
                 const selectedUser = (window as any).selectedProfileUser;
                 htmlResult = component.html(selectedUser);
-                // Nettoyer après utilisation
+                // Ne pas nettoyer tout de suite - on en a besoin pour profileDashboard
+            }
+            // Cas spécial pour le profileDashboard - passer l'utilisateur sélectionné
+            else if (pageName === 'profileDashboard') {
+                const selectedUser = (window as any).selectedProfileUser;
+                htmlResult = component.html(selectedUser);
+                // Nettoyer après utilisation du dashboard
                 (window as any).selectedProfileUser = null;
             } 
             // Cas spécial pour gameFinished - passer les données de fin de jeu
@@ -218,17 +226,59 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
       
                 // Show components after stats are refreshed
                 await show('profile');
+                await show('profileDashboard');
+                await show('profileWinRateHistory');
                 await show('goToMain');
+                
+                // Initialiser les graphiques après l'affichage du profil
+                setTimeout(async () => {
+                    const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
+                    const user = (window as any).selectedProfileUser || window.currentUser;
+                    const wins = user?.wins || 0;
+                    const losses = user?.losses || 0;
+                    initializeStatsChart(wins, losses);
+                    if (user?.id) {
+                        await initializeWinRateHistoryChart(user.id);
+                    }
+                }, 100);
             }).catch(async (error: any) => {
                 console.warn('Failed to refresh user stats before profile:', error);
                 // Still show components even if refresh fails
                 await show('profile');
+                await show('profileDashboard');
+                await show('profileWinRateHistory');
                 await show('goToMain');
+                
+                // Initialiser les graphiques même si le refresh a échoué
+                setTimeout(async () => {
+                    const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
+                    const user = (window as any).selectedProfileUser || window.currentUser;
+                    const wins = user?.wins || 0;
+                    const losses = user?.losses || 0;
+                    initializeStatsChart(wins, losses);
+                    if (user?.id) {
+                        await initializeWinRateHistoryChart(user.id);
+                    }
+                }, 100);
             });
         } else {
             // No user or refresh function available, show components directly
             await show('profile');
+            await show('profileDashboard');
+            await show('profileWinRateHistory');
             await show('goToMain');
+            
+            // Initialiser les graphiques
+            setTimeout(async () => {
+                const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
+                const user = (window as any).selectedProfileUser || window.currentUser;
+                const wins = user?.wins || 0;
+                const losses = user?.losses || 0;
+                initializeStatsChart(wins, losses);
+                if (user?.id) {
+                    await initializeWinRateHistoryChart(user.id);
+                }
+            }, 100);
         }
     }
     else if (pageName === 'aiConfig') 

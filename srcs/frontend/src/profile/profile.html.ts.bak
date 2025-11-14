@@ -75,6 +75,7 @@ export function profileDashboardHTML(targetUser?: any) {
     const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
     
     return /*html*/ `
+    return /*html*/ `
     <div class="dashboard-container">
         <canvas id="stats-chart"></canvas>
         <div class="dashboard-stats">
@@ -93,5 +94,7 @@ export function profileWinRateHistoryHTML() {
         <h2 class="winrate-history-title">Win Rate Evolution</h2>
         <canvas id="winrate-history-chart"></canvas>
     </div>
+    `;
+}
     `;
 }

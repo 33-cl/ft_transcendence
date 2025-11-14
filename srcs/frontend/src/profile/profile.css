@@ -41,7 +41,7 @@
     }
 
     .avatar-container {
-        @apply w-64 h-64 border-4 border-amber-500 rounded-md overflow-hidden bg-gray-800;
+        @apply w-64 h-64 rounded-md overflow-hidden;
     }
 
     .avatar-container img {
@@ -54,19 +54,62 @@
     }
 
     .stats-container {
-        @apply flex flex-col items-start text-left;
+        @apply flex flex-col items-start text-left justify-center h-64;
     }
 
     .stat-row {
-        @apply text-4xl flex flex-row items-center justify-between w-full mb-6;
+        @apply text-4xl flex flex-row items-center justify-between w-full mb-8;
     }
 
     .stat-label {
-        @apply my-0 mr-16;
+        @apply my-0 mr-16 text-4xl font-normal;
     }
 
     .title-value {
         @apply text-amber-500;
+    }
+
+    /* Dashboard styling */
+    .dashboard-container {
+        @apply absolute right-[2%] top-1/2 transform -translate-y-1/2 flex flex-col items-center rounded-lg p-6 w-80 justify-center z-50;
+        height: auto;
+    }
+
+    .dashboard-title {
+        @apply text-2xl mb-4 text-amber-500;
+    }
+
+    #stats-chart {
+        @apply w-32 h-32 mb-4;
+    }
+
+    .dashboard-stats {
+        @apply flex flex-row gap-8 w-full justify-center;
+    }
+
+    .dashboard-stat {
+        @apply flex flex-col items-center;
+    }
+
+    .dashboard-label {
+        @apply text-sm text-gray-400 mb-1;
+    }
+
+    .dashboard-value {
+        @apply text-2xl text-white font-bold;
+    }
+
+    /* Win Rate History Chart styling */
+    .winrate-history-container {
+        @apply absolute left-[2%] top-[43%] transform -translate-y-1/2 flex flex-col items-center rounded-lg p-6 w-96 z-50 h-[400px] max-h-[400px];
+    }
+
+    .winrate-history-title {
+        @apply text-2xl mb-4 text-amber-500;
+    }
+
+    #winrate-history-chart {
+        @apply w-full h-[300px] max-h-[300px];
     }
 
     .match-history {
@@ -85,11 +128,4 @@
         @apply text-xl py-2;
     }
 
-    .match-item.win {
-        @apply text-green-500;
-    }
-
-    .match-item.loss {
-        @apply text-red-500;
-    }
 }
