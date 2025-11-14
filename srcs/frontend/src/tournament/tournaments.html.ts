@@ -2,19 +2,19 @@ export function tournamentsHTML() {
     return `
         <div class="tournament-container">
             <div class="tournament-header">
-                <h1 class="tournament-title">Tournois 4-Player</h1>
+                <h1 class="tournament-title">4-Player Tournaments</h1>
                 <button id="create-tournament-btn" class="tournament-create-btn">
-                    ➕ Créer Tournoi
+                    ➕ Create Tournament
                 </button>
             </div>
             
-            <!-- Formulaire de création inline (caché par défaut) -->
+            <!-- Inline creation form (hidden by default) -->
             <div id="tournament-create-form" class="tournament-create-form" style="display: none;">
                 <input 
                     type="text" 
                     id="tournament-name-input" 
                     class="tournament-name-input" 
-                    placeholder="Nom du tournoi (max 50 caractères)..."
+                    placeholder="Tournament name (max 50 characters)..."
                     maxlength="50"
                 />
                 <div class="tournament-create-actions">
@@ -25,7 +25,7 @@ export function tournamentsHTML() {
             
             <div id="tournaments-list" class="tournament-list">
                 <div class="tournament-loading">
-                    <p class="tournament-loading-text">Chargement des tournois...</p>
+                    <p class="tournament-loading-text">Loading tournaments...</p>
                 </div>
             </div>
         </div>

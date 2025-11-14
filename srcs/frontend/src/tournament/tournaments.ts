@@ -23,10 +23,10 @@ async function handleJoinTournament(tournamentId: string) {
             await loadTournamentsList();
         } else {
             const error = await response.json();
-            alert(`Erreur: ${error.error || 'Impossible de rejoindre le tournoi'}`);
+            alert(`Error: ${error.error || 'Failed to join tournament'}`);
         }
     } catch (error) {
-        alert('Erreur lors de l\'inscription au tournoi');
+        alert('Error when joining tournament');
         console.error('Tournament join error:', error);
     }
 }
@@ -44,10 +44,10 @@ async function handleLeaveTournament(tournamentId: string) {
             await loadTournamentsList();
         } else {
             const error = await response.json();
-            alert(`Erreur: ${error.error || 'Impossible de quitter le tournoi'}`);
+            alert(`Error: ${error.error || 'Failed to leave tournament'}`);
         }
     } catch (error) {
-        alert('Erreur lors de la désinscription du tournoi');
+        alert('Error when leaving tournament');
         console.error('Tournament leave error:', error);
     }
 }
@@ -71,18 +71,18 @@ async function handleCreateTournament() {
         });
         
         if (response.ok) {
-            // Cacher le formulaire et réafficher le bouton
+            // Hide form and show button again
             if (createForm) createForm.style.display = 'none';
             if (createBtn) createBtn.style.display = 'inline-block';
             nameInput.value = '';
             await loadTournamentsList();
         } else {
             const error = await response.json();
-            alert(`Erreur: ${error.error || 'Impossible de créer le tournoi'}`);
+            alert(`Error: ${error.error || 'Failed to create tournament'}`);
             nameInput?.focus();
         }
     } catch (error) {
-        alert('Erreur lors de la création du tournoi');
+        alert('Error creating tournament');
         console.error('Tournament creation error:', error);
     }
 }
@@ -108,10 +108,10 @@ async function handleDeleteTournament(tournamentId: string) {
             await loadTournamentsList();
         } else {
             const error = await response.json();
-            alert(`Erreur: ${error.error || 'Impossible de supprimer le tournoi'}`);
+            alert(`Error: ${error.error || 'Failed to delete tournament'}`);
         }
     } catch (error) {
-        alert('Erreur lors de la suppression du tournoi');
+        alert('Error deleting tournament');
         console.error('Tournament deletion error:', error);
     }
 }
@@ -123,7 +123,7 @@ function setupTournamentEventListeners() {
     const confirmBtn = document.getElementById('confirm-create-btn');
     const cancelBtn = document.getElementById('cancel-create-btn');
     
-    // Afficher le formulaire de création
+    // Show creation form
     if (createBtn && !(createBtn as any)._listenerSet) {
         (createBtn as any)._listenerSet = true;
         createBtn.addEventListener('click', () => {
@@ -133,7 +133,7 @@ function setupTournamentEventListeners() {
         });
     }
     
-    // Confirmer avec le bouton ✓
+    // Confirm with ✓ button
     if (confirmBtn && !(confirmBtn as any)._listenerSet) {
         (confirmBtn as any)._listenerSet = true;
         confirmBtn.addEventListener('click', async () => {
@@ -141,7 +141,7 @@ function setupTournamentEventListeners() {
         });
     }
     
-    // Annuler avec le bouton ✕
+    // Cancel with ✕ button
     if (cancelBtn && !(cancelBtn as any)._listenerSet) {
         (cancelBtn as any)._listenerSet = true;
         cancelBtn.addEventListener('click', () => {
@@ -149,7 +149,7 @@ function setupTournamentEventListeners() {
         });
     }
     
-    // Confirmer avec Enter
+    // Confirm with Enter
     if (nameInput && !(nameInput as any)._listenerSet) {
         (nameInput as any)._listenerSet = true;
         nameInput.addEventListener('keypress', async (e) => {
@@ -158,7 +158,7 @@ function setupTournamentEventListeners() {
             }
         });
         
-        // Annuler avec Escape
+        // Cancel with Escape
         nameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 cancelCreateTournament();
@@ -172,7 +172,7 @@ async function loadTournamentsList() {
     if (!listContainer) return;
     
     try {
-        // Appel API pour récupérer les tournois 4-player
+        // API call to fetch 4-player tournaments
         const res = await fetch('/api/tournaments', { method: 'GET', credentials: 'include' });
         if (!res.ok) throw new Error('Failed to fetch tournaments');
         const data = await res.json();
@@ -185,28 +185,28 @@ async function loadTournamentsList() {
                 <div class="tournament-item">
                     <div class="tournament-item-info">
                         <div class="tournament-item-name">${t.name}</div>
-                        <div class="tournament-item-status">Status: ${t.status} — ${t.current_players}/${t.max_players}</div>
+                        <div class="tournament-item-status">Status: ${t.status} — ${t.current_players}/${t.max_players} players</div>
                         ${t.max_players === 4 ? '<span class="tournament-badge-4player">4-Player</span>' : ''}
                     </div>
                     <div class="tournament-actions">
                         ${t.status === 'registration' ? `
                             ${t.is_participant ? `
                                 <button data-id="${t.id}" class="leave-tournament tournament-leave-btn">
-                                    ✕ Quitter
+                                    ✕ Leave
                                 </button>
                             ` : `
                                 <button data-id="${t.id}" class="join-tournament tournament-join-btn">
-                                    ➕ Rejoindre
+                                    ➕ Join
                                 </button>
                             `}
                             ${t.is_creator ? `
                                 <button data-id="${t.id}" class="delete-tournament tournament-delete-btn">
-                                    🗑️ Supprimer
+                                    🗑️ Delete
                                 </button>
                             ` : ''}
                         ` : `
                             <button disabled class="tournament-view-btn tournament-disabled">
-                                ${t.status === 'active' ? 'En cours' : 'Terminé'}
+                                ${t.status === 'active' ? 'Ongoing' : 'Completed'}
                             </button>
                         `}
                     </div>
@@ -258,6 +258,6 @@ async function loadTournamentsList() {
         });
     } catch (error) {
         console.error('Error loading tournaments:', error);
-        listContainer!.innerHTML = '<p class="text-red-500 text-center py-4">Erreur lors du chargement des tournois.</p>';
+        listContainer!.innerHTML = '<p class="text-red-500 text-center py-4">Error loading tournaments.</p>';
     }
 }

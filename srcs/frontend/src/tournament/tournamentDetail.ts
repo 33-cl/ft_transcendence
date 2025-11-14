@@ -1,6 +1,6 @@
 import { load } from '../navigation/utils.js';
 
-// Types pour les données du tournoi (4-player specs)
+// Types for tournament data (4-player specs)
 interface TournamentParticipant {
     id: number;
     tournament_id: string;
@@ -38,11 +38,11 @@ interface TournamentDetailResponse {
     matches: TournamentMatch[];
 }
 
-// Page de détail d'un tournoi (4-player tournament management)
+// Tournament detail page (4-player tournament management)
 export default async function renderTournamentDetail(tournamentId: string): Promise<void> {
     console.log(`📄 Rendering tournament detail for ID: ${tournamentId}`);
     
-    // Masquer le contenu existant sans casser la structure
+    // Hide existing content without breaking structure
     const mainContent = document.querySelector('main') || document.body;
     
     const containerId = 'tournamentDetailPage';
@@ -61,29 +61,29 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
         mainContent.appendChild(container);
     }
     
-    // Afficher le conteneur
+    // Show container
     container.style.display = 'block';
 
-    // Affichage initial avec loading
+    // Initial display with loading
     container.innerHTML = `
         <div class="mb-4">
             <button id="tournament-back" class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
-                ← Retour aux tournois
+                ← Back to tournaments
             </button>
         </div>
         <div id="tournament-content">
             <div class="text-center py-8">
-                <div class="text-lg">Chargement du tournoi...</div>
+                <div class="text-lg">Loading tournament...</div>
             </div>
         </div>
     `;
 
-    // Event listener pour le bouton retour
+    // Event listener for back button
     const backBtn = document.getElementById('tournament-back');
     if (backBtn && !(backBtn as any)._listenerSet) {
         (backBtn as any)._listenerSet = true;
         backBtn.addEventListener('click', async () => {
-            // Supprimer complètement la page tournament detail
+            // Completely remove tournament detail page
             const detailPage = document.getElementById('tournamentDetailPage');
             if (detailPage) {
                 detailPage.remove();
@@ -96,7 +96,7 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     if (!contentContainer) return;
 
     try {
-        // Fetch des données du tournoi via API
+        // Fetch tournament data via API
         const response = await fetch(`/api/tournaments/${tournamentId}`, {
             method: 'GET',
             credentials: 'include'
@@ -104,49 +104,49 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
 
         if (!response.ok) {
             if (response.status === 404) {
-                throw new Error('Tournoi non trouvé');
+                throw new Error('Tournament not found');
             }
-            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
         const data: TournamentDetailResponse = await response.json();
         
         if (!data.success) {
-            throw new Error('Réponse invalide du serveur');
+            throw new Error('Invalid server response');
         }
 
         console.log('Tournament data received:', data);
         console.log('Tournament object:', data.tournament);
         console.log('Participants:', data.participants);
 
-        // Validation des données critiques
+        // Validation of critical data
         if (!data.tournament || !data.tournament.id) {
-            console.error('❌ Données de tournoi invalides:', data);
-            throw new Error('Données de tournoi invalides');
+            console.error('❌ Invalid tournament data:', data);
+            throw new Error('Invalid tournament data');
         }
         
-        console.log('✅ Données valides, rendering...');
+        console.log('✅ Valid data, rendering...');
 
-        // Construire la page avec les données
+        // Build page with data
         contentContainer.innerHTML = renderTournamentContent(data);
         
-        // Attacher les event listeners pour les boutons d'action
+        // Attach event listeners for action buttons
         attachTournamentActionListeners(data.tournament);
     } catch (error) {
-        console.error('Erreur lors du chargement du tournoi:', error);
+        console.error('Error loading tournament:', error);
         contentContainer.innerHTML = `
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                <h2 class="text-xl font-bold mb-2">Erreur</h2>
-                <p>${error instanceof Error ? error.message : 'Erreur inconnue lors du chargement du tournoi'}</p>
+                <h2 class="text-xl font-bold mb-2">Error</h2>
+                <p>${error instanceof Error ? error.message : 'Unknown error while loading tournament'}</p>
             </div>
         `;
     }
 
-    // Assurer que la page est visible
+    // Ensure page is visible
     container.style.display = 'block';
 }
 
-// Helper pour créer la map user_id -> alias (robuste)
+// Helper to create user_id -> alias map (robust)
 function createPlayerAliasMap(participants: TournamentParticipant[]): Map<number, string> {
     const playerAliasMap = new Map<number, string>();
     if (participants && Array.isArray(participants)) {
@@ -159,7 +159,7 @@ function createPlayerAliasMap(participants: TournamentParticipant[]): Map<number
     return playerAliasMap;
 }
 
-// Helper pour grouper les matchs par round (robuste)
+// Helper to group matches by round (robust)
 function groupMatchesByRound(matches: TournamentMatch[]): Map<number, TournamentMatch[]> {
     const matchesByRound = new Map<number, TournamentMatch[]>();
     if (matches && Array.isArray(matches)) {
@@ -175,14 +175,14 @@ function groupMatchesByRound(matches: TournamentMatch[]): Map<number, Tournament
     return matchesByRound;
 }
 
-// Helper pour générer le HTML des participants (robuste)
+// Helper to generate participants HTML (robust)
 function renderParticipantsHtml(participants: TournamentParticipant[]): string {
     if (!participants || participants.length === 0) {
         return '<p class="text-gray-500">No participants</p>';
     }
     
     return participants
-        .filter(p => p && p.alias) // Filtrer les participants invalides
+        .filter(p => p && p.alias) // Filter invalid participants
         .map(p => `
             <div class="bg-gray-50 px-3 py-2 rounded border">
                 <span class="font-medium">${p.alias.trim() || 'Empty alias'}</span>
@@ -191,14 +191,14 @@ function renderParticipantsHtml(participants: TournamentParticipant[]): string {
         `).join('');
 }
 
-// Helper pour générer le HTML du bracket par rounds
+// Helper to generate bracket HTML by rounds
 function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playerAliasMap: Map<number, string>): string {
     if (matchesByRound.size === 0) {
         return '<p class="text-gray-500">No matches scheduled</p>';
     }
     
     return Array.from(matchesByRound.entries())
-        .sort(([a], [b]) => a - b) // Trier par numéro de round
+        .sort(([a], [b]) => a - b) // Sort by round number
         .map(([round, roundMatches]) => {
             const matchesHtml = roundMatches.map(match => {
                 const player1 = getPlayerAlias(match.player1_id, playerAliasMap);
@@ -244,17 +244,17 @@ function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playe
         }).join('');
 }
 
-// Fonction principale de rendu du contenu du tournoi
+// Main function to render tournament content
 function renderTournamentContent(data: TournamentDetailResponse): string {
     const { tournament, participants, matches } = data;
     
-    // Utiliser les helpers pour traiter les données
+    // Use helpers to process data
     const playerAliasMap = createPlayerAliasMap(participants);
     const matchesByRound = groupMatchesByRound(matches);
     const participantsHtml = renderParticipantsHtml(participants);
     const bracketHtml = renderBracketHtml(matchesByRound, playerAliasMap);
     
-    // Statut du tournoi avec couleur
+    // Tournament status with color
     let statusClass = 'text-gray-600';
     let statusDisplayText: string = tournament.status;
     
@@ -279,7 +279,7 @@ function renderTournamentContent(data: TournamentDetailResponse): string {
 
     return `
         <div class="space-y-6">
-            <!-- En-tête du tournoi -->
+            <!-- Tournament Header -->
             <div class="bg-white shadow rounded-lg p-6">
                 <h1 class="text-3xl font-bold text-gray-900 mb-2">${tournament.name}</h1>
                 <div class="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -312,7 +312,7 @@ function renderTournamentContent(data: TournamentDetailResponse): string {
                 </div>
             </div>
 
-            <!-- Section Participants -->
+            <!-- Participants Section -->
             <div class="bg-white shadow rounded-lg p-6">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Participants</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -320,7 +320,7 @@ function renderTournamentContent(data: TournamentDetailResponse): string {
                 </div>
             </div>
 
-            <!-- Section Bracket -->
+            <!-- Bracket Section -->
             <div class="bg-white shadow rounded-lg p-6">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-800">Bracket</h2>
                 <div class="space-y-4">
@@ -331,7 +331,7 @@ function renderTournamentContent(data: TournamentDetailResponse): string {
     `;
 }
 
-// Helper pour obtenir l'alias d'un joueur (robuste)
+// Helper to get player alias (robust)
 function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, string>): string {
     if (!playerId || playerId === 0) return 'BYE';
     const alias = playerAliasMap.get(playerId);
@@ -339,16 +339,16 @@ function getPlayerAlias(playerId: number | null, playerAliasMap: Map<number, str
     return alias;
 }
 
-// Attacher les event listeners pour les boutons d'action du tournoi
+// Attach event listeners for tournament action buttons
 function attachTournamentActionListeners(tournament: Tournament): void {
-    // Bouton "Join Tournament"
+    // "Join Tournament" button
     const joinBtn = document.getElementById('join-tournament-btn');
     if (joinBtn && !(joinBtn as any)._listenerSet) {
         (joinBtn as any)._listenerSet = true;
         
         joinBtn.addEventListener('click', async () => {
             try {
-                joinBtn.textContent = 'Inscription...';
+                joinBtn.textContent = 'Joining...';
                 (joinBtn as HTMLButtonElement).disabled = true;
                 
                 const response = await fetch(`/api/tournaments/${tournament.id}/join`, {
@@ -359,38 +359,38 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                 });
                 
                 if (response.ok) {
-                    // Recharger la page pour afficher la mise à jour
+                    // Reload page to show update
                     await renderTournamentDetail(tournament.id);
                 } else {
                     const error = await response.json();
-                    alert(`Erreur: ${error.error || 'Impossible de rejoindre le tournoi'}`);
+                    alert(`Error: ${error.error || 'Failed to join tournament'}`);
                     joinBtn.textContent = `➕ Join Tournament (${tournament.current_players}/${tournament.max_players})`;
                     (joinBtn as HTMLButtonElement).disabled = false;
                 }
             } catch (error) {
                 console.error('Tournament join error:', error);
-                alert('Erreur lors de l\'inscription au tournoi');
+                alert('Error when joining tournament');
                 joinBtn.textContent = `➕ Join Tournament (${tournament.current_players}/${tournament.max_players})`;
                 (joinBtn as HTMLButtonElement).disabled = false;
             }
         });
     }
 
-    // Bouton "Start Tournament" 
+    // "Start Tournament" button 
     const startBtn = document.getElementById('start-tournament-btn');
     if (startBtn && !(startBtn as any)._listenerSet) {
         (startBtn as any)._listenerSet = true;
         
         startBtn.addEventListener('click', async () => {
-            if (!confirm('Êtes-vous sûr de vouloir démarrer ce tournoi ? Cette action est irréversible.')) {
+            if (!confirm('Are you sure you want to start this tournament? This action is irreversible.')) {
                 return;
             }
             
             try {
-                startBtn.textContent = 'Démarrage...';
+                startBtn.textContent = 'Starting...';
                 (startBtn as HTMLButtonElement).disabled = true;
                 
-                // Appel à la route de démarrage manuel
+                // Call manual start route
                 const response = await fetch(`/api/tournaments/${tournament.id}/start`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -399,18 +399,18 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                 });
                 
                 if (response.ok) {
-                    // Recharger la page pour voir le tournoi démarré
+                    // Reload page to see started tournament
                     await renderTournamentDetail(tournament.id);
                 } else {
                     const error = await response.json();
-                    alert(`Erreur: ${error.error || 'Impossible de démarrer le tournoi'}`);
+                    alert(`Error: ${error.error || 'Failed to start tournament'}`);
                     startBtn.textContent = '🚀 Start Tournament';
                     (startBtn as HTMLButtonElement).disabled = false;
                 }
                 
             } catch (error) {
                 console.error('Tournament start error:', error);
-                alert('Erreur lors du démarrage du tournoi');
+                alert('Error when starting tournament');
                 startBtn.textContent = '🚀 Start Tournament';
                 (startBtn as HTMLButtonElement).disabled = false;
             }
