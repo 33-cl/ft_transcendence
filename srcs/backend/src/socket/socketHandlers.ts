@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/08/27 04:23:36 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/11/17 10:14:30 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,7 +147,7 @@ function registerSocketEventListeners(socket: Socket, io: Server, fastify: Fasti
 {
     socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
     socket.on('tournament:join_match', (data: any) => handleTournamentJoinMatch(socket, data, fastify));
-    socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
+    // socket.on('ping', () => socket.emit('pong', { message: 'Hello client!' }));
     socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
     socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));
     socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));
