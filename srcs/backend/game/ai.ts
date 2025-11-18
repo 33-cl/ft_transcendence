@@ -11,33 +11,33 @@ import { movePaddle } from './paddle.js';
  */
 const DIFFICULTY_SETTINGS = {
     easy: {
-        reactionTime: 1200,         // Réaction lente mais cohérente
+        reactionTime: 800,         // Réaction lente mais cohérente
         errorMargin: 30,            // Erreurs modestes (petits offsets)
-        keyHoldDuration: 500,       // Maintient un peu plus longtemps
-        keyReleaseChance: 0.6,      // Relâche parfois les touches
-        panicThreshold: 300,        // Panique modérée
+        keyHoldDuration: 200,       // Maintient un peu plus longtemps
+        keyReleaseChance: 0.2,      // Relâche parfois les touches
+        panicThreshold: 200,        // Panique modérée
         microcorrectionChance: 0.08, // Quelques micro-corrections
-        persistanceTime: 250,       // Persistance raisonnable
-        maxErrorFrequency: 0.35     // Erreurs modérées
+        persistanceTime: 500,      // Persistance longue (recalcule rarement)
+        maxErrorFrequency: 0.20     // Erreurs modérées
     },
     medium: {
-        reactionTime: 800,          // Réaction modérée
-        errorMargin: 25,            // Erreurs modérées
-        keyHoldDuration: 250,       // Durée normale
-        keyReleaseChance: 0.35,     // Relâche occasionnellement
-        panicThreshold: 250,        // Panique modérée
+        reactionTime: 500,          // Réaction modérée
+        errorMargin: 10,            // Erreurs modérées
+        keyHoldDuration: 100,       // Durée normale
+        keyReleaseChance: 0.1,     // Relâche occasionnellement
+        panicThreshold: 100,        // Panique modérée
         microcorrectionChance: 0.25, // Quelques corrections
-        persistanceTime: 500,       // Persistance modérée
-        maxErrorFrequency: 0.25     // Quelques erreurs
+        persistanceTime: 250,       // Persistance modérée
+        maxErrorFrequency: 0.10     // Quelques erreurs
     },
     hard: {
         reactionTime: 100,          // Réaction ultra-rapide
-        errorMargin: 3,             // Presque pas d'erreurs
+        errorMargin: 1,             // Presque pas d'erreurs
         keyHoldDuration: 60,        // Très précis
         keyReleaseChance: 0.01,     // Relâche rarement
-        panicThreshold: 80,         // Panique tard
+        panicThreshold: 50,         // Panique tard
         microcorrectionChance: 0.8, // Beaucoup de corrections
-        persistanceTime: 1500,      // Très persistant
+        persistanceTime: 100,       // Persistance courte (recalcule souvent)
         maxErrorFrequency: 0.01     // Erreurs rarissimes
     }
 };
@@ -47,18 +47,12 @@ const DIFFICULTY_SETTINGS = {
  * @param difficulty Niveau de difficulté (easy/medium/hard)
  * @returns Configuration IA complète et prête à utiliser
  */
-export function createAIConfig(difficulty: AIDifficulty): AIConfig {
+export function createAIConfig(difficulty: AIDifficulty, paddleSpeed: number): AIConfig {
     const settings = DIFFICULTY_SETTINGS[difficulty];
-    
+
     // ⚖️ FAIRNESS RULE: Tous les joueurs partagent la même vitesse de paddle
     // La difficulté est contrôlée uniquement par le temps de réaction, la marge d'erreur et la variation de décision
-    // La valeur effective doit provenir de state.paddleSpeed ; on initialise ici pour clarté.
-    const paddleSpeed = 10;
-    
-    // Vérification runtime: s'assurer que la vitesse IA correspond à la vitesse humaine (doit être 10)
-    if (paddleSpeed !== 10) {
-        console.warn('⚠️ WARNING: AI paddle speed is', paddleSpeed, 'instead of 10. Fairness violation!');
-    }
+    // La valeur effective doit provenir de state.paddleSpeed ; on la reçoit désormais en paramètre.
     
     return {
         enabled: true,
@@ -88,20 +82,13 @@ export function createAIConfig(difficulty: AIDifficulty): AIConfig {
         maxErrorFrequency: settings.maxErrorFrequency,
         
         // Debug et statistiques
-        debugMode: false,                 // Debug désactivé par défaut
+        debugMode: true,                 // Debug désactivé par défaut
         decisionCount: 0,                 // Compteur de décisions
         errorCount: 0,                    // Compteur d'erreurs
         panicCount: 0                     // Compteur de paniques
     };
 }
 
-/**
- * Fonction helper pour obtenir la vitesse du paddle depuis le gameState
- * Permet à l'IA d'utiliser la même vitesse que les joueurs humains
- */
-function getPaddleSpeedFromState(state: GameState): number {
-    return state.paddleSpeed; // Utilise la vitesse définie dans gameState
-}
 
 /**
  * Prédit où la balle va atterrir sur le côté gauche (paddle IA)
@@ -146,9 +133,9 @@ export function updateAITarget(state: GameState): void {
     
     // Vérifier si c'est le moment de mettre à jour (1 fois par seconde max)
     // Moins de mises à jour en mode facile pour un comportement plus "humain"
-    const updateInterval = ai.difficulty === 'easy' ? 2000 : // 2 secondes en mode facile 
-                          ai.difficulty === 'medium' ? 1200 : // 1.2 secondes en mode moyen
-                          800; // 0.8 secondes en mode difficile
+    const updateInterval = ai.difficulty === 'easy' ? 2200 : // 2.2 secondes en mode facile 
+                          ai.difficulty === 'medium' ? 1600 : // 1.6 secondes en mode moyen
+                          1000; // 1 seconde en mode difficile
                           
     if (now - ai.lastUpdate < updateInterval) return;
     
@@ -165,63 +152,72 @@ export function updateAITarget(state: GameState): void {
         }
     }
     
-    // Prédire où la balle va atterrir
-    let predictedY = predictBallLanding(state);
-    
-    // En mode facile, appliquer principalement de petits offsets pour paraître humain
-    if (ai.difficulty === 'easy') {
-        // Petit offset fréquent
-        const smallOffset = (Math.random() - 0.5) * ai.errorMargin; // ± errorMargin/2
-        predictedY += smallOffset;
-
-        // Très rarement, faire une grosse erreur (miss) pour varier le comportement
-        if (Math.random() < 0.05) { // 5% chance
-            const bigMiss = (Math.random() < 0.5 ? -1 : 1) * (ai.errorMargin * 3 + Math.random() * ai.errorMargin * 2);
-            predictedY += bigMiss;
-            if (ai.debugMode) console.log(`[IA-easy] Grosse erreur (miss): ${bigMiss.toFixed(1)}px`);
-        }
-    }
-    
-    if (ai.debugMode) {
-        console.log(`🎯 [IA-${ai.difficulty}] Prédiction: Y=${predictedY.toFixed(1)} | Balle: X=${state.ballX.toFixed(1)}, SpeedX=${state.ballSpeedX.toFixed(2)}`);
-    }
-    
     // Système de persistance : ne pas changer d'avis trop souvent
-    let targetY = predictedY;
+    let baseTargetY;
+    let isNewDecision = false;
+    
     if (ai.lastDecisionTime > 0 && (now - ai.lastDecisionTime) < ai.persistanceTime) {
-        // Garder l'ancienne cible si on est encore dans la période de persistance
-        targetY = ai.targetY;
+        // Garder l'ancienne cible de base si on est encore dans la période de persistance
+        baseTargetY = ai.targetY;  // ✅ Pas de nouveau calcul, on garde l'ancien
     } else {
-        // Nouvelle décision autorisée
-        ai.lastDecisionTime = now;
-        ai.decisionCount++;
+        // Nouvelle décision autorisée : calculer une nouvelle cible de base
+        let predictedY = predictBallLanding(state);  // ✅ Calcul SEULEMENT quand nécessaire
         
-        // Appliquer les erreurs selon la fréquence maximale et le mode panique
-        const errorChance = ai.panicMode ? ai.maxErrorFrequency * 1.5 : ai.maxErrorFrequency;
-        if (Math.random() < errorChance) {
-            // Erreur importante : décalage aléatoire
-            const errorOffset = (Math.random() - 0.5) * ai.errorMargin * 2;
-            targetY += errorOffset;
-            ai.errorCount++;
-            
-            if (ai.debugMode) {
-                console.log(`❌ [IA-${ai.difficulty}] ERREUR! Décalage: ${errorOffset.toFixed(1)}px (${ai.panicMode ? 'PANIQUE' : 'normale'})`);
-            }
-        }
-        
-        // Micro-corrections : petits ajustements aléatoires pour simuler l'imprécision humaine
-        if (Math.random() < ai.microcorrectionChance) {
-            const microError = (Math.random() - 0.5) * (ai.errorMargin * 0.3);
-            targetY += microError;
-            
-            if (ai.debugMode) {
-                console.log(`🔧 [IA-${ai.difficulty}] Micro-correction: ${microError.toFixed(1)}px`);
+        // En mode facile, appliquer principalement de petits offsets pour paraître humain
+        if (ai.difficulty === 'easy') {
+            // Petit offset fréquent
+            const smallOffset = (Math.random() - 0.5) * ai.errorMargin; // ± errorMargin/2
+            predictedY += smallOffset;
+
+            // Très rarement, faire une grosse erreur (miss) pour varier le comportement
+            if (Math.random() < 0.05) { // 5% chance
+                const bigMiss = (Math.random() - 0.5) * ai.errorMargin * 5;
+                predictedY += bigMiss;
+                if (ai.debugMode) console.log(`[IA-easy] Grosse erreur (miss): ${bigMiss.toFixed(1)}px`);
             }
         }
         
         if (ai.debugMode) {
-            console.log(`📊 [IA-${ai.difficulty}] Stats: Décisions=${ai.decisionCount}, Erreurs=${ai.errorCount}, Paniques=${ai.panicCount}`);
+            console.log(`🎯 [IA-${ai.difficulty}] Prédiction: Y=${predictedY.toFixed(1)} | Balle: X=${state.ballX.toFixed(1)}, SpeedX=${state.ballSpeedX.toFixed(2)}`);
         }
+        
+        baseTargetY = predictedY;  // ✅ Utilise la nouvelle prédiction
+        ai.lastDecisionTime = now;
+        ai.decisionCount++;
+        isNewDecision = true;
+        
+        if (ai.debugMode) {
+            console.log(`🔄 [IA-${ai.difficulty}] Nouvelle décision: base=${baseTargetY.toFixed(1)}px`);
+        }
+    }
+    // ✅ ERREURS APPLIQUÉES À CHAQUE ÉVALUATION (indépendamment de la persistance)
+    let targetY = baseTargetY;
+    
+    // Appliquer les erreurs selon la fréquence maximale et le mode panique
+    const errorChance = ai.panicMode ? ai.maxErrorFrequency * 1.5 : ai.maxErrorFrequency;
+    if (Math.random() < errorChance) {
+        // Erreur importante : décalage aléatoire
+        const errorOffset = (Math.random() - 0.5) * ai.errorMargin * 2;
+        targetY += errorOffset;
+        ai.errorCount++;
+        
+        if (ai.debugMode) {
+            console.log(`❌ [IA-${ai.difficulty}] ERREUR! Décalage: ${errorOffset.toFixed(1)}px (${ai.panicMode ? 'PANIQUE' : 'normale'})`);
+        }
+    }
+    
+    // Micro-corrections : petits ajustements aléatoires pour simuler l'imprécision humaine
+    if (Math.random() < ai.microcorrectionChance) {
+        const microError = (Math.random() - 0.5) * (ai.errorMargin * 0.3);
+        targetY += microError;
+        
+        if (ai.debugMode) {
+            console.log(`🔧 [IA-${ai.difficulty}] Micro-correction: ${microError.toFixed(1)}px`);
+        }
+    }
+    
+    if (ai.debugMode && isNewDecision) {
+        console.log(`📊 [IA-${ai.difficulty}] Stats: Décisions=${ai.decisionCount}, Erreurs=${ai.errorCount}, Paniques=${ai.panicCount}`);
     }
     
     // S'assurer que la cible reste dans les limites du canvas

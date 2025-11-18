@@ -183,7 +183,7 @@ export class PongGame {
             return;
         }
         
-        this.state.aiConfig = createAIConfig(difficulty);
+    this.state.aiConfig = createAIConfig(difficulty, this.state.paddleSpeed);
         console.log(`🤖 IA activée en mode ${difficulty}`);
     }
 
