@@ -113,7 +113,7 @@
     }
 
     .match-history {
-        @apply mt-24 w-full max-w-2xl;
+        @apply mt-24 w-full max-w-2xl mb-24;
     }
 
     .match-history h2 {
@@ -121,7 +121,24 @@
     }
 
     #match-list {
-        @apply list-none p-0;
+        @apply list-none p-0 max-h-64 overflow-y-auto pr-2;
+    }
+
+    /* Custom scrollbar styling */
+    #match-list::-webkit-scrollbar {
+        @apply w-2;
+    }
+
+    #match-list::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    #match-list::-webkit-scrollbar-thumb {
+        @apply bg-white rounded-full;
+    }
+
+    #match-list::-webkit-scrollbar-thumb:hover {
+        @apply bg-gray-200;
     }
 
     .match-item {

@@ -1,6 +1,6 @@
 export async function fetchUserMatches(userId: string) {
     try {
-        const response = await fetch(`/matches/history/${userId}?limit=5`);
+        const response = await fetch(`/matches/history/${userId}?limit=50`);
         if (response.ok) {
             const data = await response.json();
             return data.matches || [];
