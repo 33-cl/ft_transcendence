@@ -143,7 +143,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
 
             // Show components after stats are refreshed
                 await show('mainMenu');
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 await show('friendList');
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 // Attendre que l'HTML soit rendu avant d'initialiser
                 setTimeout(async () => {
                     if (myLoadId !== currentLoadId) return; // Abort if newer load
@@ -157,13 +159,16 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                     await updateFriendRequestsBadge();
                 }, 100);
                 await show('leaderboard');
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 await show('profileCard');
             }).catch(async (error: any) => {
                 if (myLoadId !== currentLoadId) return; // Abort if newer load
                 console.warn('Failed to refresh user stats before main menu:', error);
                 // Still show components even if refresh fails
                 await show('mainMenu');
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 await show('friendList');
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 // Wait for HTML to be rendered before initialization
                 setTimeout(async () => {
                     if (myLoadId !== currentLoadId) return; // Abort if newer load
@@ -176,12 +181,15 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                     await updateFriendRequestsBadge();
                 }, 100);
                 await show('leaderboard');
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 await show('profileCard');
             });
         } else {
             // No user or refresh function available, show components directly
             await show('mainMenu');
+            if (myLoadId !== currentLoadId) return; // Abort if newer load
             await show('friendList');
+            if (myLoadId !== currentLoadId) return; // Abort if newer load
             // Wait for HTML to be rendered before initialization
             setTimeout(async () => {
                 if (myLoadId !== currentLoadId) return; // Abort if newer load
@@ -195,6 +203,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await updateFriendRequestsBadge();
             }, 100);
             await show('leaderboard');
+            if (myLoadId !== currentLoadId) return; // Abort if newer load
             await show('profileCard');
         }
     }
