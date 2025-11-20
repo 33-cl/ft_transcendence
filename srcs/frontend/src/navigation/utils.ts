@@ -97,8 +97,13 @@ async function show(pageName: keyof typeof components, data?: any)
     }, 0);
 }
 
+let currentLoadId = 0;
+
 async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
+    const myLoadId = ++currentLoadId;
+    console.log(`🔄 load('${pageName}') started (ID: ${myLoadId})`);
+
     // 🚨 CRITICAL SECURITY CHECK: Block navigation if session is blocked by another tab
     if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp') {
         console.warn('Navigation blocked: Session is active in another tab');
@@ -113,6 +118,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     
     hideAllPages();
     
+    // Check if another load started
+    if (myLoadId !== currentLoadId) {
+        console.warn(`🚫 load('${pageName}') aborted: newer load started`);
+        return;
+    }
+
     // Arrêter les mises à jour WebSocket si on quitte le menu principal
     if (pageName !== 'mainMenu') {
         stopFriendListRealtimeUpdates();
@@ -128,12 +139,14 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         // Refresh user stats BEFORE showing components to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
             (window as any).refreshUserStats().then(async (_statsChanged: boolean) => {
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
 
             // Show components after stats are refreshed
                 await show('mainMenu');
                 await show('friendList');
                 // Attendre que l'HTML soit rendu avant d'initialiser
                 setTimeout(async () => {
+                    if (myLoadId !== currentLoadId) return; // Abort if newer load
                     initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners(); // Initialiser les event listeners
                     startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
@@ -146,12 +159,14 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 await show('leaderboard');
                 await show('profileCard');
             }).catch(async (error: any) => {
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 console.warn('Failed to refresh user stats before main menu:', error);
                 // Still show components even if refresh fails
                 await show('mainMenu');
                 await show('friendList');
                 // Wait for HTML to be rendered before initialization
                 setTimeout(async () => {
+                    if (myLoadId !== currentLoadId) return; // Abort if newer load
                     initializeAddFriendsButton(); // Initialiser le bouton Add Friends
                     initializeFriendListEventListeners();
                     startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
@@ -169,6 +184,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             await show('friendList');
             // Wait for HTML to be rendered before initialization
             setTimeout(async () => {
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 initializeAddFriendsButton(); // Initialize Add Friends button
                 initializeFriendListEventListeners(); // Initialize event listeners
                 startFriendListRealtimeUpdates(); // Enable real-time updates via WebSocket
@@ -215,14 +231,17 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
         stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('matchmaking');
-        animateDots();
-        switchTips();
+        if (myLoadId === currentLoadId) {
+            animateDots();
+            switchTips();
+        }
     }
     else if (pageName === 'profile')
     {
         // Refresh user stats BEFORE showing profile to ensure displayed data is current
         if (window.currentUser && (window as any).refreshUserStats) {
             (window as any).refreshUserStats().then(async (_statsChanged: boolean) => {
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
       
                 // Show components after stats are refreshed
                 await show('profile');
@@ -232,6 +251,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 
                 // Initialiser les graphiques après l'affichage du profil
                 setTimeout(async () => {
+                    if (myLoadId !== currentLoadId) return; // Abort if newer load
                     const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
                     const user = (window as any).selectedProfileUser || window.currentUser;
                     const wins = user?.wins || 0;
@@ -242,6 +262,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                     }
                 }, 100);
             }).catch(async (error: any) => {
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 console.warn('Failed to refresh user stats before profile:', error);
                 // Still show components even if refresh fails
                 await show('profile');
@@ -251,6 +272,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 
                 // Initialiser les graphiques même si le refresh a échoué
                 setTimeout(async () => {
+                    if (myLoadId !== currentLoadId) return; // Abort if newer load
                     const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
                     const user = (window as any).selectedProfileUser || window.currentUser;
                     const wins = user?.wins || 0;
@@ -270,6 +292,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             
             // Initialiser les graphiques
             setTimeout(async () => {
+                if (myLoadId !== currentLoadId) return; // Abort if newer load
                 const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
                 const user = (window as any).selectedProfileUser || window.currentUser;
                 const wins = user?.wins || 0;
@@ -286,6 +309,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('aiConfig');
         await show('goToMain');
         setTimeout(() => {
+            if (myLoadId !== currentLoadId) return; // Abort if newer load
             if ((window as any).initAIConfigManagers) (window as any).initAIConfigManagers();
         }, 100);
     }
@@ -296,6 +320,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('goToMain');
         // Initialize tournaments functionality after component is rendered
         setTimeout(async () => {
+            if (myLoadId !== currentLoadId) return; // Abort if newer load
             console.log('🚀 Loading tournaments functionality...');
             const tournamentsPage = await import('../tournament/tournaments.js');
             await tournamentsPage.initTournaments();
@@ -318,7 +343,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     else
         console.warn(`Page ${pageName} not found`);
 
-    if (updateHistory)
+    if (updateHistory && myLoadId === currentLoadId)
         pushHistoryState(pageName);
 }
 
