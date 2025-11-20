@@ -67,6 +67,12 @@ export function setupPopStateHandler(): void {
             targetPage = 'mainMenu';
             console.log(`🚫 Auth page blocked (user connected), redirecting to: ${targetPage}`);
         }
+
+        // Protection: empêcher le retour aux pages de jeu transitoires (matchmaking, game, etc.)
+        if (['matchmaking', 'game', 'game4', 'gameFinished'].includes(targetPage)) {
+            targetPage = 'mainMenu';
+            console.log(`🚫 Game flow page blocked in history, redirecting to: ${targetPage}`);
+        }
         
         // Protection critique: si pas connecté, forcer la connexion
         if (!window.currentUser && targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing') {
