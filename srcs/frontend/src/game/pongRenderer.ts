@@ -10,10 +10,10 @@ import './pongInterpolation.js';
 // Fonction pour obtenir la couleur selon le paddle
 function getColorForSide(side: string): string {
     const colors: Record<string, string> = {
-        'A': '#ff4444',  // Rouge - Gauche
-        'B': '#44ff44',  // Vert - Bas  
-        'C': '#4444ff',  // Bleu - Droite
-        'D': '#ffff44'   // Jaune - Haut
+        'A': '#ffffff',  // Rouge - Gauche
+        'B': '#ffffff',  // Vert - Bas  
+        'C': '#ffffff',  // Bleu - Droite
+        'D': '#ffffff'   // Jaune - Haut
     };
     return colors[side] || '#ffffff';
 }
