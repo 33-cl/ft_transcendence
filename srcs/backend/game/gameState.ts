@@ -1,8 +1,8 @@
 /**
  * Types de côtés pour les raquettes dans le jeu Pong
- * A = gauche, B = bas, C = droite, D = haut
+ * LEFT = gauche, DOWN = bas, RIGHT = droite, TOP = haut
  */
-export type PaddleSide = 'A' | 'B' | 'C' | 'D';
+export type PaddleSide = 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP';
 
 /* Niveaux de difficulté disponibles pour l'IA */
 export type AIDifficulty = 'easy' | 'medium' | 'hard';
@@ -104,7 +104,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
     const paddleY       = canvasHeight / 2 - paddleHeight / 2; // Position Y par défaut (centré)
 
     // Ordre des côtés pour l'attribution des raquettes
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C', 'D'];
+    const paddleSides: PaddleSide[] = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
     const paddles: { x: number; y: number; width: number; height: number; side: PaddleSide; score: number }[] = [];
     
     // Création et positionnement des raquettes selon le nombre de joueurs
@@ -114,43 +114,43 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         
         if (numPlayers === 2) 
         {
-            // Mode 1v1 : on veut A (gauche) et C (droite), pas B
+            // Mode 1v1 : on veut LEFT (gauche) et RIGHT (droite), pas DOWN
             // Cela donne une disposition classique de Pong horizontal
             if (i === 1) 
-                side = 'C' as PaddleSide; // Deuxième paddle = C au lieu de B
-            if (side === 'A')
+                side = 'RIGHT' as PaddleSide; // Deuxième paddle = RIGHT au lieu de DOWN
+            if (side === 'LEFT')
                 x = paddleMargin;                               // Raquette gauche
-            else if (side === 'C')
+            else if (side === 'RIGHT')
                 x = canvasWidth - paddleMargin - paddleWidth;   // Raquette droite
         } 
         else if (numPlayers === 4) 
         {
             // Mode 1v1v1v1 : disposition carrée avec 4 paddles (battle royale)
             // Chaque raquette est sur un côté différent du terrain
-            if (side === 'A') {
-                // Paddle A : gauche (vertical)
+            if (side === 'LEFT') {
+                // Paddle LEFT : gauche (vertical)
                 x = paddleMargin;
                 y = canvasHeight / 2 - paddleHeight / 2;
                 width = paddleWidth;
                 height = paddleHeight;
-            } else if (side === 'B') {
-                // Paddle B : bas (horizontal)
+            } else if (side === 'DOWN') {
+                // Paddle DOWN : bas (horizontal)
                 x = canvasWidth / 2 - paddleHeight / 2;
                 y = canvasHeight - paddleMargin - paddleWidth;
                 width = paddleHeight; // 115 pixels de largeur (horizontale)
                 height = paddleWidth; // 10 pixels de hauteur (horizontale)
-            } else if (side === 'C') {
-                // Paddle C : droite (vertical)
+            } else if (side === 'RIGHT') {
+                // Paddle RIGHT : droite (vertical)
                 x = canvasWidth - paddleMargin - paddleWidth;
                 y = canvasHeight / 2 - paddleHeight / 2;
                 width = paddleWidth;
                 height = paddleHeight;
-            } else if (side === 'D') {
-                // Paddle D : haut (horizontal) - même taille que B
+            } else if (side === 'TOP') {
+                // Paddle TOP : haut (horizontal) - même taille que DOWN
                 x = canvasWidth / 2 - paddleHeight / 2;
                 y = paddleMargin;
-                width = paddleHeight; // 115 pixels de largeur (même que B)
-                height = paddleWidth; // 10 pixels de hauteur (même que B)
+                width = paddleHeight; // 115 pixels de largeur (même que DOWN)
+                height = paddleWidth; // 10 pixels de hauteur (même que DOWN)
             }
         }
         

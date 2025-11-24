@@ -23,35 +23,15 @@ export function isValidDirection(direction: any): direction is 'up' | 'down'
 }
 
 /**
- * Verifie si le paddle side est valide (A, B, C ou D)
+ * Verifie si le paddle side est valide (LEFT, DOWN, RIGHT ou TOP)
  * Type guard pour TypeScript
  * 
  * @param side - Le cote du paddle a valider
- * @returns true si A, B, C ou D
+ * @returns true si LEFT, DOWN, RIGHT ou TOP
  */
 export function isValidPaddleSide(side: any): side is PaddleSide
 {
-    return side === 'A' || side === 'B' || side === 'C' || side === 'D';
-}
-
-// ========================================
-// MAPPING
-// ========================================
-
-/**
- * Convertit les alias 'left'/'right' en sides reels A/C
- * 
- * En mode local, le client peut envoyer des alias humains
- * qu'on doit convertir en coordonnees internes du serveur
- * 
- * @param player - Le nom du paddle ('left', 'right', 'A', 'B', 'C', 'D')
- * @returns Le side normalise (A, B, C ou D)
- */
-export function mapPlayerAliasToPaddleSide(player: string): string
-{
-    if (player === 'left') return 'A';
-    if (player === 'right') return 'C';
-    return player;
+    return side === 'LEFT' || side === 'DOWN' || side === 'RIGHT' || side === 'TOP';
 }
 
 // ========================================
@@ -111,7 +91,7 @@ export function tryMovePaddle(room: RoomType, paddleSide: string, direction: str
  * 
  * @param room - La room contenant le jeu
  * @param socketId - L'ID du socket du joueur
- * @param player - Le paddle demande ('A', 'C', 'left', 'right', etc.)
+ * @param player - Le paddle demande ('LEFT', 'RIGHT', 'left', 'right', etc.)
  * @param direction - La direction ('up' ou 'down')
  * @param messageType - Type du message ('keydown' ou 'keyup')
  */
@@ -123,24 +103,23 @@ export function handleLocalGamePaddleControl(
     messageType: string
 ): void
 {
-    const mappedPlayer = mapPlayerAliasToPaddleSide(player);
     const allowedPaddles = room.paddleBySocket![socketId];
     
     // Verifier que ce socket peut controler ce paddle
-    if (!Array.isArray(allowedPaddles) || !allowedPaddles.includes(mappedPlayer))
+    if (!Array.isArray(allowedPaddles) || !allowedPaddles.includes(player))
         return;
     
     // Valider le paddle et la direction
-    if (!isValidPaddleSide(mappedPlayer) || !isValidDirection(direction))
+    if (!isValidPaddleSide(player) || !isValidDirection(direction))
         return;
     
     // Mettre a jour l'input
     const isPressed = messageType === 'keydown';
-    updatePaddleInput(room, mappedPlayer, direction, isPressed);
+    updatePaddleInput(room, player, direction, isPressed);
     
     // Mouvement immediat sur keydown
     if (isPressed)
-        tryMovePaddle(room, mappedPlayer, direction);
+        tryMovePaddle(room, player, direction);
 }
 
 // ========================================
@@ -155,7 +134,7 @@ export function handleLocalGamePaddleControl(
  * 
  * @param room - La room contenant le jeu
  * @param socketId - L'ID du socket du joueur
- * @param player - Le paddle demande ('A', 'B', 'C' ou 'D')
+ * @param player - Le paddle demande ('LEFT', 'DOWN', 'RIGHT' ou 'TOP')
  * @param direction - La direction ('up' ou 'down')
  * @param messageType - Type du message ('keydown' ou 'keyup')
  */

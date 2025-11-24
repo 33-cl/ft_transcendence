@@ -16,7 +16,7 @@ interface CreateGameBody {
 }
 
 interface PaddleControlBody {
-  player: 'left' | 'right' | 'A' | 'B' | 'C' | 'D';
+  player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP';
   direction: 'up' | 'down';
 }
 
@@ -251,7 +251,7 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
       }
 
       // Validate player and direction
-      const validPlayers = ['left', 'right', 'A', 'B', 'C', 'D'];
+      const validPlayers = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
       const validDirections = ['up', 'down'];
 
       if (!player || !validPlayers.includes(player)) {
@@ -297,11 +297,7 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
       fastify.log.info(`Paddle control via API: ${id} - ${player} ${direction}`);
 
       // Find the paddle for this player
-      const paddleData = room.gameState.paddles.find(p => 
-        (player === 'left' && p.side === 'A') || 
-        (player === 'right' && p.side === 'C') ||
-        p.side === player
-      );
+      const paddleData = room.gameState.paddles.find(p => p.side === player);
 
       return reply.send({
         success: true,

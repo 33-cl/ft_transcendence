@@ -23,8 +23,8 @@ export const gameFinishedHTML = (data?: any) => {
     if (isLocalOrAIGame) {
         // Déterminer le texte du gagnant
         let winnerText = '';
-        // Les sides peuvent être 'A' (gauche), 'C' (droite), 'left', ou 'right'
-        const isLeftWinner = winnerName === 'left' || winnerName === 'A';
+        // Les sides peuvent être 'LEFT' (gauche) ou 'RIGHT' (droite)
+        const isLeftWinner = winnerName === 'LEFT';
         
         if (mode === 'local') {
             // Mode local : afficher LEFT/RIGHT PLAYER

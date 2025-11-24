@@ -1,10 +1,10 @@
 // pongControls.ts
 // Gère les contrôles clavier et l'envoi des mouvements de raquette au backend
 
-// Le backend envoie le paddle attribué lors du joinRoom : { room: ..., paddle: 'A'|'B'|'C'|'left'|'right' }
+// Le backend envoie le paddle attribué lors du joinRoom : { room: ..., paddle: 'LEFT'|'DOWN'|'RIGHT'|'TOP' }
 (window as any).controlledPaddle = null;
 
-function sendKeyEvent(type: 'keydown' | 'keyup', player: 'A' | 'B' | 'C' | 'D' | 'left' | 'right', direction: 'up' | 'down') {
+function sendKeyEvent(type: 'keydown' | 'keyup', player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down') {
     
     if ((window as any).isLocalGame) {
         (window as any).sendMessage(type, { player, direction });
@@ -16,81 +16,59 @@ function sendKeyEvent(type: 'keydown' | 'keyup', player: 'A' | 'B' | 'C' | 'D' |
 }
 
 // Mapping dynamique selon le mode de jeu
-let keyToMove: Record<string, { player: 'A' | 'B' | 'C' | 'D' | 'left' | 'right', direction: 'up' | 'down' }> = {};
+let keyToMove: Record<string, { player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down' }> = {};
 
 function updatePaddleKeyBindings() {
     const paddle = (window as any).controlledPaddle;
     const isLocal = (window as any).isLocalGame;
     
     if (isLocal) {
-        let paddles = paddle;
-        if (Array.isArray(paddle) && paddle.length === 2 && paddle.includes('A') && paddle.includes('C')) {
-            paddles = ['left', 'right'];
-        }
+        const paddles = paddle;
         if (Array.isArray(paddles)) {
             keyToMove = {};
-            // 1v1 local : left/right (patch appliqué)
+            // 1v1 local : LEFT/RIGHT
             if (!(window as any).aiMode){
-                if (paddles.includes('left')) {
-                    keyToMove['w'] = { player: 'left', direction: 'up' };
-                    keyToMove['s'] = { player: 'left', direction: 'down' };
+                if (paddles.includes('LEFT')) {
+                    keyToMove['w'] = { player: 'LEFT', direction: 'up' };
+                    keyToMove['s'] = { player: 'LEFT', direction: 'down' };
                 }
             }
-            if (paddles.includes('right')) {
-                keyToMove['ArrowUp'] = { player: 'right', direction: 'up' };
-                keyToMove['ArrowDown'] = { player: 'right', direction: 'down' };
+            if (paddles.includes('RIGHT')) {
+                keyToMove['ArrowUp'] = { player: 'RIGHT', direction: 'up' };
+                keyToMove['ArrowDown'] = { player: 'RIGHT', direction: 'down' };
             }
-            // 1v1v1v1 local : A/B/C/D 
-            if (paddles.includes('A')) {
-                keyToMove['w'] = { player: 'A', direction: 'up' };
-                keyToMove['s'] = { player: 'A', direction: 'down' };
+            // 1v1v1v1 local : LEFT/DOWN/RIGHT/TOP 
+            if (paddles.includes('DOWN')) {
+                // Paddle DOWN est horizontal : v = gauche, b = droite
+                keyToMove['v'] = { player: 'DOWN', direction: 'up' }; // up = gauche pour paddle horizontal
+                keyToMove['b'] = { player: 'DOWN', direction: 'down' }; // down = droite pour paddle horizontal
             }
-            if (paddles.includes('B')) {
-                // Paddle B est horizontal : i = gauche, k = droite
-                keyToMove['v'] = { player: 'B', direction: 'up' }; // up = gauche pour paddle horizontal
-                keyToMove['b'] = { player: 'B', direction: 'down' }; // down = droite pour paddle horizontal
-            }
-            if (paddles.includes('C')) {
-                keyToMove['ArrowUp'] = { player: 'C', direction: 'up' };
-                keyToMove['ArrowDown'] = { player: 'C', direction: 'down' };
-            }
-            if (paddles.includes('D')) {
-                // Paddle D est horizontal : v = gauche, b = droite
-                keyToMove['o'] = { player: 'D', direction: 'up' }; // up = gauche pour paddle horizontal
-                keyToMove['p'] = { player: 'D', direction: 'down' }; // down = droite pour paddle horizontal
+            if (paddles.includes('TOP')) {
+                // Paddle TOP est horizontal : o = gauche, p = droite
+                keyToMove['o'] = { player: 'TOP', direction: 'up' }; // up = gauche pour paddle horizontal
+                keyToMove['p'] = { player: 'TOP', direction: 'down' }; // down = droite pour paddle horizontal
             }
         } 
-        else if (['A', 'B', 'C', 'D'].includes(paddle)) {
+        else if (['LEFT', 'DOWN', 'RIGHT', 'TOP'].includes(paddle)) {
             // Cas fallback (jamais utilisé normalement)
             keyToMove = {
-                w: { player: 'A', direction: 'up' },
-                s: { player: 'A', direction: 'down' },
-                i: { player: 'B', direction: 'up' }, // up = gauche pour paddle B horizontal
-                k: { player: 'B', direction: 'down' }, // down = droite pour paddle B horizontal
-                ArrowUp: { player: 'C', direction: 'up' },
-                ArrowDown: { player: 'C', direction: 'down' },
-                v: { player: 'D', direction: 'up' }, // up = gauche pour paddle D horizontal
-                b: { player: 'D', direction: 'down' } // down = droite pour paddle D horizontal
+                w: { player: 'LEFT', direction: 'up' },
+                s: { player: 'LEFT', direction: 'down' },
+                v: { player: 'DOWN', direction: 'up' }, // up = gauche pour paddle DOWN horizontal
+                b: { player: 'DOWN', direction: 'down' }, // down = droite pour paddle DOWN horizontal
+                ArrowUp: { player: 'RIGHT', direction: 'up' },
+                ArrowDown: { player: 'RIGHT', direction: 'down' },
+                o: { player: 'TOP', direction: 'up' }, // up = gauche pour paddle TOP horizontal
+                p: { player: 'TOP', direction: 'down' } // down = droite pour paddle TOP horizontal
             };
         }
     }
     else {
         // Mode online : chaque joueur utilise les flèches directionnelles
-        
-        if (paddle === 'A' || paddle === 'B' || paddle === 'C' || paddle === 'D') {
+        if (paddle === 'LEFT' || paddle === 'DOWN' || paddle === 'RIGHT' || paddle === 'TOP') {
             keyToMove = {
                 ArrowUp: { player: paddle, direction: 'up' },
                 ArrowDown: { player: paddle, direction: 'down' }
-            };
-        } else if (paddle === 'left') {
-            keyToMove = {
-                ArrowUp: { player: 'left', direction: 'up' },
-                ArrowDown: { player: 'left', direction: 'down' }
-            };
-        } else if (paddle === 'right') {
-            keyToMove = {
-                ArrowUp: { player: 'right', direction: 'up' },
-                ArrowDown: { player: 'right', direction: 'down' }
             };
         } else {
             keyToMove = {};

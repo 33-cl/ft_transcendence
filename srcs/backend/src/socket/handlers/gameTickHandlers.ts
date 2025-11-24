@@ -22,15 +22,15 @@ export function initPaddleInputs(maxPlayers: number): Record<PaddleSide, { up: b
     
     if (maxPlayers === 2)
     {
-        inputs['A'] = { up: false, down: false };
-        inputs['C'] = { up: false, down: false };
+        inputs['LEFT'] = { up: false, down: false };
+        inputs['RIGHT'] = { up: false, down: false };
     }
     else if (maxPlayers === 4)
     {
-        inputs['A'] = { up: false, down: false };
-        inputs['B'] = { up: false, down: false };
-        inputs['C'] = { up: false, down: false };
-        inputs['D'] = { up: false, down: false };
+        inputs['LEFT'] = { up: false, down: false };
+        inputs['DOWN'] = { up: false, down: false };
+        inputs['RIGHT'] = { up: false, down: false };
+        inputs['TOP'] = { up: false, down: false };
     }
     
     return inputs;
@@ -98,7 +98,7 @@ export function updateAllPaddlesPositions(room: RoomType): void
         if (!input)
             continue;
         
-        if (paddle.side === 'B' || paddle.side === 'D')
+        if (paddle.side === 'DOWN' || paddle.side === 'TOP')
             applyHorizontalPaddleMovement(paddle, input, speed, canvasWidth);
         else
             applyVerticalPaddleMovement(paddle, input, speed, canvasHeight);

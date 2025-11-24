@@ -13,9 +13,9 @@ export function assignAllPaddlesToSocket(room: RoomType, socketId: string): void
     if (!room.paddleBySocket) room.paddleBySocket = {};
     
     if (room.maxPlayers === 2)
-        room.paddleBySocket[socketId] = ['A', 'C'];
+        room.paddleBySocket[socketId] = ['LEFT', 'RIGHT'];
     else if (room.maxPlayers === 4)
-        room.paddleBySocket[socketId] = ['A', 'B', 'C', 'D'];
+        room.paddleBySocket[socketId] = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
 }
 
 /**
@@ -38,7 +38,7 @@ export function purgeOldPaddleAssignments(room: RoomType): void
  */
 export function assignPaddleToPlayer(room: RoomType): PaddleSide | null
 {
-    const paddleSides: PaddleSide[] = ['A', 'B', 'C', 'D'];
+    const paddleSides: PaddleSide[] = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
     for (const side of paddleSides.slice(0, room.maxPlayers))
     {
         if (!room.paddleBySocket || !Object.values(room.paddleBySocket).includes(side))
@@ -58,8 +58,8 @@ export function assignPaddleByArrivalOrder(room: RoomType, socketId: string): vo
     if (socketId in room.paddleBySocket) return;
     
     if (room.maxPlayers === 2) {
-        // En mode 1v1 (local et non-local) : toujours A=gauche et C=droite
-        const paddles = ['A', 'C'];
+        // En mode 1v1 (local et non-local) : toujours LEFT=gauche et RIGHT=droite
+        const paddles = ['LEFT', 'RIGHT'];
         const idx = room.players.indexOf(socketId);
         room.paddleBySocket[socketId] = paddles[idx] || null;
     } else if (room.maxPlayers === 4) {

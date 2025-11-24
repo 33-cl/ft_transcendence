@@ -305,7 +305,7 @@ export function simulateKeyboardInput(state: GameState): void {
         // Aucune touche pressée : en presser une nouvelle
         ai.keyPressed = requiredDirection;
         ai.keyPressStartTime = now;
-        movePaddle(state, 'A', requiredDirection);
+        movePaddle(state, 'LEFT', requiredDirection);
     } else if (ai.keyPressed === requiredDirection) {
         // Bonne direction : continuer ou relâcher selon les paramètres
         const keyHeldDuration = now - ai.keyPressStartTime;
@@ -330,7 +330,7 @@ export function simulateKeyboardInput(state: GameState): void {
             }
         } else {
             // Continuer à maintenir la touche
-            movePaddle(state, 'A', requiredDirection);
+            movePaddle(state, 'LEFT', requiredDirection);
         }
     } else {
         // Mauvaise direction : relâcher et changer (mais avec une certaine inertie)
@@ -338,7 +338,7 @@ export function simulateKeyboardInput(state: GameState): void {
         if (now - ai.keyPressStartTime >= directionChangeDelay) {
             ai.keyPressed = requiredDirection;
             ai.keyPressStartTime = now;
-            movePaddle(state, 'A', requiredDirection);
+            movePaddle(state, 'LEFT', requiredDirection);
         }
     }
 }

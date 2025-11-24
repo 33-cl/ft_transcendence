@@ -10,10 +10,10 @@ import './pongInterpolation.js';
 // Fonction pour obtenir la couleur selon le paddle
 function getColorForSide(side: string): string {
     const colors: Record<string, string> = {
-        'A': '#ffffff',  // Rouge - Gauche
-        'B': '#ffffff',  // Vert - Bas  
-        'C': '#ffffff',  // Bleu - Droite
-        'D': '#ffffff'   // Jaune - Haut
+        'LEFT': '#ffffff',   // Gauche
+        'DOWN': '#ffffff',   // Bas  
+        'RIGHT': '#ffffff',  // Droite
+        'TOP': '#ffffff'     // Haut
     };
     return colors[side] || '#ffffff';
 }
@@ -92,9 +92,9 @@ export function draw(gameState: any)
             const height = paddle.height ?? gameState.paddleHeight ?? 100;
             let x = paddle.x;
             if (x === undefined) {
-                if (paddle.side === 'A' || paddle.side === 'left')
+                if (paddle.side === 'LEFT')
                     x = gameState.paddleMargin ?? 10;
-                else if (paddle.side === 'B' || paddle.side === 'right')
+                else if (paddle.side === 'RIGHT')
                     x = (gameState.canvasWidth ?? canvas.width) - (gameState.paddleMargin ?? 10) - width;
                 else
                     x = 0;

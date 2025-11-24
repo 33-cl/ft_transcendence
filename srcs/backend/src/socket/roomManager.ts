@@ -10,7 +10,7 @@ export interface Room
   gameState: GameState;
   isLocalGame?: boolean; // Ajouté : flag pour indiquer si c'est un jeu local
   pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
-  // Nouvelle structure : paddleInputs indexé par PaddleSide ('A', 'B', 'C')
+  // Nouvelle structure : paddleInputs indexé par PaddleSide ('LEFT', 'DOWN', 'RIGHT', 'TOP')
   paddleInputs?: Record<PaddleSide, { up: boolean; down: boolean }>;
   // Mapping socket.id -> PaddleSide (attribution du contrôle des paddles)
   paddleBySocket?: Record<string, PaddleSide>;

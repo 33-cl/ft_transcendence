@@ -53,7 +53,7 @@ export class PongGame {
         this.state.running = false;
     }
 
-    movePaddle(player: 'left' | 'right' | 'A' | 'B' | 'C' | 'D', direction: 'up' | 'down') {
+    movePaddle(player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down') {
         movePaddle(this.state, player, direction);
     }
 
