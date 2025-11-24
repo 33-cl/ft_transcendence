@@ -47,8 +47,8 @@ function updatePaddleKeyBindings() {
             }
             if (paddles.includes('B')) {
                 // Paddle B est horizontal : i = gauche, k = droite
-                keyToMove['i'] = { player: 'B', direction: 'up' }; // up = gauche pour paddle horizontal
-                keyToMove['k'] = { player: 'B', direction: 'down' }; // down = droite pour paddle horizontal
+                keyToMove['v'] = { player: 'B', direction: 'up' }; // up = gauche pour paddle horizontal
+                keyToMove['b'] = { player: 'B', direction: 'down' }; // down = droite pour paddle horizontal
             }
             if (paddles.includes('C')) {
                 keyToMove['ArrowUp'] = { player: 'C', direction: 'up' };
@@ -56,8 +56,8 @@ function updatePaddleKeyBindings() {
             }
             if (paddles.includes('D')) {
                 // Paddle D est horizontal : v = gauche, b = droite
-                keyToMove['v'] = { player: 'D', direction: 'up' }; // up = gauche pour paddle horizontal
-                keyToMove['b'] = { player: 'D', direction: 'down' }; // down = droite pour paddle horizontal
+                keyToMove['o'] = { player: 'D', direction: 'up' }; // up = gauche pour paddle horizontal
+                keyToMove['p'] = { player: 'D', direction: 'down' }; // down = droite pour paddle horizontal
             }
         } 
         else if (['A', 'B', 'C', 'D'].includes(paddle)) {
