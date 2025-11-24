@@ -28,6 +28,7 @@ declare global
 			created_at?: string;
 			updated_at?: string;
 			provider?: string;
+			twoFactorEnabled?: boolean;
 		} | null;
 		logout?: () => Promise<void>;
 	}

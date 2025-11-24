@@ -45,4 +45,19 @@
     #settings-buttons button {
         @apply hover:text-amber-500; /* Hover effect */
     }
+
+    .settings-2fa-btn {
+        @apply w-64 text-right cursor-pointer;
+        @apply bg-transparent border-none outline-none;
+        @apply hover:text-amber-500;
+        @apply text-white;
+    }
+
+    .settings-2fa-btn[data-enabled="true"] {
+        @apply text-green-400;
+    }
+
+    .settings-2fa-btn[data-enabled="false"] {
+        @apply text-gray-400;
+    }
 }

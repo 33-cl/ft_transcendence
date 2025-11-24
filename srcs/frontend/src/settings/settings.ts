@@ -49,6 +49,44 @@ function showMessage(message: string, isError: boolean = false): void {
     }
 }
 
+// Fonction pour activer/désactiver la 2FA
+async function toggle2FA(): Promise<void> {
+    const is2FAEnabled = window.currentUser?.twoFactorEnabled || false;
+    
+    try {
+        const endpoint = is2FAEnabled ? '/auth/2fa/disable' : '/auth/2fa/enable';
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showMessage(data.error || '2FA toggle failed', true);
+            return;
+        }
+
+        // Mettre à jour l'état dans window.currentUser
+        if (window.currentUser) {
+            window.currentUser.twoFactorEnabled = !is2FAEnabled;
+        }
+
+        // Mettre à jour le bouton
+        const toggle2FABtn = document.getElementById('toggle-2fa');
+        if (toggle2FABtn) {
+            toggle2FABtn.textContent = `[${!is2FAEnabled ? 'DISABLE' : 'ENABLE'}]`;
+            toggle2FABtn.setAttribute('data-enabled', String(!is2FAEnabled));
+        }
+
+        showMessage(data.message || `2FA ${!is2FAEnabled ? 'enabled' : 'disabled'} successfully`);
+        
+    } catch (error) {
+        console.error('2FA toggle error:', error);
+        showMessage('Network error occurred', true);
+    }
+}
+
 // Reset du champ password
 function resetPasswordField(passwordInput: HTMLInputElement): void {
     passwordInput.value = '';
@@ -414,11 +452,18 @@ export function initSettingsHandlers(): void {
         initAvatarHandlers();
 
         const saveBtn = document.getElementById('saveBtn');
+        const toggle2FABtn = document.getElementById('toggle-2fa');
         // const goToMainBtn = document.getElementById('goToMain');
 
         if (saveBtn) {
             saveBtn.addEventListener('click', async () => {
                 await saveChangedFields();
+            });
+        }
+
+        if (toggle2FABtn) {
+            toggle2FABtn.addEventListener('click', async () => {
+                await toggle2FA();
             });
         }
 

@@ -2,6 +2,7 @@ export function settingsHTML() {
     const username = window.currentUser?.username || 'a';
     const email = window.currentUser?.email;
     const isGoogleAuth = window.currentUser?.provider === 'google';
+    const is2FAEnabled = window.currentUser?.twoFactorEnabled || false;
 
     return /*html*/ `
     <h1>USER SETTINGS</h1>
@@ -24,6 +25,12 @@ export function settingsHTML() {
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>
             <input type="password" id="settings-password" placeholder="New password">
+        </div>
+        <div class="settings-row">
+            <span class="settings-label">2 Factor Auth</span>
+            <button id="toggle-2fa" class="settings-2fa-btn" data-enabled="${is2FAEnabled}">
+                [${is2FAEnabled ? 'DISABLE' : 'ENABLE'}]
+            </button>
         </div>
     </div>
     <div id="settings-buttons">
