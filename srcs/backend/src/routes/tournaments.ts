@@ -19,6 +19,7 @@ interface TournamentRow {
     status: 'registration' | 'active' | 'completed' | 'cancelled';
     max_players: number;
     current_players: number;
+    winner_id?: number | null;
     created_at?: string;
     started_at?: string | null;
     completed_at?: string | null;

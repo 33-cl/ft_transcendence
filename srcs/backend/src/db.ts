@@ -70,10 +70,12 @@ db.exec(`
     status TEXT NOT NULL CHECK(status IN ('registration', 'active', 'completed', 'cancelled')),
     max_players INTEGER NOT NULL DEFAULT 8,
     current_players INTEGER DEFAULT 0,
+    winner_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     started_at DATETIME,
     completed_at DATETIME,
-    FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY(creator_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(winner_id) REFERENCES users(id) ON DELETE SET NULL
   );
 
   -- Table pour lister les participants d'un tournoi
@@ -173,6 +175,20 @@ try {
   }
 } catch (err) {
   console.error('Migration error:', err);
+}
+
+// Migration: Add winner_id column to tournaments table if it doesn't exist
+try {
+  const tournamentsTableInfo = db.prepare("PRAGMA table_info(tournaments)").all() as Array<{ name: string }>;
+  const hasWinnerId = tournamentsTableInfo.some(col => col.name === 'winner_id');
+  
+  if (!hasWinnerId) {
+    console.log('📝 Migration: Adding winner_id column to tournaments table');
+    db.exec('ALTER TABLE tournaments ADD COLUMN winner_id INTEGER');
+    console.log('✅ Migration completed: winner_id column added');
+  }
+} catch (error) {
+  console.error('❌ Migration failed for tournaments.winner_id:', error);
 }
 
 // Migration pour ajouter creator_id à la table tournaments
