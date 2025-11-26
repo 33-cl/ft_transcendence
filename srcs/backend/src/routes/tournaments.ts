@@ -1,4 +1,4 @@
-// routes/tournaments.ts - Routes API pour les tournois
+// routes/tournaments.ts - Endpoints HTTP - Routes API pour les tournois (C'est la couche HTTP qui reçoit les requêtes des clients (frontend).)
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
