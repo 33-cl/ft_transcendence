@@ -1,6 +1,7 @@
 // tournament.ts - Logique métier pour la gestion des tournois 4 joueurs
 
 import db from './db.js';
+import { emitTournamentStarted, emitMatchFinished, emitTournamentCompleted } from './socket/handlers/tournamentHandlers.js';
 
 /**
  * Interface pour un match de tournoi
@@ -55,9 +56,19 @@ export function generateBracket(tournamentId: string): void {
 
     // 4. Créer le match de finale (round 2) avec player1_id et player2_id NULL
     // Ils seront remplis automatiquement après les demi-finales
-    insertMatch.run(tournamentId, 2, null, null);
+    const finalMatchInfo = insertMatch.run(tournamentId, 2, null, null);
 
     console.log(`✅ Bracket generated for tournament ${tournamentId}: 2 semi-finals + 1 final`);
+
+    // 5. Émettre un événement WebSocket pour notifier les participants
+    const matches = db.prepare(`
+        SELECT id, round, player1_id, player2_id 
+        FROM tournament_matches 
+        WHERE tournament_id = ? 
+        ORDER BY round, id
+    `).all(tournamentId) as Array<{ id: number; round: number; player1_id: number | null; player2_id: number | null }>;
+    
+    emitTournamentStarted(tournamentId, matches);
 }
 
 /**
@@ -115,7 +126,10 @@ export function updateMatchResult(matchId: number, winnerId: number): void {
 
     console.log(`✅ Match ${matchId} finished. Winner: ${winnerId}`);
 
-    // 4. Propager le résultat selon le round
+    // 4. Émettre un événement WebSocket pour notifier la fin du match
+    emitMatchFinished(match.tournament_id, matchId, winnerId, match.round);
+
+    // 5. Propager le résultat selon le round
     if (match.round === 1) {
         // C'est une demi-finale → mettre à jour la finale
         advanceWinnerToFinal(match.tournament_id, winnerId);
@@ -179,4 +193,7 @@ function declareChampion(tournamentId: string, winnerId: number): void {
     `).run(winnerId, tournamentId);
 
     console.log(`🏆 Tournament ${tournamentId} completed! Champion: ${winnerId}`);
+
+    // Émettre un événement WebSocket pour notifier la fin du tournoi
+    emitTournamentCompleted(tournamentId, winnerId);
 }
