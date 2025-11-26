@@ -6,6 +6,7 @@ import db from '../db.js';
 import { validateLength, sanitizeUsername, validateId, validateUUID } from '../security.js';
 import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
+import { generateBracket } from '../tournament.js';
 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -386,35 +387,14 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: `Tournament needs ${tournament.max_players} players to start (current: ${tournament.current_players})` });
             }
 
-            // Récupérer les participants pour créer le bracket
-            const participants = db.prepare(
-                `SELECT user_id FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
-            ).all(id) as Array<{ user_id: number }>;
-
-            // Shuffle participants (Fisher-Yates)
-            for (let i = participants.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const tmp = participants[i];
-                participants[i] = participants[j];
-                participants[j] = tmp;
-            }
-
-            // Créer les matchs du premier round
-            const insertMatch = db.prepare(`
-                INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
-                VALUES (?, ?, ?, ?, 'scheduled')
-            `);
-
-            for (let i = 0; i < participants.length; i += 2) {
-                const p1 = participants[i].user_id;
-                const p2 = i + 1 < participants.length ? participants[i + 1].user_id : null;
-                insertMatch.run(id, 1, p1, p2);
-            }
-
-            // Marquer le tournoi comme actif
+            // Générer le bracket du tournoi (2 demi-finales + 1 finale) via la fonction dédiée
+            // Cette fonction crée automatiquement les 3 matchs nécessaires pour un tournoi à 4 joueurs
+            generateBracket(id);
+            
+            // Mettre à jour le statut du tournoi (maintenant géré par generateBracket pour la cohérence)
             db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
-
-            fastify.log.info(`Tournament ${id} started manually with ${participants.length} players`);
+            
+            fastify.log.info(`Tournament ${id} started manually with ${tournament.current_players} players`);
             
             reply.send({ success: true, message: 'Tournament started successfully' });
         } catch (error) {
