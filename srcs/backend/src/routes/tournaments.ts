@@ -268,35 +268,16 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(result.lastInsertRowid);
 
-            // Si le tournoi est désormais plein, générer le bracket simple (round 1)
+            // Si le tournoi est désormais plein, générer automatiquement le bracket complet
             const updatedTournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow;
             if (updatedTournament.current_players >= updatedTournament.max_players) {
-                // Récupère participants
-                const participants = db.prepare(
-                    `SELECT user_id FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
-                ).all(id) as Array<{ user_id: number }>;
-
-                // Shuffle (Fisher-Yates)
-                for (let i = participants.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    const tmp = participants[i];
-                    participants[i] = participants[j];
-                    participants[j] = tmp;
-                }
-
-                const insertMatch = db.prepare(`
-                    INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
-                    VALUES (?, ?, ?, ?, 'scheduled')
-                `);
-
-                for (let i = 0; i < participants.length; i += 2) {
-                    const p1 = participants[i].user_id;
-                    const p2 = i + 1 < participants.length ? participants[i + 1].user_id : null;
-                    insertMatch.run(id, 1, p1, p2);
-                }
-
-                // Marquer actif
+                // Générer le bracket complet (2 demi-finales + 1 finale)
+                generateBracket(id);
+                
+                // Marquer le tournoi comme actif
                 db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
+                
+                fastify.log.info(`Tournament ${id} auto-started with ${updatedTournament.current_players} players`);
             }
 
             reply.status(201).send({ success: true, participant });
