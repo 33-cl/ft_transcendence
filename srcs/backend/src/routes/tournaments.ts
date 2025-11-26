@@ -6,7 +6,7 @@ import db from '../db.js';
 import { validateLength, sanitizeUsername, validateId, validateUUID } from '../security.js';
 import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
-import { generateBracket } from '../tournament.js';
+import { generateBracket, updateMatchResult } from '../tournament.js';
 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -424,42 +424,15 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Winner is not a participant of this match' });
             }
 
-            // Record tournament match winner
-            db.prepare(`UPDATE tournament_matches SET winner_id = ?, status = 'finished' WHERE id = ?`).run(winnerId, mid);
+            // Use dedicated function to update match result and advance bracket automatically
+            updateMatchResult(mid, winnerId);
 
-            // Insert global match record
+            // Insert global match record for statistics
             const insertGlobal = db.prepare(`
                 INSERT INTO matches (winner_id, loser_id, winner_score, loser_score, match_type)
                 VALUES (?, ?, ?, ?, 'tournament')
             `);
             insertGlobal.run(winnerId, loserId, winnerScore, loserScore);
-
-            // Check if all matches in this round are finished -> advance bracket
-            const round = tm.round as number;
-            const remaining = (db.prepare(`SELECT COUNT(*) as cnt FROM tournament_matches WHERE tournament_id = ? AND round = ? AND status != 'finished'`).get(tid, round) as { cnt: number }).cnt;
-
-            if (remaining === 0) {
-                // Récupérer tous les winners de la ronde, dans l'ordre des match id
-                const winnersRows = db.prepare(`SELECT winner_id FROM tournament_matches WHERE tournament_id = ? AND round = ? ORDER BY id`).all(tid, round) as Array<{ winner_id: number | null }>;
-                const winners = winnersRows.map(r => r.winner_id).filter(Boolean) as number[];
-
-                if (winners.length <= 1) {
-                    // Tournoi terminé
-                    db.prepare(`UPDATE tournaments SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tid);
-                } else {
-                    const nextRound = round + 1;
-                    const insertNext = db.prepare(`
-                        INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
-                        VALUES (?, ?, ?, ?, 'scheduled')
-                    `);
-
-                    for (let i = 0; i < winners.length; i += 2) {
-                        const p1 = winners[i];
-                        const p2 = i + 1 < winners.length ? winners[i + 1] : null;
-                        insertNext.run(tid, nextRound, p1, p2);
-                    }
-                }
-            }
 
             reply.send({ success: true });
         } catch (error) {
