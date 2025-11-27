@@ -55,12 +55,25 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
     
     // Utiliser directement les valeurs initiales du gameState pour la cohérence
     const initialState = createInitialGameState(state.paddles?.length || 2);
-    const baseSpeedX = Math.abs(initialState.ballSpeedX); // 3 depuis gameState.ts
-    const baseSpeedY = Math.abs(initialState.ballSpeedY); // 3 depuis gameState.ts
+    const baseSpeed = Math.sqrt(
+        initialState.ballSpeedX * initialState.ballSpeedX + 
+        initialState.ballSpeedY * initialState.ballSpeedY
+    );
     
-    // Direction aléatoire pour X et Y (trajectoire diagonale équilibrée)
-    state.ballSpeedX = baseSpeedX * (Math.random() > 0.5 ? 1 : -1);
-    state.ballSpeedY = baseSpeedY * (Math.random() > 0.5 ? 1 : -1);
+    const numPlayers = state.paddles?.length || 2;
+    
+    if (numPlayers === 4) {
+        // Mode 4 joueurs : angle complètement aléatoire (0 à 360°)
+        const randomAngle = Math.random() * 2 * Math.PI;
+        state.ballSpeedX = baseSpeed * Math.cos(randomAngle);
+        state.ballSpeedY = baseSpeed * Math.sin(randomAngle);
+    } else {
+        // Mode 2 joueurs : direction aléatoire pour X et Y (trajectoire diagonale équilibrée)
+        const baseSpeedX = Math.abs(initialState.ballSpeedX);
+        const baseSpeedY = Math.abs(initialState.ballSpeedY);
+        state.ballSpeedX = baseSpeedX * (Math.random() > 0.5 ? 1 : -1);
+        state.ballSpeedY = baseSpeedY * (Math.random() > 0.5 ? 1 : -1);
+    }
     
     // Log pour confirmer le reset de vitesse
     const resetSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
