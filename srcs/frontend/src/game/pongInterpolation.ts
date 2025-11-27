@@ -1,5 +1,5 @@
 // pongInterpolation.ts
-// Système d'interpolation pour fluidifier le mouvement de la balle
+// Système d'interpolation et de prédiction pour fluidifier le mouvement de la balle
 
 // Interface pour les états de jeu avec timestamp
 interface GameState {
@@ -8,6 +8,7 @@ interface GameState {
     ballY: number;
     ballSpeedX?: number;
     ballSpeedY?: number;
+    ballRadius?: number;
     canvasWidth: number;
     canvasHeight: number;
     paddles: {
@@ -23,8 +24,13 @@ interface GameState {
 
 // Buffer pour stocker les états de jeu récents
 const stateBuffer: GameState[] = [];
-const BUFFER_SIZE = 3; // Nombre d'états à conserver pour l'interpolation
-const INTERPOLATION_DELAY = 100; // Délai d'interpolation en ms (ajuster selon latence)
+const BUFFER_SIZE = 5; // Nombre d'états à conserver pour l'interpolation
+const INTERPOLATION_DELAY = 10; // Délai d'interpolation en ms (réduit pour plus de réactivité)
+
+// Variables pour la prédiction client-side
+let lastPredictedState: GameState | null = null;
+let lastPredictionTime: number = 0;
+let lastServerState: GameState | null = null;
 
 let isRenderLoopRunning = false;
 
@@ -38,11 +44,15 @@ export function addGameState(gameState: GameState): void {
         gameState.timestamp = Date.now();
     }
     
+    // Sauvegarder le dernier état serveur pour la prédiction
+    lastServerState = {...gameState};
+    lastPredictionTime = Date.now();
+    
     // Ajouter l'état au buffer
     stateBuffer.push({...gameState}); // Copie pour éviter les références
     
     // Limiter la taille du buffer
-    if (stateBuffer.length > BUFFER_SIZE + 2) { // +2 pour avoir une marge
+    while (stateBuffer.length > BUFFER_SIZE) {
         stateBuffer.shift();
     }
 }
@@ -62,24 +72,111 @@ export function startRenderLoop(): void {
  */
 export function stopRenderLoop(): void {
     isRenderLoopRunning = false;
+    lastPredictedState = null;
+    lastServerState = null;
+    stateBuffer.length = 0;
 }
 
 /**
- * Obtient l'état interpolé actuel basé sur le buffer
+ * Prédit la position de la balle en fonction de sa vitesse
+ * @param state État de base pour la prédiction
+ * @param deltaTime Temps écoulé en ms depuis le dernier état serveur
+ * @returns État prédit avec nouvelle position de balle
+ */
+function predictBallPosition(state: GameState, deltaTime: number): GameState {
+    const result: GameState = { ...state };
+    
+    // Si on a la vitesse de la balle, prédire sa position
+    if (state.ballSpeedX !== undefined && state.ballSpeedY !== undefined) {
+        // Convertir deltaTime en secondes et appliquer un facteur de lissage
+        const dt = deltaTime / 1000;
+        
+        // Calculer la nouvelle position prédite
+        let newBallX = state.ballX + state.ballSpeedX * dt;
+        let newBallY = state.ballY + state.ballSpeedY * dt;
+        
+        // Gérer les rebonds sur les bords (approximation simple)
+        const ballRadius = state.ballRadius || 10;
+        const margin = ballRadius;
+        
+        // Rebond horizontal (seulement en mode 4 joueurs avec paddles en haut/bas)
+        if (state.paddles && state.paddles.length === 4) {
+            if (newBallX <= margin || newBallX >= state.canvasWidth - margin) {
+                newBallX = Math.max(margin, Math.min(state.canvasWidth - margin, newBallX));
+            }
+        }
+        
+        // Rebond vertical (en mode 2 joueurs classique)
+        if (state.paddles && state.paddles.length === 2) {
+            if (newBallY <= margin) {
+                newBallY = margin;
+            } else if (newBallY >= state.canvasHeight - margin) {
+                newBallY = state.canvasHeight - margin;
+            }
+        }
+        
+        result.ballX = newBallX;
+        result.ballY = newBallY;
+    }
+    
+    return result;
+}
+
+/**
+ * Interpole les positions des paddles pour un mouvement fluide
+ */
+function interpolatePaddles(state1: GameState, state2: GameState, alpha: number): GameState["paddles"] {
+    return state1.paddles.map((paddle, index) => {
+        if (index < state2.paddles.length && state2.paddles[index]) {
+            const paddle2 = state2.paddles[index];
+            return {
+                ...paddle,
+                x: paddle.x + alpha * (paddle2.x - paddle.x),
+                y: paddle.y + alpha * (paddle2.y - paddle.y)
+            };
+        }
+        return paddle;
+    });
+}
+
+/**
+ * Obtient l'état interpolé actuel basé sur le buffer avec prédiction client-side
  * @returns État interpolé ou dernier état disponible
  */
 export function getCurrentInterpolatedState(): GameState | null {
-    if (stateBuffer.length === 0) {
+    if (stateBuffer.length === 0 && !lastServerState) {
         return null;
     }
     
-    // Si un seul état, le retourner directement
+    const now = Date.now();
+    
+    // Si on a un état serveur récent, utiliser la prédiction client-side
+    if (lastServerState) {
+        const timeSinceLastUpdate = now - lastPredictionTime;
+        
+        // Si l'état serveur est très récent (< 100ms), prédire la position
+        if (timeSinceLastUpdate < 150) {
+            const predictedState = predictBallPosition(lastServerState, timeSinceLastUpdate);
+            
+            // Lissage avec l'état précédemment prédit pour éviter les saccades
+            if (lastPredictedState) {
+                const smoothingFactor = 0.3; // Plus bas = plus lisse mais moins réactif
+                predictedState.ballX = lastPredictedState.ballX + smoothingFactor * (predictedState.ballX - lastPredictedState.ballX);
+                predictedState.ballY = lastPredictedState.ballY + smoothingFactor * (predictedState.ballY - lastPredictedState.ballY);
+            }
+            
+            lastPredictedState = predictedState;
+            return predictedState;
+        }
+    }
+    
+    // Fallback: interpolation classique entre états du buffer
     if (stateBuffer.length === 1) {
         return stateBuffer[0] || null;
     }
     
     // Recherche des deux états entourant le temps cible
-    const targetTime = Date.now() - INTERPOLATION_DELAY;
+    const targetTime = now - INTERPOLATION_DELAY;
     
     // Trouver les deux états entourant le temps cible
     let state1Index = -1;
@@ -132,22 +229,12 @@ function interpolateStates(state1: GameState, state2: GameState, alpha: number):
     // Copier les propriétés de base du premier état
     const result: GameState = { ...state1 };
     
-    // Interpolation linéaire des positions
+    // Interpolation linéaire des positions de la balle
     result.ballX = state1.ballX + alpha * (state2.ballX - state1.ballX);
     result.ballY = state1.ballY + alpha * (state2.ballY - state1.ballY);
     
     // Interpolation des positions des raquettes
-    result.paddles = state1.paddles.map((paddle, index) => {
-        if (index < state2.paddles.length && state2.paddles[index]) {
-            const paddle2 = state2.paddles[index];
-            return {
-                ...paddle,
-                x: paddle.x + alpha * (paddle2.x - paddle.x),
-                y: paddle.y + alpha * (paddle2.y - paddle.y)
-            };
-        }
-        return paddle;
-    });
+    result.paddles = interpolatePaddles(state1, state2, alpha);
     
     return result;
 }
