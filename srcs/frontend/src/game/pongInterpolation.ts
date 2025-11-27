@@ -31,8 +31,35 @@ const INTERPOLATION_DELAY = 10; // Délai d'interpolation en ms (réduit pour pl
 let lastPredictedState: GameState | null = null;
 let lastPredictionTime: number = 0;
 let lastServerState: GameState | null = null;
+let lastScore: number = 0; // Pour détecter les changements de score
 
 let isRenderLoopRunning = false;
+
+/**
+ * Calcule le score total de tous les paddles
+ */
+function getTotalScore(state: GameState): number {
+    if (!state.paddles) return 0;
+    return state.paddles.reduce((sum, p) => sum + (p.score || 0), 0);
+}
+
+/**
+ * Détecte si la balle a été "téléportée" (reset après un but)
+ */
+function hasBallTeleported(oldState: GameState | null, newState: GameState): boolean {
+    if (!oldState) return false;
+    
+    // Calculer la distance entre les deux positions
+    const dx = newState.ballX - oldState.ballX;
+    const dy = newState.ballY - oldState.ballY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Si la balle a bougé de plus de 100 pixels d'un coup, c'est un reset
+    // (la balle normale ne peut pas bouger aussi vite en une frame)
+    const teleportThreshold = 100;
+    
+    return distance > teleportThreshold;
+}
 
 /**
  * Ajoute un nouvel état au buffer et applique un timestamp s'il n'en a pas
@@ -42,6 +69,20 @@ export function addGameState(gameState: GameState): void {
     // Ajouter un timestamp si absent
     if (!gameState.timestamp) {
         gameState.timestamp = Date.now();
+    }
+    
+    // Détecter un changement de score (= but marqué)
+    const currentScore = getTotalScore(gameState);
+    const scoreChanged = currentScore !== lastScore;
+    lastScore = currentScore;
+    
+    // Détecter une téléportation de la balle
+    const teleported = hasBallTeleported(lastServerState, gameState);
+    
+    // Si le score a changé ou la balle a été téléportée, reset la prédiction
+    if (scoreChanged || teleported) {
+        lastPredictedState = null;
+        stateBuffer.length = 0; // Vider le buffer pour éviter l'interpolation avec les anciennes positions
     }
     
     // Sauvegarder le dernier état serveur pour la prédiction
@@ -74,6 +115,7 @@ export function stopRenderLoop(): void {
     isRenderLoopRunning = false;
     lastPredictedState = null;
     lastServerState = null;
+    lastScore = 0;
     stateBuffer.length = 0;
 }
 
