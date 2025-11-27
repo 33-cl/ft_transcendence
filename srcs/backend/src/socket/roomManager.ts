@@ -16,6 +16,9 @@ export interface Room
   paddleBySocket?: Record<string, PaddleSide>;
   // Mapping socket.id -> username for authenticated players (online games only)
   playerUsernames?: Record<string, string>;
+  // Tournament metadata (pour les rooms de tournoi)
+  tournamentId?: string;
+  matchId?: number;
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques

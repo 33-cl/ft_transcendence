@@ -8,6 +8,8 @@ import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 import { generateBracket, updateMatchResult } from '../tournament.js';
 import { emitTournamentPlayerUpdate, emitTournamentStarted } from '../socket/handlers/tournamentHandlers.js';
+import { rooms, roomExists } from '../socket/roomManager.js';
+import { createInitialGameState } from '../../game/gameState.js';
 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -465,6 +467,141 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         } catch (error) {
             fastify.log.error(`Error recording tournament match result: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
+        }
+    });
+
+    // POST /tournaments/:id/matches/:matchId/play - Créer une room Pong pour jouer un match de tournoi
+    fastify.post('/tournaments/:id/matches/:matchId/play', async (request: FastifyRequest<{ Params: { id: string, matchId: string } }>, reply: FastifyReply) => {
+        try {
+            // SECURITY: Authentification
+            const token = getJwtFromRequest(request);
+            if (!token) {
+                return reply.status(401).send({ error: 'Unauthorized' });
+            }
+
+            let userId: number;
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET) as any;
+                userId = decoded.userId;
+            } catch (error) {
+                return reply.status(401).send({ error: 'Invalid token' });
+            }
+
+            const { id, matchId } = request.params as { id: string, matchId: string };
+
+            // Validation des paramètres
+            if (!validateUUID(id)) {
+                return reply.status(400).send({ error: 'Invalid tournament ID' });
+            }
+
+            const tid = id;
+            const mid = parseInt(matchId, 10);
+            if (Number.isNaN(mid)) {
+                return reply.status(400).send({ error: 'Invalid matchId' });
+            }
+
+            // Vérifier que le tournoi existe et est actif
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tid) as TournamentRow | undefined;
+            if (!tournament) {
+                return reply.status(404).send({ error: 'Tournament not found' });
+            }
+
+            if (tournament.status !== 'active') {
+                return reply.status(400).send({ error: 'Tournament is not active. Cannot start match.' });
+            }
+
+            // Vérifier que le match existe et appartient au tournoi
+            const match = db.prepare(`
+                SELECT tm.*, 
+                       u1.username as player1_username, 
+                       u2.username as player2_username
+                FROM tournament_matches tm
+                LEFT JOIN tournament_participants tp1 ON tm.player1_id = tp1.id
+                LEFT JOIN users u1 ON tp1.user_id = u1.id
+                LEFT JOIN tournament_participants tp2 ON tm.player2_id = tp2.id
+                LEFT JOIN users u2 ON tp2.user_id = u2.id
+                WHERE tm.id = ? AND tm.tournament_id = ?
+            `).get(mid, tid) as any;
+
+            if (!match) {
+                return reply.status(404).send({ error: 'Match not found for this tournament' });
+            }
+
+            if (match.status !== 'scheduled') {
+                return reply.status(400).send({ error: 'Match is not scheduled. Cannot start match.' });
+            }
+
+            // Vérifier que les 2 joueurs sont définis
+            if (!match.player1_id || !match.player2_id) {
+                return reply.status(400).send({ error: 'Match does not have 2 players assigned' });
+            }
+
+            // Récupérer les user_id des participants pour la vérification de sécurité
+            const participant1 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(match.player1_id) as any;
+            const participant2 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(match.player2_id) as any;
+
+            if (!participant1 || !participant2) {
+                return reply.status(400).send({ error: 'Could not find participant data' });
+            }
+
+            // SECURITY: Vérifier que l'utilisateur est l'un des 2 joueurs du match
+            if (userId !== participant1.user_id && userId !== participant2.user_id) {
+                return reply.status(403).send({ error: 'You are not a participant of this match' });
+            }
+
+            // Générer le nom de la room (unique par match)
+            const roomName = `tournament_${tid}_match_${mid}`;
+
+            // Vérifier si la room existe déjà
+            if (roomExists(roomName)) {
+                // Room existe déjà, retourner ses infos
+                return reply.send({
+                    success: true,
+                    roomName: roomName,
+                    match: {
+                        id: match.id,
+                        player1_id: match.player1_id,
+                        player2_id: match.player2_id,
+                        player1_username: match.player1_username,
+                        player2_username: match.player2_username,
+                        round: match.round
+                    },
+                    message: 'Match room already exists. Join with socket.emit(\'joinRoom\', { roomName })'
+                });
+            }
+
+            // Créer la room manuellement avec métadonnées
+            const newRoom = {
+                players: [],
+                maxPlayers: 2,
+                gameState: createInitialGameState(2),
+                isLocalGame: false, // Tournoi = online game
+                tournamentId: tid,  // Métadonnée pour retrouver le tournoi
+                matchId: mid        // Métadonnée pour retrouver le match
+            };
+
+            rooms[roomName] = newRoom;
+
+            fastify.log.info(`✅ Tournament match room created: ${roomName} for tournament ${tid}, match ${mid}`);
+
+            // Retourner les infos de la room créée
+            return reply.send({
+                success: true,
+                roomName: roomName,
+                match: {
+                    id: match.id,
+                    player1_id: match.player1_id,
+                    player2_id: match.player2_id,
+                    player1_username: match.player1_username,
+                    player2_username: match.player2_username,
+                    round: match.round
+                },
+                message: 'Match room created. Join with socket.emit(\'joinRoom\', { roomName })'
+            });
+
+        } catch (error) {
+            fastify.log.error(`Error creating tournament match room: ${error}`);
+            return reply.status(500).send({ error: 'Internal server error' });
         }
     });
 
