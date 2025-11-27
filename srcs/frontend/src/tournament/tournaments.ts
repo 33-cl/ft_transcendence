@@ -1,4 +1,4 @@
-// Page tournaments: liste des tournois 4-player (legacy, not used anymore)
+// Page tournaments: liste des tournois 4-player (legacy, not used anymore) (couche UI dans le navigateur)
 export default async function tournamentsPage() {
     console.warn('tournamentsPage() is deprecated, use initTournaments() instead');
 }

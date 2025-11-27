@@ -1,4 +1,4 @@
-// routes/tournaments.ts - Routes API pour les tournois
+// routes/tournaments.ts - Endpoints HTTP - Routes API pour les tournois (C'est la couche HTTP qui reçoit les requêtes des clients (frontend).)
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,6 +6,8 @@ import db from '../db.js';
 import { validateLength, sanitizeUsername, validateId, validateUUID } from '../security.js';
 import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
+import { generateBracket, updateMatchResult } from '../tournament.js';
+import { emitTournamentPlayerUpdate, emitTournamentStarted } from '../socket/handlers/tournamentHandlers.js';
 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -19,6 +21,7 @@ interface TournamentRow {
     status: 'registration' | 'active' | 'completed' | 'cancelled';
     max_players: number;
     current_players: number;
+    winner_id?: number | null;
     created_at?: string;
     started_at?: string | null;
     completed_at?: string | null;
@@ -266,35 +269,24 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(result.lastInsertRowid);
 
-            // Si le tournoi est désormais plein, générer le bracket simple (round 1)
+            // Si le tournoi est désormais plein, générer automatiquement le bracket complet
             const updatedTournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow;
+            
+            // Emit WebSocket event to notify player joined
+            emitTournamentPlayerUpdate(id, 'joined', {
+                user_id: validUserId,
+                alias: sanitizedAlias,
+                current_players: updatedTournament.current_players
+            });
+            
             if (updatedTournament.current_players >= updatedTournament.max_players) {
-                // Récupère participants
-                const participants = db.prepare(
-                    `SELECT user_id FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
-                ).all(id) as Array<{ user_id: number }>;
-
-                // Shuffle (Fisher-Yates)
-                for (let i = participants.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    const tmp = participants[i];
-                    participants[i] = participants[j];
-                    participants[j] = tmp;
-                }
-
-                const insertMatch = db.prepare(`
-                    INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
-                    VALUES (?, ?, ?, ?, 'scheduled')
-                `);
-
-                for (let i = 0; i < participants.length; i += 2) {
-                    const p1 = participants[i].user_id;
-                    const p2 = i + 1 < participants.length ? participants[i + 1].user_id : null;
-                    insertMatch.run(id, 1, p1, p2);
-                }
-
-                // Marquer actif
+                // Générer le bracket complet (2 demi-finales + 1 finale)
+                generateBracket(id);
+                
+                // Marquer le tournoi comme actif
                 db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
+                
+                fastify.log.info(`Tournament ${id} auto-started with ${updatedTournament.current_players} players`);
             }
 
             reply.status(201).send({ success: true, participant });
@@ -340,9 +332,9 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             // Vérifier que l'utilisateur est bien participant
             const participant = db.prepare(`
-                SELECT id FROM tournament_participants 
+                SELECT id, alias FROM tournament_participants 
                 WHERE tournament_id = ? AND user_id = ?
-            `).get(id, userId);
+            `).get(id, userId) as { id: number; alias: string } | undefined;
 
             if (!participant) {
                 return reply.status(400).send({ error: 'You are not a participant of this tournament' });
@@ -353,6 +345,16 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             
             // Décrémenter le compteur de participants
             db.prepare(`UPDATE tournaments SET current_players = current_players - 1 WHERE id = ?`).run(id);
+
+            // Get updated player count
+            const updatedTournament = db.prepare(`SELECT current_players FROM tournaments WHERE id = ?`).get(id) as { current_players: number } | undefined;
+
+            // Emit WebSocket event to notify player left
+            emitTournamentPlayerUpdate(id, 'left', {
+                user_id: userId,
+                alias: participant.alias,
+                current_players: updatedTournament?.current_players || 0
+            });
 
             reply.send({ success: true, message: 'Left tournament successfully' });
         } catch (error) {
@@ -385,36 +387,23 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: `Tournament needs ${tournament.max_players} players to start (current: ${tournament.current_players})` });
             }
 
-            // Récupérer les participants pour créer le bracket
-            const participants = db.prepare(
-                `SELECT user_id FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
-            ).all(id) as Array<{ user_id: number }>;
-
-            // Shuffle participants (Fisher-Yates)
-            for (let i = participants.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const tmp = participants[i];
-                participants[i] = participants[j];
-                participants[j] = tmp;
-            }
-
-            // Créer les matchs du premier round
-            const insertMatch = db.prepare(`
-                INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
-                VALUES (?, ?, ?, ?, 'scheduled')
-            `);
-
-            for (let i = 0; i < participants.length; i += 2) {
-                const p1 = participants[i].user_id;
-                const p2 = i + 1 < participants.length ? participants[i + 1].user_id : null;
-                insertMatch.run(id, 1, p1, p2);
-            }
-
-            // Marquer le tournoi comme actif
-            db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
-
-            fastify.log.info(`Tournament ${id} started manually with ${participants.length} players`);
+            // Générer le bracket du tournoi (2 demi-finales + 1 finale) via la fonction dédiée
+            // Cette fonction crée automatiquement les 3 matchs nécessaires pour un tournoi à 4 joueurs
+            generateBracket(id);
             
+            // Mettre à jour le statut du tournoi (maintenant géré par generateBracket pour la cohérence)
+            db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
+            
+            fastify.log.info(`Tournament ${id} started manually with ${tournament.current_players} players`);
+            
+            // Récupérer les matchs générés pour l'événement WebSocket
+            const matches = db.prepare(
+                `SELECT id, round, player1_id, player2_id FROM tournament_matches WHERE tournament_id = ? ORDER BY round, id`
+            ).all(id) as Array<{ id: number; round: number; player1_id: number | null; player2_id: number | null }>;
+            
+            // Emit WebSocket event to notify tournament started
+            emitTournamentStarted(id, matches);
+
             reply.send({ success: true, message: 'Tournament started successfully' });
         } catch (error) {
             fastify.log.error(`Error starting tournament: ${error}`);
@@ -462,42 +451,15 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Winner is not a participant of this match' });
             }
 
-            // Record tournament match winner
-            db.prepare(`UPDATE tournament_matches SET winner_id = ?, status = 'finished' WHERE id = ?`).run(winnerId, mid);
+            // Use dedicated function to update match result and advance bracket automatically
+            updateMatchResult(mid, winnerId);
 
-            // Insert global match record
+            // Insert global match record for statistics
             const insertGlobal = db.prepare(`
                 INSERT INTO matches (winner_id, loser_id, winner_score, loser_score, match_type)
                 VALUES (?, ?, ?, ?, 'tournament')
             `);
             insertGlobal.run(winnerId, loserId, winnerScore, loserScore);
-
-            // Check if all matches in this round are finished -> advance bracket
-            const round = tm.round as number;
-            const remaining = (db.prepare(`SELECT COUNT(*) as cnt FROM tournament_matches WHERE tournament_id = ? AND round = ? AND status != 'finished'`).get(tid, round) as { cnt: number }).cnt;
-
-            if (remaining === 0) {
-                // Récupérer tous les winners de la ronde, dans l'ordre des match id
-                const winnersRows = db.prepare(`SELECT winner_id FROM tournament_matches WHERE tournament_id = ? AND round = ? ORDER BY id`).all(tid, round) as Array<{ winner_id: number | null }>;
-                const winners = winnersRows.map(r => r.winner_id).filter(Boolean) as number[];
-
-                if (winners.length <= 1) {
-                    // Tournoi terminé
-                    db.prepare(`UPDATE tournaments SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tid);
-                } else {
-                    const nextRound = round + 1;
-                    const insertNext = db.prepare(`
-                        INSERT INTO tournament_matches (tournament_id, round, player1_id, player2_id, status)
-                        VALUES (?, ?, ?, ?, 'scheduled')
-                    `);
-
-                    for (let i = 0; i < winners.length; i += 2) {
-                        const p1 = winners[i];
-                        const p2 = i + 1 < winners.length ? winners[i + 1] : null;
-                        insertNext.run(tid, nextRound, p1, p2);
-                    }
-                }
-            }
 
             reply.send({ success: true });
         } catch (error) {
