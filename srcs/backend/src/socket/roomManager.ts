@@ -64,19 +64,15 @@ export function removePlayerFromRoom(socketId: string): void
 		room.players = room.players.filter(id => id !== socketId);
 		
 		// Clean up username mapping when player leaves
-		if (room.playerUsernames && room.playerUsernames[socketId]) {
+		if (room.playerUsernames && room.playerUsernames[socketId])
 			delete room.playerUsernames[socketId];
-		}
 		
 		// Clean up paddle assignments
-		if (room.paddleBySocket && room.paddleBySocket[socketId]) {
+		if (room.paddleBySocket && room.paddleBySocket[socketId])
 			delete room.paddleBySocket[socketId];
-		}
 		
 		if (room.players.length === 0)
-		{
 			delete rooms[playerRoom];
-		}
 	}
 }
 
@@ -107,11 +103,11 @@ export function getNextRoomName(): string {
 }
 
 // Helper: vérifier si un utilisateur (par socketId) est en jeu
-export function isUserInGame(socketId: string): boolean {
+export function isUserInGame(socketId: string): boolean
+{
   const playerRoom = getPlayerRoom(socketId);
-  if (!playerRoom || !rooms[playerRoom]) {
+  if (!playerRoom || !rooms[playerRoom])
     return false;
-  }
   
   const room = rooms[playerRoom];
   // L'utilisateur est en jeu s'il est dans une room avec au moins 2 joueurs
@@ -120,22 +116,25 @@ export function isUserInGame(socketId: string): boolean {
 }
 
 // Helper: vérifier si un utilisateur (par username) est en jeu
-export function isUsernameInGame(username: string): boolean {
-  for (const roomName in rooms) {
+export function isUsernameInGame(username: string): boolean
+{
+  for (const roomName in rooms)
+{
     const room = rooms[roomName];
-    if (room.playerUsernames) {
+    if (room.playerUsernames)
+	{
       // Vérifier si ce username est dans cette room et si le jeu a commencé
       const usernameInRoom = Object.values(room.playerUsernames).includes(username);
-      if (usernameInRoom && room.players.length >= 2 && !!room.pongGame) {
+      if (usernameInRoom && room.players.length >= 2 && !!room.pongGame)
         return true;
-      }
     }
   }
   return false;
 }
 
 // Helper: créer une nouvelle room avec un nom unique
-export function createRoom(maxPlayers: number, roomPrefix: string = 'room'): string {
+export function createRoom(maxPlayers: number, roomPrefix: string = 'room'): string
+{
   let roomName: string;
   do {
     roomName = `${roomPrefix}-${getNextRoomName()}`;
