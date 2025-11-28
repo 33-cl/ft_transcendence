@@ -11,6 +11,7 @@ import { logoutRoute } from './auth/logout.js';
 import { enable2FARoute } from './auth/2fa/enable.js';
 import { verify2FARoute } from './auth/2fa/verify.js';
 import { disable2FARoute } from './auth/2fa/disable.js';
+import { verifyOAuth2FARoute } from './auth/2fa/verify-oauth.js';
 
 // Import des routes de profil
 import { profileRoute } from './profile/update.js';
@@ -70,6 +71,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/2fa/enable', enable2FARoute);
   fastify.post('/auth/2fa/verify', verify2FARoute);
   fastify.post('/auth/2fa/disable', disable2FARoute);
+  fastify.post('/auth/2fa/verify-oauth', verifyOAuth2FARoute);
 
   // ==================== Routes de profil ====================
   fastify.put('/auth/profile', (request, reply) => profileRoute(request, reply, fastify));

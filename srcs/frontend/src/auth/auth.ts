@@ -228,16 +228,154 @@ document.addEventListener('componentsReady', () => {
 
         const authWindow = window.open('https://localhost:8080/auth/google', '_blank', 'width=500,height=600');
         
+        let messageReceived = false;
+        
+        // Écouter les messages de la fenêtre OAuth (2FA requis ou erreur)
+        const messageHandler = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            
+            messageReceived = true;
+            
+            if (event.data.type === 'oauth-2fa-required') {
+                // L'utilisateur a la 2FA activée, on demande le code
+                const tempToken = event.data.tempToken;
+                
+                // Afficher le formulaire 2FA dans la SPA (pas de nouvelle page)
+                showOAuth2FAPrompt(tempToken);
+                
+                // Cleanup
+                window.removeEventListener('message', messageHandler);
+            } else if (event.data.type === 'oauth-error') {
+                // Erreur lors de l'OAuth
+                const msg = document.getElementById('signUpMsg') || document.getElementById('signInMsg');
+                if (msg) {
+                    msg.textContent = event.data.error || 'Authentication error. Please try again.';
+                    msg.style.color = 'red';
+                }
+                window.removeEventListener('message', messageHandler);
+            }
+        };
+        
+        window.addEventListener('message', messageHandler);
+        
         const checkInterval = setInterval(() => {
             if (authWindow?.closed) {
                 clearInterval(checkInterval);
-                window.location.reload();
+                window.removeEventListener('message', messageHandler);
+                
+                // Si un message 2FA a été reçu, ne pas recharger (on attend la saisie du code)
+                // Sinon, recharger pour afficher l'état authentifié
+                if (!messageReceived) {
+                    setTimeout(() => window.location.reload(), 500);
+                }
             }
         }, 500);
     });
 });
 
 // Les handlers 2FA ne sont plus nécessaires car intégrés dans le signIn
+
+/**
+ * Affiche un prompt pour entrer le code 2FA après OAuth
+ */
+function showOAuth2FAPrompt(tempToken: string) {
+    const msg = document.getElementById('signUpMsg') || document.getElementById('signInMsg');
+    if (!msg) return;
+
+    // Créer un formulaire 2FA dynamique
+    const container = msg.parentElement;
+    if (!container) return;
+
+    // Clear existing message
+    msg.textContent = '';
+    msg.style.color = '#667eea';
+
+    // Créer le formulaire
+    const twoFADiv = document.createElement('div');
+    twoFADiv.id = 'oauth-2fa-container';
+    twoFADiv.innerHTML = `
+        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #667eea;">
+            <h3 style="margin-top: 0; color: #667eea;">🔐 Two-Factor Authentication</h3>
+            <p style="margin: 10px 0; color: #666;">A verification code has been sent to your email.</p>
+            <input type="text" id="oauth-2fa-code" placeholder="Enter 6-digit code" maxlength="6" 
+                   style="width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; text-align: center; letter-spacing: 0.5em;">
+            <button id="oauth-2fa-submit" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px;">
+                Verify Code
+            </button>
+            <div id="oauth-2fa-error" style="color: red; margin-top: 10px; display: none;"></div>
+        </div>
+    `;
+
+    // Insérer après le message
+    msg.after(twoFADiv);
+
+    // Focus sur l'input
+    const codeInput = document.getElementById('oauth-2fa-code') as HTMLInputElement;
+    const submitBtn = document.getElementById('oauth-2fa-submit') as HTMLButtonElement;
+    const errorDiv = document.getElementById('oauth-2fa-error') as HTMLDivElement;
+
+    if (codeInput) {
+        codeInput.focus();
+        
+        // Submit on Enter
+        codeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitBtn?.click();
+            }
+        });
+    }
+
+    // Handler pour la vérification
+    const verifyCode = async () => {
+        const code = codeInput?.value.trim();
+        
+        if (!code || code.length !== 6) {
+            if (errorDiv) {
+                errorDiv.textContent = 'Please enter a 6-digit code';
+                errorDiv.style.display = 'block';
+            }
+            return;
+        }
+
+        // Désactiver le bouton pendant la requête
+        if (submitBtn) submitBtn.disabled = true;
+        if (errorDiv) errorDiv.style.display = 'none';
+
+        try {
+            const response = await fetch('https://localhost:8080/auth/2fa/verify-oauth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ tempToken, code })
+            });
+
+            if (response.ok) {
+                // Success! Reload to show authenticated state
+                msg.textContent = '✅ Authentication successful!';
+                msg.style.color = 'green';
+                twoFADiv.remove();
+                
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                const data = await response.json();
+                if (errorDiv) {
+                    errorDiv.textContent = data.error || 'Invalid verification code';
+                    errorDiv.style.display = 'block';
+                }
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error verifying OAuth 2FA code:', error);
+            if (errorDiv) {
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    };
+
+    submitBtn?.addEventListener('click', verifyCode);
+}
 
 // Expose refreshUserStats globally for post-game stats refresh
 (window as any).refreshUserStats = refreshUserStats;

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { sanitizeUsername } from '../security.js';
 import { isValidUsername } from '../services/validation.service.js';
 import { getJwtExpiry } from '../services/auth.service.js';
+import { isTwoFactorEnabled, generateTwoFactorCode, storeTwoFactorCode, sendTwoFactorEmail } from '../services/twoFactor.service.js';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set');
@@ -126,6 +127,72 @@ export default async function oauthRoutes(app: FastifyInstance) {
                 WHERE id = ?`
             ).run(googleUser.name, googleUser.picture, user.id);
             app.log.info({ userId: user.id }, '✅ Utilisateur Google existant reconnecté');
+        }
+
+        // 🔒 SÉCURITÉ : Vérification 2FA si activée pour l'utilisateur
+        // IMPORTANT : Même pour Google OAuth, on vérifie la 2FA pour éviter le bypass
+        const has2FA = isTwoFactorEnabled(user.id);
+        
+        if (has2FA) {
+            // L'utilisateur a activé la 2FA → envoyer un code au lieu de connecter directement
+            try {
+                const twoFactorCode = generateTwoFactorCode();
+                storeTwoFactorCode(user.id, twoFactorCode, 5);
+                await sendTwoFactorEmail(user.email, user.username, twoFactorCode);
+
+                app.log.info({ userId: user.id }, '🔑 2FA activée : code envoyé pour vérification OAuth');
+
+                // Stocker temporairement l'ID utilisateur dans une session
+                // Pour permettre la vérification 2FA après
+                const tempToken = jwt.sign(
+                    { userId: user.id, pending2FA: true },
+                    JWT_SECRET,
+                    { expiresIn: '10m' } // Token temporaire de 10 minutes
+                );
+
+                // 🎯 RESPECT DE LA SPA : Fermer la popup et communiquer avec la fenêtre parente
+                // La SPA va afficher le formulaire 2FA, pas le backend
+                return reply.type('text/html').send(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Two-Factor Authentication Required</title>
+                    </head>
+                    <body>
+                        <script>
+                            // Envoyer le message à la fenêtre parente (SPA)
+                            if (window.opener) {
+                                window.opener.postMessage({
+                                    type: 'oauth-2fa-required',
+                                    tempToken: '${tempToken}'
+                                }, window.location.origin);
+                            }
+                            // Fermer immédiatement la popup
+                            window.close();
+                        </script>
+                    </body>
+                    </html>
+                `);
+            } catch (error) {
+                app.log.error(error, '❌ Erreur lors de l\'envoi du code 2FA OAuth');
+                return reply.type('text/html').send(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head><title>Error</title></head>
+                    <body>
+                        <script>
+                            if (window.opener) {
+                                window.opener.postMessage({
+                                    type: 'oauth-error',
+                                    error: 'Failed to send verification code'
+                                }, window.location.origin);
+                            }
+                            window.close();
+                        </script>
+                    </body>
+                    </html>
+                `);
+            }
         }
 
         // Generate JWT token like normal login
