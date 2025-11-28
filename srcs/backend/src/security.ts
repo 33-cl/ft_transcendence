@@ -50,10 +50,10 @@ export function validateLength(input: string, minLength: number, maxLength: numb
  */
 export const RATE_LIMITS = {
     // 🔴 CRITICAL - Very strict limits for security-sensitive actions
-    LOGIN: { max: 5, window: 60000 },              // 5 attempts per minute - brute-force protection
-    REGISTER: { max: 3, window: 60000 },           // 3 accounts per minute - spam prevention
-    TWO_FA: { max: 3, window: 60000 },             // 3 attempts per minute - 2FA verification
-    PASSWORD_RESET: { max: 3, window: 60000 },     // 3 resets per minute - abuse prevention
+    LOGIN: { max: 10, window: 60000 },              // 5 attempts per minute - brute-force protection
+    REGISTER: { max: 10, window: 60000 },           // 3 accounts per minute - spam prevention
+    TWO_FA: { max: 10, window: 60000 },            // 10 attempts per minute - 2FA verification (allows typos)
+    PASSWORD_RESET: { max: 10, window: 60000 },     // 3 resets per minute - abuse prevention
     
     // 🟡 MODERATE - Balanced limits for social actions
     FRIEND_REQUEST: { max: 10, window: 60000 },    // 10 requests per minute - spam prevention

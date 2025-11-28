@@ -15,7 +15,7 @@ interface VerifyBody {
 }
 
 export async function verify2FARoute(request: FastifyRequest, reply: FastifyReply) {
-  // Rate limiting: 3 tentatives par minute
+  // Rate limiting: 3 tentatives par minute par IP
   if (!checkRateLimit(`2fa-verify-${request.ip}`, RATE_LIMITS.TWO_FA.max, RATE_LIMITS.TWO_FA.window)) {
     return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
   }
@@ -29,6 +29,11 @@ export async function verify2FARoute(request: FastifyRequest, reply: FastifyRepl
   const user = getUserById(session.id);
   if (!user) {
     return reply.status(404).send({ error: 'User not found' });
+  }
+
+  // Rate limiting additionnel par utilisateur
+  if (!checkRateLimit(`2fa-verify-user-${user.id}`, RATE_LIMITS.TWO_FA.max, RATE_LIMITS.TWO_FA.window)) {
+    return reply.status(429).send({ error: 'Too many verification attempts. Please request a new code.' });
   }
 
   // Récupérer le code depuis le body

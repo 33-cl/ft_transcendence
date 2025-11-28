@@ -4,7 +4,7 @@
 
 import nodemailer from 'nodemailer';
 import db from '../db.js';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 
 // Configuration du transporteur d'emails avec Gmail
 // Les credentials doivent être définis dans les variables d'environnement
@@ -34,8 +34,8 @@ export interface TwoFactorCode {
 
 export function generateTwoFactorCode(): string
 {
-  // Genere un nombre entre 100000 et 999999
-  const code = Math.floor(100000 + Math.random() * 900000);
+  // Génère un nombre cryptographiquement sécurisé entre 100000 et 999999
+  const code = randomInt(100000, 1000000);
   return code.toString();
 }
 

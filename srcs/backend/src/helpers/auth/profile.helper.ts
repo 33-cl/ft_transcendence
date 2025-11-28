@@ -10,6 +10,7 @@ import {
   isValidPassword as isValidPasswordService
 } from '../../services/validation.service.js';
 import { hashPassword as hashPasswordService, verifyPassword as verifyPasswordService } from '../../services/auth.service.js';
+import { disableTwoFactor } from '../../services/twoFactor.service.js';
 import db from '../../db.js';
 
 interface ProfileUpdateData {
@@ -135,16 +136,24 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
 {
   const updates: string[] = [];
   const values: any[] = [];
+  
+  // 🔐 SÉCURITÉ CRITIQUE : Désactiver 2FA si l'email change
+  // Si l'utilisateur change son email et qu'il a la 2FA activée, il pourrait se bloquer
+  // car les codes 2FA seront envoyés au nouvel email (potentiellement invalide)
+  let emailChanged = false;
+  if (data.email)
+  {
+    updates.push('email = ?');
+    values.push(data.email);
+    emailChanged = true;
+  }
+  
   if (data.username)
   {
     updates.push('username = ?');
     values.push(data.username);
   }
-  if (data.email)
-  {
-    updates.push('email = ?');
-    values.push(data.email);
-  }
+  
   if (data.newPassword)
   {
     const passwordHash = hashPasswordService(data.newPassword);
@@ -161,6 +170,18 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
   const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
   values.push(userId);
   db.prepare(query).run(...values);
+  
+  // Si l'email a changé, désactiver la 2FA pour éviter que l'utilisateur se bloque
+  if (emailChanged) {
+    try {
+      disableTwoFactor(userId);
+      console.log(`⚠️ 2FA automatically disabled for user ${userId} after email change`);
+    } catch (error) {
+      console.error('Error disabling 2FA after email change:', error);
+      // On continue quand même, l'update du profil a réussi
+    }
+  }
+  
   return true;
 }
 

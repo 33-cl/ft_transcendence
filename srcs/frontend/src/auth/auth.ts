@@ -185,6 +185,22 @@ document.addEventListener('componentsReady', () => {
 
     // Ajouter event listeners pour la touche Entrée sur les champs SignIn
     addEnterKeyListeners(['username', 'password'], () => btnIn.click());
+    
+    // Réinitialiser le champ 2FA si l'utilisateur modifie username ou password
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const twoFactorSection = document.getElementById('twoFactorSection');
+    const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
+    
+    const reset2FAField = () => {
+        if (twoFactorSection && twoFactorInput) {
+            twoFactorSection.style.display = 'none';
+            twoFactorInput.value = '';
+        }
+    };
+    
+    usernameInput?.addEventListener('input', reset2FAField);
+    passwordInput?.addEventListener('input', reset2FAField);
 
     // Expose simple logout helper with security guard
     if (!window.logout) {

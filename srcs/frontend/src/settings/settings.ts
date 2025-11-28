@@ -8,7 +8,7 @@ async function updateProfile(profileData: {
     email?: string;
     currentPassword?: string;
     newPassword?: string;
-}): Promise<{ ok: boolean; error?: string; message?: string }> {
+}): Promise<{ ok: boolean; error?: string; message?: string; twoFactorDisabled?: boolean }> {
     try {
         const response = await fetch('/auth/profile', {
             method: 'PUT',
@@ -25,7 +25,16 @@ async function updateProfile(profileData: {
             return { ok: false, error: data.error || 'Update failed' };
         }
 
-        return { ok: true, message: data.message };
+        // Si la 2FA a été désactivée, mettre à jour l'état local
+        if (data.updated?.twoFactorDisabled && window.currentUser) {
+            window.currentUser.twoFactorEnabled = false;
+        }
+
+        return { 
+            ok: true, 
+            message: data.message,
+            twoFactorDisabled: data.updated?.twoFactorDisabled 
+        };
     } catch (error) {
         console.error('Profile update error:', error);
         return { ok: false, error: 'Network error' };
@@ -506,7 +515,7 @@ async function saveChangedFields(): Promise<void> {
         }
 
         // Sauvegarder le profil si des changements existent
-        let profileSaveResult: { ok: boolean; error?: string; message?: string } = { ok: true };
+        let profileSaveResult: { ok: boolean; error?: string; message?: string; twoFactorDisabled?: boolean } = { ok: true };
         if (hasUsernameChanged || hasEmailChanged) {
             profileSaveResult = await updateProfile(profileData);
             if (!profileSaveResult.ok) {
@@ -528,11 +537,25 @@ async function saveChangedFields(): Promise<void> {
         }
 
         if (successMessages.length > 0) {
-            showMessage(`${successMessages.join(' and ')} updated successfully`);
+            // Message personnalisé si 2FA désactivée
+            let message = `${successMessages.join(' and ')} updated successfully`;
+            if (profileSaveResult.message) {
+                message = profileSaveResult.message;
+            }
+            showMessage(message);
             
             // Mettre à jour l'utilisateur global si l'avatar a été sauvegardé
             if (avatarSaveResult.avatar_url && window.currentUser) {
                 window.currentUser.avatar_url = avatarSaveResult.avatar_url;
+            }
+            
+            // Si la 2FA a été désactivée, mettre à jour le bouton
+            if (profileSaveResult.twoFactorDisabled) {
+                const toggle2FABtn = document.getElementById('toggle-2fa');
+                if (toggle2FABtn) {
+                    toggle2FABtn.textContent = '[ENABLE]';
+                    toggle2FABtn.setAttribute('data-enabled', 'false');
+                }
             }
             
             // Refresh les données utilisateur
