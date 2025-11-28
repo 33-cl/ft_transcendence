@@ -7,6 +7,11 @@ import { loginRoute } from './auth/login.js';
 import { meRoute } from './auth/me.js';
 import { logoutRoute } from './auth/logout.js';
 
+// Import des routes 2FA
+import { enable2FARoute } from './auth/2fa/enable.js';
+import { verify2FARoute } from './auth/2fa/verify.js';
+import { disable2FARoute } from './auth/2fa/disable.js';
+
 // Import des routes de profil
 import { profileRoute } from './profile/update.js';
 
@@ -60,6 +65,11 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/login', (request, reply) => loginRoute(request, reply, fastify));
   fastify.get('/auth/me', (request, reply) => meRoute(request, reply, JWT_SECRET));
   fastify.post('/auth/logout', (request, reply) => logoutRoute(request, reply, fastify));
+
+  // ==================== Routes 2FA ====================
+  fastify.post('/auth/2fa/enable', enable2FARoute);
+  fastify.post('/auth/2fa/verify', verify2FARoute);
+  fastify.post('/auth/2fa/disable', disable2FARoute);
 
   // ==================== Routes de profil ====================
   fastify.put('/auth/profile', (request, reply) => profileRoute(request, reply, fastify));

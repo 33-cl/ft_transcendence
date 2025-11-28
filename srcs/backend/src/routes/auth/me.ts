@@ -29,8 +29,14 @@ export async function meRoute(request: FastifyRequest, reply: FastifyReply, jwtS
     
     // Recup user
     const user = db.prepare(
-      'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?'
-    ).get(decodedToken.userId);
+      'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider, two_factor_enabled FROM users WHERE id = ?'
+    ).get(decodedToken.userId) as any;
+    
+    // Convertir two_factor_enabled en boolean pour le frontend
+    if (user) {
+      user.twoFactorEnabled = user.two_factor_enabled === 1;
+      delete user.two_factor_enabled; // Supprimer l'ancienne propriété snake_case
+    }
     
     if (!user)
       return reply.code(401).send({ error: 'Utilisateur non trouvé.' });

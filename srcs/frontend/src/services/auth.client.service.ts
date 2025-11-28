@@ -18,6 +18,8 @@ export interface AuthResponse {
     user?: any;
     error?: string;
     code?: string;
+    requires2FA?: boolean;
+    message?: string;
 }
 
 /**
@@ -88,23 +90,39 @@ export async function registerUser(
  * Appelle l'API /auth/login
  * @param login - Email ou username
  * @param password - Mot de passe
- * @returns AuthResponse avec success: true si OK, sinon error
+ * @param twoFactorCode - Code 2FA optionnel
+ * @returns AuthResponse avec success: true si OK, sinon error (ou requires2FA: true si 2FA nécessaire)
  */
 export async function loginUser(
     login: string, 
-    password: string
+    password: string,
+    twoFactorCode?: string
 ): Promise<AuthResponse> {
     try {
+        const body: any = { login, password };
+        if (twoFactorCode) {
+            body.twoFactorCode = twoFactorCode;
+        }
+        
         const res = await fetch('/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ login, password })
+            body: JSON.stringify(body)
         });
 
         const data = await res.json().catch(() => ({} as any));
 
         if (res.ok) {
+            // Vérifier si 2FA est nécessaire
+            if (data?.requires2FA) {
+                return {
+                    success: false,
+                    requires2FA: true,
+                    message: data?.message || 'Two-Factor Authentication required'
+                };
+            }
+            
             const user = data?.user || null;
 
             // Stocker l'utilisateur globalement

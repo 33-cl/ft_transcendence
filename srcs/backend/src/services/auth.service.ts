@@ -27,6 +27,7 @@ export interface UserData {
   created_at: string;
   updated_at: string;
   provider?: string;
+  two_factor_enabled?: number; // 0 = disabled, 1 = enabled (SQLite boolean)
 }
 
 export interface CreateUserInput {
@@ -104,7 +105,7 @@ export function createUser(input: CreateUserInput): UserData {
   
   // Récupérer l'utilisateur créé
   const created = db.prepare(
-    'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?'
+    'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider, two_factor_enabled FROM users WHERE id = ?'
   ).get(info.lastInsertRowid) as UserData;
   
   return created;
@@ -129,7 +130,7 @@ export function getUserByUsername(username: string): (UserData & { password_hash
  */
 export function getUserById(userId: number): UserData | undefined {
   return db.prepare(
-    'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider FROM users WHERE id = ?'
+    'SELECT id, email, username, avatar_url, wins, losses, created_at, updated_at, provider, two_factor_enabled FROM users WHERE id = ?'
   ).get(userId) as UserData | undefined;
 }
 

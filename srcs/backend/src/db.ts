@@ -109,6 +109,19 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_tm_tournament_id ON tournament_matches(tournament_id);
+
+  -- Table pour les codes de verification 2FA par email
+  CREATE TABLE IF NOT EXISTS two_factor_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    code TEXT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_2fa_user_id ON two_factor_codes(user_id);
+  CREATE INDEX IF NOT EXISTS idx_2fa_expires_at ON two_factor_codes(expires_at);
 `);
 
 // Migration: Add google_id and provider columns if they don't exist
@@ -216,6 +229,22 @@ try {
   }
 } catch (err) {
   console.error('Creator_id migration error:', err);
+}
+
+// Migration: Add two_factor_enabled column to users table
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>;
+  //verifie si la colonne existe deja
+  const hasTwoFactorEnabled = tableInfo.some(col => col.name === 'two_factor_enabled');
+  
+  if (!hasTwoFactorEnabled)
+  {
+    console.log('📝 Migration: Adding two_factor_enabled column to users table');
+    db.exec('ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0');
+    console.log('✅ Migration completed: two_factor_enabled column added');
+  }
+} catch (error) {
+  console.error('❌ Migration failed for users.two_factor_enabled:', error);
 }
 
 export default db;

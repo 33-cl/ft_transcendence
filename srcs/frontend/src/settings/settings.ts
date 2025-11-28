@@ -49,42 +49,152 @@ function showMessage(message: string, isError: boolean = false): void {
     }
 }
 
+// Fonction pour afficher/masquer le champ de code 2FA
+function show2FACodeField(show: boolean): void {
+    const codeRow = document.getElementById('twofa-code-row');
+    const codeInput = document.getElementById('twofa-code-input') as HTMLInputElement;
+    
+    if (codeRow) {
+        codeRow.style.display = show ? 'flex' : 'none';
+    }
+    
+    if (codeInput && show) {
+        codeInput.value = '';
+        codeInput.focus();
+    }
+}
+
+// Fonction pour afficher un message 2FA
+function show2FAMessage(message: string, isError: boolean = false): void {
+    const msg = document.getElementById('twofa-message');
+    if (!msg) return;
+    
+    msg.textContent = message;
+    msg.style.color = isError ? '#ef4444' : '#22c55e';
+    msg.style.display = 'block';
+    
+    setTimeout(() => {
+        msg.style.display = 'none';
+    }, 5000);
+}
+
 // Fonction pour activer/désactiver la 2FA
 async function toggle2FA(): Promise<void> {
     const is2FAEnabled = window.currentUser?.twoFactorEnabled || false;
     
+    if (is2FAEnabled) {
+        // Désactiver la 2FA (pas besoin de code)
+        try {
+            const response = await fetch('/auth/2fa/disable', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                show2FAMessage(data.error || '2FA disable failed', true);
+                return;
+            }
+
+            // Mettre à jour l'état dans window.currentUser
+            if (window.currentUser) {
+                window.currentUser.twoFactorEnabled = false;
+            }
+
+            // Mettre à jour le bouton
+            const toggle2FABtn = document.getElementById('toggle-2fa');
+            if (toggle2FABtn) {
+                toggle2FABtn.textContent = '[ENABLE]';
+                toggle2FABtn.setAttribute('data-enabled', 'false');
+            }
+
+            show2FAMessage('2FA disabled successfully');
+            
+        } catch (error) {
+            console.error('2FA disable error:', error);
+            show2FAMessage('Network error occurred', true);
+        }
+    } else {
+        // Activer la 2FA (nécessite un code de vérification)
+        try {
+            // Étape 1: Demander l'envoi du code
+            const response = await fetch('/auth/2fa/enable', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                show2FAMessage(data.error || '2FA enable failed', true);
+                return;
+            }
+
+            // Afficher le champ de code
+            show2FACodeField(true);
+            show2FAMessage(data.message || 'Verification code sent to your email');
+            
+        } catch (error) {
+            console.error('2FA enable error:', error);
+            show2FAMessage('Network error occurred', true);
+        }
+    }
+}
+
+// Fonction pour vérifier le code 2FA
+async function verify2FACode(): Promise<void> {
+    const codeInput = document.getElementById('twofa-code-input') as HTMLInputElement;
+    const code = codeInput?.value.trim();
+    
+    if (!code || code.length !== 6) {
+        show2FAMessage('Please enter a valid 6-digit code', true);
+        return;
+    }
+    
     try {
-        const endpoint = is2FAEnabled ? '/auth/2fa/disable' : '/auth/2fa/enable';
-        const response = await fetch(endpoint, {
+        const verifyResponse = await fetch('/auth/2fa/verify', {
             method: 'POST',
-            credentials: 'include'
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ code })
         });
 
-        const data = await response.json();
+        const verifyData = await verifyResponse.json();
         
-        if (!response.ok) {
-            showMessage(data.error || '2FA toggle failed', true);
+        if (!verifyResponse.ok) {
+            show2FAMessage(verifyData.error || 'Invalid verification code', true);
             return;
         }
 
         // Mettre à jour l'état dans window.currentUser
         if (window.currentUser) {
-            window.currentUser.twoFactorEnabled = !is2FAEnabled;
+            window.currentUser.twoFactorEnabled = true;
         }
 
         // Mettre à jour le bouton
         const toggle2FABtn = document.getElementById('toggle-2fa');
         if (toggle2FABtn) {
-            toggle2FABtn.textContent = `[${!is2FAEnabled ? 'DISABLE' : 'ENABLE'}]`;
-            toggle2FABtn.setAttribute('data-enabled', String(!is2FAEnabled));
+            toggle2FABtn.textContent = '[DISABLE]';
+            toggle2FABtn.setAttribute('data-enabled', 'true');
         }
 
-        showMessage(data.message || `2FA ${!is2FAEnabled ? 'enabled' : 'disabled'} successfully`);
+        // Masquer le champ de code
+        show2FACodeField(false);
+        show2FAMessage('2FA enabled successfully!');
         
     } catch (error) {
-        console.error('2FA toggle error:', error);
-        showMessage('Network error occurred', true);
+        console.error('2FA verify error:', error);
+        show2FAMessage('Network error occurred', true);
     }
+}
+
+// Fonction pour annuler l'activation 2FA
+function cancel2FAActivation(): void {
+    show2FACodeField(false);
+    show2FAMessage('2FA activation cancelled', true);
 }
 
 // Reset du champ password
@@ -453,6 +563,8 @@ export function initSettingsHandlers(): void {
 
         const saveBtn = document.getElementById('saveBtn');
         const toggle2FABtn = document.getElementById('toggle-2fa');
+        const verify2FABtn = document.getElementById('verify-2fa-code');
+        const cancel2FABtn = document.getElementById('cancel-2fa-code');
         // const goToMainBtn = document.getElementById('goToMain');
 
         if (saveBtn) {
@@ -464,6 +576,28 @@ export function initSettingsHandlers(): void {
         if (toggle2FABtn) {
             toggle2FABtn.addEventListener('click', async () => {
                 await toggle2FA();
+            });
+        }
+
+        if (verify2FABtn) {
+            verify2FABtn.addEventListener('click', async () => {
+                await verify2FACode();
+            });
+        }
+
+        if (cancel2FABtn) {
+            cancel2FABtn.addEventListener('click', () => {
+                cancel2FAActivation();
+            });
+        }
+
+        // Support de la touche Enter pour le champ de code 2FA
+        const codeInput = document.getElementById('twofa-code-input');
+        if (codeInput) {
+            codeInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    await verify2FACode();
+                }
             });
         }
 

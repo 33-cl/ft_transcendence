@@ -1,5 +1,5 @@
 @layer components {
-    #signIn input, #signUp input {
+    #signIn input, #signUp input, #twoFactor input {
         @apply p-2 w-[300px] text-lg;                /* Padding, width and text size */
         @apply border-2 border-white rounded-md;     /* Borders and corners */
         @apply bg-black text-white;                /* Colors */

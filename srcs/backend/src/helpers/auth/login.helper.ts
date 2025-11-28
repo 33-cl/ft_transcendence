@@ -21,6 +21,7 @@ interface DbUser {
   losses: number;
   created_at: string;
   updated_at: string;
+  two_factor_enabled: number;
 }
 
 interface SafeUser {
@@ -32,6 +33,7 @@ interface SafeUser {
   losses: number;
   created_at: string;
   updated_at: string;
+  twoFactorEnabled: boolean;
 }
 
 // verifyPassword is imported from services/auth.service.js to avoid duplication
@@ -90,7 +92,8 @@ export function createSafeUser(user: DbUser): SafeUser
     wins: user.wins,
     losses: user.losses,
     created_at: user.created_at,
-    updated_at: user.updated_at
+    updated_at: user.updated_at,
+    twoFactorEnabled: user.two_factor_enabled === 1
   };
 }
 

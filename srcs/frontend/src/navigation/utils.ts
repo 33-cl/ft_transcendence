@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -17,6 +17,7 @@ const components = {
     game4: {id: 'game4', html: game4HTML},
     signIn: {id: 'signIn', html: signInHTML},
     signUp: {id: 'signUp', html: signUpHTML},
+    twoFactor: {id: 'twoFactor', html: twoFactorHTML},
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
     spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
@@ -227,6 +228,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
         // show('goToMain');
+    }
+    else if (pageName === 'twoFactor')
+    {
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+        await show('twoFactor');
     }
     else if (pageName === 'game') {
         stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket

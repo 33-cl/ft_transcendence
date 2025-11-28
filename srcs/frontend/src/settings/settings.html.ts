@@ -32,11 +32,20 @@ export function settingsHTML() {
                 [${is2FAEnabled ? 'DISABLE' : 'ENABLE'}]
             </button>
         </div>
+        <div id="twofa-code-row" class="settings-row" style="display: none;">
+            <span class="settings-label">VERIFICATION CODE</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="twofa-code-input" placeholder="6-digit code" maxlength="6" pattern="[0-9]{6}">
+                <button id="verify-2fa-code" class="settings-verify-btn">[VERIFY]</button>
+                <button id="cancel-2fa-code" class="settings-cancel-btn">[CANCEL]</button>
+            </div>
+        </div>
     </div>
     <div id="settings-buttons">
         <button id="goToMain">[BACK]</button>
         <button id="saveBtn">[SAVE]</button>
     </div>
     <div id="settings-message" style="margin-top: 20px; color: #22c55e; display: none;"></div>
+    <div id="twofa-message" style="margin-top: 10px; display: none;"></div>
     `;
 }
