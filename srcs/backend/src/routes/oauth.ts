@@ -79,35 +79,53 @@ export default async function oauthRoutes(app: FastifyInstance) {
    
         app.log.info({ userId: googleUser.id, email: googleUser.email }, 'Utilisateur Google authentifié');
 
+        // 1. Chercher par google_id
         let user = db.prepare(
             'SELECT * FROM users WHERE google_id = ?'
         ).get(googleUser.id) as any;
 
         if (!user) {
+            // 2. Créer un nouveau compte Google
             const baseUsername = parseUsernameFromEmail(googleUser.email);
             let username = baseUsername;
             let counter = 1;
 
             while (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) {
-            const maxBaseLength = 10 - counter.toString().length;
-            username = baseUsername.substring(0, maxBaseLength) + counter;
-            counter++;
+                const maxBaseLength = 10 - counter.toString().length;
+                username = baseUsername.substring(0, maxBaseLength) + counter;
+                counter++;
+            }
+
+            // 🔒 SÉCURITÉ : Si l'email existe déjà, générer un email unique temporaire
+            // Cela évite les conflits et les problèmes de sécurité (account takeover)
+            let email = googleUser.email;
+            const emailExists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+            
+            if (emailExists) {
+                // Email déjà pris → générer un email unique avec le google_id
+                // L'utilisateur pourra le changer dans les settings
+                email = `google_${googleUser.id}@oauth.local`;
+                app.log.warn({ 
+                    originalEmail: googleUser.email, 
+                    generatedEmail: email 
+                }, '⚠️ Email already taken, using generated email. User can update in settings.');
             }
 
             const result = db.prepare(
-            `INSERT INTO users (username, email, display_name, avatar_url, google_id, provider) 
-            VALUES (?, ?, ?, ?, ?, ?)`
-            ).run(username, googleUser.email, googleUser.name, googleUser.picture, googleUser.id, 'google') as any;
+                `INSERT INTO users (username, email, display_name, avatar_url, google_id, provider) 
+                VALUES (?, ?, ?, ?, ?, ?)`
+            ).run(username, email, googleUser.name, googleUser.picture, googleUser.id, 'google') as any;
 
             user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid) as any;
-            app.log.info({ userId: user.id }, 'Nouvel utilisateur créé via Google OAuth');
+            app.log.info({ userId: user.id, emailSet: !!email }, '✨ Nouvel utilisateur créé via Google OAuth');
         } else {
+            // 3. Utilisateur Google existant : mettre à jour les infos
             db.prepare(
-            `UPDATE users 
-            SET display_name = ?, avatar_url = ?, email = ? 
-            WHERE id = ?`
-            ).run(googleUser.name, googleUser.picture, googleUser.email, user.id);
-            app.log.info({ userId: user.id }, 'Utilisateur existant connecté via Google OAuth');
+                `UPDATE users 
+                SET display_name = ?, avatar_url = ?
+                WHERE id = ?`
+            ).run(googleUser.name, googleUser.picture, user.id);
+            app.log.info({ userId: user.id }, '✅ Utilisateur Google existant reconnecté');
         }
 
         // Generate JWT token like normal login

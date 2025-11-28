@@ -32,6 +32,14 @@ export async function enable2FARoute(request: FastifyRequest, reply: FastifyRepl
     return reply.status(400).send({ error: 'No email address associated with this account' });
   }
 
+  // 🔒 SÉCURITÉ : Bloquer la 2FA si email temporaire (Google OAuth avec conflit)
+  if (user.email.endsWith('@oauth.local')) {
+    return reply.status(400).send({ 
+      error: 'Please update your email address before enabling Two-Factor Authentication. Your current email is temporary.',
+      code: 'TEMPORARY_EMAIL'
+    });
+  }
+
   try {
     // Générer un code de vérification
     const code = generateTwoFactorCode();

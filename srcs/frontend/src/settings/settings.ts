@@ -136,7 +136,12 @@ async function toggle2FA(): Promise<void> {
             const data = await response.json();
             
             if (!response.ok) {
-                show2FAMessage(data.error || '2FA enable failed', true);
+                // Message spécial pour email temporaire
+                if (data.code === 'TEMPORARY_EMAIL') {
+                    show2FAMessage('Please update your email address first (Settings → Email). Your current email is temporary.', true);
+                } else {
+                    show2FAMessage(data.error || '2FA enable failed', true);
+                }
                 return;
             }
 
