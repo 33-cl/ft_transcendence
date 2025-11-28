@@ -1,7 +1,6 @@
 export { landingHTML } from '../landing/landing.html.js';
 export { signInHTML } from '../auth/signIn.html.js';
 export { signUpHTML } from '../auth/signUp.html.js';
-export { twoFactorHTML } from '../auth/twoFactor.html.js';
 export { goToMainHTML } from '../navigation/goToMain.html.js';
 export { leaderboardHTML } from '../leaderboard/leaderboard.html.js';
 export { friendListHTML, spectateFreind, initLoadingIcons, destroyLoadingIcons, initializeFriendListEventListeners, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, initializeAddFriendsButton, updateFriendRequestsBadge, fetchInitialFriendStatuses } from '../friends/friendList.html.js';

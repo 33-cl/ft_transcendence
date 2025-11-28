@@ -142,22 +142,29 @@ async function handleSignIn(): Promise<void> {
     // Récupérer les valeurs des inputs
     const login = getInputValue('username');
     const password = getPasswordValue('password');
+    const twoFactorCode = getInputValue('twoFactorCode');
 
     if (!login || !password) {
         showErrorMessage(msg, 'Enter username/email and password.');
         return;
     }
 
-    // Appeler l'API de login
-    const result = await loginUser(login, password);
+    // Appeler l'API de login (avec code 2FA si présent)
+    const result = await loginUser(login, password, twoFactorCode || undefined);
 
     if (result.success) {
         showSuccessMessage(msg, 'Signed in.');
         await load('mainMenu');
     } else if (result.requires2FA) {
-        // 2FA required - store credentials and redirect to 2FA page
-        (window as any).pending2FALogin = { login, password };
-        await load('twoFactor');
+        // 2FA required - afficher le champ de code
+        const twoFactorSection = document.getElementById('twoFactorSection');
+        const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
+        
+        if (twoFactorSection && twoFactorInput) {
+            twoFactorSection.style.display = 'block';
+            twoFactorInput.focus();
+            showSuccessMessage(msg, result.message || 'Code sent to your email');
+        }
     } else {
         // Gérer spécifiquement l'erreur de connexion multiple
         if (result.code === 'USER_ALREADY_CONNECTED') {
@@ -214,53 +221,7 @@ document.addEventListener('componentsReady', () => {
     });
 });
 
-// Handler pour la vérification du code 2FA
-document.addEventListener('DOMContentLoaded', () => {
-    document.addEventListener('click', async (e) => {
-        const target = e.target as HTMLElement;
-        
-        // Bouton de vérification du code 2FA
-        if (target.id === 'verifyCodeButton') {
-            const msg = document.getElementById('twoFactorMsg');
-            if (!msg) return;
-
-            const codeInput = document.getElementById('twoFactorCode') as HTMLInputElement;
-            const code = codeInput?.value.trim();
-
-            if (!code || code.length !== 6) {
-                showErrorMessage(msg, 'Please enter a valid 6-digit code.');
-                return;
-            }
-
-            // Récupérer les credentials stockés
-            const pending = (window as any).pending2FALogin;
-            if (!pending || !pending.login || !pending.password) {
-                showErrorMessage(msg, 'Session expired. Please sign in again.');
-                await load('signIn');
-                return;
-            }
-
-            // Appeler l'API de login avec le code 2FA
-            const result = await loginUser(pending.login, pending.password, code);
-
-            if (result.success) {
-                // Nettoyer les credentials stockés
-                delete (window as any).pending2FALogin;
-                showSuccessMessage(msg, 'Verified! Signing in...');
-                await load('mainMenu');
-            } else {
-                showErrorMessage(msg, result.error || 'Invalid code. Please try again.');
-            }
-        }
-
-        // Bouton d'annulation 2FA
-        if (target.id === 'cancel2FABtn') {
-            // Nettoyer les credentials stockés
-            delete (window as any).pending2FALogin;
-            await load('signIn');
-        }
-    });
-});
+// Les handlers 2FA ne sont plus nécessaires car intégrés dans le signIn
 
 // Expose refreshUserStats globally for post-game stats refresh
 (window as any).refreshUserStats = refreshUserStats;
