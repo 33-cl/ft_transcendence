@@ -9,6 +9,60 @@ import { RoomType } from '../../types.js';
 import { getUserByUsername, updateUserStats } from '../../user.js';
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
+import { updateMatchResult } from '../../tournament.js';
+import db from '../../db.js';
+
+// ========================================
+// TOURNAMENT MATCH END
+// ========================================
+
+/**
+ * Enregistre automatiquement le résultat d'un match de tournoi
+ * Appelée quand un match Pong de tournoi se termine
+ */
+async function handleTournamentMatchEnd(
+    room: RoomType,
+    winner: { side: string; score: number },
+    loser: { side: string; score: number },
+    fastify: FastifyInstance
+): Promise<void> {
+    try {
+        // Vérification de sécurité TypeScript
+        if (!room.matchId || !room.tournamentId) {
+            fastify.log.error('Tournament match end called without matchId or tournamentId');
+            return;
+        }
+
+        // 1. Récupérer les infos du match
+        const match = db.prepare(`
+            SELECT player1_id, player2_id FROM tournament_matches 
+            WHERE id = ? AND tournament_id = ?
+        `).get(room.matchId, room.tournamentId) as any;
+
+        if (!match) {
+            fastify.log.error(`Tournament match not found: ${room.matchId}`);
+            return;
+        }
+
+        // 2. Déterminer le gagnant (participant_id) en fonction du paddle side
+        const { winnerSocketId } = findSocketIdsForWinnerAndLoser(room, winner, loser);
+        if (!winnerSocketId || !room.paddleBySocket) {
+            fastify.log.error('Could not determine winner socket');
+            return;
+        }
+
+        // 3. Mapper le paddle side vers le participant_id
+        const winnerPaddle = room.paddleBySocket[winnerSocketId];
+        const winnerParticipantId = winnerPaddle === 'LEFT' ? match.player1_id : match.player2_id;
+
+        // 4. Enregistrer le résultat via la fonction existante
+        updateMatchResult(room.matchId, winnerParticipantId);
+
+        fastify.log.info(`✅ Tournament match ${room.matchId} result recorded automatically. Winner: participant ${winnerParticipantId}`);
+    } catch (error) {
+        fastify.log.error(`Error recording tournament match result: ${error}`);
+    }
+}
 
 // ========================================
 // LOCAL / AI GAME END
@@ -192,20 +246,26 @@ export function notifyFriendsGameEnded(room: RoomType, fastify: FastifyInstance)
  * Point d'entrée principal pour la gestion de fin de partie
  * Dirige vers le bon handler selon le type de jeu (local/online)
  */
-export function handleGameEnd(
+export async function handleGameEnd(
     roomName: string,
     room: RoomType,
     winner: { side: string; score: number },
     loser: { side: string; score: number },
     fastify: FastifyInstance,
     io: Server
-): void
+): Promise<void>
 {
     // Jeux locaux/IA : pas de stats
     if (room.isLocalGame)
     {
         handleLocalGameEnd(room, roomName, winner, loser, io);
         return;
+    }
+    
+    // TOURNAMENT MATCH: Enregistrer automatiquement le résultat
+    if (room.tournamentId && room.matchId) {
+        await handleTournamentMatchEnd(room, winner, loser, fastify);
+        // Continue pour notifier les joueurs normalement
     }
     
     // Jeux online : validation des données

@@ -470,6 +470,9 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+
+
+    
     // POST /tournaments/:id/matches/:matchId/play - Créer une room Pong pour jouer un match de tournoi
     fastify.post('/tournaments/:id/matches/:matchId/play', async (request: FastifyRequest<{ Params: { id: string, matchId: string } }>, reply: FastifyReply) => {
         try {
@@ -605,17 +608,18 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+
+
+    
     // DELETE /tournaments/:id - Supprimer un tournoi
     fastify.delete('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         try {
             const tournamentId = request.params.id;
 
-            // SECURITY: Validation de l'utilisateur
+            // SECURITY: Authentification de l'utilisateur
             const token = getJwtFromRequest(request);
-            if (!token) {
+            if (!token)
                 return reply.status(401).send({ error: 'Unauthorized' });
-            }
-
             let userId: number;
             try {
                 const decoded = jwt.verify(token, JWT_SECRET) as any;
