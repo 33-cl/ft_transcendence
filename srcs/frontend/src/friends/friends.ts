@@ -342,6 +342,9 @@ export function startFriendListRealtimeUpdates(): void {
 
     window.socket.on('friendStatusChanged', (data: { username: string; status: string; timestamp: number }) => {
         updateFriendStatus(data.username, data.status);
+        
+        // 🎯 Mettre à jour le menu contextuel si ouvert pour cet utilisateur
+        updateContextMenuForUser(data.username, data.status);
     });
 
     window.socket.on('friendAdded', (_data: { friend: { id: number; username: string }; timestamp: number }) => {
@@ -441,6 +444,42 @@ function updateFriendStatus(username: string, status: string): void {
             friendNameElement.insertAdjacentHTML('beforeend', miniPongHTML);
         } else if (!shouldShowAnimation && currentAnimation) {
             currentAnimation.remove();
+        }
+    }
+}
+
+/**
+ * Met à jour le menu contextuel si ouvert pour un utilisateur dont le statut change
+ * Si l'utilisateur n'est plus en jeu, on retire le bouton Spectate
+ */
+function updateContextMenuForUser(username: string, status: string): void {
+    const selectedUser = (window as any).selectedContextUser;
+    
+    // Vérifier si le menu contextuel est ouvert pour cet utilisateur
+    if (!selectedUser || selectedUser.username !== username) {
+        return;
+    }
+    
+    const menu = document.getElementById('contextMenu');
+    if (!menu || !menu.innerHTML.trim()) {
+        return; // Menu pas affiché
+    }
+    
+    const spectateBtn = document.getElementById('spectateBtn');
+    const isInGame = status === 'in-game';
+    
+    // Mettre à jour l'état stocké
+    selectedUser.isInGame = isInGame;
+    (window as any).contextMenuIsInGame = isInGame;
+    
+    if (!isInGame && spectateBtn) {
+        // L'ami n'est plus en game → retirer le bouton Spectate
+        spectateBtn.remove();
+    } else if (isInGame && !spectateBtn) {
+        // L'ami est maintenant en game → ajouter le bouton Spectate
+        const profileBtn = document.getElementById('profileBtn');
+        if (profileBtn) {
+            profileBtn.insertAdjacentHTML('afterend', '<li id="spectateBtn">Spectate</li>');
         }
     }
 }
