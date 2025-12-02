@@ -28,16 +28,11 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">2 Factor Auth</span>
-            <button id="toggle-2fa" class="settings-2fa-btn" data-enabled="${is2FAEnabled}">
-                [${is2FAEnabled ? 'DISABLE' : 'ENABLE'}]
-            </button>
-        </div>
-        <div id="twofa-code-row" class="settings-row" style="display: none;">
-            <span class="settings-label">VERIFICATION CODE</span>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="text" id="twofa-code-input" placeholder="6-digit code" maxlength="6" pattern="[0-9]{6}">
-                <button id="verify-2fa-code" class="settings-verify-btn">[VERIFY]</button>
-                <button id="cancel-2fa-code" class="settings-cancel-btn">[CANCEL]</button>
+            <div id="twofa-container">
+                <button id="toggle-2fa" class="settings-2fa-btn" data-enabled="${is2FAEnabled}">
+                    [${is2FAEnabled ? 'DISABLE' : 'ENABLE'}]
+                </button>
+                <input type="text" id="twofa-code-input" style="display: none;" placeholder="6-digit code" maxlength="6" pattern="[0-9]{6}">
             </div>
         </div>
     </div>
