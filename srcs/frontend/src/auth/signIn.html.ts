@@ -5,7 +5,6 @@ export const signInHTML = /*html*/`
     
     <!-- Champ 2FA (masqué par défaut) -->
     <div id="twoFactorSection" style="display: none;">
-        <p style="margin: 10px 0; color: #22c55e;">A verification code has been sent to your email.</p>
         <input type="text" id="twoFactorCode" placeholder="6-digit code" maxlength="6" pattern="[0-9]{6}">
     </div>
     
