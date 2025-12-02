@@ -11,6 +11,8 @@ import jwt from 'jsonwebtoken';
 import db from '../../../db.js';
 import { verifyTwoFactorCode } from '../../../services/twoFactor.service.js';
 import { getJwtExpiry } from '../../../services/auth.service.js';
+import { checkRateLimit, RATE_LIMITS } from '../../../security.js';
+import { isValid2FACode } from '../../../services/validation.service.js';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set');
@@ -22,12 +24,22 @@ function fmtSqliteDate(d: Date): string {
 }
 
 export async function verifyOAuth2FARoute(request: FastifyRequest, reply: FastifyReply) {
+  // 🔒 SÉCURITÉ : Rate limiting pour éviter le brute-force
+  if (!checkRateLimit(`2fa-oauth-${request.ip}`, RATE_LIMITS.TWO_FA.max, RATE_LIMITS.TWO_FA.window)) {
+    return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
+  }
+
   const body = (request.body as any) || {};
   const tempToken: string = (body.tempToken ?? '').toString().trim();
   const code: string = (body.code ?? '').toString().trim();
 
   if (!tempToken || !code) {
     return reply.status(400).send({ error: 'Missing tempToken or code' });
+  }
+
+  // 🔒 SÉCURITÉ : Validation du format du code 2FA (6 chiffres uniquement)
+  if (!isValid2FACode(code)) {
+    return reply.status(400).send({ error: 'Invalid code format. Code must be 6 digits.' });
   }
 
   // Vérifier le token temporaire

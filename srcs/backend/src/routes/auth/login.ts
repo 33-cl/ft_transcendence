@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { validateAndGetUser, checkPassword, checkAlreadyConnected, authenticateUser, createSafeUser } from '../../helpers/auth/login.helper.js';
 import { isTwoFactorEnabled, generateTwoFactorCode, storeTwoFactorCode, sendTwoFactorEmail, verifyTwoFactorCode } from '../../services/twoFactor.service.js';
+import { isValid2FACode } from '../../services/validation.service.js';
 
 /**
  * POST /auth/login
@@ -20,6 +21,11 @@ export async function loginRoute(request: FastifyRequest, reply: FastifyReply, f
   const login: string = (body.login ?? body.username ?? body.email ?? '').toString().trim();
   const password: string = (body.password ?? '').toString();
   const twoFactorCode: string = (body.twoFactorCode ?? '').toString().trim();
+
+  // 🔒 SÉCURITÉ : Validation du format du code 2FA (6 chiffres uniquement)
+  if (twoFactorCode && !isValid2FACode(twoFactorCode)) {
+    return reply.status(400).send({ error: 'Invalid code format. Code must be 6 digits.' });
+  }
 
   // Validation, rate limiting et recup de l'utilisateur
   const user = validateAndGetUser(login, password, request.ip, reply);

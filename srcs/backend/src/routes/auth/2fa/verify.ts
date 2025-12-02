@@ -9,6 +9,7 @@ import { verifyTwoFactorCode, enableTwoFactor } from '../../../services/twoFacto
 import { getJwtFromRequest } from '../../../helpers/http/cookie.helper.js';
 import { authenticateAndGetSession } from '../../../helpers/auth/session.helper.js';
 import { checkRateLimit, RATE_LIMITS } from '../../../security.js';
+import { isValid2FACode } from '../../../services/validation.service.js';
 
 interface VerifyBody {
   code: string;
@@ -45,7 +46,7 @@ export async function verify2FARoute(request: FastifyRequest, reply: FastifyRepl
   }
 
   // Vérifier que le code est un nombre à 6 chiffres
-  if (!/^\d{6}$/.test(code)) {
+  if (!isValid2FACode(code)) {
     return reply.status(400).send({ error: 'Invalid code format. Code must be 6 digits.' });
   }
 

@@ -26,23 +26,94 @@ export interface ValidatedRegisterInput {
 
 /**
  * Vérifie si un email est valide
+ * Format attendu: quelquechose@domaine.extension
  */
-export function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+export function isValidEmail(email: string): boolean
+{
+  if (typeof email !== 'string')
+    return false;
+  
+  if (email.includes(' '))
+    return false;
+  
+  // Doit contenir exactement un @ + pas en 1st pos
+  const atIndex = email.indexOf('@');
+  if (atIndex <= 0)
+    return false;
+  if (email.lastIndexOf('@') !== atIndex)
+    return false;
+  
+  const localPart = email.slice(0, atIndex);
+  const domainPart = email.slice(atIndex + 1);
+  
+  if (localPart.length === 0)
+    return false;
+  if (domainPart.length === 0)
+    return false;
+  
+
+  const dotIndex = domainPart.lastIndexOf('.');
+  if (dotIndex <= 0)
+    return false;
+  if (dotIndex === domainPart.length - 1)
+    return false;
+  
+  return true;
 }
 
 /**
- * Vérifie si un username est valide (3-10 caractères alphanumériques + underscore)
+ * Vérifie si un username est valide
+ * Règles: 3-10 caractères, uniquement lettres, chiffres et underscore
  */
-export function isValidUsername(username: string): boolean {
-  return /^[a-zA-Z0-9_]{3,10}$/.test(username);
+export function isValidUsername(username: string): boolean
+{
+  if (typeof username !== 'string')
+    return false;
+  
+  if (username.length < 3 || username.length > 10)
+    return false;
+  
+
+  for (const char of username)
+  {
+    const isLetter = (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z');
+    const isDigit = char >= '0' && char <= '9';
+    const isUnderscore = char === '_';
+    
+    if (!isLetter && !isDigit && !isUnderscore)
+      return false;
+  }
+  
+  return true;
 }
 
 /**
  * Vérifie si un password est valide (minimum 8 caractères)
  */
-export function isValidPassword(password: string): boolean {
+export function isValidPassword(password: string): boolean
+{
   return typeof password === 'string' && password.length >= 8;
+}
+
+/**
+ * Vérifie si un code 2FA est valide
+ * Règles: exactement 6 chiffres
+ */
+export function isValid2FACode(code: string): boolean
+{
+  if (typeof code !== 'string')
+    return false;
+  
+  if (code.length !== 6)
+    return false;
+  
+  for (const char of code)
+  {
+    if (char < '0' || char > '9')
+      return false;
+  }
+  
+  return true;
 }
 
 // ============================================
@@ -58,7 +129,8 @@ export function validateRegisterInput(data: {
   email?: string;
   username?: string;
   password?: string;
-}): { success: true; data: ValidatedRegisterInput } | { success: false; error: string } {
+}): { success: true; data: ValidatedRegisterInput } | { success: false; error: string }
+{
   const { email, username, password } = data;
 
   if (!email || !username || !password)
