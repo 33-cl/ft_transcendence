@@ -7,6 +7,7 @@ import { rooms, getNextRoomName, roomExists } from '../socket/roomManager.js';
 import { PongGame } from '../../game/PongGame.js';
 import { validateId } from '../security.js';
 import { PaddleSide } from '../../game/gameState.js';
+import { verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';
 
 // Types pour les requêtes
 interface CreateGameBody {
@@ -129,9 +130,14 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
 
   // ============================================================================
   // POST /api/games - Crée/initialise une nouvelle partie
+  // SECURITY: Route protégée par JWT
   // ============================================================================
   fastify.post<{ Body: CreateGameBody }>('/api/games', async (request: FastifyRequest<{ Body: CreateGameBody }>, reply: FastifyReply) => {
     try {
+      // SECURITY: Vérifier l'authentification
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
       const { numPlayers = 2, player1, player2 } = request.body || {};
 
       // Validate numPlayers
@@ -179,9 +185,14 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
 
   // ============================================================================
   // POST /api/games/:id/start - Démarre une partie
+  // SECURITY: Route protégée par JWT
   // ============================================================================
   fastify.post<{ Params: GameIdParams }>('/api/games/:id/start', async (request: FastifyRequest<{ Params: GameIdParams }>, reply: FastifyReply) => {
     try {
+      // SECURITY: Vérifier l'authentification
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
       const { id } = request.params;
 
       // Validate game ID
@@ -236,9 +247,14 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
 
   // ============================================================================
   // POST /api/games/:id/paddle - Contrôle un paddle (up/down)
+  // SECURITY: Route protégée par JWT
   // ============================================================================
   fastify.post<{ Params: GameIdParams; Body: PaddleControlBody }>('/api/games/:id/paddle', async (request: FastifyRequest<{ Params: GameIdParams; Body: PaddleControlBody }>, reply: FastifyReply) => {
     try {
+      // SECURITY: Vérifier l'authentification
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
       const { id } = request.params;
       const { player, direction } = request.body || {};
 
@@ -453,9 +469,14 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
 
   // ============================================================================
   // DELETE /api/games/:id - Arrête/supprime une partie
+  // SECURITY: Route protégée par JWT
   // ============================================================================
   fastify.delete<{ Params: GameIdParams }>('/api/games/:id', async (request: FastifyRequest<{ Params: GameIdParams }>, reply: FastifyReply) => {
     try {
+      // SECURITY: Vérifier l'authentification
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
       const { id } = request.params;
 
       if (!id || typeof id !== 'string') {

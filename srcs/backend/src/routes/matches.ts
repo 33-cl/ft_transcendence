@@ -1,11 +1,17 @@
 import { FastifyInstance } from 'fastify';
 import { updateUserStats, getMatchHistory, getUserByUsername } from '../user.js';
 import { validateId, sanitizeUsername, validateLength } from '../security.js';
+import { verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';
 
 export default async function matchesRoutes(fastify: FastifyInstance) {
-  // Enregistrer un match en utilisant les usernames (pour test)
+  // Enregistrer un match en utilisant les usernames
+  // SECURITY: Route protégée par JWT - seuls les utilisateurs authentifiés peuvent enregistrer des matchs
   fastify.post('/matches', async (request, reply) => {
     try {
+      // SECURITY: Vérifier l'authentification
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
       const body = request.body as any;
       const winnerUsername = body.winnerUsername;
       const loserUsername = body.loserUsername;
@@ -68,8 +74,13 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
     }
   });
   // Enregistrer le résultat d'un match en ligne
+  // SECURITY: Route protégée par JWT - seuls les utilisateurs authentifiés peuvent enregistrer des résultats
   fastify.post('/matches/record', async (request, reply) => {
     try {
+      // SECURITY: Vérifier l'authentification
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
       const body = request.body as any;
       
       // SECURITY: Validate IDs

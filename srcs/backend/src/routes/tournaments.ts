@@ -3,7 +3,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
-import { validateLength, sanitizeUsername, validateId, validateUUID } from '../security.js';
+import { validateLength, sanitizeUsername, validateId, validateUUID, checkRateLimit } from '../security.js';
 import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 import { generateBracket, updateMatchResult } from '../tournament.js';
@@ -38,6 +38,7 @@ interface CreateTournamentBody {
 export default async function tournamentsRoutes(fastify: FastifyInstance) {
     
     // POST /tournaments - Créer un nouveau tournoi
+    // SECURITY: Rate limiting pour éviter le spam de création
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
             // SECURITY: Validation de l'utilisateur
@@ -52,6 +53,11 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 userId = decoded.userId;
             } catch (error) {
                 return reply.status(401).send({ error: 'Invalid token' });
+            }
+
+            // SECURITY: Rate limiting - 5 créations de tournoi par minute par user
+            if (!checkRateLimit(`tournament_create_${userId}`, 5, 60000)) {
+                return reply.status(429).send({ error: 'Too many tournament creations. Please wait.' });
             }
 
             const body = request.body as CreateTournamentBody;
@@ -176,6 +182,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     });
 
     // POST /tournaments/:id/join - Inscrire un utilisateur à un tournoi
+    // SECURITY: Rate limiting pour éviter le spam de join
     interface JoinTournamentBody {} // Empty body, we use authenticated user
 
     fastify.post('/tournaments/:id/join', async (request: FastifyRequest<{ Params: { id: string }, Body: JoinTournamentBody }>, reply: FastifyReply) => {
@@ -207,6 +214,11 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 alias = user.username; // Force alias = username
             } catch (jwtError) {
                 return reply.status(401).send({ error: 'Invalid or expired JWT' });
+            }
+
+            // SECURITY: Rate limiting - 20 joins par minute par user (permet plusieurs tournois)
+            if (!checkRateLimit(`tournament_join_${userId}`, 20, 60000)) {
+                return reply.status(429).send({ error: 'Too many join attempts. Please wait.' });
             }
 
             const { id } = request.params as { id: string };
@@ -414,6 +426,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     });
 
     // POST /tournaments/:id/matches/:matchId/result - Enregistrer le résultat d'un match de tournoi
+    // SECURITY: Route protégée par JWT - seul un participant du match peut enregistrer le résultat
     interface MatchResultBody {
         winnerId: number;
         loserId: number;
@@ -423,6 +436,24 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
     fastify.post('/tournaments/:id/matches/:matchId/result', async (request: FastifyRequest<{ Params: { id: string, matchId: string }, Body: MatchResultBody }>, reply: FastifyReply) => {
         try {
+            // SECURITY: Vérifier l'authentification
+            const token = getJwtFromRequest(request);
+            if (!token) {
+                return reply.status(401).send({ error: 'Authentication required' });
+            }
+
+            let currentUserId: number;
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET) as any;
+                const activeToken = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(decoded.userId, token);
+                if (!activeToken) {
+                    return reply.status(401).send({ error: 'Session expired or logged out' });
+                }
+                currentUserId = decoded.userId;
+            } catch (error) {
+                return reply.status(401).send({ error: 'Invalid token' });
+            }
+
             const { id, matchId } = request.params as { id: string, matchId: string };
             const body = request.body as MatchResultBody;
 
@@ -451,6 +482,15 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // Validate winner belongs to the match
             if (tm.player1_id !== winnerId && tm.player2_id !== winnerId) {
                 return reply.status(400).send({ error: 'Winner is not a participant of this match' });
+            }
+
+            // SECURITY: Vérifier que l'utilisateur courant est bien un des participants du match
+            const participant1 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(tm.player1_id) as any;
+            const participant2 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(tm.player2_id) as any;
+            
+            if ((!participant1 || participant1.user_id !== currentUserId) && 
+                (!participant2 || participant2.user_id !== currentUserId)) {
+                return reply.status(403).send({ error: 'You are not a participant of this match' });
             }
 
             // Use dedicated function to update match result and advance bracket automatically
