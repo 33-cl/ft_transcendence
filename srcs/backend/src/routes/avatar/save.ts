@@ -5,11 +5,13 @@ import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js'
 import { processAvatarSave } from '../../helpers/avatar/avatar.helper.js';
 import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
 import { getGlobalIo } from '../../socket/socketHandlers.js';
+import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
 /**
  * POST /auth/avatar/save
  * Sauvegarde définitive d'un avatar temporaire
  * - Authentification JWT requise
+ * - Rate limiting (5/min)
  * - Validation de l'ownership du fichier temporaire
  * - Renommage du fichier (temp → final)
  * - Mise à jour de la base de données
@@ -22,6 +24,11 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
 
   if (!session)
     return;
+
+  // SECURITY: Rate limiting pour éviter le spam
+  if (!checkRateLimit(`avatar_save_${session.id}`, RATE_LIMITS.UPLOAD_AVATAR.max, RATE_LIMITS.UPLOAD_AVATAR.window)) {
+    return reply.code(429).send({ error: 'Too many save attempts. Please wait a moment.' });
+  }
 
   // Extraction de l'URL temporaire depuis le body
   const { temp_avatar_url } = (request.body as { temp_avatar_url?: string }) || {};

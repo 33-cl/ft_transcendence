@@ -2,11 +2,13 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js';
 import { streamToBuffer, processAvatarUpload } from '../../helpers/avatar/avatar.helper.js';
+import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
 /**
  * POST /auth/avatar/upload
  * Upload et traitement sécurisé d'un avatar temporaire
  * - Authentification JWT requise
+ * - Rate limiting (5/min)
  * - Validation de taille et type de fichier
  * - Réencodage sécurisé de l'image
  * - Sauvegarde temporaire (préfixe temp_)
@@ -17,6 +19,11 @@ export async function avatarUploadRoute(request: FastifyRequest, reply: FastifyR
   const session = authenticateAndGetSession(jwtToken, reply);
   if (!session)
     return;
+
+  // SECURITY: Rate limiting pour éviter le spam d'upload
+  if (!checkRateLimit(`avatar_upload_${session.id}`, RATE_LIMITS.UPLOAD_AVATAR.max, RATE_LIMITS.UPLOAD_AVATAR.window)) {
+    return reply.code(429).send({ error: 'Too many upload attempts. Please wait a moment.' });
+  }
 
   try {
     //Récupération du fichier uploadé

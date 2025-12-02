@@ -7,7 +7,7 @@ import { createInitialGameState } from '../../game/gameState.js';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { validateLength, sanitizeUsername, validateRoomName, validateMaxPlayers, checkRateLimit } from '../security.js';
-import { parseCookies } from '../helpers/http/cookie.helper.js';
+import { parseCookies, verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set');
@@ -77,8 +77,13 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 	});
 
 	// Route DELETE /rooms/:roomName : supprimer une room par son nom
+	// SECURITY: Route protégée par JWT
 	fastify.delete('/rooms/:roomName', async (request, reply) =>
 	{
+		// SECURITY: Vérifier l'authentification
+		const currentUserId = verifyAuthFromRequest(request, reply);
+		if (!currentUserId) return;
+
 		const { roomName } = request.params as { roomName: string };
 		
 		// SECURITY: Validate room name

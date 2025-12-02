@@ -62,6 +62,7 @@ export const RATE_LIMITS = {
     FRIEND_REMOVE: { max: 10, window: 60000 },     // 10 removals per minute - prevent mass unfriend
     SEARCH_USERS: { max: 30, window: 60000 },      // 30 searches per minute - typing queries OK
     UPLOAD_AVATAR: { max: 5, window: 60000 },      // 5 uploads per minute - bandwidth protection
+    PROFILE_UPDATE: { max: 10, window: 60000 },    // 10 updates per minute - prevent spam
     
     // 🟢 PERMISSIVE - Higher limits for read-only or frequent actions
     GET_FRIENDS: { max: 60, window: 60000 },       // 60 per minute - auto-refresh OK

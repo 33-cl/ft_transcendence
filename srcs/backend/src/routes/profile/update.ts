@@ -5,6 +5,7 @@ import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js'
 import { validateAndSanitizeProfileInput, verifyPasswordAndUniqueness, updateUserProfile } from '../../helpers/auth/profile.helper.js';
 import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
 import { getGlobalIo } from '../../socket/socketHandlers.js';
+import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
 /**
  * PUT /auth/profile
@@ -29,6 +30,12 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
   const sessionRow = authenticateAndGetSession(jwtToken, reply);
   if (!sessionRow)
     return;
+
+  // Rate limiting par utilisateur
+  const rateLimitKey = `profile_update:${sessionRow.id}`;
+  if (!checkRateLimit(rateLimitKey, RATE_LIMITS.PROFILE_UPDATE.max, RATE_LIMITS.PROFILE_UPDATE.window)) {
+    return reply.code(429).send({ error: 'Too many profile update attempts, please try again later' });
+  }
 
   // Extraction du body
   const { username, email, currentPassword, newPassword } = (request.body as {
