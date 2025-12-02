@@ -1,8 +1,10 @@
 export function settingsHTML() {
     const username = window.currentUser?.username || 'a';
-    const email = window.currentUser?.email;
-    const isGoogleAuth = window.currentUser?.provider === 'google';
+    const email = window.currentUser?.email || '';
     const is2FAEnabled = window.currentUser?.twoFactorEnabled || false;
+    
+    // Vérifier si l'utilisateur a un email temporaire (créé quand leur email Google était déjà pris)
+    const hasTemporaryEmail = email.endsWith('@oauth.local');
 
     return /*html*/ `
     <h1>USER SETTINGS</h1>
@@ -20,7 +22,8 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">EMAIL</span>
-            <input type="email" id="settings-email" placeholder="${email}"${isGoogleAuth ? ' disabled' : ''}>
+            <input type="email" id="settings-email" placeholder="${email}">
+            ${hasTemporaryEmail ? '<span id="temp-email-warning" style="color: #f59e0b; font-size: 0.8em; margin-left: 10px;">[Update required]</span>' : ''}
         </div>
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>

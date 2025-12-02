@@ -49,8 +49,10 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
     if (!verifyPasswordAndUniqueness(newPassword, currentPassword, sanitizedEmail, sanitizedUsername, sessionRow.email, sessionRow.username, sessionRow.id, reply))
       return;
 
-    // Déterminer si l'email a changé (pour le message 2FA)
+    // Vérifier si l'email a changé ET si la 2FA était activée AVANT la mise à jour
     const emailChanged = sanitizedEmail && sanitizedEmail !== sessionRow.email;
+    const userBefore = db.prepare('SELECT two_factor_enabled FROM users WHERE id = ?').get(sessionRow.id) as { two_factor_enabled: number } | undefined;
+    const had2FAEnabled = userBefore?.two_factor_enabled === 1;
     
     if (!updateUserProfile({ username: sanitizedUsername, email: sanitizedEmail, newPassword }, sessionRow.id, reply))
       return;
@@ -60,9 +62,10 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
     if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
       notifyProfileUpdated(getGlobalIo(), sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
 
-    // Message adapté si 2FA a été désactivée
+    // Message adapté : mentionner la 2FA SEULEMENT si elle était activée avant
     let message = 'Profile updated successfully';
-    if (emailChanged) {
+    const twoFactorWasDisabled = emailChanged && had2FAEnabled;
+    if (twoFactorWasDisabled) {
       message = 'Profile updated successfully. Two-Factor Authentication has been disabled for security (new email address). You can re-enable it in settings.';
     }
 
@@ -73,7 +76,7 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
         username: updatedRow?.username ?? sessionRow.username,
         email: updatedRow?.email ?? sessionRow.email,
         passwordChanged: !!newPassword,
-        twoFactorDisabled: emailChanged
+        twoFactorDisabled: twoFactorWasDisabled
       }
     });
   } catch (error) {
