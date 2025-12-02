@@ -595,6 +595,22 @@ async function saveChangedFields(): Promise<void> {
                 window.currentUser.avatar_url = avatarSaveResult.avatar_url;
             }
             
+            // Mettre à jour l'email dans window.currentUser et cacher le message "temporary" si nécessaire
+            if (hasEmailChanged && window.currentUser) {
+                window.currentUser.email = email;
+                
+                // Si le nouvel email n'est plus temporaire, cacher le message d'avertissement
+                const tempEmailWarning = document.getElementById('temp-email-warning');
+                if (tempEmailWarning && !email.endsWith('@oauth.local')) {
+                    tempEmailWarning.remove();
+                }
+            }
+            
+            // Mettre à jour le username dans window.currentUser
+            if (hasUsernameChanged && window.currentUser) {
+                window.currentUser.username = username;
+            }
+            
             // Si la 2FA a été désactivée, mettre à jour le bouton
             if (profileSaveResult.twoFactorDisabled) {
                 const toggle2FABtn = document.getElementById('toggle-2fa');
