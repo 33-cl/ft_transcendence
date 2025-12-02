@@ -60,16 +60,18 @@ function showMessage(message: string, isError: boolean = false): void {
 
 // Fonction pour afficher/masquer le champ de code 2FA
 function show2FACodeField(show: boolean): void {
-    const codeRow = document.getElementById('twofa-code-row');
+    const toggle2FABtn = document.getElementById('toggle-2fa');
     const codeInput = document.getElementById('twofa-code-input') as HTMLInputElement;
     
-    if (codeRow) {
-        codeRow.style.display = show ? 'flex' : 'none';
+    if (toggle2FABtn) {
+        toggle2FABtn.style.display = show ? 'none' : 'inline-block';
     }
     
-    if (codeInput && show) {
-        codeInput.value = '';
-        codeInput.focus();
+    if (codeInput) {
+        codeInput.style.display = show ? 'inline-block' : 'none';
+        if (show) {
+            codeInput.value = '';
+        }
     }
 }
 
@@ -87,8 +89,17 @@ function show2FAMessage(message: string, isError: boolean = false): void {
     }, 5000);
 }
 
+// Variable pour le cooldown du bouton 2FA
+let is2FAButtonDisabled = false;
+
 // Fonction pour activer/désactiver la 2FA
 async function toggle2FA(): Promise<void> {
+    // Vérifier le cooldown
+    if (is2FAButtonDisabled) {
+        return;
+    }
+
+    const toggle2FABtn = document.getElementById('toggle-2fa');
     const is2FAEnabled = window.currentUser?.twoFactorEnabled || false;
     
     if (is2FAEnabled) {
@@ -126,6 +137,14 @@ async function toggle2FA(): Promise<void> {
         }
     } else {
         // Activer la 2FA (nécessite un code de vérification)
+        // Activer le cooldown immédiatement
+        is2FAButtonDisabled = true;
+        if (toggle2FABtn) {
+            toggle2FABtn.setAttribute('disabled', 'true');
+            toggle2FABtn.style.opacity = '0.5';
+            toggle2FABtn.style.cursor = 'not-allowed';
+        }
+
         try {
             // Étape 1: Demander l'envoi du code
             const response = await fetch('/auth/2fa/enable', {
@@ -142,6 +161,15 @@ async function toggle2FA(): Promise<void> {
                 } else {
                     show2FAMessage(data.error || '2FA enable failed', true);
                 }
+                // Réactiver le bouton après 30 secondes en cas d'erreur
+                setTimeout(() => {
+                    is2FAButtonDisabled = false;
+                    if (toggle2FABtn) {
+                        toggle2FABtn.removeAttribute('disabled');
+                        toggle2FABtn.style.opacity = '1';
+                        toggle2FABtn.style.cursor = 'pointer';
+                    }
+                }, 30000);
                 return;
             }
 
@@ -149,9 +177,28 @@ async function toggle2FA(): Promise<void> {
             show2FACodeField(true);
             show2FAMessage(data.message || 'Verification code sent to your email');
             
+            // Réactiver le bouton après 30 secondes (au cas où l'utilisateur veut réessayer)
+            setTimeout(() => {
+                is2FAButtonDisabled = false;
+                if (toggle2FABtn) {
+                    toggle2FABtn.removeAttribute('disabled');
+                    toggle2FABtn.style.opacity = '1';
+                    toggle2FABtn.style.cursor = 'pointer';
+                }
+            }, 30000);
+            
         } catch (error) {
             console.error('2FA enable error:', error);
             show2FAMessage('Network error occurred', true);
+            // Réactiver le bouton après 30 secondes en cas d'erreur réseau
+            setTimeout(() => {
+                is2FAButtonDisabled = false;
+                if (toggle2FABtn) {
+                    toggle2FABtn.removeAttribute('disabled');
+                    toggle2FABtn.style.opacity = '1';
+                    toggle2FABtn.style.cursor = 'pointer';
+                }
+            }, 30000);
         }
     }
 }
@@ -203,12 +250,6 @@ async function verify2FACode(): Promise<void> {
         console.error('2FA verify error:', error);
         show2FAMessage('Network error occurred', true);
     }
-}
-
-// Fonction pour annuler l'activation 2FA
-function cancel2FAActivation(): void {
-    show2FACodeField(false);
-    show2FAMessage('2FA activation cancelled', true);
 }
 
 // Reset du champ password
@@ -607,8 +648,6 @@ export function initSettingsHandlers(): void {
 
         const saveBtn = document.getElementById('saveBtn');
         const toggle2FABtn = document.getElementById('toggle-2fa');
-        const verify2FABtn = document.getElementById('verify-2fa-code');
-        const cancel2FABtn = document.getElementById('cancel-2fa-code');
         // const goToMainBtn = document.getElementById('goToMain');
 
         if (saveBtn) {
@@ -623,23 +662,17 @@ export function initSettingsHandlers(): void {
             });
         }
 
-        if (verify2FABtn) {
-            verify2FABtn.addEventListener('click', async () => {
-                await verify2FACode();
-            });
-        }
-
-        if (cancel2FABtn) {
-            cancel2FABtn.addEventListener('click', () => {
-                cancel2FAActivation();
-            });
-        }
-
-        // Support de la touche Enter pour le champ de code 2FA
-        const codeInput = document.getElementById('twofa-code-input');
+        // Support de la touche Enter et validation automatique pour le champ de code 2FA
+        const codeInput = document.getElementById('twofa-code-input') as HTMLInputElement;
         if (codeInput) {
             codeInput.addEventListener('keypress', async (e) => {
                 if (e.key === 'Enter') {
+                    await verify2FACode();
+                }
+            });
+            // Validation automatique quand 6 chiffres sont entrés
+            codeInput.addEventListener('input', async () => {
+                if (codeInput.value.length === 6) {
                     await verify2FACode();
                 }
             });

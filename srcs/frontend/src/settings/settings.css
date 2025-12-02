@@ -62,33 +62,16 @@
     }
 
     /* 2FA Code Input Styles */
-    #twofa-code-row {
-        @apply flex items-center justify-between;
+    #twofa-container {
+        @apply flex items-center;
+        @apply w-64;
     }
 
     #twofa-code-input {
-        @apply w-40 text-center;
+        @apply w-full text-right;
         @apply bg-transparent border-b-2 border-white;
         @apply text-white placeholder-gray-400;
         @apply focus:border-amber-500 focus:outline-none;
-    }
-
-    .settings-verify-btn,
-    .settings-cancel-btn {
-        @apply px-3 py-1;
-        @apply bg-transparent border-none outline-none;
-        @apply cursor-pointer;
-        @apply transition-colors duration-200;
-    }
-
-    .settings-verify-btn {
-        @apply text-green-400;
-        @apply hover:text-green-300;
-    }
-
-    .settings-cancel-btn {
-        @apply text-red-400;
-        @apply hover:text-red-300;
     }
 
     /* 2FA Message Styles */
