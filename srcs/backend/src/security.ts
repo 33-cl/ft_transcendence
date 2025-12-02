@@ -49,13 +49,13 @@ export function validateLength(input: string, minLength: number, maxLength: numb
  * Adapted limits based on action sensitivity and normal user behavior
  */
 export const RATE_LIMITS = {
-    // 🔴 CRITICAL - Very strict limits for security-sensitive actions
+    // CRITICAL - Very strict limits for security-sensitive actions
     LOGIN: { max: 10, window: 60000 },              // 5 attempts per minute - brute-force protection
     REGISTER: { max: 10, window: 60000 },           // 3 accounts per minute - spam prevention
     TWO_FA: { max: 10, window: 60000 },            // 10 attempts per minute - 2FA verification (allows typos)
     PASSWORD_RESET: { max: 10, window: 60000 },     // 3 resets per minute - abuse prevention
     
-    // 🟡 MODERATE - Balanced limits for social actions
+    // MODERATE - Balanced limits for social actions
     FRIEND_REQUEST: { max: 10, window: 60000 },    // 10 requests per minute - spam prevention
     FRIEND_ACCEPT: { max: 20, window: 60000 },     // 20 accepts per minute - batch accepting OK
     FRIEND_REJECT: { max: 20, window: 60000 },     // 20 rejects per minute - batch rejecting OK
@@ -64,7 +64,7 @@ export const RATE_LIMITS = {
     UPLOAD_AVATAR: { max: 5, window: 60000 },      // 5 uploads per minute - bandwidth protection
     PROFILE_UPDATE: { max: 10, window: 60000 },    // 10 updates per minute - prevent spam
     
-    // 🟢 PERMISSIVE - Higher limits for read-only or frequent actions
+    //PERMISSIVE - Higher limits for read-only or frequent actions
     GET_FRIENDS: { max: 60, window: 60000 },       // 60 per minute - auto-refresh OK
     GET_STATUS: { max: 60, window: 60000 },        // 60 per minute - real-time status OK
     GET_LEADERBOARD: { max: 30, window: 60000 },   // 30 per minute - dashboard views OK

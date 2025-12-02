@@ -8,6 +8,19 @@ import { PongGame } from '../../game/PongGame.js';
 import { validateId } from '../security.js';
 import { PaddleSide } from '../../game/gameState.js';
 import { verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';
+import { getUserById } from '../services/auth.service.js';
+
+// Helper: Vérifier si un utilisateur fait partie d'une room
+function isUserInRoom(userId: number, roomName: string): boolean {
+  const room = rooms[roomName];
+  if (!room || !room.playerUsernames) return false;
+  
+  const user = getUserById(userId);
+  if (!user) return false;
+  
+  // Vérifier si le username de l'utilisateur est dans la room
+  return Object.values(room.playerUsernames).includes(user.username);
+}
 
 // Types pour les requêtes
 interface CreateGameBody {
@@ -469,7 +482,7 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
 
   // ============================================================================
   // DELETE /api/games/:id - Arrête/supprime une partie
-  // SECURITY: Route protégée par JWT
+  // SECURITY: Route protégée par JWT + vérification que l'utilisateur fait partie de la game
   // ============================================================================
   fastify.delete<{ Params: GameIdParams }>('/api/games/:id', async (request: FastifyRequest<{ Params: GameIdParams }>, reply: FastifyReply) => {
     try {
@@ -493,6 +506,14 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
         });
       }
 
+      // SECURITY: Vérifier que l'utilisateur fait partie de la game
+      if (!isUserInRoom(currentUserId, id)) {
+        return reply.code(403).send({
+          success: false,
+          error: 'You can only delete games you are participating in'
+        });
+      }
+
       const room = rooms[id];
       
       // Stop the game if running
@@ -502,7 +523,7 @@ export default async function gamesRoutes(fastify: FastifyInstance) {
 
       // Delete the room
       delete rooms[id];
-      fastify.log.info(`Game deleted via API: ${id}`);
+      fastify.log.info(`Game deleted via API: ${id} by user ${currentUserId}`);
 
       return reply.send({
         success: true,

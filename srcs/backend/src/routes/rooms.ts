@@ -7,7 +7,7 @@ import { createInitialGameState } from '../../game/gameState.js';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { validateLength, sanitizeUsername, validateRoomName, validateMaxPlayers, checkRateLimit } from '../security.js';
-import { parseCookies, verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';
+import { parseCookies } from '../helpers/http/cookie.helper.js';
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set');
@@ -76,26 +76,9 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 		}
 	});
 
-	// Route DELETE /rooms/:roomName : supprimer une room par son nom
-	// SECURITY: Route protégée par JWT
-	fastify.delete('/rooms/:roomName', async (request, reply) =>
-	{
-		// SECURITY: Vérifier l'authentification
-		const currentUserId = verifyAuthFromRequest(request, reply);
-		if (!currentUserId) return;
-
-		const { roomName } = request.params as { roomName: string };
-		
-		// SECURITY: Validate room name
-		if (!validateRoomName(roomName)) {
-			return reply.status(400).send({ error: 'Invalid room name' });
-		}
-		
-		if (!rooms[roomName])
-			return reply.status(404).send({ error: 'Room not found' });
-		delete rooms[roomName];
-		return { success: true };
-	});
+	// Route DELETE /rooms/:roomName supprimée pour des raisons de sécurité
+	// Les rooms sont automatiquement supprimées quand tous les joueurs quittent
+	// Voir: roomManager.ts ligne 78, roomHandlers.ts, gameTickHandlers.ts
 
 	// Route GET /rooms/friend/:username : trouver la room d'un ami pour spectate
 	fastify.get('/rooms/friend/:username', async (request, reply) => {
