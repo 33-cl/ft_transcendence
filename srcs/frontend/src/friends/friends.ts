@@ -531,25 +531,23 @@ export async function spectateFreind(username: string): Promise<void> {
         const friendElement = document.querySelector(`#friendsList [data-username="${username}"]`);
         const isInGame = friendElement?.getAttribute('data-is-in-game') === 'true';
         
-        if (!isInGame) {
-            alert(`${username} is not currently in a game. Please wait for them to start playing!`);
+        if (!isInGame)
             return;
-        }
         
         const response = await fetch(`/rooms/friend/${username}`, {
             method: 'GET',
             credentials: 'include'
         });
 
-        if (!response.ok) {
+        if (!response.ok)
+        {
             const error = await response.json();
-            if (response.status === 403) {
+            if (response.status === 403)
                 alert('You can only spectate friends.');
-            } else if (response.status === 401) {
+            else if (response.status === 401)
                 alert('Authentication required. Please log in.');
-            } else {
+            else 
                 console.warn('Error finding game: ' + (error.error || 'Unknown error'));
-            }
             return;
         }
 
