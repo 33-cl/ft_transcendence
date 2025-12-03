@@ -1,4 +1,13 @@
 // Page tournaments: liste des tournois 4-player (legacy, not used anymore) (couche UI dans le navigateur)
+
+import { load } from '../navigation/utils.js';
+
+// Navigate to tournament detail page
+function navigateToTournamentDetail(tournamentId: string) {
+    console.log(`🏆 Navigating to tournament detail: ${tournamentId}`);
+    load(`tournaments/${tournamentId}`);
+}
+
 export default async function tournamentsPage() {
     console.warn('tournamentsPage() is deprecated, use initTournaments() instead');
 }
@@ -168,21 +177,31 @@ function setupTournamentEventListeners() {
 }
 
 async function loadTournamentsList() {
+    console.log('🔄 loadTournamentsList() called');
     const listContainer = document.getElementById('tournaments-list');
-    if (!listContainer) return;
+    console.log('📦 listContainer:', listContainer);
+    if (!listContainer) {
+        console.error('❌ tournaments-list container not found!');
+        return;
+    }
     
     try {
         // API call to fetch 4-player tournaments
+        console.log('📡 Fetching tournaments from /api/tournaments...');
         const res = await fetch('/api/tournaments', { method: 'GET', credentials: 'include' });
+        console.log('📡 Response status:', res.status);
         if (!res.ok) throw new Error('Failed to fetch tournaments');
         const data = await res.json();
+        console.log('📋 Tournaments data:', data);
         const tournaments = data.tournaments || [];
 
         if (tournaments.length === 0) {
-            listContainer!.innerHTML = '';
+            console.log('📭 No tournaments found');
+            listContainer!.innerHTML = '<p class="text-gray-400 text-center py-4">No tournaments yet. Create one!</p>';
         } else {
+            console.log(`📋 Rendering ${tournaments.length} tournaments`);
             const rows = tournaments.map((t: any) => `
-                <div class="tournament-item">
+                <div class="tournament-item" data-tournament-id="${t.id}" style="cursor: pointer;">
                     <div class="tournament-item-info">
                         <div class="tournament-item-name">${t.name}</div>
                         <div class="tournament-item-status">Status: ${t.status} — ${t.current_players}/${t.max_players} players</div>
@@ -205,8 +224,8 @@ async function loadTournamentsList() {
                                 </button>
                             ` : ''}
                         ` : `
-                            <button disabled class="tournament-view-btn tournament-disabled">
-                                ${t.status === 'active' ? 'Ongoing' : 'Completed'}
+                            <button data-id="${t.id}" class="view-tournament tournament-view-btn-active">
+                                ${t.status === 'active' ? '🏆 View Bracket' : '📊 Results'}
                             </button>
                         `}
                     </div>
@@ -221,6 +240,7 @@ async function loadTournamentsList() {
                 (btn as any)._listenerSet = true;
                 
                 (btn as HTMLElement).addEventListener('click', async (e) => {
+                    e.stopPropagation(); // Prevent navigation when clicking join
                     const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
                     if (id) {
                         await handleJoinTournament(id);
@@ -235,6 +255,7 @@ async function loadTournamentsList() {
                 (btn as any)._listenerSet = true;
                 
                 (btn as HTMLElement).addEventListener('click', async (e) => {
+                    e.stopPropagation(); // Prevent navigation when clicking leave
                     const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
                     if (id) {
                         await handleLeaveTournament(id);
@@ -249,9 +270,41 @@ async function loadTournamentsList() {
                 (btn as any)._listenerSet = true;
                 
                 (btn as HTMLElement).addEventListener('click', async (e) => {
+                    e.stopPropagation(); // Prevent navigation when clicking delete
                     const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
                     if (id) {
                         await handleDeleteTournament(id);
+                    }
+                });
+            }
+        });
+
+        // Attach click handlers for view bracket buttons
+        document.querySelectorAll('.view-tournament').forEach(btn => {
+            if (!(btn as any)._listenerSet) {
+                (btn as any)._listenerSet = true;
+                
+                (btn as HTMLElement).addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+                    if (id) {
+                        navigateToTournamentDetail(id);
+                    }
+                });
+            }
+        });
+
+        // Attach click handlers for tournament items (entire row clickable)
+        document.querySelectorAll('.tournament-item').forEach(item => {
+            if (!(item as any)._navListenerSet) {
+                (item as any)._navListenerSet = true;
+                
+                (item as HTMLElement).addEventListener('click', (e) => {
+                    // Only navigate if the click wasn't on a button
+                    if ((e.target as HTMLElement).closest('button')) return;
+                    const id = (item as HTMLElement).getAttribute('data-tournament-id');
+                    if (id) {
+                        navigateToTournamentDetail(id);
                     }
                 });
             }

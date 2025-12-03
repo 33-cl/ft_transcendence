@@ -146,16 +146,18 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     container.style.display = 'block';
 }
 
-// Helper to create user_id -> alias map (robust)
+// Helper to create user_id -> alias map (matches use user_id, not participant.id)
 function createPlayerAliasMap(participants: TournamentParticipant[]): Map<number, string> {
     const playerAliasMap = new Map<number, string>();
     if (participants && Array.isArray(participants)) {
         participants.forEach(participant => {
             if (participant && participant.user_id && participant.alias) {
+                // Use user_id as key since matches reference user_id, not participant.id
                 playerAliasMap.set(participant.user_id, participant.alias.trim());
             }
         });
     }
+    console.log('🗺️ Player alias map (user_id -> alias):', Array.from(playerAliasMap.entries()));
     return playerAliasMap;
 }
 
@@ -191,68 +193,200 @@ function renderParticipantsHtml(participants: TournamentParticipant[]): string {
         `).join('');
 }
 
-// Helper to generate bracket HTML by rounds
-function renderBracketHtml(matchesByRound: Map<number, TournamentMatch[]>, playerAliasMap: Map<number, string>): string {
+// Helper to render a single match card
+function renderMatchCard(
+    match: TournamentMatch, 
+    playerAliasMap: Map<number, string>, 
+    label: string,
+    currentUserId: number | null,
+    tournamentId: string
+): string {
+    const player1 = getPlayerAlias(match.player1_id, playerAliasMap);
+    const player2 = getPlayerAlias(match.player2_id, playerAliasMap);
+    const winner = match.winner_id ? getPlayerAlias(match.winner_id, playerAliasMap) : null;
+    
+    let statusBadge = '';
+    let borderColor = 'border-gray-300';
+    
+    if (match.status === 'finished' && winner) {
+        statusBadge = `<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ ${winner}</span>`;
+        borderColor = 'border-green-400';
+    } else if (match.status === 'scheduled') {
+        statusBadge = `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Scheduled</span>`;
+        borderColor = 'border-blue-400';
+    } else if (match.status === 'cancelled') {
+        statusBadge = `<span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Cancelled</span>`;
+        borderColor = 'border-red-400';
+    }
+
+    // Highlight winner in player names
+    const player1Class = match.winner_id === match.player1_id ? 'font-bold text-green-700' : '';
+    const player2Class = match.winner_id === match.player2_id ? 'font-bold text-green-700' : '';
+
+    // Check if current user is one of the players in this match
+    // player1_id and player2_id are user_ids, not participant_ids
+    const isCurrentUserInMatch = currentUserId !== null && (
+        currentUserId === match.player1_id || currentUserId === match.player2_id
+    );
+    
+    // DEBUG: Log match info to understand why button might not show
+    console.log(`🎯 Match ${match.id} (${label}):`, {
+        status: match.status,
+        player1_id: match.player1_id,
+        player2_id: match.player2_id,
+        currentUserId,
+        isCurrentUserInMatch
+    });
+    
+    // Show "Play Match" button only if:
+    // - Match is scheduled (not finished/cancelled)
+    // - Both players are assigned
+    // - Current user is one of the players
+    const canPlay = match.status === 'scheduled' 
+        && match.player1_id !== null 
+        && match.player2_id !== null 
+        && isCurrentUserInMatch;
+    
+    console.log(`🎮 canPlay for match ${match.id}: ${canPlay}`);
+
+    const playButtonHtml = canPlay ? `
+        <button 
+            class="play-match-btn mt-2 w-full px-3 py-2 bg-orange-500 text-white text-sm font-medium rounded hover:bg-orange-600 transition-colors"
+            data-tournament-id="${tournamentId}"
+            data-match-id="${match.id}"
+        >
+            🎮 Play Match
+        </button>
+    ` : '';
+
+    return `
+        <div class="bracket-match bg-white border-2 ${borderColor} rounded-lg p-3 min-w-[180px] shadow-sm" data-match-id="${match.id}">
+            <div class="text-xs text-gray-500 mb-2 font-semibold uppercase">${label}</div>
+            <div class="space-y-1">
+                <div class="flex items-center gap-2 ${player1Class}">
+                    <span class="w-4 h-4 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">1</span>
+                    <span class="truncate">${player1}</span>
+                </div>
+                <div class="text-center text-gray-400 text-xs">vs</div>
+                <div class="flex items-center gap-2 ${player2Class}">
+                    <span class="w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">2</span>
+                    <span class="truncate">${player2}</span>
+                </div>
+            </div>
+            <div class="mt-2 text-center">
+                ${statusBadge}
+            </div>
+            ${playButtonHtml}
+        </div>
+    `;
+}
+
+// Helper to generate bracket HTML as a visual tree (4-player tournament)
+function renderBracketHtml(
+    matchesByRound: Map<number, TournamentMatch[]>, 
+    playerAliasMap: Map<number, string>, 
+    tournament: Tournament,
+    currentUserId: number | null
+): string {
     if (matchesByRound.size === 0) {
-        return '<p class="text-gray-500">No matches scheduled</p>';
+        return '<p class="text-gray-500">No matches scheduled yet. The bracket will appear once the tournament starts.</p>';
     }
     
-    return Array.from(matchesByRound.entries())
-        .sort(([a], [b]) => a - b) // Sort by round number
-        .map(([round, roundMatches]) => {
-            const matchesHtml = roundMatches.map(match => {
-                const player1 = getPlayerAlias(match.player1_id, playerAliasMap);
-                const player2 = getPlayerAlias(match.player2_id, playerAliasMap);
-                const winner = match.winner_id ? getPlayerAlias(match.winner_id, playerAliasMap) : null;
-                
-                let statusDisplayText: string = match.status;
-                let statusClass = 'text-gray-600';
-                
-                if (match.status === 'finished' && winner) {
-                    statusDisplayText = `Finished - Winner: ${winner}`;
-                    statusClass = 'text-green-600 font-medium';
-                } else if (match.status === 'scheduled') {
-                    statusDisplayText = 'Scheduled';
-                    statusClass = 'text-blue-600';
-                } else if (match.status === 'cancelled') {
-                    statusDisplayText = 'Cancelled';
-                    statusClass = 'text-red-600';
-                }
-
-                return `
-                    <div class="bg-white border rounded p-3 mb-2">
-                        <div class="flex justify-between items-center">
-                            <div class="font-medium">
-                                ${player1} <span class="text-gray-400">vs</span> ${player2}
-                            </div>
-                            <div class="text-sm ${statusClass}">
-                                ${statusDisplayText}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-3 text-blue-800">Round ${round}</h3>
-                    <div class="space-y-2">
-                        ${matchesHtml}
-                    </div>
+    // Get matches by round
+    const semiFinals = matchesByRound.get(1) || [];
+    const finals = matchesByRound.get(2) || [];
+    const finalMatch = finals[0];
+    
+    // Determine champion (if tournament completed)
+    let championHtml = '';
+    if (tournament?.status === 'completed' && finalMatch?.winner_id) {
+        const championAlias = getPlayerAlias(finalMatch.winner_id, playerAliasMap);
+        championHtml = `
+            <div class="flex flex-col items-center justify-center">
+                <div class="text-4xl mb-2">🏆</div>
+                <div class="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 text-center shadow-lg">
+                    <div class="text-xs text-yellow-600 font-semibold uppercase mb-1">Champion</div>
+                    <div class="text-xl font-bold text-yellow-800">${championAlias}</div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
+    } else {
+        championHtml = `
+            <div class="flex flex-col items-center justify-center">
+                <div class="text-4xl mb-2 opacity-30">🏆</div>
+                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <div class="text-xs text-gray-500 font-semibold uppercase mb-1">Champion</div>
+                    <div class="text-lg text-gray-400">TBD</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Build semi-finals HTML
+    const semi1Html = semiFinals[0] ? renderMatchCard(semiFinals[0], playerAliasMap, 'Semi-Final 1', currentUserId, tournament.id) : '';
+    const semi2Html = semiFinals[1] ? renderMatchCard(semiFinals[1], playerAliasMap, 'Semi-Final 2', currentUserId, tournament.id) : '';
+    const finalHtml = finalMatch ? renderMatchCard(finalMatch, playerAliasMap, 'Final', currentUserId, tournament.id) : `
+        <div class="bracket-match bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-3 min-w-[180px]">
+            <div class="text-xs text-gray-500 mb-2 font-semibold uppercase">Final</div>
+            <div class="text-center text-gray-400 py-4">Waiting for semi-finals...</div>
+        </div>
+    `;
+
+    // Visual bracket tree structure using flexbox
+    return `
+        <div class="bracket-container overflow-x-auto">
+            <div class="flex items-center justify-center gap-4 min-w-[700px] py-4">
+                <!-- Semi-Finals Column -->
+                <div class="flex flex-col gap-8">
+                    ${semi1Html}
+                    ${semi2Html}
+                </div>
+                
+                <!-- Connector Lines (Semi → Final) -->
+                <div class="flex flex-col items-center justify-center h-48">
+                    <svg width="40" height="200" class="text-gray-400">
+                        <!-- Top line from Semi 1 -->
+                        <line x1="0" y1="50" x2="20" y2="50" stroke="currentColor" stroke-width="2"/>
+                        <line x1="20" y1="50" x2="20" y2="100" stroke="currentColor" stroke-width="2"/>
+                        <!-- Bottom line from Semi 2 -->
+                        <line x1="0" y1="150" x2="20" y2="150" stroke="currentColor" stroke-width="2"/>
+                        <line x1="20" y1="150" x2="20" y2="100" stroke="currentColor" stroke-width="2"/>
+                        <!-- Line to Final -->
+                        <line x1="20" y1="100" x2="40" y2="100" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                
+                <!-- Final Column -->
+                <div class="flex items-center">
+                    ${finalHtml}
+                </div>
+                
+                <!-- Connector Line (Final → Champion) -->
+                <div class="flex items-center">
+                    <svg width="40" height="50" class="text-gray-400">
+                        <line x1="0" y1="25" x2="40" y2="25" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                
+                <!-- Champion Column -->
+                ${championHtml}
+            </div>
+        </div>
+    `;
 }
 
 // Main function to render tournament content
 function renderTournamentContent(data: TournamentDetailResponse): string {
     const { tournament, participants, matches } = data;
     
+    // Get current user ID from global state
+    const currentUserId = (window as any).currentUser?.id || null;
+    
     // Use helpers to process data
     const playerAliasMap = createPlayerAliasMap(participants);
     const matchesByRound = groupMatchesByRound(matches);
     const participantsHtml = renderParticipantsHtml(participants);
-    const bracketHtml = renderBracketHtml(matchesByRound, playerAliasMap);
+    const bracketHtml = renderBracketHtml(matchesByRound, playerAliasMap, tournament, currentUserId);
     
     // Tournament status with color
     let statusClass = 'text-gray-600';
@@ -299,15 +433,15 @@ function renderTournamentContent(data: TournamentDetailResponse): string {
                 
                 <!-- Tournament Action Buttons -->
                 <div class="mt-4 flex gap-3">
-                    ${tournament.status === 'registration' && tournament.current_players >= tournament.max_players ? `
-                        <button id="start-tournament-btn" data-tournament-id="${tournament.id}" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors">
-                            🚀 Start Tournament
-                        </button>
-                    ` : ''}
                     ${tournament.status === 'registration' && tournament.current_players < tournament.max_players ? `
                         <button id="join-tournament-btn" data-tournament-id="${tournament.id}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors">
                             ➕ Join Tournament (${tournament.current_players}/${tournament.max_players})
                         </button>
+                    ` : ''}
+                    ${tournament.status === 'registration' && tournament.current_players >= tournament.max_players ? `
+                        <span class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded font-medium">
+                            ⏳ Waiting for tournament to start...
+                        </span>
                     ` : ''}
                 </div>
             </div>
@@ -376,44 +510,68 @@ function attachTournamentActionListeners(tournament: Tournament): void {
         });
     }
 
-    // "Start Tournament" button 
-    const startBtn = document.getElementById('start-tournament-btn');
-    if (startBtn && !(startBtn as any)._listenerSet) {
-        (startBtn as any)._listenerSet = true;
-        
-        startBtn.addEventListener('click', async () => {
-            if (!confirm('Are you sure you want to start this tournament? This action is irreversible.')) {
-                return;
-            }
+    // "Play Match" buttons (multiple buttons possible)
+    const playBtns = document.querySelectorAll('.play-match-btn');
+    playBtns.forEach(btn => {
+        if (!(btn as any)._listenerSet) {
+            (btn as any)._listenerSet = true;
             
-            try {
-                startBtn.textContent = 'Starting...';
-                (startBtn as HTMLButtonElement).disabled = true;
+            btn.addEventListener('click', async (e) => {
+                const target = e.currentTarget as HTMLButtonElement;
+                const tournamentId = target.dataset.tournamentId;
+                const matchId = target.dataset.matchId;
                 
-                // Call manual start route
-                const response = await fetch(`/api/tournaments/${tournament.id}/start`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({})
-                });
-                
-                if (response.ok) {
-                    // Reload page to see started tournament
-                    await renderTournamentDetail(tournament.id);
-                } else {
-                    const error = await response.json();
-                    alert(`Error: ${error.error || 'Failed to start tournament'}`);
-                    startBtn.textContent = '🚀 Start Tournament';
-                    (startBtn as HTMLButtonElement).disabled = false;
+                if (!tournamentId || !matchId) {
+                    console.error('Missing tournament or match ID');
+                    return;
                 }
                 
-            } catch (error) {
-                console.error('Tournament start error:', error);
-                alert('Error when starting tournament');
-                startBtn.textContent = '🚀 Start Tournament';
-                (startBtn as HTMLButtonElement).disabled = false;
-            }
-        });
-    }
+                try {
+                    target.textContent = 'Starting...';
+                    target.disabled = true;
+                    
+                    // Call API to create/get match room
+                    const response = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}/play`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({}) // Empty body required by Fastify
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const roomName = data.roomName;
+                        
+                        console.log(`🎮 Joining tournament match room: ${roomName}`);
+                        
+                        // Join the room via WebSocket
+                        const socket = (window as any).socket;
+                        if (socket) {
+                            // Store tournament context for later use (e.g., returning to bracket)
+                            (window as any).currentTournamentId = tournamentId;
+                            (window as any).currentMatchId = matchId;
+                            
+                            socket.emit('joinRoom', { roomName });
+                            // The 'roomJoined' event handler in websocket.ts will navigate to the game page
+                        } else {
+                            console.error('Socket not available');
+                            alert('Connection error. Please refresh the page.');
+                            target.textContent = '🎮 Play Match';
+                            target.disabled = false;
+                        }
+                    } else {
+                        const error = await response.json();
+                        alert(`Error: ${error.error || 'Failed to start match'}`);
+                        target.textContent = '🎮 Play Match';
+                        target.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Match start error:', error);
+                    alert('Error starting match');
+                    target.textContent = '🎮 Play Match';
+                    target.disabled = false;
+                }
+            });
+        }
+    });
 }

@@ -559,10 +559,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                        u1.username as player1_username, 
                        u2.username as player2_username
                 FROM tournament_matches tm
-                LEFT JOIN tournament_participants tp1 ON tm.player1_id = tp1.id
-                LEFT JOIN users u1 ON tp1.user_id = u1.id
-                LEFT JOIN tournament_participants tp2 ON tm.player2_id = tp2.id
-                LEFT JOIN users u2 ON tp2.user_id = u2.id
+                LEFT JOIN users u1 ON tm.player1_id = u1.id
+                LEFT JOIN users u2 ON tm.player2_id = u2.id
                 WHERE tm.id = ? AND tm.tournament_id = ?
             `).get(mid, tid) as any;
 
@@ -579,16 +577,12 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Match does not have 2 players assigned' });
             }
 
-            // Récupérer les user_id des participants pour la vérification de sécurité
-            const participant1 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(match.player1_id) as any;
-            const participant2 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(match.player2_id) as any;
-
-            if (!participant1 || !participant2) {
-                return reply.status(400).send({ error: 'Could not find participant data' });
-            }
+            // player1_id and player2_id ARE user_ids, so compare directly
+            const player1UserId = match.player1_id;
+            const player2UserId = match.player2_id;
 
             // SECURITY: Vérifier que l'utilisateur est l'un des 2 joueurs du match
-            if (userId !== participant1.user_id && userId !== participant2.user_id) {
+            if (userId !== player1UserId && userId !== player2UserId) {
                 return reply.status(403).send({ error: 'You are not a participant of this match' });
             }
 
