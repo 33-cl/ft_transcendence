@@ -5,7 +5,7 @@ import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from '../settings/settings.js';
 import { setStarsHoverColor } from '../background/background.js';
 import { initSessionBroadcast } from '../navigation/sessionBroadcast.js'; // Import session broadcast
-import { installFetchGuard } from '../navigation/securityGuard.js'; // Import fetch guard
+import { installAllSecurityGuards } from '../navigation/securityGuard.js'; // Import all security guards
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../navigation/navigation.js';
 import '../config/config.js'; // Import to load AI Config handlers
 import '../landing/landing.js'; // Import to load Landing handlers
@@ -502,8 +502,8 @@ setupPopStateHandler();
 // // top level statemetn ( s'execute des que le fichier est importe)
 // // --> manipuler le dom quúne fois qu'il est pret
 initNavigationOnLoad(async () => {
-    // 🛡️ SECURITY: Install fetch guard FIRST to intercept all requests
-    installFetchGuard();
+    // 🛡️ SECURITY: Install ALL security guards FIRST to intercept all requests
+    installAllSecurityGuards();
     
     // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
     await initSessionBroadcast();

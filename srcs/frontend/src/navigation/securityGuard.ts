@@ -14,7 +14,7 @@ export function guardFunction<T extends (...args: any[]) => any>(
     return ((...args: any[]) => {
         // Vérifier si la session est bloquée
         if (isSessionBlocked()) {
-            console.error(`🚫 Security: Blocked call to ${functionName} - Session is blocked in this tab`);
+            console.error(`Security: Blocked call to ${functionName} - Session is blocked in this tab`);
             console.trace('Call stack:');
             return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
         }
@@ -23,7 +23,7 @@ export function guardFunction<T extends (...args: any[]) => any>(
         if (requiresAuth) {
             const currentUser = (window as any).currentUser;
             if (!currentUser) {
-                console.error(`🚫 Security: Blocked call to ${functionName} - User not authenticated`);
+                console.error(`Security: Blocked call to ${functionName} - User not authenticated`);
                 return Promise.reject(new Error(`Action blocked: User not authenticated`));
             }
         }
@@ -40,7 +40,7 @@ export function guardFunction<T extends (...args: any[]) => any>(
 export function canExecuteAction(): boolean {
     const blocked = isSessionBlocked();
     if (blocked) {
-        console.error('🚫 Security: Action blocked - This tab does not have an active session');
+        console.error('Security: Action blocked - This tab does not have an active session');
     }
     return !blocked;
 }
@@ -55,7 +55,7 @@ export function guardEventHandler<T extends Event>(
 ): (event: T) => void {
     return (event: T) => {
         if (isSessionBlocked()) {
-            console.error(`🚫 Security: Blocked event handler for ${actionName}`);
+            console.error(`Security: Blocked event handler for ${actionName}`);
             event.preventDefault();
             event.stopPropagation();
             return;
@@ -74,18 +74,23 @@ export function installFetchGuard() {
     window.fetch = function(...args: Parameters<typeof fetch>): Promise<Response> {
         const url = args[0]?.toString() || 'unknown';
         
-        // Autoriser toujours les requêtes d'authentification
+        // Autoriser toujours les requêtes de LOGIN (pas logout depuis un onglet bloqué)
         if (url.includes('/auth/login') || 
             url.includes('/auth/register') || 
-            url.includes('/auth/logout') ||
             url.includes('/auth/me') ||
             url.includes('/oauth/')) {
             return originalFetch.apply(this, args);
         }
         
-        // Vérifier si la session est bloquée
+        // Bloquer logout depuis un onglet bloqué (empêche de déconnecter l'autre onglet)
+        if (url.includes('/auth/logout') && isSessionBlocked()) {
+            console.error(`Security: Blocked logout from blocked tab`);
+            return Promise.reject(new Error(`Logout blocked: This tab does not have an active session`));
+        }
+        
+        // Vérifier si la session est bloquée pour les autres requêtes
         if (isSessionBlocked()) {
-            console.error(`🚫 Security: Blocked fetch to ${url} - Session is blocked in this tab`);
+            console.error(`Security: Blocked fetch to ${url} - Session is blocked in this tab`);
             return Promise.reject(new Error(`Fetch blocked: This tab does not have an active session`));
         }
         
@@ -93,7 +98,7 @@ export function installFetchGuard() {
         if (url.includes('/api/')) {
             const currentUser = (window as any).currentUser;
             if (!currentUser) {
-                console.error(`🚫 Security: Blocked fetch to ${url} - No active user session`);
+                console.error(`Security: Blocked fetch to ${url} - No active user session`);
                 return Promise.reject(new Error(`Fetch blocked: User not authenticated`));
             }
         }
@@ -102,5 +107,97 @@ export function installFetchGuard() {
         return originalFetch.apply(this, args);
     };
     
-    console.log('🛡️ Fetch guard installed');
+}
+
+/**
+ * Protège le socket contre les émissions non autorisées depuis un onglet bloqué
+ * Doit être appelé après l'initialisation du socket
+ */
+export function installSocketGuard()
+{
+    const socket = (window as any).socket;
+    if (!socket)
+    {
+        console.warn('Socket not found, will retry socket guard installation later');
+        return false;
+    }
+    
+    // Éviter d'installer plusieurs fois
+    if ((socket as any)._guardInstalled)
+        return true;
+    
+    // Sauvegarder la référence originale
+    const originalEmit = socket.emit.bind(socket);
+    
+    // Événements toujours autorisés (même si bloqué)
+    const allowedWhenBlocked = ['ping', 'disconnect'];
+    
+    // Événements sensibles qui nécessitent une session active
+    const sensitiveEvents = [
+        'joinRoom', 
+        'leaveRoom', 
+        'startGame', 
+        'playerMove', 
+        'sendMessage',
+        'createRoom',
+        'leaveAllRooms'
+    ];
+    
+    // Remplacer emit par une version protégée
+    socket.emit = function(event: string, ...args: any[]) {
+        // Autoriser certains événements même si bloqué
+        if (allowedWhenBlocked.includes(event)) {
+            return originalEmit(event, ...args);
+        }
+        
+        // Bloquer si session bloquée
+        if (isSessionBlocked())
+        {
+            console.error(`Security: Blocked socket.emit('${event}') - Session is blocked in this tab`);
+            return socket; // Retourner le socket pour le chaînage
+        }
+        
+        // Vérifier auth pour les événements sensibles
+        if (sensitiveEvents.includes(event)) {
+            const currentUser = (window as any).currentUser;
+            if (!currentUser)
+            {
+                console.error(`Security: Blocked socket.emit('${event}') - User not authenticated`);
+                return socket;
+            }
+        }
+        
+        return originalEmit(event, ...args);
+    };
+    
+    (socket as any)._guardInstalled = true;
+    console.log('Socket Guard installed');
+    return true;
+}
+
+/**
+ * Installe toutes les protections de sécurité
+ * Doit être appelé au démarrage de l'application
+ */
+export function installAllSecurityGuards()
+{
+    console.log('Installing security guards...');
+    
+    // Fetch Guard
+    installFetchGuard();
+    console.log('Fetch Guard installed');
+    
+    // Socket Guard - on vérifie périodiquement si le socket existe
+    const checkSocket = setInterval(() => {
+        if (installSocketGuard()) {
+            clearInterval(checkSocket);
+        }
+    }, 100);
+    
+    // Timeout après 10 secondes si le socket n'est pas trouvé
+    setTimeout(() => {
+        clearInterval(checkSocket);
+    }, 10000);
+    
+    console.log('Security guards installation initiated!');
 }
