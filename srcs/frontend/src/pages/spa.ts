@@ -263,6 +263,22 @@ function initializeComponents(): void
             (window as any).selectedProfileUser = selectedUser;
             await load('profile');
         }
+        
+        // Gestionnaire de clic sur les matchs dans le profil
+        if (target.classList.contains('match-item') && !target.classList.contains('no-click')) {
+            const matchIndex = target.getAttribute('data-match-index');
+            if (matchIndex !== null) {
+                const { getCachedMatches } = await import('../profile/profile.html.js');
+                const matches = getCachedMatches();
+                const match = matches[parseInt(matchIndex)];
+                if (match) {
+                    // Stocker les données du match pour la page de stats
+                    (window as any).selectedMatchData = match;
+                    await load('gameStats');
+                }
+            }
+        }
+        
         if (target.id === 'logOutBtn') {
             // Use the global logout function which handles broadcast
             if (typeof window.logout === 'function') {

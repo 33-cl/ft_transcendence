@@ -142,7 +142,104 @@
     }
 
     .match-item {
-        @apply text-xl py-2;
+        @apply text-xl py-2 cursor-pointer transition-all duration-200;
+    }
+
+    .match-item:hover {
+        @apply text-amber-500 pl-2;
+    }
+
+    .match-item.no-click {
+        @apply cursor-default text-gray-500;
+    }
+
+    .match-item.no-click:hover {
+        @apply text-gray-500 pl-0;
+    }
+
+    /* Game Stats Page Styling */
+    .gamestats-container {
+        @apply flex flex-col items-center justify-start w-full min-h-full pt-4 pb-24 px-8 overflow-y-auto;
+    }
+
+    .gamestats-header {
+        @apply text-center mb-4;
+    }
+
+    .gamestats-title {
+        @apply text-3xl mb-1;
+    }
+
+    .gamestats-date {
+        @apply text-gray-400 text-base mb-1;
+    }
+
+    .gamestats-type {
+        @apply px-3 py-1 bg-amber-500 text-black rounded-full text-xs font-bold;
+    }
+
+    .gamestats-result {
+        @apply text-4xl font-bold mb-4;
+    }
+
+    .gamestats-score-section {
+        @apply flex items-center justify-center gap-6 mb-6;
+    }
+
+    .gamestats-player {
+        @apply flex flex-col items-center p-4 rounded-lg min-w-[120px];
+    }
+
+    .gamestats-player.winner {
+        @apply text-green-500;
+    }
+
+    .gamestats-player.loser {
+        @apply text-red-500;
+    }
+
+    .gamestats-player .player-name {
+        @apply text-base mb-1;
+    }
+
+    .gamestats-player .player-score {
+        @apply text-4xl font-bold;
+    }
+
+    .gamestats-vs {
+        @apply text-2xl text-gray-500;
+    }
+
+    .gamestats-charts {
+        @apply flex flex-wrap justify-center gap-6 mb-6 w-full max-w-3xl;
+    }
+
+    .gamestats-chart-container {
+        @apply flex flex-col items-center bg-black/30 rounded-lg p-4 min-w-[250px] max-w-[350px] flex-1;
+    }
+
+    .gamestats-chart-container h3 {
+        @apply text-lg text-amber-500 mb-2;
+    }
+
+    .gamestats-chart-container canvas {
+        @apply w-full max-h-[180px];
+    }
+
+    .gamestats-details {
+        @apply grid grid-cols-2 gap-3 w-full max-w-sm;
+    }
+
+    .gamestats-detail-item {
+        @apply flex flex-col items-center bg-black/30 rounded-lg p-3;
+    }
+
+    .gamestats-detail-item .detail-label {
+        @apply text-gray-400 text-xs mb-1;
+    }
+
+    .gamestats-detail-item .detail-value {
+        @apply text-lg font-bold;
     }
 
 }

@@ -11,6 +11,13 @@ export async function fetchUserMatches(userId: string) {
     return [];
 }
 
+// Stocker les matchs globalement pour pouvoir y accéder lors du clic
+let cachedMatches: any[] = [];
+
+export function getCachedMatches() {
+    return cachedMatches;
+}
+
 export async function profileHTML(targetUser?: any) {
     // Si un utilisateur cible est spécifié, l'afficher, sinon afficher l'utilisateur actuel
     const user = targetUser || window.currentUser;
@@ -21,10 +28,11 @@ export async function profileHTML(targetUser?: any) {
     
     // Récupérer les vrais matchs de l'utilisateur
     const matches = user?.id ? await fetchUserMatches(user.id) : [];
+    cachedMatches = matches; // Sauvegarder pour l'accès lors du clic
     
-    // Générer le HTML des matchs
+    // Générer le HTML des matchs avec data-attributes pour le clic
     const matchesHTML = matches.length > 0 
-        ? matches.map((match: any) => {
+        ? matches.map((match: any, index: number) => {
             const isWinner = match.winner_id === user?.id;
             const opponent = isWinner ? match.loser_username : match.winner_username;
             const userScore = isWinner ? match.winner_score : match.loser_score;
@@ -32,9 +40,9 @@ export async function profileHTML(targetUser?: any) {
             const result = isWinner ? 'Win' : 'Loss';
             const matchClass = isWinner ? 'win' : 'loss';
             
-            return `<li class="match-item ${matchClass}">${result} vs. ${opponent} (${userScore}-${opponentScore})</li>`;
+            return `<li class="match-item ${matchClass}" data-match-index="${index}" data-match-id="${match.id}">${result} vs. ${opponent} (${userScore}-${opponentScore})</li>`;
         }).join('')
-        : '<li class="match-item">No matches played yet</li>';
+        : '<li class="match-item no-click">No matches played yet</li>';
     
     return /*html*/ `
     <div class="profile-container">

@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -22,6 +22,7 @@ const components = {
     profile: {id: 'profile', html: profileHTML},
     profileDashboard: {id: 'profileDashboard', html: profileDashboardHTML},
     profileWinRateHistory: {id: 'profileWinRateHistory', html: profileWinRateHistoryHTML},
+    gameStats: {id: 'gameStats', html: gameStatsHTML as any},
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
     settings: {id: 'settings', html: settingsHTML},
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
@@ -59,6 +60,12 @@ async function show(pageName: keyof typeof components, data?: any)
                 // Nettoyer après utilisation du dashboard
                 (window as any).selectedProfileUser = null;
             } 
+            // Cas spécial pour gameStats - passer les données du match
+            else if (pageName === 'gameStats') {
+                const matchData = (window as any).selectedMatchData;
+                const userId = window.currentUser?.id || 0;
+                htmlResult = component.html(matchData, userId);
+            }
             // Cas spécial pour gameFinished - passer les données de fin de jeu
             else if (pageName === 'gameFinished') {
                 htmlResult = component.html(data);
@@ -308,6 +315,21 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 }
             }, 100);
         }
+    }
+    else if (pageName === 'gameStats') {
+        stopFriendListRealtimeUpdates();
+        await show('gameStats');
+        await show('goToMain');
+        
+        // Initialiser les graphiques après l'affichage
+        setTimeout(async () => {
+            if (myLoadId !== currentLoadId) return;
+            const { initializeGameStatsCharts } = await import('../profile/gamestats.js');
+            const matchData = (window as any).selectedMatchData;
+            if (matchData) {
+                initializeGameStatsCharts(matchData);
+            }
+        }, 100);
     }
     else if (pageName === 'aiConfig') 
     {

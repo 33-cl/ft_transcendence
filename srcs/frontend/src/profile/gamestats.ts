@@ -1,0 +1,182 @@
+// gamestats.ts - Logique pour afficher les statistiques d'un match
+import { MatchData } from './gamestats.html.js';
+
+// Chart.js est chargé via CDN dans index.html
+declare const Chart: any;
+
+/**
+ * Initialise le graphique de distribution des points (pie chart)
+ */
+export function initializePointsDistributionChart(match: MatchData): void {
+    const canvas = document.getElementById('points-distribution-chart') as HTMLCanvasElement;
+    if (!canvas) {
+        console.error('Canvas points-distribution-chart not found');
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Could not get 2d context');
+        return;
+    }
+
+    // Détruire l'ancien graphique s'il existe
+    if (Chart && Chart.getChart) {
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+    }
+
+    if (!Chart) {
+        console.error('Chart.js not loaded');
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [match.winner_username, match.loser_username],
+            datasets: [{
+                data: [match.winner_score, match.loser_score],
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.8)',  // green pour le gagnant
+                    'rgba(239, 68, 68, 0.8)',  // red pour le perdant
+                ],
+                borderColor: [
+                    'rgba(34, 197, 94, 1)',
+                    'rgba(239, 68, 68, 1)',
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: '#fff',
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#fbbf24',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context: any) {
+                            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.raw} points (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Initialise le graphique de progression du score (bar chart)
+ */
+export function initializeScoreProgressionChart(match: MatchData): void {
+    const canvas = document.getElementById('score-progression-chart') as HTMLCanvasElement;
+    if (!canvas) {
+        console.error('Canvas score-progression-chart not found');
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Could not get 2d context');
+        return;
+    }
+
+    // Détruire l'ancien graphique s'il existe
+    if (Chart && Chart.getChart) {
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+    }
+
+    if (!Chart) {
+        console.error('Chart.js not loaded');
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [match.winner_username, match.loser_username],
+            datasets: [{
+                label: 'Points Scored',
+                data: [match.winner_score, match.loser_score],
+                backgroundColor: [
+                    'rgba(34, 197, 94, 0.8)',  // green pour le gagnant
+                    'rgba(239, 68, 68, 0.8)',  // red pour le perdant
+                ],
+                borderColor: [
+                    'rgba(34, 197, 94, 1)',
+                    'rgba(239, 68, 68, 1)',
+                ],
+                borderWidth: 2,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: Math.max(match.winner_score, match.loser_score) + 2,
+                    ticks: {
+                        color: '#fff',
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#fff'
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#fbbf24',
+                    borderWidth: 1
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Initialise tous les graphiques de la page de statistiques
+ */
+export function initializeGameStatsCharts(match: MatchData): void {
+    initializePointsDistributionChart(match);
+    initializeScoreProgressionChart(match);
+}
