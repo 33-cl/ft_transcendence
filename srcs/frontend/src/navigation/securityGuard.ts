@@ -29,7 +29,6 @@ export function guardFunction<T extends (...args: any[]) => any>(
         }
         
         // Si pas bloqué, exécuter la fonction normalement
-        console.log(`✅ Security: Allowing call to ${functionName}`);
         return fn(...args);
     }) as T;
 }
@@ -171,7 +170,6 @@ export function installSocketGuard()
     };
     
     (socket as any)._guardInstalled = true;
-    console.log('Socket Guard installed');
     return true;
 }
 
@@ -181,11 +179,8 @@ export function installSocketGuard()
  */
 export function installAllSecurityGuards()
 {
-    console.log('Installing security guards...');
-    
     // Fetch Guard
     installFetchGuard();
-    console.log('Fetch Guard installed');
     
     // Socket Guard - on vérifie périodiquement si le socket existe
     const checkSocket = setInterval(() => {
@@ -199,5 +194,4 @@ export function installAllSecurityGuards()
         clearInterval(checkSocket);
     }, 10000);
     
-    console.log('Security guards installation initiated!');
 }

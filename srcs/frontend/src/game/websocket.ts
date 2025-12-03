@@ -12,12 +12,10 @@ import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from 
 
 // Fonction pour afficher l'overlay de session déconnectée
 function showSessionDisconnectedOverlay(message: string) {
-    console.log('🎨 showSessionDisconnectedOverlay() called with message:', message);
     
     // Éviter les doublons
     const existingOverlay = document.getElementById('sessionDisconnectedOverlay');
     if (existingOverlay) {
-        console.log('🗑️ Removing existing overlay in showSessionDisconnectedOverlay()');
         existingOverlay.remove();
     }
     
@@ -28,7 +26,6 @@ function showSessionDisconnectedOverlay(message: string) {
     
     // Ajouter l'overlay au body
     document.body.appendChild(overlayDiv);
-    console.log('✅ Overlay appended to body by showSessionDisconnectedOverlay()');
     
     // Initialiser les event listeners pour le bouton
     initializeSessionDisconnectedListeners();
@@ -175,7 +172,6 @@ function setupGlobalSocketListeners() {
             // NOTE: Normally this is already handled by BroadcastChannel (sessionBroadcast.ts)
             // This is just a fallback for edge cases (e.g., BroadcastChannel not supported)
             if (data && data.code === 'USER_ALREADY_CONNECTED') {
-                console.log('⚠️ WebSocket: USER_ALREADY_CONNECTED received');
                 
                 // Import isSessionBlocked dynamically to check if BroadcastChannel already handled this
                 import('../navigation/sessionBroadcast.js').then(({ isSessionBlocked }) => {
@@ -184,13 +180,9 @@ function setupGlobalSocketListeners() {
                     const overlayExists = document.getElementById('sessionDisconnectedOverlay');
                     
                     if (alreadyBlocked || overlayExists) {
-                        console.log('ℹ️ Session already blocked by BroadcastChannel, not creating duplicate overlay');
                         socket.disconnect();
                         return;
                     }
-                    
-                    // Fallback: BroadcastChannel didn't handle it (e.g., not supported in browser)
-                    console.log('🎨 FALLBACK: Creating session blocked overlay from WebSocket');
                     
                     // Stop friend list auto-refresh to prevent background requests
                     if ((window as any).stopFriendListAutoRefresh) {
