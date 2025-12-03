@@ -7,7 +7,6 @@ import { load } from './utils.js';
  * @param pageName - Nom de la page à ajouter à l'historique
  */
 export function pushHistoryState(pageName: string): void {
-    console.log(`📝 Pushing history state: ${pageName} → /${pageName}`);
     window.history.pushState({ page: pageName }, '', `/${pageName}`);
 }
 
@@ -39,11 +38,6 @@ export function setupPopStateHandler(): void {
     (window as any)._popStateListenerSet = true;
     
     window.addEventListener('popstate', async function(event) {
-        console.log('🔄 PopState event triggered!', {
-            state: event.state,
-            pathname: window.location.pathname,
-            href: window.location.href
-        });
         
         let targetPage = event.state?.page;
         
@@ -51,39 +45,31 @@ export function setupPopStateHandler(): void {
         if (!targetPage) {
             const path = window.location.pathname.substring(1) || 'signIn'; // Remove leading /
             targetPage = path;
-            console.log(`📍 No state found, using URL path: ${targetPage}`);
-        } else {
-            console.log(`📍 Using state page: ${targetPage}`);
         }
         
         // Protection: empêcher l'accès à landing via l'historique
         if (targetPage === 'landing') {
             targetPage = window.currentUser ? 'mainMenu' : 'signIn';
-            console.log(`🚫 Landing blocked, redirecting to: ${targetPage}`);
         }
         
         // Protection: si connecté et tentative d'accès aux pages d'auth → rediriger
         if (window.currentUser && (targetPage === 'signIn' || targetPage === 'signUp')) {
             targetPage = 'mainMenu';
-            console.log(`🚫 Auth page blocked (user connected), redirecting to: ${targetPage}`);
         }
 
         // Protection: empêcher le retour aux pages de jeu transitoires (matchmaking, game, etc.)
         if (['matchmaking', 'game', 'game4', 'gameFinished'].includes(targetPage)) {
             targetPage = 'mainMenu';
-            console.log(`🚫 Game flow page blocked in history, redirecting to: ${targetPage}`);
         }
         
         // Protection critique: si pas connecté, forcer la connexion
         if (!window.currentUser && targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing') {
-            console.log(`🚫 Protected page blocked (no user), forcing signIn`);
             // Forcer le retour à signIn comme dans l'ancienne logique
             pushHistoryState('signIn');
             await load('signIn', undefined, false);
             return;
         }
         
-        console.log(`🎯 Final navigation target: ${targetPage}`);
         await load(targetPage, undefined, false);
     });
 }

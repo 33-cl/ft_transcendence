@@ -184,7 +184,6 @@ export class PongGame {
         }
         
     this.state.aiConfig = createAIConfig(difficulty, this.state.paddleSpeed);
-        console.log(`🤖 IA activée en mode ${difficulty}`);
     }
 
     /**
@@ -192,7 +191,6 @@ export class PongGame {
      */
     disableAI() {
         this.state.aiConfig = undefined;
-        console.log('🤖 IA désactivée');
     }
 
     /**
@@ -200,20 +198,16 @@ export class PongGame {
      * Requis pour l'évaluation : expliquer comment l'IA fonctionne
      */
     enableAIDebug() {
-        if (this.state.aiConfig) {
+        if (this.state.aiConfig)
             this.state.aiConfig.debugMode = true;
-            console.log('[IA DEBUG] Mode debug activé - Les décisions de l\'IA seront affichées');
-        }
     }
 
     /**
      * Désactive le mode debug de l'IA
      */
     disableAIDebug() {
-        if (this.state.aiConfig) {
+        if (this.state.aiConfig)
             this.state.aiConfig.debugMode = false;
-            console.log('[IA DEBUG] Mode debug désactivé');
-        }
     }
 
     /**

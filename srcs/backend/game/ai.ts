@@ -145,11 +145,9 @@ export function updateAITarget(state: GameState): void {
     ai.panicMode = ballDistance <= ai.panicThreshold && state.ballSpeedX < 0; // Balle qui approche
     
     // Compteur de panique
-    if (ai.panicMode && !wasPanic) {
+    if (ai.panicMode && !wasPanic)
+    {
         ai.panicCount++;
-        if (ai.debugMode) {
-            console.log(`🚨 [IA-${ai.difficulty}] MODE PANIQUE activé! Distance balle: ${ballDistance.toFixed(1)}px`);
-        }
     }
     
     // Système de persistance : ne pas changer d'avis trop souvent
@@ -173,22 +171,15 @@ export function updateAITarget(state: GameState): void {
             if (Math.random() < 0.05) { // 5% chance
                 const bigMiss = (Math.random() - 0.5) * ai.errorMargin * 5;
                 predictedY += bigMiss;
-                if (ai.debugMode) console.log(`[IA-easy] Grosse erreur (miss): ${bigMiss.toFixed(1)}px`);
             }
         }
         
-        if (ai.debugMode) {
-            console.log(`🎯 [IA-${ai.difficulty}] Prédiction: Y=${predictedY.toFixed(1)} | Balle: X=${state.ballX.toFixed(1)}, SpeedX=${state.ballSpeedX.toFixed(2)}`);
-        }
         
         baseTargetY = predictedY;  // ✅ Utilise la nouvelle prédiction
         ai.lastDecisionTime = now;
         ai.decisionCount++;
         isNewDecision = true;
         
-        if (ai.debugMode) {
-            console.log(`🔄 [IA-${ai.difficulty}] Nouvelle décision: base=${baseTargetY.toFixed(1)}px`);
-        }
     }
     // ✅ ERREURS APPLIQUÉES À CHAQUE ÉVALUATION (indépendamment de la persistance)
     let targetY = baseTargetY;
@@ -201,9 +192,6 @@ export function updateAITarget(state: GameState): void {
         targetY += errorOffset;
         ai.errorCount++;
         
-        if (ai.debugMode) {
-            console.log(`❌ [IA-${ai.difficulty}] ERREUR! Décalage: ${errorOffset.toFixed(1)}px (${ai.panicMode ? 'PANIQUE' : 'normale'})`);
-        }
     }
     
     // Micro-corrections : petits ajustements aléatoires pour simuler l'imprécision humaine
@@ -211,14 +199,8 @@ export function updateAITarget(state: GameState): void {
         const microError = (Math.random() - 0.5) * (ai.errorMargin * 0.3);
         targetY += microError;
         
-        if (ai.debugMode) {
-            console.log(`🔧 [IA-${ai.difficulty}] Micro-correction: ${microError.toFixed(1)}px`);
-        }
     }
     
-    if (ai.debugMode && isNewDecision) {
-        console.log(`📊 [IA-${ai.difficulty}] Stats: Décisions=${ai.decisionCount}, Erreurs=${ai.errorCount}, Paniques=${ai.panicCount}`);
-    }
     
     // S'assurer que la cible reste dans les limites du canvas
     const paddleHeight = state.paddles[0]?.height || state.paddleHeight;

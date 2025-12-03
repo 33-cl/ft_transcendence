@@ -63,7 +63,6 @@ export function initializeStatsChart(wins: number, losses: number) {
         }
     });
     
-    console.log('Stats chart initialized with wins:', wins, 'losses:', losses);
 }
 
 export async function initializeWinRateHistoryChart(userId: string) {
@@ -84,10 +83,6 @@ export async function initializeWinRateHistoryChart(userId: string) {
         const data = await response.json();
         const matches = data.matches || [];
         
-        if (matches.length === 0) {
-            console.log('No matches found for win rate history');
-            return;
-        }
         
         // Trier les matchs par date (du plus ancien au plus récent)
         matches.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -175,7 +170,6 @@ export async function initializeWinRateHistoryChart(userId: string) {
             }
         });
         
-        console.log('Win rate history chart initialized with', matches.length, 'matches');
     } catch (error) {
         console.error('Error initializing win rate history chart:', error);
     }

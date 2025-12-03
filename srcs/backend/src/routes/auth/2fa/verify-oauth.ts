@@ -98,7 +98,6 @@ export async function verifyOAuth2FARoute(request: FastifyRequest, reply: Fastif
     maxAge: maxAge
   });
 
-  console.log('✅ User authenticated successfully after OAuth 2FA verification:', user.username);
 
   // Retourner les infos utilisateur (sans le password_hash)
   const { password_hash, ...safeUser } = user;

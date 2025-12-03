@@ -235,6 +235,12 @@ function initializeComponents(): void
         if (target.id === 'signUpBtn')        
             await load('signUp');
         if (target.id === 'profileBtn' || isProfileBtn) {
+            // Si le clic vient du context menu, ignorer (sera géré par le listener du context menu)
+            const contextMenu = document.getElementById('contextMenu');
+            if (contextMenu && contextMenu.contains(target)) {
+                return;
+            }
+            
             // Récupérer les informations de l'utilisateur cliqué
             let selectedUser = null;
             if (currentElement && currentElement.dataset && currentElement.dataset.username) {
@@ -419,7 +425,7 @@ function initializeComponents(): void
     if (!(document as any)._spaMenuClickListenerSet) {
         (document as any)._spaMenuClickListenerSet = true;
         
-        document.addEventListener('click', (e) => {
+        document.addEventListener('click', async (e) => {
             const menu = document.getElementById('contextMenu');
             if (!menu) return;
         
@@ -429,8 +435,23 @@ function initializeComponents(): void
             const target = e.target as HTMLElement;
             
             // Gérer les clics sur les boutons du menu contextuel
-            if (menu.contains(target)) {
-                if (target.id === 'removeFriendBtn') {
+            if (menu.contains(target))
+            {
+                if (target.id === 'profileBtn')
+                {
+                    // Gérer l'affichage du profil depuis le context menu
+                    const selectedUser = (window as any).selectedContextUser;
+                    if (selectedUser && selectedUser.username)
+                    {
+                        const userProfile = await fetchUserByUsername(selectedUser.username);
+                        (window as any).selectedProfileUser = userProfile;
+                        await load('profile');
+                    }
+                    hide('contextMenu');
+                    return;
+                }
+                if (target.id === 'removeFriendBtn')
+                {
                     // Gérer la suppression d'ami
                     const selectedUser = (window as any).selectedContextUser;
                     if (selectedUser && selectedUser.userId) {
@@ -439,7 +460,8 @@ function initializeComponents(): void
                     hide('contextMenu');
                     return;
                 }
-                if (target.id === 'spectateBtn') {
+                if (target.id === 'spectateBtn')
+                {
                     // Gérer le spectate
                     const selectedUser = (window as any).selectedContextUser;
                     if (selectedUser && selectedUser.username) {
@@ -502,10 +524,10 @@ setupPopStateHandler();
 // // top level statemetn ( s'execute des que le fichier est importe)
 // // --> manipuler le dom quúne fois qu'il est pret
 initNavigationOnLoad(async () => {
-    // 🛡️ SECURITY: Install ALL security guards FIRST to intercept all requests
+    // SECURITY: Install ALL security guards FIRST to intercept all requests
     installAllSecurityGuards();
     
-    // 🚨 CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
+    // CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
     await initSessionBroadcast();
     
     await checkSessionOnce();
