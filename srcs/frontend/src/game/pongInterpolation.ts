@@ -1,5 +1,5 @@
 // pongInterpolation.ts
-// Système d'interpolation et de prédiction pour fluidifier le mouvement de la balle
+// Système d'interpolation simple pour fluidifier le mouvement de la balle
 
 // Interface pour les états de jeu avec timestamp
 interface GameState {
@@ -25,41 +25,9 @@ interface GameState {
 // Buffer pour stocker les états de jeu récents
 const stateBuffer: GameState[] = [];
 const BUFFER_SIZE = 5; // Nombre d'états à conserver pour l'interpolation
-const INTERPOLATION_DELAY = 10; // Délai d'interpolation en ms (réduit pour plus de réactivité)
-
-// Variables pour la prédiction client-side
-let lastPredictedState: GameState | null = null;
-let lastPredictionTime: number = 0;
-let lastServerState: GameState | null = null;
-let lastScore: number = 0; // Pour détecter les changements de score
+const INTERPOLATION_DELAY = 10; // Délai d'interpolation en ms
 
 let isRenderLoopRunning = false;
-
-/**
- * Calcule le score total de tous les paddles
- */
-function getTotalScore(state: GameState): number {
-    if (!state.paddles) return 0;
-    return state.paddles.reduce((sum, p) => sum + (p.score || 0), 0);
-}
-
-/**
- * Détecte si la balle a été "téléportée" (reset après un but)
- */
-function hasBallTeleported(oldState: GameState | null, newState: GameState): boolean {
-    if (!oldState) return false;
-    
-    // Calculer la distance entre les deux positions
-    const dx = newState.ballX - oldState.ballX;
-    const dy = newState.ballY - oldState.ballY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // Si la balle a bougé de plus de 100 pixels d'un coup, c'est un reset
-    // (la balle normale ne peut pas bouger aussi vite en une frame)
-    const teleportThreshold = 100;
-    
-    return distance > teleportThreshold;
-}
 
 /**
  * Ajoute un nouvel état au buffer et applique un timestamp s'il n'en a pas
@@ -70,24 +38,6 @@ export function addGameState(gameState: GameState): void {
     if (!gameState.timestamp) {
         gameState.timestamp = Date.now();
     }
-    
-    // Détecter un changement de score (= but marqué)
-    const currentScore = getTotalScore(gameState);
-    const scoreChanged = currentScore !== lastScore;
-    lastScore = currentScore;
-    
-    // Détecter une téléportation de la balle
-    const teleported = hasBallTeleported(lastServerState, gameState);
-    
-    // Si le score a changé ou la balle a été téléportée, reset la prédiction
-    if (scoreChanged || teleported) {
-        lastPredictedState = null;
-        stateBuffer.length = 0; // Vider le buffer pour éviter l'interpolation avec les anciennes positions
-    }
-    
-    // Sauvegarder le dernier état serveur pour la prédiction
-    lastServerState = {...gameState};
-    lastPredictionTime = Date.now();
     
     // Ajouter l'état au buffer
     stateBuffer.push({...gameState}); // Copie pour éviter les références
@@ -113,55 +63,7 @@ export function startRenderLoop(): void {
  */
 export function stopRenderLoop(): void {
     isRenderLoopRunning = false;
-    lastPredictedState = null;
-    lastServerState = null;
-    lastScore = 0;
     stateBuffer.length = 0;
-}
-
-/**
- * Prédit la position de la balle en fonction de sa vitesse
- * @param state État de base pour la prédiction
- * @param deltaTime Temps écoulé en ms depuis le dernier état serveur
- * @returns État prédit avec nouvelle position de balle
- */
-function predictBallPosition(state: GameState, deltaTime: number): GameState {
-    const result: GameState = { ...state };
-    
-    // Si on a la vitesse de la balle, prédire sa position
-    if (state.ballSpeedX !== undefined && state.ballSpeedY !== undefined) {
-        // Convertir deltaTime en secondes et appliquer un facteur de lissage
-        const dt = deltaTime / 1000;
-        
-        // Calculer la nouvelle position prédite
-        let newBallX = state.ballX + state.ballSpeedX * dt;
-        let newBallY = state.ballY + state.ballSpeedY * dt;
-        
-        // Gérer les rebonds sur les bords (approximation simple)
-        const ballRadius = state.ballRadius || 10;
-        const margin = ballRadius;
-        
-        // Rebond horizontal (seulement en mode 4 joueurs avec paddles en haut/bas)
-        if (state.paddles && state.paddles.length === 4) {
-            if (newBallX <= margin || newBallX >= state.canvasWidth - margin) {
-                newBallX = Math.max(margin, Math.min(state.canvasWidth - margin, newBallX));
-            }
-        }
-        
-        // Rebond vertical (en mode 2 joueurs classique)
-        if (state.paddles && state.paddles.length === 2) {
-            if (newBallY <= margin) {
-                newBallY = margin;
-            } else if (newBallY >= state.canvasHeight - margin) {
-                newBallY = state.canvasHeight - margin;
-            }
-        }
-        
-        result.ballX = newBallX;
-        result.ballY = newBallY;
-    }
-    
-    return result;
 }
 
 /**
@@ -182,42 +84,20 @@ function interpolatePaddles(state1: GameState, state2: GameState, alpha: number)
 }
 
 /**
- * Obtient l'état interpolé actuel basé sur le buffer avec prédiction client-side
+ * Obtient l'état interpolé actuel basé sur le buffer
  * @returns État interpolé ou dernier état disponible
  */
 export function getCurrentInterpolatedState(): GameState | null {
-    if (stateBuffer.length === 0 && !lastServerState) {
+    if (stateBuffer.length === 0) {
         return null;
     }
     
-    const now = Date.now();
-    
-    // Si on a un état serveur récent, utiliser la prédiction client-side
-    if (lastServerState) {
-        const timeSinceLastUpdate = now - lastPredictionTime;
-        
-        // Si l'état serveur est très récent (< 100ms), prédire la position
-        if (timeSinceLastUpdate < 150) {
-            const predictedState = predictBallPosition(lastServerState, timeSinceLastUpdate);
-            
-            // Lissage avec l'état précédemment prédit pour éviter les saccades
-            if (lastPredictedState) {
-                const smoothingFactor = 0.3; // Plus bas = plus lisse mais moins réactif
-                predictedState.ballX = lastPredictedState.ballX + smoothingFactor * (predictedState.ballX - lastPredictedState.ballX);
-                predictedState.ballY = lastPredictedState.ballY + smoothingFactor * (predictedState.ballY - lastPredictedState.ballY);
-            }
-            
-            lastPredictedState = predictedState;
-            return predictedState;
-        }
-    }
-    
-    // Fallback: interpolation classique entre états du buffer
+    // Si un seul état, le retourner directement
     if (stateBuffer.length === 1) {
         return stateBuffer[0] || null;
     }
     
-    // Recherche des deux états entourant le temps cible
+    const now = Date.now();
     const targetTime = now - INTERPOLATION_DELAY;
     
     // Trouver les deux états entourant le temps cible
