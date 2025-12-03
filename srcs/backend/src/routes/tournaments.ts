@@ -10,6 +10,7 @@ import { generateBracket, updateMatchResult } from '../tournament.js';
 import { emitTournamentPlayerUpdate, emitTournamentStarted } from '../socket/handlers/tournamentHandlers.js';
 import { rooms, roomExists } from '../socket/roomManager.js';
 import { createInitialGameState } from '../../game/gameState.js';
+import { canUserJoinTournament, getUserActiveTournament } from '../socket/utils/modeIsolation.js';
 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
@@ -58,6 +59,18 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // SECURITY: Rate limiting - 5 créations de tournoi par minute par user
             if (!checkRateLimit(`tournament_create_${userId}`, 5, 60000)) {
                 return reply.status(429).send({ error: 'Too many tournament creations. Please wait.' });
+            }
+
+            // ========================================
+            // ISOLATION CHECK: Online vs Tournament
+            // ========================================
+            // Vérifier que l'utilisateur n'est pas dans un jeu online ou un autre tournoi
+            const isolationCheck = canUserJoinTournament(userId);
+            if (!isolationCheck.allowed) {
+                return reply.status(409).send({ 
+                    error: isolationCheck.reason,
+                    code: 'MODE_ISOLATION'
+                });
             }
 
             const body = request.body as CreateTournamentBody;
@@ -227,6 +240,18 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const validUserId = validateId(userId);
             if (!validUserId) {
                 return reply.status(400).send({ error: 'Invalid userId' });
+            }
+
+            // ========================================
+            // ISOLATION CHECK: Online vs Tournament
+            // ========================================
+            // Vérifier que l'utilisateur n'est pas dans un jeu online ou un autre tournoi
+            const isolationCheck = canUserJoinTournament(validUserId);
+            if (!isolationCheck.allowed) {
+                return reply.status(409).send({ 
+                    error: isolationCheck.reason,
+                    code: 'MODE_ISOLATION'
+                });
             }
 
             // SECURITY: Validate alias (username from DB is already sanitized)

@@ -170,6 +170,14 @@ function setupGlobalSocketListeners() {
                 // Don't show error to user for this case, just log it
                 return;
             }
+
+            // Handle tournament isolation error
+            if (data && data.code === 'TOURNAMENT_ISOLATION') {
+                console.log('⚠️ WebSocket: TOURNAMENT_ISOLATION - User is in active tournament');
+                // Show a user-friendly message
+                alert(data.error || 'You cannot join online games while in an active tournament.');
+                return;
+            }
             
             // Handle user already connected error
             // NOTE: Normally this is already handled by BroadcastChannel (sessionBroadcast.ts)

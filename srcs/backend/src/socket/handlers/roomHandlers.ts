@@ -33,6 +33,7 @@ import {
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { handleGameEnd } from './gameEndHandlers.js';
+import { canSocketJoinOnlineGame, isTournamentRoom } from '../utils/modeIsolation.js';
 
 // ========================================
 // ROOM ACCESS VALIDATION
@@ -239,6 +240,29 @@ export async function handleJoinRoom(
         
         const room = rooms[roomName] as RoomType;
         room.isLocalGame = params.isLocalGame;
+        
+        // ========================================
+        // ISOLATION CHECK: Tournament vs Online
+        // ========================================
+        // Si ce n'est pas un jeu local ET pas une room de tournoi,
+        // vérifier si l'utilisateur est dans un tournoi actif
+        if (!params.isLocalGame && !isTournamentRoom(roomName))
+        {
+            const isolationCheck = canSocketJoinOnlineGame(socket);
+            if (!isolationCheck.allowed)
+            {
+                socket.emit('error', { 
+                    error: isolationCheck.reason,
+                    code: 'TOURNAMENT_ISOLATION',
+                    tournament: isolationCheck.tournament
+                });
+                // Nettoyer la room si elle vient d'être créée et est vide
+                if (room.players.length === 0) {
+                    delete rooms[roomName];
+                }
+                return;
+            }
+        }
         
         if (params.isSpectator && roomName && rooms[roomName])
         {
