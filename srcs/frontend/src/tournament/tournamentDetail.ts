@@ -551,6 +551,13 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                             (window as any).currentTournamentId = tournamentId;
                             (window as any).currentMatchId = matchId;
                             
+                            // Close the tournament detail overlay before joining the game
+                            const detailPage = document.getElementById('tournamentDetailPage');
+                            if (detailPage) {
+                                detailPage.remove();
+                                console.log('🗑️ Tournament detail overlay closed');
+                            }
+                            
                             socket.emit('joinRoom', { roomName });
                             // The 'roomJoined' event handler in websocket.ts will navigate to the game page
                         } else {
