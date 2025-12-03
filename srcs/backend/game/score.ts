@@ -22,7 +22,6 @@ export function checkScoring4Players(state: GameState, ballState: BallState): vo
         else if (ballState.lastContact === 2) paddles[2].score++; // C gagne
         else if (ballState.lastContact === 3) paddles[3].score++; // D gagne
         ballState.pointScored = true; // Marquer qu'un point a été attribué
-        console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
     }
     // Si la moitié de la balle sort par le côté droit - joueur C éliminé
     else if (state.ballX - ballRadius/2 >= canvasWidth) {
@@ -30,7 +29,6 @@ export function checkScoring4Players(state: GameState, ballState: BallState): vo
         else if (ballState.lastContact === 1) paddles[1].score++; // B gagne
         else if (ballState.lastContact === 3) paddles[3].score++; // D gagne
         ballState.pointScored = true; // Marquer qu'un point a été attribué
-        console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
     }
     // Si la moitié de la balle sort par le bas - joueur B éliminé
     else if (state.ballY - ballRadius/2 >= canvasHeight) {
@@ -38,7 +36,6 @@ export function checkScoring4Players(state: GameState, ballState: BallState): vo
         else if (ballState.lastContact === 2) paddles[2].score++; // C gagne
         else if (ballState.lastContact === 3) paddles[3].score++; // D gagne
         ballState.pointScored = true; // Marquer qu'un point a été attribué
-        console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
     }
     // Si la moitié de la balle sort par le haut - joueur D éliminé
     else if (state.ballY + ballRadius/2 <= 0) {
@@ -46,7 +43,6 @@ export function checkScoring4Players(state: GameState, ballState: BallState): vo
         else if (ballState.lastContact === 1) paddles[1].score++; // B gagne
         else if (ballState.lastContact === 2) paddles[2].score++; // C gagne
         ballState.pointScored = true; // Marquer qu'un point a été attribué
-        console.log(`[BACKEND] But 1v1v1v1 ! Scores - A: ${paddles[0].score}, B: ${paddles[1].score}, C: ${paddles[2].score}, D: ${paddles[3].score}`);
     }
 }
 
@@ -62,13 +58,11 @@ export function checkScoring2Players(state: GameState, ballState: BallState): vo
     if (state.ballX + ballRadius/2 <= 0) {
         paddles[1].score++;
         ballState.pointScored = true; // Marquer qu'un point a été attribué
-        console.log(`[BACKEND] But 1v1 ! Score joueur droit: ${paddles[1].score}`);
     }
     // But à droite - la moitié de la balle sort par la droite
     else if (state.ballX - ballRadius/2 >= canvasWidth) {
         paddles[0].score++;
         ballState.pointScored = true; // Marquer qu'un point a été attribué
-        console.log(`[BACKEND] But 1v1 ! Score joueur gauche: ${paddles[0].score}`);
     }
 }
 

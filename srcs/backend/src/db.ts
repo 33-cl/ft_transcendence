@@ -134,24 +134,20 @@ try {
   const passwordHashCol = tableInfo.find(col => col.name === 'password_hash');
   
   if (!hasGoogleId) {
-    console.log('📝 Migration: Adding google_id column to users table');
     db.exec('ALTER TABLE users ADD COLUMN google_id TEXT');
     db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL');
   }
   
   if (!hasProvider) {
-    console.log('📝 Migration: Adding provider column to users table');
     db.exec("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'local'");
   }
   
   if (!hasDisplayName) {
-    console.log('📝 Migration: Adding display_name column to users table');
     db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
   }
   
   // SQLite doesn't support ALTER COLUMN, so we need to recreate the table if password_hash is NOT NULL
   if (passwordHashCol && passwordHashCol.notnull === 1) {
-    console.log('📝 Migration: Making password_hash nullable for OAuth users');
     db.exec(`
       BEGIN TRANSACTION;
       
@@ -196,9 +192,7 @@ try {
   const hasWinnerId = tournamentsTableInfo.some(col => col.name === 'winner_id');
   
   if (!hasWinnerId) {
-    console.log('📝 Migration: Adding winner_id column to tournaments table');
     db.exec('ALTER TABLE tournaments ADD COLUMN winner_id INTEGER');
-    console.log('✅ Migration completed: winner_id column added');
   }
 } catch (error) {
   console.error('❌ Migration failed for tournaments.winner_id:', error);
@@ -210,7 +204,6 @@ try {
   const hasCreatorId = columns.some((col) => col.name === 'creator_id');
     
   if (!hasCreatorId) {
-    console.log('Adding creator_id column to tournaments table...');
     db.exec(`
       BEGIN TRANSACTION;
       
@@ -225,7 +218,6 @@ try {
       
       COMMIT;
     `);
-    console.log('creator_id column added successfully');
   }
 } catch (err) {
   console.error('Creator_id migration error:', err);
@@ -239,9 +231,7 @@ try {
   
   if (!hasTwoFactorEnabled)
   {
-    console.log('📝 Migration: Adding two_factor_enabled column to users table');
     db.exec('ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0');
-    console.log('✅ Migration completed: two_factor_enabled column added');
   }
 } catch (error) {
   console.error('❌ Migration failed for users.two_factor_enabled:', error);

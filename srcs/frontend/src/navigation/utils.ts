@@ -30,18 +30,15 @@ const components = {
 
 async function show(pageName: keyof typeof components, data?: any)
 {
-    console.log(`📄 show('${pageName}') called`);
     
     // 🚨 SECURITY: Don't load ANY content if session is blocked
     const blocked = isSessionBlocked();
-    console.log(`   isSessionBlocked() returned: ${blocked}`);
     
     if (blocked && pageName !== 'signIn' && pageName !== 'signUp') {
         console.warn(`🚫 Component loading BLOCKED for '${pageName}': Session is active in another tab`);
         return; // Don't load any content
     }
     
-    console.log(`✅ Loading component '${pageName}'`);
     // Show the requested component
     const component = components[pageName];
     const element = document.getElementById(component.id);
@@ -102,7 +99,6 @@ let currentLoadId = 0;
 async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
     const myLoadId = ++currentLoadId;
-    console.log(`🔄 load('${pageName}') started (ID: ${myLoadId})`);
 
     // 🚨 CRITICAL SECURITY CHECK: Block navigation if session is blocked by another tab
     if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp') {

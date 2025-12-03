@@ -155,7 +155,6 @@ The ft_transcendence Team
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ 2FA Email sent:', info.messageId);
   } catch (error) {
     console.error('❌ Error sending 2FA email:', error);
     throw new Error('Failed to send 2FA code. Please try again later.');
@@ -191,5 +190,4 @@ function formatSqliteDate(date: Date): string
 // Cleanup automatique des codes expirés toutes les 10 minutes
 setInterval(() => {
   cleanupExpiredCodes();
-  console.log('🧹 Cleaned up expired 2FA codes');
 }, 10 * 60 * 1000);
