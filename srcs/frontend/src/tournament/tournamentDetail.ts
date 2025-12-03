@@ -58,7 +58,11 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
         container.style.height = '100%';
         container.style.backgroundColor = 'white';
         container.style.zIndex = '1000';
+        container.style.overflowY = 'auto'; // Enable vertical scrolling
         mainContent.appendChild(container);
+    } else {
+        // Ensure scroll is enabled even for existing container
+        container.style.overflowY = 'auto';
     }
     
     // Show container

@@ -167,6 +167,22 @@ function initializeComponents(): void
             
             await load('mainMenu');
         }
+        // Handler pour retour au tournoi après un match
+        if (target.id === 'backToTournamentBtn') {
+            const tournamentId = (window as any).currentTournamentId;
+            // Nettoyage des variables de tournoi match
+            (window as any).currentMatchId = null;
+            
+            // Cleanup game state
+            cleanupGameState();
+            
+            if (tournamentId) {
+                await load(`tournaments/${tournamentId}`);
+            } else {
+                // Fallback si pas de tournamentId
+                await load('tournaments');
+            }
+        }
         if (target.id === 'profileCard')
             await load('profile');
         if (target.id === 'settingsBtn' || isSettingsBtn)
