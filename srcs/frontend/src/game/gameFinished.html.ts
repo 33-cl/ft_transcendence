@@ -6,6 +6,9 @@ export const gameFinishedHTML = (data?: any) => {
     const forfeitMessage = data?.forfeitMessage || '';
     const mode = data?.mode; // 'ai', 'local', ou undefined pour online
     
+    // Détecter si c'est un match de tournoi
+    const isTournamentMatch = !!(window as any).currentTournamentId || !!(window as any).currentMatchId;
+    
     // Determine if this is a local/AI game (side-based) or online game (username-based)
     const isLocalOrAIGame = (winner?.side && !winner?.username) || mode === 'ai' || mode === 'local';
     const isOnlineGame = winner?.username && loser?.username;
@@ -16,8 +19,8 @@ export const gameFinishedHTML = (data?: any) => {
     const winnerScore = winner?.score ?? 0;
     const loserScore = loser?.score ?? 0;
     
-    // Show restart button only for local games or if no forfeit
-    const showRestartBtn = !isOnlineGame || !isForfeit;
+    // Show restart button only for local games, NOT for tournament matches
+    const showRestartBtn = !isTournamentMatch && (!isOnlineGame || !isForfeit);
     
     // Layout pour parties locales/IA (plus simple, centré)
     if (isLocalOrAIGame) {
@@ -57,7 +60,7 @@ export const gameFinishedHTML = (data?: any) => {
                     </div>
                     
                     <div class="game-finished-actions">
-                        <button id="localGameBtn" class="game-finished-btn">PLAY AGAIN</button>
+                        ${showRestartBtn ? '<button id="localGameBtn" class="game-finished-btn">PLAY AGAIN</button>' : ''}
                         <button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>
                     </div>
                 </div>
@@ -70,7 +73,7 @@ export const gameFinishedHTML = (data?: any) => {
         <div class="game-finished-overlay">
             <div class="game-finished-box">
                 <h2 class="game-finished-title">
-                    ${isForfeit ? 'VICTORY BY FORFEIT' : 'GAME OVER'}
+                    ${isTournamentMatch ? 'MATCH FINISHED' : (isForfeit ? 'VICTORY BY FORFEIT' : 'GAME OVER')}
                 </h2>
                 
                 ${isForfeit ? `
@@ -97,7 +100,9 @@ export const gameFinishedHTML = (data?: any) => {
                 
                 <div class="game-finished-actions">
                     ${showRestartBtn ? '<button id="localGameBtn" class="game-finished-btn">PLAY AGAIN</button>' : ''}
-                    <button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>
+                    ${isTournamentMatch 
+                        ? '<button id="backToTournamentBtn" class="game-finished-btn">BACK TO TOURNAMENT</button>' 
+                        : '<button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>'}
                 </div>
             </div>
         </div>

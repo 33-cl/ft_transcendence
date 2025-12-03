@@ -299,3 +299,34 @@
 .tournament-btn-delete {
     @apply px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors;
 }
+
+/* Tournament Detail Page Scroll Fix */
+#tournamentDetailPage {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+#tournamentDetailPage::-webkit-scrollbar {
+    width: 8px;
+}
+
+#tournamentDetailPage::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#tournamentDetailPage::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+}
+
+#tournamentDetailPage::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* Ensure bracket container is scrollable */
+.bracket-container {
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 1rem;
+}
