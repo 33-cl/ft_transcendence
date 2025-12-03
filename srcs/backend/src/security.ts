@@ -4,16 +4,36 @@
  * Sanitize username: remove HTML tags and enforce alphanumeric + underscore only
  * This prevents XSS attacks through usernames
  */
-export function sanitizeUsername(username: string): string {
-    if (typeof username !== 'string') {
+export function sanitizeUsername(username: string): string
+{
+    if (typeof username !== 'string')
         throw new Error('Username must be a string');
+    
+    // Remove HTML tags by extracting only text content
+    let result = '';
+    let inTag = false;
+    for (const char of username)
+    {
+        if (char === '<')
+            inTag = true;
+        else if (char === '>')
+            inTag = false;
+        else if (!inTag)
+            result += char;
     }
     
-    // Remove HTML tags
-    const noHtml = username.replace(/<[^>]*>/g, '');
-    
-    // Only keep alphanumeric and underscore
-    const sanitized = noHtml.replace(/[^a-zA-Z0-9_]/g, '');
+    // Only keep alphanumeric and underscore (a-z, A-Z, 0-9, _)
+    let sanitized = '';
+    for (const char of result)
+    {
+        const isLowercase = char >= 'a' && char <= 'z';
+        const isUppercase = char >= 'A' && char <= 'Z';
+        const isDigit = char >= '0' && char <= '9';
+        const isUnderscore = char === '_';
+        
+        if (isLowercase || isUppercase || isDigit || isUnderscore)
+            sanitized += char;
+    }
     
     return sanitized;
 }
@@ -21,25 +41,35 @@ export function sanitizeUsername(username: string): string {
 /**
  * Sanitize email: basic validation and normalization
  */
-export function sanitizeEmail(email: string): string {
-    if (typeof email !== 'string') {
+export function sanitizeEmail(email: string): string
+{
+    if (typeof email !== 'string')
         throw new Error('Email must be a string');
+    
+    // Remove HTML tags by extracting only text content
+    let result = '';
+    let inTag = false;
+    for (const char of email)
+    {
+        if (char === '<')
+            inTag = true;
+        else if (char === '>')
+            inTag = false;
+        else if (!inTag)
+            result += char;
     }
     
-    // Remove HTML tags
-    const noHtml = email.replace(/<[^>]*>/g, '');
-    
     // Trim and lowercase
-    return noHtml.trim().toLowerCase();
+    return result.trim().toLowerCase();
 }
 
 /**
  * Validate string length to prevent DoS attacks
  */
-export function validateLength(input: string, minLength: number, maxLength: number): boolean {
-    if (typeof input !== 'string') {
+export function validateLength(input: string, minLength: number, maxLength: number): boolean
+{
+    if (typeof input !== 'string')
         return false;
-    }
     
     return input.length >= minLength && input.length <= maxLength;
 }
@@ -78,7 +108,8 @@ export const RATE_LIMITS = {
  */
 const rateLimitMap = new Map<string, number[]>();
 
-export function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+export function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean
+{
     const now = Date.now();
     const timestamps = rateLimitMap.get(key) || [];
     
@@ -86,9 +117,8 @@ export function checkRateLimit(key: string, maxRequests: number, windowMs: numbe
     const recentTimestamps = timestamps.filter(ts => now - ts < windowMs);
     
     // Check if limit exceeded
-    if (recentTimestamps.length >= maxRequests) {
+    if (recentTimestamps.length >= maxRequests)
         return false;
-    }
     
     // Add current timestamp
     recentTimestamps.push(now);
@@ -97,28 +127,48 @@ export function checkRateLimit(key: string, maxRequests: number, windowMs: numbe
     return true;
 }
 
-/**
- * Validate and sanitize file paths to prevent directory traversal attacks
+/*
+    Validate and sanitize file paths to prevent directory traversal attacks
+    "../../../etc/passwd"  →  "///etc/passwd"
  */
-export function sanitizeFilePath(filePath: string): string {
-    if (typeof filePath !== 'string') {
+export function sanitizeFilePath(filePath: string): string
+{
+    if (typeof filePath !== 'string')
         throw new Error('File path must be a string');
+    
+    // Remove directory traversal attempts (..)
+    let sanitized = '';
+    let i = 0;
+    while (i < filePath.length)
+    {
+        // Skip ".." sequences
+        if (filePath[i] === '.' && filePath[i + 1] === '.')
+        {
+            i += 2;
+            continue;
+        }
+        // Convert backslashes to forward slashes
+        if (filePath[i] === '\\')
+            sanitized += '/';
+        else
+            sanitized += filePath[i];
+        i++;
     }
     
-    // Remove any attempts at directory traversal
-    const sanitized = filePath.replace(/\.\./g, '').replace(/\\/g, '/');
+    // Remove leading slashes
+    while (sanitized.startsWith('/'))
+        sanitized = sanitized.slice(1);
     
-    // Ensure it doesn't start with /
-    return sanitized.replace(/^\/+/, '');
+    return sanitized;
 }
 
 /**
  * Validate JWT token format (basic check before verification)
  */
-export function isValidJwtFormat(token: string): boolean {
-    if (typeof token !== 'string') {
+export function isValidJwtFormat(token: string): boolean
+{
+    if (typeof token !== 'string')
         return false;
-    }
     
     // JWT has 3 parts separated by dots
     const parts = token.split('.');
@@ -128,65 +178,121 @@ export function isValidJwtFormat(token: string): boolean {
 /**
  * Validate and parse ID parameter (for routes with :id)
  * Returns the ID as number if valid, null otherwise
+ * @param id - URL parameter (always string) or body value
  */
-export function validateId(id: any): number | null {
+export function validateId(id: string | number | undefined | null): number | null
+{
+    if (id === undefined || id === null)
+        return null;
+    
     // Try to parse as integer
-    const parsed = parseInt(id);
+    const parsed = parseInt(String(id));
     
     // Check if it's a valid positive integer
-    if (isNaN(parsed) || parsed < 1 || !Number.isInteger(parsed)) {
+    if (isNaN(parsed) || parsed < 1 || !Number.isInteger(parsed))
         return null;
-    }
     
     return parsed;
 }
 
 /**
  * Validate UUID format for tournament IDs
+ * UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+ * where x is hex digit (0-9, a-f) and y is 8, 9, a, or b
+ * @param id - URL parameter or body value to validate
  */
-export function validateUUID(id: any): boolean {
-    if (typeof id !== 'string') {
+export function validateUUID(id: string | undefined | null): boolean
+{
+    if (typeof id !== 'string')
         return false;
+    
+    if (id.length !== 36)
+        return false;
+    
+    if (id[8] !== '-' || id[13] !== '-' || id[18] !== '-' || id[23] !== '-')
+        return false;
+    
+    const isHex = (char: string): boolean => {
+        return (char >= '0' && char <= '9') || 
+               (char >= 'a' && char <= 'f') || 
+               (char >= 'A' && char <= 'F');
+    };
+    
+    for (let i = 0; i < id.length; i++)
+    {
+        if (i === 8 || i === 13 || i === 18 || i === 23)
+            continue;
+        
+        if (i === 14)
+        {
+            if (id[i] !== '4')
+                return false;
+            continue;
+        }
+        
+        if (i === 19)
+        {
+            const char = id[i].toLowerCase();
+            if (char !== '8' && char !== '9' && char !== 'a' && char !== 'b')
+                return false;
+            continue;
+        }
+        
+        if (!isHex(id[i]))
+            return false;
     }
     
-    // UUID v4 regex pattern
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    
-    return uuidRegex.test(id);
+    return true;
 }
 
 /**
  * Validate room name format
  * Only allows alphanumeric, hyphens, and underscores
  */
-export function validateRoomName(roomName: string): boolean {
-    if (typeof roomName !== 'string') {
+export function validateRoomName(roomName: string): boolean
+{
+    if (typeof roomName !== 'string')
         return false;
-    }
     
     // Check length
-    if (roomName.length < 1 || roomName.length > 50) {
+    if (roomName.length < 1 || roomName.length > 50)
         return false;
-    }
     
     // Only alphanumeric, hyphens, and underscores
-    return /^[a-zA-Z0-9_-]+$/.test(roomName);
+    for (const char of roomName)
+    {
+        const isLowercase = char >= 'a' && char <= 'z';
+        const isUppercase = char >= 'A' && char <= 'Z';
+        const isDigit = char >= '0' && char <= '9';
+        const isAllowed = char === '_' || char === '-';
+        
+        if (!isLowercase && !isUppercase && !isDigit && !isAllowed)
+            return false;
+    }
+    
+    return true;
 }
 
 /**
  * Validate max players for a game room
+ * @param maxPlayers - Body value from request (can be string from form or number from JSON)
  */
-export function validateMaxPlayers(maxPlayers: any): boolean {
-    const parsed = parseInt(maxPlayers);
+export function validateMaxPlayers(maxPlayers: string | number | undefined | null): boolean
+{
+    if (maxPlayers === undefined || maxPlayers === null)
+        return false;
+    
+    const parsed = parseInt(String(maxPlayers));
     
     // Must be 2 or 4
     return parsed === 2 || parsed === 4;
 }
 
-/**
- * Clean up expired entries from rate limit map (run periodically)
+/*
+    nettoie le tableau qui enregistre les timestamps des requêtes pour le rate limiting
  */
-export function cleanupRateLimitMap(windowMs: number): void {
+export function cleanupRateLimitMap(windowMs: number): void
+{
     const now = Date.now();
     for (const [key, timestamps] of rateLimitMap.entries()) {
         const recentTimestamps = timestamps.filter(ts => now - ts < windowMs);
