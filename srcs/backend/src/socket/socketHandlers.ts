@@ -109,7 +109,7 @@ function handleSocketAuthentication(socket: Socket, fastify: FastifyInstance): b
 /**
  * Handler pour rejoindre un match de tournoi
  */
-function handleTournamentJoinMatch(socket: Socket, data: any, fastify: FastifyInstance): void
+function handleTournamentJoinMatch(socket: Socket, data: { tournamentId?: string; matchId?: string } | undefined | null, fastify: FastifyInstance): void
 {
     try
     {
@@ -145,8 +145,8 @@ function handleTournamentJoinMatch(socket: Socket, data: any, fastify: FastifyIn
  */
 function registerSocketEventListeners(socket: Socket, io: Server, fastify: FastifyInstance): void
 {
-    socket.on('joinRoom', (data: any) => handleJoinRoom(socket, data, fastify, io));
-    socket.on('tournament:join_match', (data: any) => handleTournamentJoinMatch(socket, data, fastify));
+    socket.on('joinRoom', (data: Record<string, unknown>) => handleJoinRoom(socket, data, fastify, io));
+    socket.on('tournament:join_match', (data: { tournamentId?: string; matchId?: string }) => handleTournamentJoinMatch(socket, data, fastify));
     socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
     socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));
     socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));

@@ -165,6 +165,13 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
 
       // Chercher des utilisateurs qui ne sont pas déjà amis et qui ne sont pas l'utilisateur actuel
+      interface SearchUser {
+        id: number;
+        username: string;
+        avatar_url: string | null;
+        wins: number;
+        losses: number;
+      }
       const searchResults = db.prepare(`
         SELECT DISTINCT u.id, u.username, u.avatar_url, u.wins, u.losses
         FROM users u
@@ -177,10 +184,10 @@ export default async function usersRoutes(fastify: FastifyInstance) {
           )
         ORDER BY u.username
         LIMIT 10
-      `).all(currentUserId, `%${sanitizedQuery}%`, currentUserId) as any[];
+      `).all(currentUserId, `%${sanitizedQuery}%`, currentUserId) as SearchUser[];
 
       // Ajouter l'information si une demande d'ami a déjà été envoyée
-      const usersWithRequestStatus = searchResults.map((user: any) => {
+      const usersWithRequestStatus = searchResults.map((user: SearchUser) => {
         const pendingRequest = db.prepare(
           'SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?'
         ).get(currentUserId, user.id, 'pending');
@@ -626,15 +633,19 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       }
 
       // Récupérer les amis de l'utilisateur
+      interface FriendRow {
+        id: number;
+        username: string;
+      }
       const friends = db.prepare(`
         SELECT u.id, u.username
         FROM friendships f
         JOIN users u ON f.friend_id = u.id
         WHERE f.user_id = ?
-      `).all(currentUserId);
+      `).all(currentUserId) as FriendRow[];
 
       // Obtenir le statut en ligne des amis
-      const friendsStatus = friends.map((friend: any) => {
+      const friendsStatus = friends.map((friend: FriendRow) => {
         const socketId = getSocketIdForUser(friend.id);
         const isOnline = !!socketId;
         const isInGame = isOnline && isUsernameInGame(friend.username);

@@ -17,7 +17,7 @@ import { PaddleSide } from '../../../game/gameState.js';
  * @param direction - La direction a valider
  * @returns true si 'up' ou 'down'
  */
-export function isValidDirection(direction: any): direction is 'up' | 'down'
+export function isValidDirection(direction: string | undefined | null): direction is 'up' | 'down'
 {
     return direction === 'up' || direction === 'down';
 }
@@ -29,7 +29,7 @@ export function isValidDirection(direction: any): direction is 'up' | 'down'
  * @param side - Le cote du paddle a valider
  * @returns true si LEFT, DOWN, RIGHT ou TOP
  */
-export function isValidPaddleSide(side: any): side is PaddleSide
+export function isValidPaddleSide(side: string | undefined | null): side is PaddleSide
 {
     return side === 'LEFT' || side === 'DOWN' || side === 'RIGHT' || side === 'TOP';
 }

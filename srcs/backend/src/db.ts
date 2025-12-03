@@ -206,8 +206,8 @@ try {
 
 // Migration pour ajouter creator_id à la table tournaments
 try {
-  const hasCreatorId = db.prepare(`PRAGMA table_info(tournaments)`).all()
-    .some((col: any) => col.name === 'creator_id');
+  const columns = db.prepare(`PRAGMA table_info(tournaments)`).all() as { name: string }[];
+  const hasCreatorId = columns.some((col) => col.name === 'creator_id');
     
   if (!hasCreatorId) {
     console.log('Adding creator_id column to tournaments table...');

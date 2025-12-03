@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import db from '../../db.js';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 export function parseCookies(header?: string): Record<string, string>
 {
@@ -13,7 +14,7 @@ export function parseCookies(header?: string): Record<string, string>
   return out;
 }
 
-export function getJwtFromRequest(request: any): string | undefined
+export function getJwtFromRequest(request: FastifyRequest): string | undefined
 {
   const cookies = parseCookies(request.headers['cookie'] as string | undefined);
   return cookies['jwt'];
@@ -24,7 +25,7 @@ export function getJwtFromRequest(request: any): string | undefined
  * Envoie automatiquement une réponse d'erreur si non authentifié
  * @returns userId si authentifié, null sinon (reply déjà envoyée)
  */
-export function verifyAuthFromRequest(request: any, reply: any): number | null {
+export function verifyAuthFromRequest(request: FastifyRequest, reply: FastifyReply): number | null {
   const JWT_SECRET = process.env.JWT_SECRET;
   if (!JWT_SECRET) {
     reply.status(500).send({ error: 'Server configuration error' });

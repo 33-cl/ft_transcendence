@@ -27,7 +27,8 @@ import {
     authenticateOnlinePlayer,
     notifyFriendsGameStarted,
     startLocalGame,
-    startOnlineGame
+    startOnlineGame,
+    JoinRoomParams
 } from '../utils/roomJoining.js';
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
@@ -76,7 +77,7 @@ export function validateRoomAccess(
     socket: Socket,
     roomName: string,
     room: RoomType,
-    params: any,
+    params: JoinRoomParams,
     fastify: FastifyInstance
 ): boolean
 {
@@ -193,7 +194,7 @@ export function handleOnlineGamePreparation(
 export function tryStartGame(
     room: RoomType,
     roomName: string,
-    params: any,
+    params: JoinRoomParams,
     fastify: FastifyInstance,
     io: Server
 ): void
@@ -217,7 +218,7 @@ export const joinRoomLocks = new Set<string>();
  */
 export async function handleJoinRoom(
     socket: Socket,
-    data: any,
+    data: Record<string, unknown>,
     fastify: FastifyInstance,
     io: Server
 ): Promise<void>

@@ -44,7 +44,7 @@ export function getDisconnectedPlayerInfo(
 export function getPlayerScore(room: RoomType, paddleSide: string): number
 {
     const paddles = room.pongGame!.state.paddles;
-    const paddle = paddles.find((p: any) => p.side === paddleSide);// Trouve le paddle correspondant au cote
+    const paddle = paddles.find((p: { side: string; score: number }) => p.side === paddleSide);// Trouve le paddle correspondant au cote
     return paddle?.score || 0;
 }
 
@@ -112,8 +112,8 @@ export function recordForfeitMatch(
     loserScore: number
 ): boolean
 {
-    const winnerUser = getUserByUsername(winnerUsername) as any;
-    const loserUser = getUserByUsername(loserUsername) as any;
+    const winnerUser = getUserByUsername(winnerUsername) as { id: number } | undefined;
+    const loserUser = getUserByUsername(loserUsername) as { id: number } | undefined;
     
     if (!winnerUser || !loserUser || winnerUser.id === loserUser.id)
         return false;
@@ -166,8 +166,8 @@ export function notifyFriendsForfeit(
     fastify: FastifyInstance
 ): void
 {
-    const winnerUser = getUserByUsername(winnerUsername) as any;
-    const loserUser = getUserByUsername(loserUsername) as any;
+    const winnerUser = getUserByUsername(winnerUsername) as { id: number } | undefined;
+    const loserUser = getUserByUsername(loserUsername) as { id: number } | undefined;
     
     if (!winnerUser || !loserUser)
         return;

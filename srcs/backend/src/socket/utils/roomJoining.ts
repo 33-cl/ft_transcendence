@@ -20,14 +20,24 @@ export interface JoinRoomParams {
     roomName: string | null;
 }
 
-export function parseJoinRoomData(data: any): JoinRoomParams {
+interface JoinRoomData {
+    maxPlayers?: number;
+    isLocalGame?: boolean;
+    enableAI?: boolean;
+    aiDifficulty?: string;
+    spectator?: boolean;
+    roomName?: string;
+}
+
+export function parseJoinRoomData(data: Record<string, unknown> | undefined | null): JoinRoomParams {
+    const d = data as JoinRoomData | undefined | null;
     return {
-        maxPlayers: data?.maxPlayers,
-        isLocalGame: data?.isLocalGame === true,
-        enableAI: data?.enableAI === true,
-        aiDifficulty: data?.aiDifficulty || 'medium',
-        isSpectator: data?.spectator === true,
-        roomName: data?.roomName || null
+        maxPlayers: d?.maxPlayers,
+        isLocalGame: d?.isLocalGame === true,
+        enableAI: d?.enableAI === true,
+        aiDifficulty: d?.aiDifficulty || 'medium',
+        isSpectator: d?.spectator === true,
+        roomName: d?.roomName || null
     };
 }
 
@@ -124,12 +134,12 @@ export function authenticateOnlinePlayer(
     roomName: string, 
     room: RoomType, 
     fastify: FastifyInstance
-): any | null
+): { id: number; username: string } | null
 {
     //qui est ce joueur? n'est il pas deja co ailleurs?
     const user = authenticateSocket(socket, fastify);
     
-    if (user && typeof user === 'object')
+    if (user && typeof user === 'object' && 'username' in user)
     {
         if (!room.playerUsernames)
             room.playerUsernames = {};
@@ -162,8 +172,8 @@ export function authenticateOnlinePlayer(
 export function notifyFriendsGameStarted(
     room: RoomType, 
     fastify: FastifyInstance,
-    broadcastUserStatusChange: Function,
-    globalIo: any
+    broadcastUserStatusChange: (io: Server | null, userId: number, status: 'in-game' | 'online' | 'offline', fastify: FastifyInstance) => void,
+    globalIo: Server | null
 ): void
 {
     if (room.players.length !== room.maxPlayers)
@@ -173,7 +183,7 @@ export function notifyFriendsGameStarted(
     
     for (const [socketId, username] of Object.entries(room.playerUsernames))
     {
-        const player = getUserByUsername(username) as any;
+        const player = getUserByUsername(username) as { id: number } | undefined;
         if (player)
             broadcastUserStatusChange(globalIo, player.id, 'in-game', fastify);
     }
