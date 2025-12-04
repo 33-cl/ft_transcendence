@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 00:00:00 by qordoux           #+#    #+#             */
-/*   Updated: 2025/12/04 13:43:17 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/12/04 14:53:13 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -194,6 +194,19 @@ export function broadcastLeaderboardUpdate(globalIo: Server | null, userId: numb
         return;
     
     try {
+        // Si userId === 0, c'est une notification de fin de match (pas de user spécifique)
+        if (userId === 0) {
+            globalIo.emit('leaderboardUpdated', {
+                userId: 0,
+                username: null,
+                avatar_url: null,
+                timestamp: Date.now(),
+                reason: 'match_ended'
+            });
+            fastify.log.info('[LEADERBOARD] Broadcasted leaderboard update (match ended)');
+            return;
+        }
+        
         const user = getUserWithAvatar(userId);
         if (!user)
             return;

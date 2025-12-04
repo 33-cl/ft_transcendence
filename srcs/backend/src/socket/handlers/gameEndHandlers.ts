@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
 import { getUserByUsername, updateUserStats } from '../../user.js';
-import { broadcastUserStatusChange } from '../notificationHandlers.js';
+import { broadcastUserStatusChange, broadcastLeaderboardUpdate } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { updateMatchResult } from '../../tournament.js';
 import db from '../../db.js';
@@ -291,7 +291,21 @@ export async function handleGameEnd(
 
     // Enregistrement en DB si possible
     if (winnerUsername && loserUsername)
-        recordMatchStats(winnerUsername, loserUsername, winner, loser);
+    {
+        const statsRecorded = recordMatchStats(winnerUsername, loserUsername, winner, loser);
+        
+        // Broadcast leaderboard update to all clients if stats were recorded
+        // Only for 1v1 online matches (maxPlayers === 2) that are NOT tournament matches
+        // Tournament matches have their own ranking system and don't affect the global leaderboard
+        const isTournamentMatch = room.tournamentId && room.matchId;
+        
+        fastify.log.info(`[LEADERBOARD DEBUG] statsRecorded=${statsRecorded}, maxPlayers=${room.maxPlayers}, isTournament=${!!isTournamentMatch}`);
+        
+        if (statsRecorded && room.maxPlayers === 2 && !isTournamentMatch) {
+            fastify.log.info(`[LEADERBOARD] Broadcasting leaderboard update after 1v1 match`);
+            broadcastLeaderboardUpdate(io, 0, {}, fastify); // userId 0 = game end, no specific user
+        }
+    }
 
     // Notifications
     notifyPlayersAndSpectators(room, roomName, winner, loser, displayWinnerUsername, displayLoserUsername, io);
