@@ -1,4 +1,5 @@
 import { load } from '../navigation/utils.js';
+import { setupTournamentSocketListeners, joinTournamentRoom, leaveTournamentRoom } from './tournamentSocket.js';
 
 // Types for tournament data (4-player specs)
 interface TournamentParticipant {
@@ -87,6 +88,9 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     if (backBtn && !(backBtn as any)._listenerSet) {
         (backBtn as any)._listenerSet = true;
         backBtn.addEventListener('click', async () => {
+            // Leave tournament room before navigating away
+            leaveTournamentRoom(tournamentId);
+            
             // Completely remove tournament detail page
             const detailPage = document.getElementById('tournamentDetailPage');
             if (detailPage) {
@@ -95,6 +99,13 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
             await load('tournaments');
         });
     }
+
+    // Setup WebSocket listeners and join tournament room
+    setupTournamentSocketListeners();
+    joinTournamentRoom(tournamentId);
+    
+    // Store tournament ID in window for back button handler
+    (window as any).currentTournamentId = tournamentId;
 
     const contentContainer = document.getElementById('tournament-content');
     if (!contentContainer) return;
