@@ -3,7 +3,7 @@ import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js';
 import { processAvatarSave } from '../../helpers/avatar/avatar.helper.js';
-import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
+import { notifyProfileUpdated, broadcastLeaderboardUpdate } from '../../socket/notificationHandlers.js';
 import { getGlobalIo } from '../../socket/socketHandlers.js';
 import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
@@ -46,6 +46,8 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
     );
     
     notifyProfileUpdated(getGlobalIo(), session.id, { avatar_url: finalAvatarUrl }, fastify);
+    // Broadcast à TOUS les clients pour le leaderboard
+    broadcastLeaderboardUpdate(getGlobalIo(), session.id, { avatar_url: finalAvatarUrl }, fastify);
     
     return reply.send({ 
       ok: true, 

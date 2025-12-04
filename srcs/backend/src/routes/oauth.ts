@@ -222,7 +222,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
             maxAge: maxAge
         });
 
-        console.log('User authenticated successfully with Google:', user);
 
         // Close Window
         return reply.type('text/html').send(`

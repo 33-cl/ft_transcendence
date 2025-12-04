@@ -58,7 +58,6 @@ export function generateBracket(tournamentId: string): void {
     // Ils seront remplis automatiquement après les demi-finales
     const finalMatchInfo = insertMatch.run(tournamentId, 2, null, null);
 
-    console.log(`✅ Bracket generated for tournament ${tournamentId}: 2 semi-finals + 1 final`);
 
     // 5. Émettre un événement WebSocket pour notifier les participants
     const matches = db.prepare(`
@@ -124,7 +123,6 @@ export function updateMatchResult(matchId: number, winnerId: number): void {
         WHERE id = ?
     `).run(winnerId, matchId);
 
-    console.log(`✅ Match ${matchId} finished. Winner: ${winnerId}`);
 
     // 4. Émettre un événement WebSocket pour notifier la fin du match
     emitMatchFinished(match.tournament_id, matchId, winnerId, match.round);
@@ -166,14 +164,12 @@ function advanceWinnerToFinal(tournamentId: string, winnerId: number): void {
             SET player1_id = ? 
             WHERE id = ?
         `).run(winnerId, finalMatch.id);
-        console.log(`✅ Winner ${winnerId} advanced to final (player1)`);
     } else if (finalMatch.player2_id === null) {
         db.prepare(`
             UPDATE tournament_matches 
             SET player2_id = ? 
             WHERE id = ?
         `).run(winnerId, finalMatch.id);
-        console.log(`✅ Winner ${winnerId} advanced to final (player2)`);
     } else {
         console.error(`❌ Final match ${finalMatch.id} already has both players assigned`);
     }
@@ -192,7 +188,6 @@ function declareChampion(tournamentId: string, winnerId: number): void {
         WHERE id = ?
     `).run(winnerId, tournamentId);
 
-    console.log(`🏆 Tournament ${tournamentId} completed! Champion: ${winnerId}`);
 
     // Émettre un événement WebSocket pour notifier la fin du tournoi
     emitTournamentCompleted(tournamentId, winnerId);

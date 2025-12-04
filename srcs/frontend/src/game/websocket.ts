@@ -46,7 +46,8 @@ let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 let errorListenerSet = false;
 let gameFinishedListenerActive = false;
-// 🚨 NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
+let leaderboardUpdatedListenerSet = false;
+// NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
 // pour avoir un meilleur contrôle sur les mises à jour de la liste d'amis:
 // - friendStatusChanged → updateFriendStatus() (préserve le statut actuel)
 // - friendAdded → reloadFriendList() (avec fetch des statuts)
@@ -235,6 +236,28 @@ function setupGlobalSocketListeners() {
     // - profileUpdated → updateFriendProfile()
     // - friendRequestReceived → updateFriendRequestsBadge()
     // Ils ont été supprimés d'ici pour éviter les doublons
+
+    // Event listener for leaderboard updates (broadcast to ALL clients when any user changes profile)
+    if (!leaderboardUpdatedListenerSet) {
+        socket.on('leaderboardUpdated', async (_data: { userId: number; username: string; avatar_url: string; timestamp: number }) => {
+            // Vérifier qu'on est bien sur le main menu (le seul endroit où le leaderboard est affiché)
+            const mainMenuElement = document.getElementById('mainMenu');
+            const isOnMainMenu = mainMenuElement !== null && mainMenuElement.innerHTML.trim() !== '';
+            
+            if (isOnMainMenu) {
+                const leaderboardContainer = document.getElementById('leaderboard');
+                if (leaderboardContainer) {
+                    try {
+                        const { leaderboardHTML } = await import('../leaderboard/leaderboard.html.js');
+                        leaderboardContainer.innerHTML = await leaderboardHTML();
+                    } catch (error) {
+                        console.error('Error refreshing leaderboard:', error);
+                    }
+                }
+            }
+        });
+        leaderboardUpdatedListenerSet = true;
+    }
 }
 
 // Configurer les listeners globaux au chargement
@@ -266,6 +289,7 @@ function reconnectWebSocket() {
         disconnectBasicListenerSet = false;
         pongListenerSet = false;
         errorListenerSet = false;
+        leaderboardUpdatedListenerSet = false;
         // NOTE: friendAdded, friendRemoved, profileUpdated, friendRequestReceived
         // sont maintenant gérés par friendList.html.ts
         

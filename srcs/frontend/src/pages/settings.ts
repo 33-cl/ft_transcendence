@@ -381,9 +381,23 @@ async function saveChangedFields(): Promise<void> {
                 window.currentUser.avatar_url = avatarSaveResult.avatar_url;
             }
             
+            // Mettre à jour le username dans window.currentUser
+            if (hasUsernameChanged && window.currentUser) {
+                window.currentUser.username = username;
+            }
+            
             // Refresh les données utilisateur
             if ((window as any).refreshUserStats) {
                 await (window as any).refreshUserStats();
+            }
+            
+            // Rafraîchir le leaderboard si le username ou l'avatar a changé
+            if (hasUsernameChanged || hasPendingAvatar) {
+                const leaderboardContainer = document.getElementById('leaderboard');
+                if (leaderboardContainer) {
+                    const { leaderboardHTML } = await import('../leaderboard/leaderboard.html.js');
+                    leaderboardContainer.innerHTML = await leaderboardHTML();
+                }
             }
         }
             

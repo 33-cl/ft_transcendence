@@ -624,6 +624,9 @@ async function saveChangedFields(): Promise<void> {
             if ((window as any).refreshUserStats) {
                 await (window as any).refreshUserStats();
             }
+            
+            // NOTE: Le leaderboard est maintenant rafraîchi automatiquement via WebSocket
+            // (événement 'leaderboardUpdated' reçu par tous les clients, géré dans websocket.ts)
         }
             
     } catch (error) {

@@ -3,7 +3,7 @@ import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { authenticateAndGetSession } from '../../helpers/auth/session.helper.js';
 import { validateAndSanitizeProfileInput, verifyPasswordAndUniqueness, updateUserProfile } from '../../helpers/auth/profile.helper.js';
-import { notifyProfileUpdated } from '../../socket/notificationHandlers.js';
+import { notifyProfileUpdated, broadcastLeaderboardUpdate } from '../../socket/notificationHandlers.js';
 import { getGlobalIo } from '../../socket/socketHandlers.js';
 import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
@@ -66,8 +66,11 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
 
     const updatedRow = db.prepare('SELECT username, email, avatar_url, two_factor_enabled FROM users WHERE id = ?').get(sessionRow.id) as { username: string; email: string; avatar_url: string | null; two_factor_enabled: number } | undefined;
 
-    if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username)
+    if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username) {
       notifyProfileUpdated(getGlobalIo(), sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
+      // Broadcast à TOUS les clients pour le leaderboard
+      broadcastLeaderboardUpdate(getGlobalIo(), sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
+    }
 
     // Message adapté : mentionner la 2FA SEULEMENT si elle était activée avant
     let message = 'Profile updated successfully';

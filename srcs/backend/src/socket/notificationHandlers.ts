@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 00:00:00 by qordoux           #+#    #+#             */
-/*   Updated: 2025/11/04 00:00:00 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/12/04 13:43:17 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,5 +176,37 @@ export function broadcastUserStatusChange(globalIo: Server | null, userId: numbe
         
     } catch (error) {
         fastify.log.error(`Error broadcasting user status change: ${error}`);
+    }
+}
+
+/**
+ * Broadcast le changement de profil à TOUS les clients connectés
+ * Utilisé pour mettre à jour le leaderboard en temps réel
+ * 
+ * @param globalIo - Instance Socket.IO globale
+ * @param userId - ID de l'utilisateur dont le profil a changé
+ * @param updates - Les champs mis à jour (username, avatar_url)
+ * @param fastify - Instance Fastify pour les logs
+ */
+export function broadcastLeaderboardUpdate(globalIo: Server | null, userId: number, updates: { username?: string; avatar_url?: string }, fastify: FastifyInstance)
+{
+    if (!globalIo)
+        return;
+    
+    try {
+        const user = getUserWithAvatar(userId);
+        if (!user)
+            return;
+        
+        // Broadcast à tous les clients connectés
+        globalIo.emit('leaderboardUpdated', {
+            userId: user.id,
+            username: updates.username || user.username,
+            avatar_url: updates.avatar_url !== undefined ? updates.avatar_url : user.avatar_url,
+            timestamp: Date.now()
+        });
+        
+    } catch (error) {
+        fastify.log.error(`Error broadcasting leaderboard update: ${error}`);
     }
 }

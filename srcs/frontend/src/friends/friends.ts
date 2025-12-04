@@ -355,8 +355,15 @@ export function startFriendListRealtimeUpdates(): void {
         reloadFriendList();
     });
 
-    window.socket.on('profileUpdated', (data: { userId: number; username: string; avatar_url: string; timestamp: number }) => {
+    window.socket.on('profileUpdated', async (data: { userId: number; username: string; avatar_url: string; timestamp: number }) => {
         updateFriendProfile(data.userId, data.username, data.avatar_url);
+        
+        // Rafraîchir le leaderboard quand un profil est mis à jour
+        const leaderboardContainer = document.getElementById('leaderboard');
+        if (leaderboardContainer) {
+            const { leaderboardHTML } = await import('../leaderboard/leaderboard.html.js');
+            leaderboardContainer.innerHTML = await leaderboardHTML();
+        }
     });
 
     window.socket.on('friendRequestReceived', (_data: { sender: { id: number; username: string }; timestamp: number }) => {
