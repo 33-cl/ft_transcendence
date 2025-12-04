@@ -1,5 +1,7 @@
 // tournamentSocket.ts - WebSocket handlers for tournament real-time updates
 
+import { toast } from '../shared/toast.js';
+
 let tournamentListenersActive = false;
 
 /**
@@ -139,8 +141,11 @@ export function setupTournamentSocketListeners(): void {
         // Vérifier si le joueur courant est dans ce match
         const currentUserId = (window as any).currentUser?.id;
         if (currentUserId === data.match.player1_id || currentUserId === data.match.player2_id) {
-            // Afficher une notification
-            showMatchReadyNotification(data.tournament_id, data.match.id);
+            // Déterminer le nom du round
+            const roundName = data.match.round === 1 ? 'Semi-Final' : 'Final';
+            
+            // Afficher une notification toast
+            toast.matchReady(data.tournament_id, data.match.id, roundName);
         }
     });
 }
@@ -193,13 +198,4 @@ function showChampionNotification(championId: number): void {
     
     // Simple alert pour l'instant
     // En production, utiliser un toast ou une modal
-}
-
-/**
- * Affiche une notification quand un match est prêt
- */
-function showMatchReadyNotification(tournamentId: string, matchId: number): void {
-    console.log(`🔔 Match ready notification: tournament ${tournamentId}, match ${matchId}`);
-    
-    // TODO: Afficher un toast "Votre match de tournoi est prêt !"
 }
