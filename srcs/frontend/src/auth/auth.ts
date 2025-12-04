@@ -142,29 +142,23 @@ async function handleSignIn(): Promise<void> {
     // Récupérer les valeurs des inputs
     const login = getInputValue('username');
     const password = getPasswordValue('password');
-    const twoFactorCode = getInputValue('twoFactorCode');
 
     if (!login || !password) {
         showErrorMessage(msg, 'Enter username/email and password.');
         return;
     }
 
-    // Appeler l'API de login (avec code 2FA si présent)
-    const result = await loginUser(login, password, twoFactorCode || undefined);
+    // Appeler l'API de login
+    const result = await loginUser(login, password);
 
     if (result.success) {
         showSuccessMessage(msg, 'Signed in.');
         await load('mainMenu');
     } else if (result.requires2FA) {
-        // 2FA required - afficher le champ de code
-        const twoFactorSection = document.getElementById('twoFactorSection');
-        const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
-        
-        if (twoFactorSection && twoFactorInput) {
-            twoFactorSection.style.display = 'block';
-            twoFactorInput.focus();
-            showSuccessMessage(msg, result.message || 'Code sent to your email');
-        }
+        // 2FA required - stocker les credentials et rediriger vers la page 2FA
+        (window as any).pending2FACredentials = { login, password };
+        // Rediriger directement vers la page 2FA
+        await load('twoFactor');
     } else {
         // Gérer spécifiquement l'erreur de connexion multiple
         if (result.code === 'USER_ALREADY_CONNECTED') {
@@ -185,28 +179,98 @@ document.addEventListener('componentsReady', () => {
 
     // Ajouter event listeners pour la touche Entrée sur les champs SignIn
     addEnterKeyListeners(['username', 'password'], () => btnIn.click());
-    
-    // Réinitialiser le champ 2FA si l'utilisateur modifie username ou password
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const twoFactorSection = document.getElementById('twoFactorSection');
-    const twoFactorInput = document.getElementById('twoFactorCode') as HTMLInputElement;
-    
-    const reset2FAField = () => {
-        if (twoFactorSection && twoFactorInput) {
-            twoFactorSection.style.display = 'none';
-            twoFactorInput.value = '';
-        }
-    };
-    
-    usernameInput?.addEventListener('input', reset2FAField);
-    passwordInput?.addEventListener('input', reset2FAField);
 
     // Expose simple logout helper with security guard
     if (!window.logout) {
         // Wrap with security guard to prevent execution in blocked tabs
         // requiresAuth = true to ensure user is authenticated before logout
         window.logout = guardFunction(logoutUser, 'logout', true);
+    }
+});
+
+/**
+ * Gestionnaire pour la page 2FA (vérification du code)
+ */
+async function handleVerify2FA(): Promise<void> {
+    const msg = ensureMessageElement('twoFactorMsg', 'verifyCodeButton');
+    
+    const twoFactorCode = getInputValue('twoFactorCode');
+    
+    if (!twoFactorCode || twoFactorCode.length !== 6) {
+        showErrorMessage(msg, 'Please enter a valid 6-digit code.');
+        return;
+    }
+    
+    // Vérifier si c'est une vérification OAuth ou login classique
+    const oauthData = (window as any).pendingOAuth2FA;
+    const credentials = (window as any).pending2FACredentials;
+    
+    if (oauthData) {
+        // Mode OAuth - appeler l'endpoint de vérification OAuth
+        try {
+            const response = await fetch('https://localhost:8080/auth/2fa/verify-oauth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ tempToken: oauthData.tempToken, code: twoFactorCode.trim() })
+            });
+
+            if (response.ok) {
+                // Nettoyer les données OAuth stockées
+                delete (window as any).pendingOAuth2FA;
+                showSuccessMessage(msg, 'Signed in.');
+                // Recharger pour obtenir l'état authentifié
+                setTimeout(() => window.location.reload(), 500);
+            } else {
+                const data = await response.json();
+                showErrorMessage(msg, data.error || 'Invalid verification code.');
+            }
+        } catch (error) {
+            console.error('Error verifying OAuth 2FA code:', error);
+            showErrorMessage(msg, 'Network error. Please try again.');
+        }
+    } else if (credentials) {
+        // Mode login classique - appeler l'API de login avec le code 2FA
+        const result = await loginUser(credentials.login, credentials.password, twoFactorCode);
+        
+        if (result.success) {
+            // Nettoyer les credentials stockés
+            delete (window as any).pending2FACredentials;
+            showSuccessMessage(msg, 'Signed in.');
+            await load('mainMenu');
+        } else {
+            showErrorMessage(msg, result.error || 'Invalid verification code.');
+        }
+    } else {
+        // Aucune session 2FA en cours
+        showErrorMessage(msg, 'Session expired. Please sign in again.');
+        setTimeout(() => load('signIn'), 1500);
+    }
+}
+
+// Handler pour la page 2FA
+document.addEventListener('componentsReady', () => {
+    // Verify button
+    const verifyBtn = document.getElementById('verifyCodeButton');
+    if (verifyBtn && !(verifyBtn as any)._bound) {
+        (verifyBtn as any)._bound = true;
+        verifyBtn.addEventListener('click', handleVerify2FA);
+        
+        // Ajouter event listener pour la touche Entrée
+        addEnterKeyListeners(['twoFactorCode'], () => verifyBtn.click());
+    }
+    
+    // Cancel button - retour à signIn
+    const cancelBtn = document.getElementById('cancel2FABtn');
+    if (cancelBtn && !(cancelBtn as any)._bound) {
+        (cancelBtn as any)._bound = true;
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Nettoyer les données stockées (OAuth ou login classique)
+            delete (window as any).pending2FACredentials;
+            delete (window as any).pendingOAuth2FA;
+            load('signIn');
+        });
     }
 });
 
@@ -229,22 +293,29 @@ document.addEventListener('componentsReady', () => {
         const authWindow = window.open('https://localhost:8080/auth/google', '_blank', 'width=500,height=600');
         
         let messageReceived = false;
+        let twoFARedirected = false;
         
         // Écouter les messages de la fenêtre OAuth (2FA requis ou erreur)
         const messageHandler = (event: MessageEvent) => {
             if (event.origin !== window.location.origin) return;
             
+            // Éviter les doubles traitements
+            if (messageReceived) return;
             messageReceived = true;
             
             if (event.data.type === 'oauth-2fa-required') {
-                // L'utilisateur a la 2FA activée, on demande le code
+                // L'utilisateur a la 2FA activée - stocker le tempToken et rediriger vers la page 2FA
                 const tempToken = event.data.tempToken;
-                
-                // Afficher le formulaire 2FA dans la SPA (pas de nouvelle page)
-                showOAuth2FAPrompt(tempToken);
+                (window as any).pendingOAuth2FA = { tempToken };
                 
                 // Cleanup
                 window.removeEventListener('message', messageHandler);
+                
+                // Rediriger vers la page 2FA (une seule fois)
+                if (!twoFARedirected) {
+                    twoFARedirected = true;
+                    load('twoFactor');
+                }
             } else if (event.data.type === 'oauth-error') {
                 // Erreur lors de l'OAuth
                 const msg = document.getElementById('signUpMsg') || document.getElementById('signInMsg');
@@ -272,63 +343,6 @@ document.addEventListener('componentsReady', () => {
         }, 500);
     });
 });
-
-// Les handlers 2FA ne sont plus nécessaires car intégrés dans le signIn
-
-/**
- * Affiche un prompt navigateur pour entrer le code 2FA après OAuth
- */
-async function showOAuth2FAPrompt(tempToken: string) {
-    const msg = document.getElementById('signUpMsg') || document.getElementById('signInMsg');
-    
-    // Petit délai pour s'assurer que la fenêtre OAuth est fermée
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Boucle pour permettre plusieurs tentatives
-    while (true) {
-        const code = window.prompt('Enter your 6-digit verification code:');
-        
-        // Si l'utilisateur annule
-        if (code === null) {
-            if (msg) {
-                msg.textContent = '2FA verification cancelled';
-                msg.style.color = 'red';
-            }
-            return;
-        }
-        
-        // Valider le format
-        if (!code || code.trim().length !== 6) {
-            window.alert('Please enter a valid 6-digit code');
-            continue;
-        }
-
-        try {
-            const response = await fetch('https://localhost:8080/auth/2fa/verify-oauth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ tempToken, code: code.trim() })
-            });
-
-            if (response.ok) {
-                // Success! Reload to show authenticated state
-                if (msg) {
-                    msg.textContent = '✅ Authentication successful!';
-                    msg.style.color = 'green';
-                }
-                setTimeout(() => window.location.reload(), 500);
-                return;
-            } else {
-                const data = await response.json();
-                window.alert(data.error || 'Invalid verification code');
-            }
-        } catch (error) {
-            console.error('Error verifying OAuth 2FA code:', error);
-            window.alert('Network error. Please try again.');
-        }
-    }
-}
 
 // Expose refreshUserStats globally for post-game stats refresh
 (window as any).refreshUserStats = refreshUserStats;

@@ -1,34 +1,23 @@
 import { setStarsHoverColor, getColorRgb } from '../background/background.js';
+import { load } from '../navigation/utils.js';
 
 /**
- * Initialize event handlers for the AI config page
+ * Initialize event handlers for the Game Config page (mode selection)
  */
-export function initAIConfigManagers(): void {
+export function initGameConfigManagers(): void {
     // Game mode selectors
     const vsAiBtn = document.getElementById('vs-ai');
     const vsPlayerBtn = document.getElementById('vs-player');
     
-    // Sections
-    const gameModeSection = document.querySelector('.game-mode-section') as HTMLElement;
-    const difficultySection = document.getElementById('difficulty-section');
-    const mainActions = document.getElementById('main-actions');
-    
-    // Difficulty selectors
-    const easyBtn = document.getElementById('ai-easy');
-    const mediumBtn = document.getElementById('ai-medium');
-    const hardBtn = document.getElementById('ai-hard');
-    
-    // Game mode handlers
+    // VS AI handler - navigate to AI difficulty page
     if (vsAiBtn && !(vsAiBtn as any)._listenerSet) {
         (vsAiBtn as any)._listenerSet = true;
         vsAiBtn.addEventListener('click', () => {
-            // Hide game mode options and show difficulty options
-            gameModeSection.classList.add('hidden');
-            if (difficultySection) difficultySection.classList.remove('hidden');
-            if (mainActions) mainActions.classList.add('hidden');
+            load('aiConfig');
         });
     }
     
+    // VS Player handler - start local 2 player game directly
     if (vsPlayerBtn && !(vsPlayerBtn as any)._listenerSet) {
         (vsPlayerBtn as any)._listenerSet = true;
         vsPlayerBtn.addEventListener('click', async () => {
@@ -45,6 +34,16 @@ export function initAIConfigManagers(): void {
             }
         });
     }
+}
+
+/**
+ * Initialize event handlers for the AI Config page (difficulty selection)
+ */
+export function initAIConfigManagers(): void {
+    // Difficulty selectors
+    const easyBtn = document.getElementById('ai-easy');
+    const mediumBtn = document.getElementById('ai-medium');
+    const hardBtn = document.getElementById('ai-hard');
     
     /**
      * Start an AI game with given difficulty
@@ -106,9 +105,11 @@ export function initAIConfigManagers(): void {
 // Export function to be globally accessible
 declare global {
     interface Window {
+        initGameConfigManagers: () => void;
         initAIConfigManagers: () => void;
     }
 }
 
-// Make function globally accessible
+// Make functions globally accessible
+(window as any).initGameConfigManagers = initGameConfigManagers;
 (window as any).initAIConfigManagers = initAIConfigManagers;

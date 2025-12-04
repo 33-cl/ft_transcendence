@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -17,6 +17,7 @@ const components = {
     game4: {id: 'game4', html: game4HTML},
     signIn: {id: 'signIn', html: signInHTML},
     signUp: {id: 'signUp', html: signUpHTML},
+    twoFactor: {id: 'twoFactor', html: twoFactorHTML},
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
     spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
@@ -25,6 +26,7 @@ const components = {
     gameStats: {id: 'gameStats', html: gameStatsHTML as any},
     contextMenu: {id: 'contextMenu', html: contextMenuHTML},
     settings: {id: 'settings', html: settingsHTML},
+    gameConfig: {id: 'gameConfig', html: gameConfigHTML},
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
     tournaments: {id: 'tournaments', html: tournamentsHTML},
 };
@@ -231,6 +233,13 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         initSessionBroadcast();
         // show('goToMain');
     }
+    else if (pageName === 'twoFactor')
+    {
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+        await show('twoFactor');
+        // Initialize cross-tab session listener
+        initSessionBroadcast();
+    }
     else if (pageName === 'game') {
         stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('game');
@@ -329,6 +338,15 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             if (matchData) {
                 initializeGameStatsCharts(matchData);
             }
+        }, 100);
+    }
+    else if (pageName === 'gameConfig') 
+    {
+        await show('gameConfig');
+        await show('goToMain');
+        setTimeout(() => {
+            if (myLoadId !== currentLoadId) return; // Abort if newer load
+            if ((window as any).initGameConfigManagers) (window as any).initGameConfigManagers();
         }, 100);
     }
     else if (pageName === 'aiConfig') 

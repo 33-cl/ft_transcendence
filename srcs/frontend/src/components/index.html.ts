@@ -1,6 +1,7 @@
 export { landingHTML } from '../landing/landing.html.js';
 export { signInHTML } from '../auth/signIn.html.js';
 export { signUpHTML } from '../auth/signUp.html.js';
+export { twoFactorHTML } from '../auth/twoFactor.html.js';
 export { goToMainHTML } from '../navigation/goToMain.html.js';
 export { leaderboardHTML } from '../leaderboard/leaderboard.html.js';
 export { friendListHTML, spectateFreind, initLoadingIcons, destroyLoadingIcons, initializeFriendListEventListeners, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, initializeAddFriendsButton, updateFriendRequestsBadge, fetchInitialFriendStatuses } from '../friends/friendList.html.js';
@@ -15,6 +16,7 @@ export { profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, getCached
 export { gameStatsHTML } from '../profile/gamestats.html.js';
 export { profileCardHTML } from '../profile/profileCard.html.js';
 export { settingsHTML } from '../settings/settings.html.js';
+export { gameConfigHTML } from '../config/gameConfig.html.js';
 export { aiConfigHTML } from '../config/aiConfig.html.js';
 export { spectatorGameFinishedHTML } from '../game/spectatorGameFinished.html.js';
 export { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.js';

@@ -205,7 +205,7 @@ function initializeComponents(): void
             // Ne pas appeler load('game4') ici !
         }
         if (target.id === 'soloAi')
-            await load('aiConfig'); // Rediriger vers la page de configuration de l'IA avant de détecter le jeu
+            await load('gameConfig'); // Rediriger vers la page de configuration du jeu (choix mode)
         if (target.id === 'localGameBtn')
         {
             // Relancer le même type de jeu qui vient de se terminer

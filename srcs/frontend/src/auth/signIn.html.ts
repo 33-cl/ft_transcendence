@@ -2,12 +2,6 @@ export const signInHTML = /*html*/`
     <h2>Sign in</h2>
     <input type="text" id="username" placeholder="Username">
     <input type="password" id="password" placeholder="Password">
-    
-    <!-- Champ 2FA (masqué par défaut) -->
-    <div id="twoFactorSection" style="display: none;">
-        <input type="text" id="twoFactorCode" placeholder="6-digit code" maxlength="6" pattern="[0-9]{6}">
-    </div>
-    
     <button id="signInButton" class="default-button">SIGN IN</button>
     <div id="signInMsg" style="margin-top:8px"></div>
 
