@@ -258,6 +258,11 @@ function setupGlobalSocketListeners() {
         });
         leaderboardUpdatedListenerSet = true;
     }
+    
+    // Setup tournament socket listeners globally (for notifications)
+    import('../tournament/tournamentSocket.js').then(({ setupTournamentSocketListeners }) => {
+        setupTournamentSocketListeners();
+    }).catch(err => console.warn('Tournament socket listeners not available:', err));
 }
 
 // Configurer les listeners globaux au chargement

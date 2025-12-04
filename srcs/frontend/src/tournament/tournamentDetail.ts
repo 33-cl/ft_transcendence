@@ -1,4 +1,5 @@
 import { load } from '../navigation/utils.js';
+import { setupTournamentSocketListeners, joinTournamentRoom, leaveTournamentRoom } from './tournamentSocket.js';
 
 // Types for tournament data (4-player specs)
 interface TournamentParticipant {
@@ -87,6 +88,9 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     if (backBtn && !(backBtn as any)._listenerSet) {
         (backBtn as any)._listenerSet = true;
         backBtn.addEventListener('click', async () => {
+            // Leave tournament room before navigating away
+            leaveTournamentRoom(tournamentId);
+            
             // Completely remove tournament detail page
             const detailPage = document.getElementById('tournamentDetailPage');
             if (detailPage) {
@@ -95,6 +99,13 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
             await load('tournaments');
         });
     }
+
+    // Setup WebSocket listeners and join tournament room
+    setupTournamentSocketListeners();
+    joinTournamentRoom(tournamentId);
+    
+    // Store tournament ID in window for back button handler
+    (window as any).currentTournamentId = tournamentId;
 
     const contentContainer = document.getElementById('tournament-content');
     if (!contentContainer) return;
@@ -203,35 +214,57 @@ function renderMatchCard(
     playerAliasMap: Map<number, string>, 
     label: string,
     currentUserId: number | null,
-    tournamentId: string
+    tournamentId: string,
+    isNextMatch: boolean = false
 ): string {
     const player1 = getPlayerAlias(match.player1_id, playerAliasMap);
     const player2 = getPlayerAlias(match.player2_id, playerAliasMap);
     const winner = match.winner_id ? getPlayerAlias(match.winner_id, playerAliasMap) : null;
     
+    // Check if current user is one of the players in this match
+    const isCurrentUserInMatch = currentUserId !== null && (
+        currentUserId === match.player1_id || currentUserId === match.player2_id
+    );
+    
     let statusBadge = '';
     let borderColor = 'border-gray-300';
+    let cardOpacity = '';
+    let nextBadge = '';
+    let yourMatchBadge = '';
     
     if (match.status === 'finished' && winner) {
         statusBadge = `<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✓ ${winner}</span>`;
         borderColor = 'border-green-400';
+        cardOpacity = 'opacity-70'; // Griser les matchs terminés
     } else if (match.status === 'scheduled') {
-        statusBadge = `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Scheduled</span>`;
-        borderColor = 'border-blue-400';
+        // Vérifier si le match est prêt (2 joueurs assignés)
+        const isReady = match.player1_id !== null && match.player2_id !== null;
+        
+        if (isReady && isNextMatch) {
+            // C'est le prochain match à jouer
+            nextBadge = `<span class="absolute -top-2 -right-2 text-xs bg-orange-500 text-white px-2 py-1 rounded-full animate-pulse font-bold">NEXT</span>`;
+            borderColor = 'border-orange-500 border-2';
+        } else if (isReady) {
+            statusBadge = `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Ready</span>`;
+            borderColor = 'border-blue-400';
+        } else {
+            statusBadge = `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">Waiting...</span>`;
+            borderColor = 'border-gray-300 border-dashed';
+        }
+        
+        // Badge "YOUR MATCH" si c'est le match du joueur courant et qu'il est prêt
+        if (isReady && isCurrentUserInMatch) {
+            yourMatchBadge = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full ml-1">👤 Your match</span>`;
+        }
     } else if (match.status === 'cancelled') {
         statusBadge = `<span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Cancelled</span>`;
         borderColor = 'border-red-400';
+        cardOpacity = 'opacity-50';
     }
 
     // Highlight winner in player names
     const player1Class = match.winner_id === match.player1_id ? 'font-bold text-green-700' : '';
     const player2Class = match.winner_id === match.player2_id ? 'font-bold text-green-700' : '';
-
-    // Check if current user is one of the players in this match
-    // player1_id and player2_id are user_ids, not participant_ids
-    const isCurrentUserInMatch = currentUserId !== null && (
-        currentUserId === match.player1_id || currentUserId === match.player2_id
-    );
     
     // DEBUG: Log match info to understand why button might not show
     console.log(`🎯 Match ${match.id} (${label}):`, {
@@ -239,7 +272,8 @@ function renderMatchCard(
         player1_id: match.player1_id,
         player2_id: match.player2_id,
         currentUserId,
-        isCurrentUserInMatch
+        isCurrentUserInMatch,
+        isNextMatch
     });
     
     // Show "Play Match" button only if:
@@ -264,7 +298,8 @@ function renderMatchCard(
     ` : '';
 
     return `
-        <div class="bracket-match bg-white border-2 ${borderColor} rounded-lg p-3 min-w-[180px] shadow-sm" data-match-id="${match.id}">
+        <div class="bracket-match bg-white border-2 ${borderColor} rounded-lg p-3 min-w-[180px] shadow-sm relative ${cardOpacity}" data-match-id="${match.id}">
+            ${nextBadge}
             <div class="text-xs text-gray-500 mb-2 font-semibold uppercase">${label}</div>
             <div class="space-y-1">
                 <div class="flex items-center gap-2 ${player1Class}">
@@ -277,8 +312,9 @@ function renderMatchCard(
                     <span class="truncate">${player2}</span>
                 </div>
             </div>
-            <div class="mt-2 text-center">
+            <div class="mt-2 text-center flex flex-wrap justify-center gap-1">
                 ${statusBadge}
+                ${yourMatchBadge}
             </div>
             ${playButtonHtml}
         </div>
@@ -300,6 +336,24 @@ function renderBracketHtml(
     const semiFinals = matchesByRound.get(1) || [];
     const finals = matchesByRound.get(2) || [];
     const finalMatch = finals[0];
+    
+    // Determine the next match to play (first scheduled match with both players ready)
+    // Priority: Round 1 first, then Round 2
+    // If multiple matches in same round are ready, all are "next"
+    const nextMatchIds: Set<number> = new Set();
+    
+    // Check semi-finals first - all ready semi-finals are "next"
+    for (const match of semiFinals) {
+        if (match.status === 'scheduled' && match.player1_id && match.player2_id) {
+            nextMatchIds.add(match.id);
+        }
+    }
+    
+    // If no semi-final pending, check final
+    if (nextMatchIds.size === 0 && finalMatch && finalMatch.status === 'scheduled' 
+        && finalMatch.player1_id && finalMatch.player2_id) {
+        nextMatchIds.add(finalMatch.id);
+    }
     
     // Determine champion (if tournament completed)
     let championHtml = '';
@@ -326,10 +380,10 @@ function renderBracketHtml(
         `;
     }
 
-    // Build semi-finals HTML
-    const semi1Html = semiFinals[0] ? renderMatchCard(semiFinals[0], playerAliasMap, 'Semi-Final 1', currentUserId, tournament.id) : '';
-    const semi2Html = semiFinals[1] ? renderMatchCard(semiFinals[1], playerAliasMap, 'Semi-Final 2', currentUserId, tournament.id) : '';
-    const finalHtml = finalMatch ? renderMatchCard(finalMatch, playerAliasMap, 'Final', currentUserId, tournament.id) : `
+    // Build semi-finals HTML with isNextMatch parameter
+    const semi1Html = semiFinals[0] ? renderMatchCard(semiFinals[0], playerAliasMap, 'Semi-Final 1', currentUserId, tournament.id, nextMatchIds.has(semiFinals[0].id)) : '';
+    const semi2Html = semiFinals[1] ? renderMatchCard(semiFinals[1], playerAliasMap, 'Semi-Final 2', currentUserId, tournament.id, nextMatchIds.has(semiFinals[1].id)) : '';
+    const finalHtml = finalMatch ? renderMatchCard(finalMatch, playerAliasMap, 'Final', currentUserId, tournament.id, nextMatchIds.has(finalMatch.id)) : `
         <div class="bracket-match bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-3 min-w-[180px]">
             <div class="text-xs text-gray-500 mb-2 font-semibold uppercase">Final</div>
             <div class="text-center text-gray-400 py-4">Waiting for semi-finals...</div>

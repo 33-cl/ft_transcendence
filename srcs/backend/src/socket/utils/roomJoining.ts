@@ -144,6 +144,12 @@ export function authenticateOnlinePlayer(
         if (!room.playerUsernames)
             room.playerUsernames = {};
         room.playerUsernames[socket.id] = user.username;
+        
+        // Also store userId for tournament match result handling
+        if (!room.playerUserIds)
+            room.playerUserIds = {};
+        room.playerUserIds[socket.id] = user.id;
+        
         return user;
     }
     else if (user === 'USER_ALREADY_CONNECTED')

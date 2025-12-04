@@ -11,7 +11,6 @@ export const gameFinishedHTML = (data?: any) => {
     
     // Determine if this is a local/AI game (side-based) or online game (username-based)
     const isLocalOrAIGame = (winner?.side && !winner?.username) || mode === 'ai' || mode === 'local';
-    const isOnlineGame = winner?.username && loser?.username;
     
     // Determine display names
     const winnerName = winner?.username || winner?.side || 'Winner';
@@ -19,8 +18,8 @@ export const gameFinishedHTML = (data?: any) => {
     const winnerScore = winner?.score ?? 0;
     const loserScore = loser?.score ?? 0;
     
-    // Show restart button only for local games, NOT for tournament matches
-    const showRestartBtn = !isTournamentMatch && (!isOnlineGame || !isForfeit);
+    // Show restart button only for local/AI games, NEVER for tournament matches or online games
+    const showRestartBtn = !isTournamentMatch && isLocalOrAIGame;
     
     // Layout pour parties locales/IA (plus simple, centré)
     if (isLocalOrAIGame) {

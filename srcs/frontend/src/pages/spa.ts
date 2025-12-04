@@ -152,6 +152,10 @@ function initializeComponents(): void
             cleanupGameState();
             setStarsHoverColor(null);
             
+            // Nettoyage des variables de tournoi
+            (window as any).currentTournamentId = null;
+            (window as any).currentMatchId = null;
+            
             // Wait for proper room cleanup before proceeding
             if (window.socket && (window as any).leaveCurrentRoomAsync) {
                 try {

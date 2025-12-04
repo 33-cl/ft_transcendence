@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
 import { getUserByUsername, updateUserStats } from '../../user.js';
-import { broadcastUserStatusChange } from '../notificationHandlers.js';
+import { broadcastUserStatusChange, broadcastLeaderboardUpdate } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { updateMatchResult } from '../../tournament.js';
 import db from '../../db.js';
@@ -46,19 +46,28 @@ async function handleTournamentMatchEnd(
 
         // 2. Déterminer le gagnant (participant_id) en fonction du paddle side
         const { winnerSocketId } = findSocketIdsForWinnerAndLoser(room, winner, loser);
-        if (!winnerSocketId || !room.paddleBySocket) {
+        if (!winnerSocketId) {
             fastify.log.error('Could not determine winner socket');
             return;
         }
 
-        // 3. Mapper le paddle side vers le participant_id
-        const winnerPaddle = room.paddleBySocket[winnerSocketId];
-        const winnerParticipantId = winnerPaddle === 'LEFT' ? match.player1_id : match.player2_id;
+        // 3. Get winner's userId from playerUserIds mapping (set when player joins room)
+        const winnerUserId = room.playerUserIds?.[winnerSocketId];
+        if (!winnerUserId) {
+            fastify.log.error(`Could not find userId for winner socket ${winnerSocketId}`);
+            return;
+        }
 
-        // 4. Enregistrer le résultat via la fonction existante
-        updateMatchResult(room.matchId, winnerParticipantId);
+        // 4. Validate that the winner is indeed a participant of this match
+        if (winnerUserId !== match.player1_id && winnerUserId !== match.player2_id) {
+            fastify.log.error(`Winner userId ${winnerUserId} is not a participant of match ${room.matchId}`);
+            return;
+        }
 
-        fastify.log.info(`✅ Tournament match ${room.matchId} result recorded automatically. Winner: participant ${winnerParticipantId}`);
+        // 5. Enregistrer le résultat via la fonction existante
+        updateMatchResult(room.matchId, winnerUserId);
+
+        fastify.log.info(`✅ Tournament match ${room.matchId} result recorded. Winner: user ${winnerUserId}`);
     } catch (error) {
         fastify.log.error(`Error recording tournament match result: ${error}`);
     }
@@ -282,7 +291,21 @@ export async function handleGameEnd(
 
     // Enregistrement en DB si possible
     if (winnerUsername && loserUsername)
-        recordMatchStats(winnerUsername, loserUsername, winner, loser);
+    {
+        const statsRecorded = recordMatchStats(winnerUsername, loserUsername, winner, loser);
+        
+        // Broadcast leaderboard update to all clients if stats were recorded
+        // Only for 1v1 online matches (maxPlayers === 2) that are NOT tournament matches
+        // Tournament matches have their own ranking system and don't affect the global leaderboard
+        const isTournamentMatch = room.tournamentId && room.matchId;
+        
+        fastify.log.info(`[LEADERBOARD DEBUG] statsRecorded=${statsRecorded}, maxPlayers=${room.maxPlayers}, isTournament=${!!isTournamentMatch}`);
+        
+        if (statsRecorded && room.maxPlayers === 2 && !isTournamentMatch) {
+            fastify.log.info(`[LEADERBOARD] Broadcasting leaderboard update after 1v1 match`);
+            broadcastLeaderboardUpdate(io, 0, {}, fastify); // userId 0 = game end, no specific user
+        }
+    }
 
     // Notifications
     notifyPlayersAndSpectators(room, roomName, winner, loser, displayWinnerUsername, displayLoserUsername, io);

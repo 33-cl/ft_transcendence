@@ -141,12 +141,43 @@ function handleTournamentJoinMatch(socket: Socket, data: { tournamentId?: string
 }
 
 /**
+ * Handler pour rejoindre une room de tournoi (recevoir les updates en temps réel)
+ */
+function handleJoinTournamentRoom(socket: Socket, data: { tournamentId?: string } | undefined | null, fastify: FastifyInstance): void
+{
+    const tournamentId = data?.tournamentId;
+    if (!tournamentId)
+    {
+        socket.emit('error', { error: 'tournamentId required' });
+        return;
+    }
+
+    const roomName = `tournament:${tournamentId}`;
+    socket.join(roomName);
+    fastify.log.info(`Socket ${socket.id} joined tournament room: ${roomName}`);
+}
+
+/**
+ * Handler pour quitter une room de tournoi
+ */
+function handleLeaveTournamentRoom(socket: Socket, data: { tournamentId?: string } | undefined | null): void
+{
+    const tournamentId = data?.tournamentId;
+    if (!tournamentId) return;
+
+    const roomName = `tournament:${tournamentId}`;
+    socket.leave(roomName);
+}
+
+/**
  * Enregistre tous les event listeners sur un socket
  */
 function registerSocketEventListeners(socket: Socket, io: Server, fastify: FastifyInstance): void
 {
     socket.on('joinRoom', (data: Record<string, unknown>) => handleJoinRoom(socket, data, fastify, io));
     socket.on('tournament:join_match', (data: { tournamentId?: string; matchId?: string }) => handleTournamentJoinMatch(socket, data, fastify));
+    socket.on('joinTournamentRoom', (data: { tournamentId?: string }) => handleJoinTournamentRoom(socket, data, fastify));
+    socket.on('leaveTournamentRoom', (data: { tournamentId?: string }) => handleLeaveTournamentRoom(socket, data));
     socket.on('message', (msg: string) => handleSocketMessage(socket, msg));
     socket.on('disconnect', () => handleSocketDisconnect(socket, io, fastify));
     socket.on('leaveAllRooms', () => handleLeaveAllRooms(socket, fastify, io));

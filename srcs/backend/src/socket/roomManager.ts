@@ -16,6 +16,8 @@ export interface Room
   paddleBySocket?: Record<string, PaddleSide>;
   // Mapping socket.id -> username for authenticated players (online games only)
   playerUsernames?: Record<string, string>;
+  // Mapping socket.id -> user_id for authenticated players (needed for tournament results)
+  playerUserIds?: Record<string, number>;
   // Tournament metadata (pour les rooms de tournoi)
   tournamentId?: string;
   matchId?: number;
@@ -69,6 +71,10 @@ export function removePlayerFromRoom(socketId: string): void
 		// Clean up username mapping when player leaves
 		if (room.playerUsernames && room.playerUsernames[socketId])
 			delete room.playerUsernames[socketId];
+		
+		// Clean up userId mapping when player leaves
+		if (room.playerUserIds && room.playerUserIds[socketId])
+			delete room.playerUserIds[socketId];
 		
 		// Clean up paddle assignments
 		if (room.paddleBySocket && room.paddleBySocket[socketId])

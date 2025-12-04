@@ -1,7 +1,7 @@
 // tournament.ts - Logique métier pour la gestion des tournois 4 joueurs
 
 import db from './db.js';
-import { emitTournamentStarted, emitMatchFinished, emitTournamentCompleted } from './socket/handlers/tournamentHandlers.js';
+import { emitTournamentStarted, emitMatchFinished, emitTournamentCompleted, emitMatchReady } from './socket/handlers/tournamentHandlers.js';
 
 /**
  * Interface pour un match de tournoi
@@ -68,6 +68,19 @@ export function generateBracket(tournamentId: string): void {
     `).all(tournamentId) as Array<{ id: number; round: number; player1_id: number | null; player2_id: number | null }>;
     
     emitTournamentStarted(tournamentId, matches);
+    
+    // Émettre les notifications pour les 2 demi-finales (toutes deux jouables)
+    const semiFinals = matches.filter(m => m.round === 1);
+    for (const match of semiFinals) {
+        if (match.player1_id && match.player2_id) {
+            emitMatchReady(tournamentId, {
+                id: match.id,
+                round: match.round,
+                player1_id: match.player1_id,
+                player2_id: match.player2_id
+            });
+        }
+    }
 }
 
 /**
@@ -170,6 +183,14 @@ function advanceWinnerToFinal(tournamentId: string, winnerId: number): void {
             SET player2_id = ? 
             WHERE id = ?
         `).run(winnerId, finalMatch.id);
+        
+        // Les 2 joueurs sont maintenant assignés → la finale est prête !
+        emitMatchReady(tournamentId, {
+            id: finalMatch.id,
+            round: 2,
+            player1_id: finalMatch.player1_id,
+            player2_id: winnerId
+        });
     } else {
         console.error(`❌ Final match ${finalMatch.id} already has both players assigned`);
     }
