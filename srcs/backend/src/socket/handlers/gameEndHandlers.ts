@@ -46,19 +46,28 @@ async function handleTournamentMatchEnd(
 
         // 2. Déterminer le gagnant (participant_id) en fonction du paddle side
         const { winnerSocketId } = findSocketIdsForWinnerAndLoser(room, winner, loser);
-        if (!winnerSocketId || !room.paddleBySocket) {
+        if (!winnerSocketId) {
             fastify.log.error('Could not determine winner socket');
             return;
         }
 
-        // 3. Mapper le paddle side vers le participant_id
-        const winnerPaddle = room.paddleBySocket[winnerSocketId];
-        const winnerParticipantId = winnerPaddle === 'LEFT' ? match.player1_id : match.player2_id;
+        // 3. Get winner's userId from playerUserIds mapping (set when player joins room)
+        const winnerUserId = room.playerUserIds?.[winnerSocketId];
+        if (!winnerUserId) {
+            fastify.log.error(`Could not find userId for winner socket ${winnerSocketId}`);
+            return;
+        }
 
-        // 4. Enregistrer le résultat via la fonction existante
-        updateMatchResult(room.matchId, winnerParticipantId);
+        // 4. Validate that the winner is indeed a participant of this match
+        if (winnerUserId !== match.player1_id && winnerUserId !== match.player2_id) {
+            fastify.log.error(`Winner userId ${winnerUserId} is not a participant of match ${room.matchId}`);
+            return;
+        }
 
-        fastify.log.info(`✅ Tournament match ${room.matchId} result recorded automatically. Winner: participant ${winnerParticipantId}`);
+        // 5. Enregistrer le résultat via la fonction existante
+        updateMatchResult(room.matchId, winnerUserId);
+
+        fastify.log.info(`✅ Tournament match ${room.matchId} result recorded. Winner: user ${winnerUserId}`);
     } catch (error) {
         fastify.log.error(`Error recording tournament match result: ${error}`);
     }

@@ -8,6 +8,7 @@ import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
 import { getUserByUsername, updateUserStats } from '../../user.js';
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
+import { updateMatchResult } from '../../tournament.js';
 
 // ========================================
 // PLAYER INFO RETRIEVAL
@@ -123,6 +124,70 @@ export function recordForfeitMatch(
 }
 
 // ========================================
+// TOURNAMENT FORFEIT
+// ========================================
+
+/**
+ * Enregistre le résultat d'un forfait dans un match de tournoi
+ * Met à jour le bracket et propage le gagnant au match suivant
+ * 
+ * @param room - La room contenant le match de tournoi
+ * @param winnerSocketId - L'ID du socket du gagnant
+ * @param fastify - Instance Fastify
+ * @returns true si le résultat a été enregistré
+ */
+export function recordTournamentForfeit(
+    room: RoomType,
+    winnerSocketId: string,
+    fastify: FastifyInstance
+): boolean
+{
+    // Vérifier que c'est bien un match de tournoi
+    if (!room.tournamentId || !room.matchId) {
+        return false;
+    }
+    
+    // Récupérer l'userId du gagnant via le mapping playerUserIds
+    const winnerUserId = room.playerUserIds?.[winnerSocketId];
+    if (!winnerUserId) {
+        fastify.log.error(`Tournament forfeit: Could not find userId for winner socket ${winnerSocketId}`);
+        return false;
+    }
+    
+    // Enregistrer le résultat du match de tournoi
+    try {
+        updateMatchResult(room.matchId, winnerUserId);
+        fastify.log.info(`✅ Tournament match ${room.matchId} forfeit recorded. Winner: user ${winnerUserId}`);
+        return true;
+    } catch (error) {
+        fastify.log.error(`Error recording tournament forfeit result: ${error}`);
+        return false;
+    }
+}
+
+/**
+ * Trouve le socketId du gagnant après un forfait
+ * 
+ * @param room - La room contenant le jeu
+ * @param disconnectedSocketId - L'ID du socket déconnecté
+ * @returns Le socketId du gagnant ou null
+ */
+export function findWinnerSocketId(
+    room: RoomType,
+    disconnectedSocketId: string
+): string | null
+{
+    for (const [socketId, paddle] of Object.entries(room.paddleBySocket || {}))
+    {
+        if (socketId !== disconnectedSocketId && room.playerUsernames?.[socketId])
+        {
+            return socketId;
+        }
+    }
+    return null;
+}
+
+// ========================================
 // NOTIFICATIONS
 // ========================================
 
@@ -222,6 +287,14 @@ export function handleForfeit(
     const winner = findWinnerAfterForfeit(room, socketId);
     if (!winner)
         return;
+    
+    // TOURNAMENT FORFEIT: Enregistrer le résultat dans le bracket
+    if (room.tournamentId && room.matchId) {
+        const winnerSocketId = findWinnerSocketId(room, socketId);
+        if (winnerSocketId) {
+            recordTournamentForfeit(room, winnerSocketId, fastify);
+        }
+    }
     
     recordForfeitMatch(
         winner.username,
