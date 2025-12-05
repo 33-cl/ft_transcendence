@@ -39,9 +39,9 @@ function ensureAvatarDirectory() {
   const avatarDir = path.join(process.cwd(), 'public', 'avatars');
   if (!fs.existsSync(avatarDir)) {
     fs.mkdirSync(avatarDir, { recursive: true });
-    app.log.info(`📁 Avatar directory created: ${avatarDir}`);
+    app.log.info(`Avatar directory created: ${avatarDir}`);
   } else {
-    app.log.info(`📁 Avatar directory exists: ${avatarDir}`);
+    app.log.info(`Avatar directory exists: ${avatarDir}`);
   }
 }
 
@@ -71,8 +71,8 @@ app.addHook('onSend', (request, reply, payload, done) => {
     });
 
     // Enregistre le plugin Rate Limiting global (DoS protection)
-    const rateWindowMs = Number(process.env.RATE_WINDOW_MS ?? 60000); // Default: 1 minute
-    const rateMax = Number(process.env.RATE_MAX ?? 200); // Default: 200 requests per window
+    const rateWindowMs = Number(60000); // Default: 1 minute
+    const rateMax = Number(200); // Default: 200 requests per window
     await app.register(fastifyRateLimit, {
       max: rateMax,
       timeWindow: rateWindowMs,
@@ -82,7 +82,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
         'x-ratelimit-reset': true
       }
     });
-    app.log.info(`🛡️ Rate limiting configured: ${rateMax} requests per ${rateWindowMs}ms`);
+    app.log.info(`Rate limiting configured: ${rateMax} requests per ${rateWindowMs}ms`);
 
     // Enregistre le plugin multipart pour l'upload d'avatar
     await app.register(fastifyMultipart, {
@@ -127,7 +127,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
     app.register(oauthRoutes); // Ajoute les routes OAuth Google
     app.register(gamesRoutes); // Ajoute les routes /api/games (CLI)
 
-    // Route GET pour récupérer les infos d'un utilisateur
+    // Route GET pour recup un profil par ID
     app.get('/profile/:id', async (request, reply) => {
       const { id } = request.params as { id: string };
       
@@ -147,7 +147,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
 
     // Lancement du serveur HTTPS (Fastify)
     const address = await app.listen({ port: 8080, host: '0.0.0.0' }); // Démarre le serveur sur le port 8080, toutes interfaces
-    app.log.info(`✅ Serveur lancé sur ${address}`); // Log l'adresse du serveur
+    app.log.info(`Serveur lancé sur ${address}`); // Log l'adresse du serveur
 
   // Configuration de socket.io avec le serveur HTTP(S) (WSS)
   const io = new SocketIOServer(app.server as any, {

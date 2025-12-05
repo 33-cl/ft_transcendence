@@ -143,9 +143,8 @@ export function recordTournamentForfeit(
 ): boolean
 {
     // Vérifier que c'est bien un match de tournoi
-    if (!room.tournamentId || !room.matchId) {
+    if (!room.tournamentId || !room.matchId)
         return false;
-    }
     
     // Récupérer l'userId du gagnant via le mapping playerUserIds
     const winnerUserId = room.playerUserIds?.[winnerSocketId];
