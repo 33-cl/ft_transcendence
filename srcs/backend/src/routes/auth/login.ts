@@ -45,6 +45,7 @@ export async function loginRoute(request: FastifyRequest, reply: FastifyReply, f
       try {
         const code = generateTwoFactorCode();
         storeTwoFactorCode(user.id, code, 5);
+        console.log(`📧 2FA: Sending code to ${user.email} for user ${user.id}`);
         await sendTwoFactorEmail(user.email, user.username, code);
         
         return reply.status(200).send({ 
@@ -57,12 +58,15 @@ export async function loginRoute(request: FastifyRequest, reply: FastifyReply, f
       }
     } else {
       // Code fourni, on le vérifie
+      console.log(`🔐 2FA: Verifying code "${twoFactorCode}" for user ${user.id} (${user.username})`);
       const isValidCode = verifyTwoFactorCode(user.id, twoFactorCode);
       
       if (!isValidCode) {
+        console.log(`❌ 2FA: Code verification failed for user ${user.id}`);
         return reply.status(400).send({ error: 'Invalid or expired verification code. Please try again.' });
       }
       
+      console.log(`✅ 2FA: Code verified successfully for user ${user.id}`);
       // Code valide, on continue avec le login normal
     }
   }

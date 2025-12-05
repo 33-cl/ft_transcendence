@@ -57,18 +57,29 @@ export function verifyTwoFactorCode(userId: number, code: string): boolean
 {
   const now = formatSqliteDate(new Date());
   
+  // Debug: Afficher tous les codes pour cet utilisateur
+  const allCodes = db.prepare(`
+    SELECT * FROM two_factor_codes WHERE user_id = ?
+  `).all(userId);
+  console.log(`🔍 2FA Debug - User ${userId}, Input code: "${code}", Now: "${now}"`);
+  console.log(`🔍 2FA Debug - Stored codes:`, allCodes);
+  
   const result = db.prepare(`
     SELECT * FROM two_factor_codes 
     WHERE user_id = ? AND code = ? AND expires_at > ?
   `).get(userId, code, now) as TwoFactorCode | undefined;
   
+  console.log(`🔍 2FA Debug - Query result:`, result);
+  
   if (result)
   {
     // Code valide, on le supprime pour qu'il ne soit utilisable qu'une fois
     db.prepare('DELETE FROM two_factor_codes WHERE id = ?').run(result.id);
+    console.log(`✅ 2FA Debug - Code verified successfully`);
     return true;
   }
   
+  console.log(`❌ 2FA Debug - Code verification failed`);
   return false;
 }
 

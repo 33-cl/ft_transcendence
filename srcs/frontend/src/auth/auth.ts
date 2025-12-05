@@ -216,11 +216,23 @@ async function handleVerify2FA(): Promise<void> {
             });
 
             if (response.ok) {
+                const data = await response.json();
                 // Nettoyer les données OAuth stockées
                 delete (window as any).pendingOAuth2FA;
+                
+                // Stocker l'utilisateur globalement
+                if (data.user) {
+                    (window as any).currentUser = data.user;
+                }
+                
+                // Reconnecter le WebSocket avec les nouveaux credentials
+                if ((window as any).reconnectWebSocket) {
+                    (window as any).reconnectWebSocket();
+                }
+                
                 showSuccessMessage(msg, 'Signed in.');
-                // Recharger pour obtenir l'état authentifié
-                setTimeout(() => window.location.reload(), 500);
+                // Naviguer vers le menu principal (comme pour le login classique)
+                await load('mainMenu');
             } else {
                 const data = await response.json();
                 showErrorMessage(msg, data.error || 'Invalid verification code.');
@@ -231,13 +243,17 @@ async function handleVerify2FA(): Promise<void> {
         }
     } else if (credentials) {
         // Mode login classique - appeler l'API de login avec le code 2FA
+        console.log('🔐 2FA: Calling loginUser with code...');
         const result = await loginUser(credentials.login, credentials.password, twoFactorCode);
+        console.log('🔐 2FA: loginUser result:', result);
         
         if (result.success) {
             // Nettoyer les credentials stockés
             delete (window as any).pending2FACredentials;
             showSuccessMessage(msg, 'Signed in.');
+            console.log('🔐 2FA: Login successful, navigating to mainMenu...');
             await load('mainMenu');
+            console.log('🔐 2FA: Navigation to mainMenu complete');
         } else {
             showErrorMessage(msg, result.error || 'Invalid verification code.');
         }
