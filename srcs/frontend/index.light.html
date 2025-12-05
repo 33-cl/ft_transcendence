@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html class="h-full w-full">
+<head>
+  <title>ft_transcendence</title>
+  <link rel="stylesheet" href="src/shared/styles/output.css?v=1">
+</head>
+<body style="background-color: black;">
+  
+  <!-- No background canvas in light mode -->
+
+  <div id="landing" class="page"></div>
+  <div id="mainMenu" class="page"></div>
+  <div id="goToMain"></div>
+  <div id="profileCard"></div>
+  <div id="settings" class="page"></div>
+  <div id="leaderboard"></div>
+  <div id="friendList"></div>
+  <div id="addFriends"></div>
+  <div id="contextMenu"></div>
+  <div id="matchmaking" class="page"></div>
+  <div id="signIn" class="page authentication"></div>
+  <div id="signUp" class="page authentication"></div>
+  <div id="twoFactor" class="page authentication"></div>
+  <div id="game" class="page"></div>
+  <div id="game4" class="page"></div>
+  <div id="gameFinished" class="page"></div>
+  <div id="spectatorGameFinished" class="page"></div>
+  <div id="profile" class="page"></div>
+  <div id="profileDashboard"></div>
+  <div id="profileWinRateHistory"></div>
+  <div id="gameStats" class="page"></div>
+  <div id="gameConfig" class="page"></div>
+  <div id="aiConfig" class="page"></div>
+  <div id="tournaments" class="page"></div>
+  <div id="lorem-ipsum" class="page"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script type="module" src="dist/game/websocket.js"></script>
+  <script type="module" src="dist/pages/spa.js"></script>
+  <!-- No background script in light mode -->
+</body>
+</html>

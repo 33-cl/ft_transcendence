@@ -9,6 +9,18 @@ up:
 down:
 	docker compose down
 
+# Light build (no background animation - faster compile)
+light: build-light up-light
+
+build-light:
+	docker compose -f docker-compose.light.yml build
+
+up-light:
+	docker compose -f docker-compose.light.yml up -d
+
+down-light:
+	docker compose -f docker-compose.light.yml down
+
 rebuild: 
 	docker compose build --no-cache
 
@@ -57,4 +69,4 @@ db-copy:
 users-sql: db-copy
 	sqlite3 ./pong.db 'SELECT id,email,username,created_at FROM users ORDER BY id;'
 
-.PHONY: all up down build rebuild logs clean fclean rm-data re backend-build frontend-build users users-count matches friend-requests clean-old-requests db-copy users-sql
+.PHONY: all up down build rebuild logs clean fclean rm-data re backend-build frontend-build users users-count matches friend-requests clean-old-requests db-copy users-sql light build-light up-light down-light

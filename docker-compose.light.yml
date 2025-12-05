@@ -1,0 +1,33 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: srcs/docker/frontend/Dockerfile.light
+    ports:
+      - "3000:3000"
+      - "8081:80"
+    depends_on:
+      - backend
+    volumes:
+      - avatar_storage:/app/avatars
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: srcs/docker/backend/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./srcs/backend/src:/app/src
+      - avatar_storage:/app/public/avatars
+      - db_storage:/app/db
+    restart: unless-stopped
+    env_file: 
+      - .env
+
+volumes:
+  avatar_storage:
+    driver: local
+  db_storage:
+    driver: local
