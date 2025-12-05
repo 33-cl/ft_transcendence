@@ -18,6 +18,7 @@ db.exec(`
     provider TEXT DEFAULT 'local',
     wins INTEGER DEFAULT 0,
     losses INTEGER DEFAULT 0,
+    two_factor_enabled INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -124,6 +125,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_2fa_expires_at ON two_factor_codes(expires_at);
 `);
 
+// ============================================================================
+// ANCIENNES MIGRATIONS (commentées car tous les champs sont déjà dans CREATE TABLE)
+// Ces migrations étaient utiles pendant le développement pour ajouter des colonnes
+// sans perdre les données existantes. Maintenant tout est dans le schéma initial.
+// ============================================================================
+
+/*
 // Migration: Add google_id and provider columns if they don't exist
 try {
   // Check if columns exist
@@ -236,5 +244,6 @@ try {
 } catch (error) {
   console.error('❌ Migration failed for users.two_factor_enabled:', error);
 }
+*/
 
 export default db;

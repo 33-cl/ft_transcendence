@@ -33,9 +33,10 @@ export async function meRoute(request: FastifyRequest, reply: FastifyReply, jwtS
     ).get(decodedToken.userId) as any;
     
     // Convertir two_factor_enabled en boolean pour le frontend
-    if (user) {
+    if (user)
+    {
       user.twoFactorEnabled = user.two_factor_enabled === 1;
-      delete user.two_factor_enabled; // Supprimer l'ancienne propriété snake_case
+      delete user.two_factor_enabled; // Supprimer l'ancienne propriete snake_case
     }
     
     if (!user)
