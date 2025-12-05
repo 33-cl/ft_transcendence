@@ -78,7 +78,8 @@ export function buildRoomJoinedData(room: RoomType, roomName: string, socketId: 
         room: roomName,
         players: room.players.length,
         maxPlayers: room.maxPlayers,
-        paddle: room.paddleBySocket?.[socketId]
+        paddle: room.paddleBySocket?.[socketId],
+        isTournament: room.isTournament || false
     };
 }
 

@@ -394,10 +394,16 @@ function initializeComponents(): void
             await load('mainMenu');
         }
 
-        // Bouton "4 Player Tournaments" pour accéder à la liste des tournois
+        // Bouton "4 Player Tournaments" - rejoindre/créer une room de tournoi
         if (target.id === 'tournamentCreateBtn')
         {
-            await load('tournaments');
+            (window as any).isTournamentMode = true;
+            (window as any).lastGameType = 'tournament';
+            try {
+                await window.joinOrCreateRoom(4, false); // 4 joueurs, mode online (pas local)
+            } catch (error) {
+                console.error('Error joining tournament room:', error);
+            }
         }
         });
     }
@@ -543,7 +549,15 @@ function setupRoomJoinedHandler()
                 await load('matchmaking');
             else
             {
-                if (data.maxPlayers === 4) {
+                // Pour les tournois, la logique est gérée dans websocket.ts
+                // Ici on gère juste le fallback pour les jeux normaux
+                if (data.isTournament) {
+                    // Tournoi: matchs 1v1 utilisent game, phase initiale reste en matchmaking
+                    if (data.maxPlayers === 2) {
+                        await load('game');
+                    }
+                    // Si maxPlayers === 4, on reste en matchmaking (géré par websocket.ts)
+                } else if (data.maxPlayers === 4) {
                     await load('game4');
                 } else {
                     await load('game');

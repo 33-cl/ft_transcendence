@@ -178,7 +178,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         ballSpeedY:     6.5,              // Vitesse verticale initiale ajustée (4 -> 5.5)
         
         // Configuration de la partie
-        win:            7,                // Nombre de points pour gagner
+        win:            3,                // Nombre de points pour gagner
         running:        false,            // Partie non démarrée au début
         ballCountdown:  3,                // Délai de 3 secondes avant que la balle commence
         

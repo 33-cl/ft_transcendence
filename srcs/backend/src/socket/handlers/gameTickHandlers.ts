@@ -142,6 +142,33 @@ export function cleanupFinishedRoom(room: RoomType, roomName: string, io: Server
 // ========================================
 
 /**
+ * Met à jour et broadcast un match de demi-finale de tournoi
+ */
+function updateSemifinalMatch(
+    semifinal: any,
+    semifinalNumber: number,
+    io: any
+): void {
+    if (!semifinal || !semifinal.pongGame || !semifinal.pongGame.state.running) return;
+    
+    // Mettre à jour les positions des paddles
+    const paddleInputs = semifinal.paddleInputs;
+    if (paddleInputs) {
+        for (const side of ['LEFT', 'RIGHT']) {
+            const input = paddleInputs[side];
+            if (input) {
+                if (input.up) semifinal.pongGame.movePaddle(side, 'up');
+                if (input.down) semifinal.pongGame.movePaddle(side, 'down');
+            }
+        }
+    }
+    
+    // Envoyer l'état du jeu aux joueurs de ce match
+    io.to(semifinal.player1).emit('gameState', semifinal.pongGame.state);
+    io.to(semifinal.player2).emit('gameState', semifinal.pongGame.state);
+}
+
+/**
  * Boucle principale du jeu (appelée 120 fois par seconde)
  * - Met à jour les positions des paddles
  * - Envoie l'état aux clients
@@ -153,7 +180,15 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
     {
         const typedRoom = room as RoomType;
         
-        // Mise à jour des jeux en cours
+        // Gestion des tournois avec demi-finales simultanées
+        if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'semifinals') {
+            // Mettre à jour les 2 demi-finales
+            updateSemifinalMatch(typedRoom.tournamentState.semifinal1, 1, io);
+            updateSemifinalMatch(typedRoom.tournamentState.semifinal2, 2, io);
+            continue;
+        }
+        
+        // Mise à jour des jeux en cours (jeux normaux et finale de tournoi)
         if (typedRoom.pongGame && typedRoom.pongGame.state.running)
         {
             ensurePaddleInputsInitialized(typedRoom);

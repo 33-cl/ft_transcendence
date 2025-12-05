@@ -1,5 +1,11 @@
 // socket/handlers/tournamentHandlers.ts - WebSocket handlers for tournament real-time updates
 
+import { Server, Socket } from 'socket.io';
+import { FastifyInstance } from 'fastify';
+import { RoomType, TournamentState } from '../../types.js';
+import { rooms } from '../roomManager.js';
+import { PongGame } from '../../../game/PongGame.js';
+import { updateUserStats } from '../../user.js';
 import { getGlobalIo } from '../socketHandlers.js';
 
 /**
@@ -146,4 +152,408 @@ export function leaveTournamentRoom(socketId: string, tournamentId: string): voi
 
     socket.leave(`tournament:${tournamentId}`);
     console.log(`🔌 Socket ${socketId} left tournament room: tournament:${tournamentId}`);
+}
+
+// ========================================
+// SIMPLIFIED TOURNAMENT SYSTEM (4 players)
+// ========================================
+
+/**
+ * Initialise l'état du tournoi quand la room est pleine
+ */
+export function initializeTournamentState(room: RoomType): void {
+    if (!room.isTournament || room.players.length !== 4) return;
+    
+    room.tournamentState = {
+        phase: 'waiting',
+        players: [...room.players],
+        playerUsernames: { ...(room.playerUsernames || {}) },
+        playerUserIds: { ...(room.playerUserIds || {}) },
+    };
+}
+
+/**
+ * Crée une structure de match de demi-finale
+ */
+function createSemifinalMatch(player1: string, player2: string): import('../../types.js').SemifinalMatch {
+    return {
+        player1,
+        player2,
+        paddleBySocket: {
+            [player1]: 'LEFT',
+            [player2]: 'RIGHT'
+        },
+        paddleInputs: {
+            LEFT: { up: false, down: false },
+            RIGHT: { up: false, down: false }
+        },
+        finished: false
+    };
+}
+
+/**
+ * Démarre les deux demi-finales simultanément
+ */
+export function startSemifinals(
+    room: RoomType,
+    roomName: string,
+    io: Server,
+    fastify: FastifyInstance
+): void {
+    if (!room.tournamentState) return;
+    
+    const state = room.tournamentState;
+    state.phase = 'semifinals';
+    
+    // Créer les 2 matchs de demi-finale
+    const sf1Player1 = state.players[0];
+    const sf1Player2 = state.players[1];
+    const sf2Player1 = state.players[2];
+    const sf2Player2 = state.players[3];
+    
+    state.semifinal1 = createSemifinalMatch(sf1Player1, sf1Player2);
+    state.semifinal2 = createSemifinalMatch(sf2Player1, sf2Player2);
+    
+    console.log(`🎮 Tournament: Starting BOTH Semi-finals simultaneously`);
+    console.log(`   SF1: ${state.playerUsernames[sf1Player1]} vs ${state.playerUsernames[sf1Player2]}`);
+    console.log(`   SF2: ${state.playerUsernames[sf2Player1]} vs ${state.playerUsernames[sf2Player2]}`);
+    
+    // Créer les callbacks de fin pour chaque demi-finale
+    const onSemifinal1End = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+        handleSemifinalEnd(1, winner, room, roomName, io, fastify);
+    };
+    
+    const onSemifinal2End = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+        handleSemifinalEnd(2, winner, room, roomName, io, fastify);
+    };
+    
+    // Créer les jeux Pong pour chaque demi-finale
+    state.semifinal1.pongGame = new PongGame(2, onSemifinal1End);
+    state.semifinal2.pongGame = new PongGame(2, onSemifinal2End);
+    
+    // Démarrer les 2 jeux
+    state.semifinal1.pongGame.start();
+    state.semifinal2.pongGame.start();
+    
+    // Notifier les joueurs de la demi-finale 1
+    io.to(sf1Player1).emit('roomJoined', {
+        paddle: 'LEFT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true,
+        semifinal: 1
+    });
+    io.to(sf1Player2).emit('roomJoined', {
+        paddle: 'RIGHT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true,
+        semifinal: 1
+    });
+    
+    // Notifier les joueurs de la demi-finale 2
+    io.to(sf2Player1).emit('roomJoined', {
+        paddle: 'LEFT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true,
+        semifinal: 2
+    });
+    io.to(sf2Player2).emit('roomJoined', {
+        paddle: 'RIGHT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true,
+        semifinal: 2
+    });
+    
+    // Envoyer l'update du tournoi à tous
+    io.to(roomName).emit('tournamentUpdate', {
+        phase: 'semifinals',
+        message: 'Both semi-finals starting!',
+        semifinal1: {
+            player1: state.playerUsernames[sf1Player1] || 'Player 1',
+            player2: state.playerUsernames[sf1Player2] || 'Player 2'
+        },
+        semifinal2: {
+            player1: state.playerUsernames[sf2Player1] || 'Player 3',
+            player2: state.playerUsernames[sf2Player2] || 'Player 4'
+        }
+    });
+}
+
+/**
+ * Gère la fin d'une demi-finale
+ */
+function handleSemifinalEnd(
+    semifinalNumber: 1 | 2,
+    winner: { side: string; score: number },
+    room: RoomType,
+    roomName: string,
+    io: Server,
+    fastify: FastifyInstance
+): void {
+    if (!room.tournamentState) return;
+    
+    const state = room.tournamentState;
+    const semifinal = semifinalNumber === 1 ? state.semifinal1 : state.semifinal2;
+    if (!semifinal) return;
+    
+    // Déterminer le gagnant
+    const winnerId = winner.side === 'LEFT' ? semifinal.player1 : semifinal.player2;
+    semifinal.winner = winnerId;
+    semifinal.finished = true;
+    
+    // Enregistrer le gagnant
+    if (semifinalNumber === 1) {
+        state.semifinal1Winner = winnerId;
+    } else {
+        state.semifinal2Winner = winnerId;
+    }
+    
+    const winnerName = state.playerUsernames[winnerId] || 'Player';
+    console.log(`🏆 Tournament: Semi-final ${semifinalNumber} complete - Winner: ${winnerName}`);
+    
+    // Notifier les joueurs de cette demi-finale
+    io.to(semifinal.player1).emit('tournamentUpdate', {
+        phase: `semifinal${semifinalNumber}_complete`,
+        message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
+        winner: winnerName
+    });
+    io.to(semifinal.player2).emit('tournamentUpdate', {
+        phase: `semifinal${semifinalNumber}_complete`,
+        message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
+        winner: winnerName
+    });
+    
+    // Vérifier si les 2 demi-finales sont terminées
+    if (state.semifinal1?.finished && state.semifinal2?.finished) {
+        console.log(`🎯 Tournament: Both semi-finals complete, starting final...`);
+        
+        // Nettoyer les jeux des demi-finales
+        state.semifinal1.pongGame = null;
+        state.semifinal2.pongGame = null;
+        
+        state.phase = 'waiting_final';
+        
+        // Notifier tout le monde
+        io.to(roomName).emit('tournamentUpdate', {
+            phase: 'waiting_final',
+            message: 'Both semi-finals complete! Final starting soon...',
+            finalist1: state.playerUsernames[state.semifinal1Winner!] || 'Finalist 1',
+            finalist2: state.playerUsernames[state.semifinal2Winner!] || 'Finalist 2'
+        });
+        
+        // Démarrer la finale après un court délai
+        setTimeout(() => {
+            startFinal(room, roomName, io, fastify);
+        }, 3000);
+    }
+}
+
+/**
+ * Configure la room pour un match de tournoi 1v1 (utilisé pour la finale)
+ */
+function setupTournamentMatch(room: RoomType, player1: string, player2: string): void {
+    // Réinitialiser les paddles pour le match (en majuscules pour correspondre aux inputs client)
+    room.paddleBySocket = {
+        [player1]: 'LEFT',
+        [player2]: 'RIGHT'
+    };
+    
+    // Réinitialiser les inputs (en majuscules pour correspondre au jeu)
+    room.paddleInputs = {
+        LEFT: { up: false, down: false },
+        RIGHT: { up: false, down: false }
+    };
+}
+
+/**
+ * Démarre un jeu de tournoi (utilisé pour la finale)
+ */
+function startTournamentGame(
+    room: RoomType,
+    roomName: string,
+    io: Server,
+    onMatchEnd: (winnerId: string, loserId: string) => void
+): void {
+    const currentMatch = room.tournamentState?.currentMatch;
+    if (!currentMatch) return;
+    
+    // Créer un nouveau jeu Pong avec callback de fin
+    const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+        // Déterminer le gagnant basé sur le côté (en majuscules: 'LEFT' ou 'RIGHT')
+        let winnerId: string;
+        let loserId: string;
+        
+        if (winner.side === 'LEFT') {
+            winnerId = currentMatch.player1;
+            loserId = currentMatch.player2;
+        } else {
+            winnerId = currentMatch.player2;
+            loserId = currentMatch.player1;
+        }
+        
+        onMatchEnd(winnerId, loserId);
+    };
+    
+    room.pongGame = new PongGame(2, gameEndCallback);
+    room.pongGame.start();
+    room.gameState = room.pongGame.state;
+    
+    // Envoyer les assignations de paddle aux joueurs du match
+    io.to(currentMatch.player1).emit('roomJoined', {
+        paddle: 'LEFT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true
+    });
+    
+    io.to(currentMatch.player2).emit('roomJoined', {
+        paddle: 'RIGHT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true
+    });
+    
+    // Les autres joueurs sont spectateurs de ce match
+    const spectators = room.tournamentState!.players.filter(
+        p => p !== currentMatch.player1 && p !== currentMatch.player2
+    );
+    
+    for (const spectatorId of spectators) {
+        io.to(spectatorId).emit('tournamentSpectator', {
+            phase: room.tournamentState!.phase,
+            message: 'Waiting for your match...',
+            currentMatch: {
+                player1: room.tournamentState!.playerUsernames[currentMatch.player1] || 'Player 1',
+                player2: room.tournamentState!.playerUsernames[currentMatch.player2] || 'Player 2'
+            }
+        });
+    }
+}
+
+/**
+ * Démarre la finale du tournoi
+ */
+function startFinal(
+    room: RoomType,
+    roomName: string,
+    io: Server,
+    fastify: FastifyInstance
+): void {
+    if (!room.tournamentState) return;
+    
+    const state = room.tournamentState;
+    state.phase = 'final';
+    
+    const player1 = state.semifinal1Winner!;
+    const player2 = state.semifinal2Winner!;
+    
+    state.currentMatch = { player1, player2 };
+    
+    console.log(`🎮 Tournament: Starting FINAL - ${state.playerUsernames[player1]} vs ${state.playerUsernames[player2]}`);
+    
+    // Notifier tous les joueurs
+    io.to(roomName).emit('tournamentUpdate', {
+        phase: 'final',
+        message: '🏆 FINAL starting!',
+        match: {
+            player1: state.playerUsernames[player1] || 'Finalist 1',
+            player2: state.playerUsernames[player2] || 'Finalist 2'
+        }
+    });
+    
+    // Configurer le match
+    setupTournamentMatch(room, player1, player2);
+    
+    // Démarrer le jeu final
+    startTournamentGame(room, roomName, io, (winnerId, loserId) => {
+        handleFinalEnd(winnerId, loserId, room, roomName, io, fastify);
+    });
+}
+
+/**
+ * Gère la fin de la finale
+ */
+function handleFinalEnd(
+    winnerId: string,
+    loserId: string,
+    room: RoomType,
+    roomName: string,
+    io: Server,
+    fastify: FastifyInstance
+): void {
+    if (!room.tournamentState) return;
+    
+    room.tournamentState.finalWinner = winnerId;
+    room.tournamentState.phase = 'completed';
+    
+    const winnerName = room.tournamentState.playerUsernames[winnerId] || 'Player';
+    const loserName = room.tournamentState.playerUsernames[loserId] || 'Player';
+    
+    console.log(`🏆🏆🏆 Tournament COMPLETE - Champion: ${winnerName}`);
+    
+    // Notifier tous les joueurs de la fin du tournoi
+    io.to(roomName).emit('tournamentComplete', {
+        winner: winnerName,
+        winnerId: room.tournamentState.playerUserIds[winnerId],
+        message: `🏆 Tournament Champion: ${winnerName}!`
+    });
+    
+    // Enregistrer le résultat de la finale
+    const winnerUserId = room.tournamentState.playerUserIds[winnerId];
+    const loserUserId = room.tournamentState.playerUserIds[loserId];
+    
+    if (winnerUserId && loserUserId) {
+        try {
+            // Score par défaut pour le tournoi (on pourrait le récupérer du dernier match)
+            updateUserStats(winnerUserId, loserUserId, 7, 0, 'tournament');
+        } catch (error) {
+            console.error('Error recording tournament final result:', error);
+        }
+    }
+    
+    // Nettoyer la room après un délai
+    setTimeout(() => {
+        if (rooms[roomName]) {
+            delete rooms[roomName];
+        }
+    }, 10000);
+}
+
+/**
+ * Démarre le tournoi (appelé quand la room est pleine)
+ */
+export function startTournament(
+    room: RoomType,
+    roomName: string,
+    io: Server,
+    fastify: FastifyInstance
+): void {
+    if (!room.isTournament || room.players.length !== 4) {
+        console.log(`❌ Cannot start tournament: isTournament=${room.isTournament}, players=${room.players.length}`);
+        return;
+    }
+    
+    initializeTournamentState(room);
+    
+    console.log(`🏁 Tournament starting in room ${roomName} with ${room.players.length} players`);
+    
+    // Notifier tous les joueurs que le tournoi démarre
+    io.to(roomName).emit('tournamentStart', {
+        message: 'Tournament is starting!',
+        players: Object.values(room.tournamentState!.playerUsernames)
+    });
+    
+    // Démarrer les deux demi-finales simultanément après un court délai
+    setTimeout(() => {
+        startSemifinals(room, roomName, io, fastify);
+    }, 2000);
 }

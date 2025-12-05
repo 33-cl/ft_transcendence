@@ -33,6 +33,7 @@ import {
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { handleGameEnd } from './gameEndHandlers.js';
+import { startTournament } from './tournamentHandlers.js';
 import { canSocketJoinOnlineGame, isTournamentRoom } from '../utils/modeIsolation.js';
 
 // ========================================
@@ -202,8 +203,14 @@ export function tryStartGame(
 {
     if (params.isLocalGame && !room.pongGame)
         startLocalGame(room, roomName, params, io, fastify);
-    else if (!room.pongGame && room.players.length === room.maxPlayers)
-        startOnlineGame(room, roomName, handleGameEnd, fastify, io);
+    else if (!room.pongGame && room.players.length === room.maxPlayers) {
+        // Vérifier si c'est un tournoi
+        if (room.isTournament) {
+            startTournament(room, roomName, io, fastify);
+        } else {
+            startOnlineGame(room, roomName, handleGameEnd, fastify, io);
+        }
+    }
 }
 
 // ========================================
@@ -240,6 +247,11 @@ export async function handleJoinRoom(
         
         const room = rooms[roomName] as RoomType;
         room.isLocalGame = params.isLocalGame;
+        
+        // Marquer la room comme tournoi si nécessaire
+        if (params.isTournament) {
+            room.isTournament = true;
+        }
         
         // ========================================
         // ISOLATION CHECK: Tournament vs Online

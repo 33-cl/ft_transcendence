@@ -18,6 +18,7 @@ export interface JoinRoomParams {
     aiDifficulty: string;
     isSpectator: boolean;
     roomName: string | null;
+    isTournament: boolean;
 }
 
 interface JoinRoomData {
@@ -27,6 +28,7 @@ interface JoinRoomData {
     aiDifficulty?: string;
     spectator?: boolean;
     roomName?: string;
+    isTournament?: boolean;
 }
 
 export function parseJoinRoomData(data: Record<string, unknown> | undefined | null): JoinRoomParams {
@@ -37,7 +39,8 @@ export function parseJoinRoomData(data: Record<string, unknown> | undefined | nu
         enableAI: d?.enableAI === true,
         aiDifficulty: d?.aiDifficulty || 'medium',
         isSpectator: d?.spectator === true,
-        roomName: d?.roomName || null
+        roomName: d?.roomName || null,
+        isTournament: d?.isTournament === true
     };
 }
 
@@ -74,11 +77,26 @@ export function findOrCreateRoom(params: JoinRoomParams): string
         {
             for (const [name, room] of Object.entries(rooms))
             {
-                if (room.maxPlayers === params.maxPlayers && room.players.length < params.maxPlayers &&
-                    room.isLocalGame === false)
-                {
-                    roomName = name;
-                    break;
+                // Pour les tournois, chercher uniquement des rooms de tournoi
+                if (params.isTournament) {
+                    if (name.startsWith('tournament-') && 
+                        room.maxPlayers === params.maxPlayers && 
+                        room.players.length < params.maxPlayers &&
+                        room.isLocalGame === false)
+                    {
+                        roomName = name;
+                        break;
+                    }
+                } else {
+                    // Pour les jeux normaux, exclure les rooms de tournoi
+                    if (!name.startsWith('tournament-') &&
+                        room.maxPlayers === params.maxPlayers && 
+                        room.players.length < params.maxPlayers &&
+                        room.isLocalGame === false)
+                    {
+                        roomName = name;
+                        break;
+                    }
                 }
             }
         }
@@ -86,7 +104,14 @@ export function findOrCreateRoom(params: JoinRoomParams): string
         // creer une nouvelle room si aucune trouvee
         if (!roomName)
         {
-            const roomPrefix = params.isLocalGame ? 'local' : 'multi';
+            let roomPrefix: string;
+            if (params.isTournament) {
+                roomPrefix = 'tournament';
+            } else if (params.isLocalGame) {
+                roomPrefix = 'local';
+            } else {
+                roomPrefix = 'multi';
+            }
             roomName = createRoom(params.maxPlayers, roomPrefix);
         }
     }

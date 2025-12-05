@@ -6,6 +6,7 @@ declare var io: any;
 // Pre-import load to avoid dynamic imports in event handlers
 import { load } from '../navigation/utils.js';
 import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../navigation/sessionDisconnected.html.js';
+import { updateMatchmakingForTournament, updateTournamentWaiting } from './matchmaking.html.js';
 
 // NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
 // pour centraliser la gestion des mises à jour de la friendlist et éviter les conflits
@@ -47,6 +48,7 @@ let pongListenerSet = false;
 let errorListenerSet = false;
 let gameFinishedListenerActive = false;
 let leaderboardUpdatedListenerSet = false;
+let tournamentListenersSet = false;
 // NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
 // pour avoir un meilleur contrôle sur les mises à jour de la liste d'amis:
 // - friendStatusChanged → updateFriendStatus() (préserve le statut actuel)
@@ -130,8 +132,29 @@ function setupGlobalSocketListeners() {
             if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number') {
                 if (data.players < data.maxPlayers) {
                     load('matchmaking');
+                    // Si mode tournoi, mettre à jour l'affichage après le chargement
+                    if ((window as any).isTournamentMode) {
+                        setTimeout(() => {
+                            updateMatchmakingForTournament(data.players, data.maxPlayers);
+                        }, 100);
+                    }
                 } else {
-                    if (data.maxPlayers === 4) {
+                    // Room pleine - lancer le jeu
+                    if (data.isTournament) {
+                        // TOURNOI : 
+                        // - Si maxPlayers=4, on est dans la phase initiale -> rester en matchmaking
+                        // - Si maxPlayers=2, c'est un match 1v1 de demi-finale/finale -> charger game
+                        if (data.maxPlayers === 4) {
+                            // Phase initiale du tournoi - attendre le démarrage des matchs
+                            load('matchmaking');
+                            setTimeout(() => {
+                                updateTournamentWaiting('All players ready! Tournament starting...');
+                            }, 100);
+                        } else {
+                            // Match de tournoi 1v1 - utiliser game standard (contrôle haut/bas)
+                            load('game');
+                        }
+                    } else if (data.maxPlayers === 4) {
                         load('game4');
                     } else if (data.maxPlayers === 3) {
                         load('game3');
@@ -218,6 +241,61 @@ function setupGlobalSocketListeners() {
             }
         });
         errorListenerSet = true;
+    }
+    
+    // ========================================
+    // TOURNAMENT EVENT LISTENERS
+    // ========================================
+    if (!tournamentListenersSet) {
+        // Tournoi démarre
+        socket.on('tournamentStart', (data: any) => {
+            console.log('🏁 Tournament starting!', data);
+            // Afficher l'écran de matchmaking avec info tournoi
+            load('matchmaking');
+            setTimeout(() => {
+                updateTournamentWaiting('Tournament starting...');
+            }, 100);
+        });
+        
+        // Mise à jour du tournoi (phases, matchs)
+        socket.on('tournamentUpdate', (data: any) => {
+            console.log('📊 Tournament update:', data);
+            
+            if (data.phase === 'semifinal1' || data.phase === 'semifinal2' || data.phase === 'final') {
+                // Un match commence - le jeu va être chargé via roomJoined
+                updateTournamentWaiting(data.message || 'Match starting...');
+            } else if (data.phase?.includes('complete')) {
+                // Un match est terminé
+                load('matchmaking');
+                setTimeout(() => {
+                    updateTournamentWaiting(data.message || 'Preparing next match...');
+                }, 100);
+            }
+        });
+        
+        // Spectateur pendant un match
+        socket.on('tournamentSpectator', (data: any) => {
+            console.log('👀 Tournament spectator mode:', data);
+            load('matchmaking');
+            setTimeout(() => {
+                const title = document.getElementById('matchmakingTitle');
+                if (title) title.textContent = 'TOURNAMENT';
+                updateTournamentWaiting(`Watching: ${data.currentMatch?.player1} vs ${data.currentMatch?.player2}`);
+            }, 100);
+        });
+        
+        // Tournoi terminé
+        socket.on('tournamentComplete', (data: any) => {
+            console.log('🏆 Tournament complete!', data);
+            // Réinitialiser le mode tournoi
+            (window as any).isTournamentMode = false;
+            
+            // Afficher un écran de fin de tournoi
+            alert(`🏆 Tournament Champion: ${data.winner}!`);
+            load('mainMenu');
+        });
+        
+        tournamentListenersSet = true;
     }
     
     // Event listener for friend status changes (real-time friend list updates)
@@ -384,6 +462,11 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
             roomData.aiDifficulty = (window as any).aiDifficulty || 'medium';
             // Reset du flag après utilisation
             //(window as any).aiMode = false; retirer car cela empeche le blocage de W/S en mode IA
+        }
+        
+        // Ajouter le flag tournoi si le mode tournoi est activé
+        if ((window as any).isTournamentMode) {
+            roomData.isTournament = true;
         }
         
         socket.emit('joinRoom', roomData);

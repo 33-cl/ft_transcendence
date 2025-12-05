@@ -55,6 +55,12 @@ function handleSocketMessage(socket: Socket, msg: string): void
     
     const room = rooms[playerRoom] as RoomType;
     
+    // Gestion spéciale pour les demi-finales de tournoi simultanées
+    if (room.isTournament && room.tournamentState?.phase === 'semifinals') {
+        handleTournamentSemifinalInput(socket.id, message, room);
+        return;
+    }
+    
     if (!room.paddleInputs)
         room.paddleInputs = initPaddleInputs(room.maxPlayers);
     
@@ -69,6 +75,48 @@ function handleSocketMessage(socket: Socket, msg: string): void
         handleLocalGamePaddleControl(room, socket.id, player, direction, message.type);
     else
         handleOnlineGamePaddleControl(room, socket.id, player, direction, message.type);
+}
+
+/**
+ * Gère les inputs pour les demi-finales de tournoi simultanées
+ */
+function handleTournamentSemifinalInput(socketId: string, message: any, room: RoomType): void {
+    if (!isKeyboardEvent(message)) return;
+    
+    const { player, direction } = message.data || {};
+    if (!player || !direction) return;
+    if (direction !== 'up' && direction !== 'down') return;
+    
+    const state = room.tournamentState;
+    if (!state) return;
+    
+    // Trouver dans quelle demi-finale est ce joueur
+    let semifinal = null;
+    if (state.semifinal1 && (socketId === state.semifinal1.player1 || socketId === state.semifinal1.player2)) {
+        semifinal = state.semifinal1;
+    } else if (state.semifinal2 && (socketId === state.semifinal2.player1 || socketId === state.semifinal2.player2)) {
+        semifinal = state.semifinal2;
+    }
+    
+    if (!semifinal || !semifinal.pongGame) return;
+    
+    // Vérifier que le joueur contrôle bien ce paddle
+    const allowedPaddle = semifinal.paddleBySocket[socketId];
+    if (player !== allowedPaddle) return;
+    
+    // Valider le paddle et la direction
+    if (player !== 'LEFT' && player !== 'RIGHT') return;
+    if (direction !== 'up' && direction !== 'down') return;
+    
+    // Mettre à jour l'input (direction est maintenant typé correctement)
+    const isPressed = message.type === 'keydown';
+    const dir = direction as 'up' | 'down';
+    semifinal.paddleInputs[player][dir] = isPressed;
+    
+    // Mouvement immédiat sur keydown
+    if (isPressed) {
+        semifinal.pongGame.movePaddle(player, direction);
+    }
 }
 
 /**
