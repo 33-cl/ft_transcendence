@@ -1,7 +1,13 @@
 @layer components {
-    /* Game canvas */
+    /* Game canvas - GPU layer isolation for performance */
     #map {
         @apply border-2 border-white rounded-md;
+        /* Force separate GPU layer to prevent background canvas interference */
+        will-change: transform;
+        isolation: isolate;
+        transform: translateZ(0);
+        position: relative;
+        z-index: 10;
     }
     
     /* Force 4-player mode canvas to be square */

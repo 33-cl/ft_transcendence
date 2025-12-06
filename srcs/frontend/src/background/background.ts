@@ -2,14 +2,34 @@
 import { BackgroundStarfield } from './BackgroundStarfield.js';
 import { setCurrentHoverColor } from './config.js';
 
+// Store reference to background instance for control
+let backgroundInstance: BackgroundStarfield | null = null;
+
 // Initialize background starfield on DOM load
 window.addEventListener('DOMContentLoaded', () => {
-  new BackgroundStarfield('background');
+  backgroundInstance = new BackgroundStarfield('background');
+  
+  // Expose throttle mode globally for game performance optimization
+  (window as any).setBackgroundThrottle = (enabled: boolean) => {
+    if (backgroundInstance) backgroundInstance.setThrottleMode(enabled);
+  };
+  (window as any).isBackgroundThrottled = () => {
+    return backgroundInstance ? backgroundInstance.isThrottled() : false;
+  };
 });
 
 // Export functions to control star color
 export function setStarsHoverColor(color: string | null): void {
   setCurrentHoverColor(color);
+}
+
+// Export function for throttle mode
+export function setBackgroundThrottle(enabled: boolean): void {
+  if (backgroundInstance) backgroundInstance.setThrottleMode(enabled);
+}
+
+export function isBackgroundThrottled(): boolean {
+  return backgroundInstance ? backgroundInstance.isThrottled() : false;
 }
 
 export function getColorRgb(difficulty: 'easy' | 'medium' | 'hard'): string {

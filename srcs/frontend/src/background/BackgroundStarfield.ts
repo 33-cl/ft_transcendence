@@ -41,6 +41,11 @@ export class BackgroundStarfield {
   private longPressY: number = 0;
   private longPressProgress: number = 0;
 
+  // Throttle mode for performance during game (50 FPS vs 60 normal)
+  private throttleMode: boolean = false;
+  private lastFrameTime: number = 0;
+  private readonly THROTTLE_FRAME_TIME = 1000 / 50; // ~20ms entre frames
+
   constructor(canvasId: string) {
     const canvasElement = document.getElementById(canvasId);
     if (!(canvasElement instanceof HTMLCanvasElement)) {
@@ -410,9 +415,37 @@ export class BackgroundStarfield {
     this.drawLongPressRing();
   }
 
-  private animate(): void {
+  private animate(currentTime: number = 0): void {
+    // En mode throttle, skip des frames pour réduire la charge CPU
+    if (this.throttleMode) {
+      const elapsed = currentTime - this.lastFrameTime;
+      if (elapsed < this.THROTTLE_FRAME_TIME) {
+        this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+        return;
+      }
+      this.lastFrameTime = currentTime;
+    }
+    
     this.draw();
     this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+  }
+
+  /**
+   * Active le mode throttle (réduit le FPS du background)
+   * Utile pour les performances pendant le jeu
+   */
+  public setThrottleMode(enabled: boolean): void {
+    this.throttleMode = enabled;
+    if (enabled) {
+      this.lastFrameTime = performance.now();
+    }
+  }
+
+  /**
+   * Vérifie si le mode throttle est activé
+   */
+  public isThrottled(): boolean {
+    return this.throttleMode;
   }
 
   public destroy(): void {

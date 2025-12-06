@@ -569,12 +569,22 @@ function cleanupGameEventListeners() {
         socket.removeAllListeners('spectatorGameFinished');
         spectatorGameFinishedListenerActive = false;
 	}
+    
+    // Désactive le throttle du background quand le jeu se termine
+    if (typeof (window as any).setBackgroundThrottle === 'function') {
+        (window as any).setBackgroundThrottle(false);
+    }
 }
 
 // Fonction pour configurer les event listeners du jeu (une seule fois)
 function setupGameEventListeners() {
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
+    
+    // Active le throttle du background pour améliorer les performances du jeu
+    if (typeof (window as any).setBackgroundThrottle === 'function') {
+        (window as any).setBackgroundThrottle(true);
+    }
     
     // Event listener pour les états de jeu
     if (!gameStateListenerActive) {
