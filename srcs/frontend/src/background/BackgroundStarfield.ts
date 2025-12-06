@@ -389,15 +389,15 @@ export class BackgroundStarfield {
       star.draw(this.ctx);
     });
 
+    // Planètes - toujours actives (même en throttle mode)
+    this.spawnPlanet();
+    this.updatePlanets();
+    this.planets.forEach(planet => {
+      planet.draw(this.ctx);
+    });
+
     // En mode throttle (pendant le jeu), skip les éléments lourds
     if (!this.throttleMode) {
-      // Planètes
-      this.spawnPlanet();
-      this.updatePlanets();
-      this.planets.forEach(planet => {
-        planet.draw(this.ctx);
-      });
-
       // Handle shooting stars - don't create more if black hole is in collapse or reset
       if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
         this.spawnShootingStar();
