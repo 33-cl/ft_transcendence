@@ -342,8 +342,9 @@ export default function registerSocketHandlers(io: Server, fastify: FastifyInsta
 {
     globalIo = io;
     
-    // Tick rate configurable (env: TICK_RATE, default: 120 FPS for smooth gameplay)
-    const tickRate = Number(process.env.TICK_RATE ?? 120);
+    // Tick rate à 60 FPS pour matcher la physique du jeu (PongGame.gameLoop)
+    // Évite d'envoyer 2x le même état quand la physique n'a pas changé
+    const tickRate = Number(process.env.TICK_RATE ?? 60);
     const intervalMs = Math.max(1, Math.floor(1000 / tickRate));//convertir fps en ms entre chaque tick
     
     setInterval(() => handleGameTick(io, fastify), intervalMs);

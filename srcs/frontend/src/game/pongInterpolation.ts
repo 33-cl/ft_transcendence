@@ -24,10 +24,22 @@ interface GameState {
 
 // Buffer pour stocker les états de jeu récents
 const stateBuffer: GameState[] = [];
-const BUFFER_SIZE = 5; // Nombre d'états à conserver pour l'interpolation
-const INTERPOLATION_DELAY = 10; // Délai d'interpolation en ms
+const BUFFER_SIZE = 6; // 6 états (~50ms d'historique à 120Hz)
 
 let isRenderLoopRunning = false;
+
+// Seuil pour détecter une téléportation (reset de balle)
+const TELEPORT_THRESHOLD = 0.2; // 20% de la taille du canvas
+
+/**
+ * Détecte si la balle s'est téléportée (reset après un point)
+ */
+function detectTeleport(oldState: GameState, newState: GameState): boolean {
+    const dx = Math.abs(newState.ballX - oldState.ballX);
+    const dy = Math.abs(newState.ballY - oldState.ballY);
+    const threshold = Math.max(newState.canvasWidth, newState.canvasHeight) * TELEPORT_THRESHOLD;
+    return dx > threshold || dy > threshold;
+}
 
 /**
  * Ajoute un nouvel état au buffer et applique un timestamp s'il n'en a pas
@@ -37,6 +49,14 @@ export function addGameState(gameState: GameState): void {
     // Ajouter un timestamp si absent
     if (!gameState.timestamp) {
         gameState.timestamp = Date.now();
+    }
+    
+    // Détecter téléportation (reset de balle) - vider le buffer pour éviter interpolation
+    if (stateBuffer.length > 0) {
+        const lastState = stateBuffer[stateBuffer.length - 1];
+        if (lastState && detectTeleport(lastState, gameState)) {
+            stateBuffer.length = 0; // Clear buffer on teleport
+        }
     }
     
     // Ajouter l'état au buffer
@@ -67,24 +87,8 @@ export function stopRenderLoop(): void {
 }
 
 /**
- * Interpole les positions des paddles pour un mouvement fluide
- */
-function interpolatePaddles(state1: GameState, state2: GameState, alpha: number): GameState["paddles"] {
-    return state1.paddles.map((paddle, index) => {
-        if (index < state2.paddles.length && state2.paddles[index]) {
-            const paddle2 = state2.paddles[index];
-            return {
-                ...paddle,
-                x: paddle.x + alpha * (paddle2.x - paddle.x),
-                y: paddle.y + alpha * (paddle2.y - paddle.y)
-            };
-        }
-        return paddle;
-    });
-}
-
-/**
  * Obtient l'état interpolé actuel basé sur le buffer
+ * Utilise l'extrapolation depuis le dernier état pour une animation fluide
  * @returns État interpolé ou dernier état disponible
  */
 export function getCurrentInterpolatedState(): GameState | null {
@@ -92,71 +96,37 @@ export function getCurrentInterpolatedState(): GameState | null {
         return null;
     }
     
-    // Si un seul état, le retourner directement
-    if (stateBuffer.length === 1) {
-        return stateBuffer[0] || null;
+    // Utiliser le dernier état et extrapoler la position de la balle
+    const latestState = stateBuffer[stateBuffer.length - 1];
+    if (!latestState) {
+        return null;
     }
     
+    // Si on n'a pas de vitesse ou pas de timestamp, retourner l'état tel quel
+    if (!latestState.timestamp || latestState.ballSpeedX === undefined || latestState.ballSpeedY === undefined) {
+        return latestState;
+    }
+    
+    // Calculer le temps écoulé depuis le dernier état
     const now = Date.now();
-    const targetTime = now - INTERPOLATION_DELAY;
+    const timeSinceLastState = now - latestState.timestamp;
     
-    // Trouver les deux états entourant le temps cible
-    let state1Index = -1;
-    let state2Index = -1;
+    // Limiter l'extrapolation à 100ms max pour éviter les dérives
+    const extrapolationTime = Math.min(timeSinceLastState, 100);
     
-    for (let i = 0; i < stateBuffer.length; i++) {
-        const state = stateBuffer[i];
-        if (state && state.timestamp !== undefined && state.timestamp <= targetTime) {
-            state1Index = i;
-        } else {
-            state2Index = i;
-            break;
-        }
-    }
+    // Copier l'état et extrapoler la position de la balle
+    const result: GameState = { ...latestState };
     
-    // Si pas d'état avant le temps cible, utiliser les deux premiers
-    if (state1Index === -1) {
-        state1Index = 0;
-        state2Index = Math.min(1, stateBuffer.length - 1);
-    }
+    // Extrapoler la position basée sur la vitesse (conversion ms -> s)
+    result.ballX = latestState.ballX + latestState.ballSpeedX * (extrapolationTime / 1000);
+    result.ballY = latestState.ballY + latestState.ballSpeedY * (extrapolationTime / 1000);
     
-    // Si pas d'état après le temps cible, utiliser les deux derniers
-    if (state2Index === -1) {
-        state2Index = stateBuffer.length - 1;
-        state1Index = Math.max(0, state2Index - 1);
-    }
+    // Garder la balle dans le canvas
+    result.ballX = Math.max(0, Math.min(result.canvasWidth, result.ballX));
+    result.ballY = Math.max(0, Math.min(result.canvasHeight, result.ballY));
     
-    const state1 = stateBuffer[state1Index];
-    const state2 = stateBuffer[state2Index];
-    
-    if (!state1 || !state2) {
-        return stateBuffer[stateBuffer.length - 1] || null;
-    }
-    
-    // Calculer le facteur d'interpolation
-    let alpha = 0;
-    if (state1.timestamp !== state2.timestamp) {
-        alpha = (targetTime - state1.timestamp!) / (state2.timestamp! - state1.timestamp!);
-        alpha = Math.max(0, Math.min(1, alpha)); // Clamp entre 0 et 1
-    }
-    
-    // Interpoler entre les deux états
-    return interpolateStates(state1, state2, alpha);
-}
-
-/**
- * Interpolation entre deux états de jeu
- */
-function interpolateStates(state1: GameState, state2: GameState, alpha: number): GameState {
-    // Copier les propriétés de base du premier état
-    const result: GameState = { ...state1 };
-    
-    // Interpolation linéaire des positions de la balle
-    result.ballX = state1.ballX + alpha * (state2.ballX - state1.ballX);
-    result.ballY = state1.ballY + alpha * (state2.ballY - state1.ballY);
-    
-    // Interpolation des positions des raquettes
-    result.paddles = interpolatePaddles(state1, state2, alpha);
+    // Copier les paddles sans modification (ils sont déjà à jour)
+    result.paddles = [...latestState.paddles];
     
     return result;
 }

@@ -357,27 +357,30 @@ export class BackgroundStarfield {
     this.ctx.fillStyle = '#000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Handle reset if necessary
-    this.handleReset();
+    // En mode throttle, on skip les features lourdes (reset, attraction, collapse)
+    if (!this.throttleMode) {
+      // Handle reset if necessary
+      this.handleReset();
 
-    // Apply normal attraction if not in collapse or reset mode
-    if (!this.blackHole || (!this.blackHole.shouldCollapseStars() && !this.blackHole.shouldReset())) {
-      this.attractStars();
-    }
+      // Apply normal attraction if not in collapse or reset mode
+      if (!this.blackHole || (!this.blackHole.shouldCollapseStars() && !this.blackHole.shouldReset())) {
+        this.attractStars();
+      }
 
-    // Start background stars collapse if requested
-    if (this.blackHole && this.blackHole.shouldCollapseStars()) {
-      this.stars.forEach((star) => {
-        if (!star.isCollapsingToBlackHole && !star.isResetting) {
-          // Add delay based on distance to black hole for wave effect
-          const dx = star.x - this.blackHole!.x;
-          const dy = star.y - this.blackHole!.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const delay = (distance / 10) * 50; // Farther = more delay
-          
-          star.startCollapseToBlackHole(this.blackHole!.x, this.blackHole!.y, delay);
-        }
-      });
+      // Start background stars collapse if requested
+      if (this.blackHole && this.blackHole.shouldCollapseStars()) {
+        this.stars.forEach((star) => {
+          if (!star.isCollapsingToBlackHole && !star.isResetting) {
+            // Add delay based on distance to black hole for wave effect
+            const dx = star.x - this.blackHole!.x;
+            const dy = star.y - this.blackHole!.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const delay = (distance / 10) * 50; // Farther = more delay
+            
+            star.startCollapseToBlackHole(this.blackHole!.x, this.blackHole!.y, delay);
+          }
+        });
+      }
     }
 
     // Update and draw each star
@@ -386,29 +389,32 @@ export class BackgroundStarfield {
       star.draw(this.ctx);
     });
 
-    // Handle shooting stars - don't create more if black hole is in collapse or reset
-    if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
-      this.spawnShootingStar();
-    }
-    this.updateShootingStars();
-    
-    // Update and draw black hole (if visible)
-    if (this.blackHole) {
-      this.blackHole.update();
-      this.blackHole.draw(this.ctx);
-    }
-    
-    // Draw shooting stars
-    this.shootingStars.forEach(shootingStar => {
-      shootingStar.draw(this.ctx);
-    });
+    // En mode throttle (pendant le jeu), skip les éléments lourds
+    if (!this.throttleMode) {
+      // Planètes
+      this.spawnPlanet();
+      this.updatePlanets();
+      this.planets.forEach(planet => {
+        planet.draw(this.ctx);
+      });
 
-    // Handle planets AFTER black hole so they're on top
-    this.spawnPlanet(); // Try to spawn new planet
-    this.updatePlanets(); // Update all planets
-    this.planets.forEach(planet => {
-      planet.draw(this.ctx);
-    });
+      // Handle shooting stars - don't create more if black hole is in collapse or reset
+      if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
+        this.spawnShootingStar();
+      }
+      this.updateShootingStars();
+      
+      // Update and draw black hole (if visible)
+      if (this.blackHole) {
+        this.blackHole.update();
+        this.blackHole.draw(this.ctx);
+      }
+      
+      // Draw shooting stars
+      this.shootingStars.forEach(shootingStar => {
+        shootingStar.draw(this.ctx);
+      });
+    }
 
     // Update and draw long press ring
     this.updateLongPress();
