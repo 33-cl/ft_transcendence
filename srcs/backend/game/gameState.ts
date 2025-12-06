@@ -168,7 +168,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState {
         paddleWidth:    paddleWidth,
         paddleMargin:   paddleMargin,
         paddles:        paddles,
-        paddleSpeed:    20,              // Vitesse de déplacement des raquettes (doublée car tick rate 60fps au lieu de 120)
+        paddleSpeed:    10,              // Vitesse de déplacement des raquettes (tick rate 120fps)
         
         // Configuration de la balle
         ballX:          canvasWidth / 2,  // Position initiale au centre X

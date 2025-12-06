@@ -43,8 +43,8 @@ export class PongGame {
         this.lastUpdateTime = now; // Pour le calcul du deltaTime
         this.accumulator = 0;      // Réinitialiser l'accumulateur
         
-        // Toujours 60 FPS pour le rendu, mais la physique sera mise à jour à 120Hz
-        this.interval = setInterval(() => this.gameLoop(), 1000 / 60);
+        // 120 FPS pour matcher le tick rate du broadcast
+        this.interval = setInterval(() => this.gameLoop(), 1000 / 120);
     }
 
     stop() {
