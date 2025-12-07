@@ -336,6 +336,8 @@ function initializeComponents(): void
         if (target.id === 'ranked1v1Btn') {
             // Sauvegarder le type de jeu pour restart
             (window as any).lastGameType = 'ranked1v1';
+            // Réinitialiser le mode tournoi
+            (window as any).isTournamentMode = false;
             
             // Ensure any previous room is cleaned up first
             if (window.socket && (window as any).leaveCurrentRoomAsync) {
@@ -359,6 +361,8 @@ function initializeComponents(): void
         if (target.id === 'multiplayer4pBtn') {
             // Sauvegarder le type de jeu pour restart
             (window as any).lastGameType = 'multiplayer4p';
+            // Réinitialiser le mode tournoi
+            (window as any).isTournamentMode = false;
             
             // Ensure any previous room is cleaned up first
             if (window.socket && (window as any).leaveCurrentRoomAsync) {
