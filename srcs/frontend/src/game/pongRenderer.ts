@@ -20,17 +20,20 @@ function getColorForSide(side: string): string {
 
 export function initPongRenderer(canvasId: string = 'map')
 {
+    console.log(`🎨 initPongRenderer called with canvasId: ${canvasId}`);
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
         console.error(`❌ Canvas #${canvasId} not found in DOM!`);
         return;
     }
+    console.log(`🎨 Canvas found:`, canvas.width, 'x', canvas.height);
     
     ctx = canvas.getContext('2d');
     if (!ctx) {
         console.error(`❌ Could not get 2D context from canvas`);
         return;
     }
+    console.log(`🎨 initPongRenderer SUCCESS - canvas and ctx ready`);
 }
 
 // Fonction de nettoyage du renderer
@@ -175,3 +178,4 @@ export function draw(gameState: any)
 }
 
 (window as any).draw = draw;
+(window as any).initPongRenderer = initPongRenderer;

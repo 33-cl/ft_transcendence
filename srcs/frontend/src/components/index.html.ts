@@ -12,6 +12,8 @@ export { matchmakingHTML } from '../game/matchmaking.html.js'
 export { gameHTML } from '../game/game.html.js';
 export { game4HTML } from '../game/game4.html.js';
 export { gameFinishedHTML } from '../game/gameFinished.html.js';
+export { tournamentSemifinalFinishedHTML } from '../game/tournamentSemifinalFinished.html.js';
+export { tournamentFinalFinishedHTML } from '../game/tournamentFinalFinished.html.js';
 export { profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, getCachedMatches } from '../profile/profile.html.js';
 export { gameStatsHTML } from '../profile/gamestats.html.js';
 export { profileCardHTML } from '../profile/profileCard.html.js';

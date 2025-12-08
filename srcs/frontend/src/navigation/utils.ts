@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -19,6 +19,8 @@ const components = {
     signUp: {id: 'signUp', html: signUpHTML},
     twoFactor: {id: 'twoFactor', html: twoFactorHTML},
     gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
+    tournamentSemifinalFinished: {id: 'tournamentSemifinalFinished', html: tournamentSemifinalFinishedHTML},
+    tournamentFinalFinished: {id: 'tournamentFinalFinished', html: tournamentFinalFinishedHTML},
     spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
     profile: {id: 'profile', html: profileHTML},
     profileDashboard: {id: 'profileDashboard', html: profileDashboardHTML},
@@ -74,6 +76,14 @@ async function show(pageName: keyof typeof components, data?: any)
             }
             // Cas spécial pour spectatorGameFinished - passer les données de fin de jeu
             else if (pageName === 'spectatorGameFinished') {
+                htmlResult = component.html(data);
+            }
+            // Cas spécial pour tournamentSemifinalFinished - passer les données de fin de demi-finale
+            else if (pageName === 'tournamentSemifinalFinished') {
+                htmlResult = component.html(data);
+            }
+            // Cas spécial pour tournamentFinalFinished - passer les données de fin de finale
+            else if (pageName === 'tournamentFinalFinished') {
                 htmlResult = component.html(data);
             }
             // Cas spécial pour contextMenu - passer isInGame
@@ -375,6 +385,10 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('gameFinished', data);
     else if (pageName === 'spectatorGameFinished')
         await show('spectatorGameFinished', data);
+    else if (pageName === 'tournamentSemifinalFinished')
+        await show('tournamentSemifinalFinished', data);
+    else if (pageName === 'tournamentFinalFinished')
+        await show('tournamentFinalFinished', data);
     else if (pageName.startsWith('tournaments/')) {
         // Handle tournament detail pages: /tournaments/:id
         const tournamentId = pageName.split('/')[1];

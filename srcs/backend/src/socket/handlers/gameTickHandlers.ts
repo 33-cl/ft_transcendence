@@ -8,6 +8,7 @@ import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
 import { PaddleSide } from '../../../game/gameState.js';
 import { rooms } from '../roomManager.js';
+import { getSocketIdForUser } from '../socketAuth.js';
 
 // ========================================
 // PADDLE INITIALIZATION
@@ -117,6 +118,41 @@ export function broadcastGameState(room: RoomType, roomName: string, io: Server)
     io.to(roomName).emit('gameState', room.pongGame!.state);
 }
 
+/**
+ * Envoie l'état du jeu aux joueurs de la finale de tournoi
+ * Utilise les user IDs pour trouver les socket IDs actuels
+ */
+let finalLogCounter = 0;
+export function broadcastFinalGameState(room: RoomType, io: Server): void
+{
+    if (!room.tournamentState || !room.tournamentState.currentMatch) return;
+    
+    const state = room.tournamentState;
+    const oldPlayer1SocketId = state.semifinal1Winner!;
+    const oldPlayer2SocketId = state.semifinal2Winner!;
+    
+    // Récupérer les user IDs
+    const player1UserId = state.playerUserIds[oldPlayer1SocketId];
+    const player2UserId = state.playerUserIds[oldPlayer2SocketId];
+    
+    // Récupérer les socket IDs actuels
+    const player1CurrentSocketId = getSocketIdForUser(player1UserId);
+    const player2CurrentSocketId = getSocketIdForUser(player2UserId);
+    
+    // Log une fois sur 100 pour debug
+    if (finalLogCounter++ % 100 === 0) {
+        console.log(`🎮 Final gameState: sending to ${player1CurrentSocketId} and ${player2CurrentSocketId}`);
+    }
+    
+    // Envoyer à chaque joueur
+    if (player1CurrentSocketId) {
+        io.to(player1CurrentSocketId).emit('gameState', room.pongGame!.state);
+    }
+    if (player2CurrentSocketId) {
+        io.to(player2CurrentSocketId).emit('gameState', room.pongGame!.state);
+    }
+}
+
 // ========================================
 // ROOM CLEANUP
 // ========================================
@@ -174,11 +210,30 @@ function updateSemifinalMatch(
  * - Envoie l'état aux clients
  * - Nettoie les rooms terminées
  */
+let tickDebugCounter = 0;
 export function handleGameTick(io: any, fastify: FastifyInstance): void
 {
+    // Log toutes les rooms une fois sur 100 (plus fréquent pour debug)
+    if (tickDebugCounter++ % 100 === 0) {
+        const roomInfo = Object.entries(rooms).map(([name, r]) => {
+            const room = r as RoomType;
+            return `${name}(phase=${room.tournamentState?.phase}, pong=${!!room.pongGame}, running=${room.pongGame?.state?.running})`;
+        });
+        if (roomInfo.length > 0) {
+            console.log(`🔍 TICK[${tickDebugCounter}]: ${roomInfo.join(' | ')}`);
+        }
+    }
+    
     for (const [roomName, room] of Object.entries(rooms))
     {
         const typedRoom = room as RoomType;
+        
+        // Debug log une fois sur 200 pour les tournois en phase finale
+        if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'final') {
+            if (tickDebugCounter % 200 === 0) {
+                console.log(`🔍 TICK DEBUG - Room: ${roomName}, phase: ${typedRoom.tournamentState?.phase}, pongGame exists: ${!!typedRoom.pongGame}, running: ${typedRoom.pongGame?.state?.running}`);
+            }
+        }
         
         // Gestion des tournois avec demi-finales simultanées
         if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'semifinals') {
@@ -193,11 +248,26 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
         {
             ensurePaddleInputsInitialized(typedRoom);
             updateAllPaddlesPositions(typedRoom);
-            broadcastGameState(typedRoom, roomName, io);
+            
+            // Pour la finale de tournoi, envoyer directement aux socket IDs actuels
+            if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'final') {
+                broadcastFinalGameState(typedRoom, io);
+            } else {
+                broadcastGameState(typedRoom, roomName, io);
+            }
         }
         
-        // Nettoyage des jeux terminés
-        if (typedRoom.pongGame && typedRoom.pongGame.state.running === false)
+        // Nettoyage des jeux terminés (mais pas les tournois en phase finale)
+        if (typedRoom.pongGame && typedRoom.pongGame.state.running === false) {
+            // Ne pas nettoyer si c'est un tournoi en phase finale (géré par handleFinalEnd)
+            if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'final') {
+                continue;
+            }
+            // Ne pas nettoyer si c'est un tournoi complété (déjà géré)
+            if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'completed') {
+                continue;
+            }
             cleanupFinishedRoom(typedRoom, roomName, io);
+        }
     }
 }

@@ -24,6 +24,7 @@ export class PongGame {
     private lastUpdateTime: number = 0;
     private accumulator: number = 0;
     private readonly fixedDeltaTime: number = 1000 / 120; // 120Hz pour la simulation physique
+    private updateCount: number = 0; // Debug counter
 
     constructor(numPlayers: number = 2, onGameEnd?: (winner: { side: string; score: number }, loser: { side: string; score: number }) => void) {
         this.state = createInitialGameState(numPlayers);
@@ -63,7 +64,14 @@ export class PongGame {
         let deltaTime = currentTime - this.lastUpdateTime;
         this.lastUpdateTime = currentTime;
         
+        // Log de debug pour les premiers appels
+        if (this.updateCount < 5) {
+            console.log(`🎮 PongGame.gameLoop: deltaTime=${deltaTime}ms, accumulator=${this.accumulator.toFixed(2)}, scores=[${this.state.paddles?.map(p => p.score).join(',')}]`);
+        }
+        this.updateCount++;
+        
         // Limiter deltaTime pour éviter les "spiral of death" lors de retards
+        if (deltaTime > 200) deltaTime = 200;
         if (deltaTime > 200) deltaTime = 200;
         
         // Accumulation du temps pour des pas de simulation fixes
@@ -155,6 +163,7 @@ export class PongGame {
             // Vérifier la fin de partie
             const gameEndInfo = checkGameEnd2Players(this.state);
             if (gameEndInfo) {
+                console.log(`🏁 PongGame: Game end detected! winner=${gameEndInfo.winner.side} score=${gameEndInfo.winner.score}, paddles=[${this.state.paddles?.map(p => p.score).join(',')}]`);
                 this.stop();
                 if (this.onGameEnd) {
                     this.onGameEnd(gameEndInfo.winner, gameEndInfo.loser);

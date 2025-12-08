@@ -47,6 +47,8 @@ let disconnectBasicListenerSet = false;
 let pongListenerSet = false;
 let errorListenerSet = false;
 let gameFinishedListenerActive = false;
+let tournamentSemifinalFinishedListenerActive = false;
+let tournamentFinalFinishedListenerActive = false;
 let leaderboardUpdatedListenerSet = false;
 let tournamentListenersSet = false;
 // NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
@@ -71,6 +73,10 @@ function setupGlobalSocketListeners() {
     // Event listener roomJoined
     if (!roomJoinedListenerSet) {
         socket.on('roomJoined', (data: any) => {
+            console.log('🎮 roomJoined received:', data);
+            console.log('🎮 Current page:', window.location.hash || document.querySelector('[data-page]:not([style*="display: none"])'));
+            console.log('🎮 isFinal:', data?.isFinal, 'isTournament:', data?.isTournament);
+            
             // Set global variables
             if (data && data.paddle) {
                 window.controlledPaddle = data.paddle;
@@ -152,7 +158,38 @@ function setupGlobalSocketListeners() {
                             }, 100);
                         } else {
                             // Match de tournoi 1v1 - utiliser game standard (contrôle haut/bas)
+                            console.log('🎮 Loading game for tournament match...');
                             load('game');
+                            // Reconfigurer les listeners de jeu après chargement de la page
+                            // Attendre que le canvas soit dans le DOM
+                            const waitForCanvas = () => {
+                                const mapCanvas = document.getElementById('map');
+                                if (mapCanvas) {
+                                    console.log('🎮 Canvas found, initializing game...');
+                                    console.log('🎮 setupGameEventListeners available:', typeof (window as any).setupGameEventListeners);
+                                    console.log('🎮 initPongRenderer available:', typeof (window as any).initPongRenderer);
+                                    if (typeof (window as any).setupGameEventListeners === 'function') {
+                                        console.log('🎮 Calling setupGameEventListeners...');
+                                        (window as any).setupGameEventListeners();
+                                    } else {
+                                        console.error('❌ setupGameEventListeners NOT available on window!');
+                                        // Fallback: appeler directement la fonction locale
+                                        setupGameEventListeners();
+                                    }
+                                    if (typeof (window as any).initPongRenderer === 'function') {
+                                        console.log('🎮 Calling initPongRenderer...');
+                                        (window as any).initPongRenderer('map');
+                                    } else {
+                                        console.error('❌ initPongRenderer NOT available on window!');
+                                        // Fallback: appeler directement
+                                        initPongRenderer('map');
+                                    }
+                                } else {
+                                    console.log('⏳ Waiting for canvas...');
+                                    setTimeout(waitForCanvas, 50);
+                                }
+                            };
+                            setTimeout(waitForCanvas, 100);
                         }
                     } else if (data.maxPlayers === 4) {
                         load('game4');
@@ -280,8 +317,43 @@ function setupGlobalSocketListeners() {
             setTimeout(() => {
                 const title = document.getElementById('matchmakingTitle');
                 if (title) title.textContent = 'TOURNAMENT';
-                updateTournamentWaiting(`Watching: ${data.currentMatch?.player1} vs ${data.currentMatch?.player2}`);
+                updateTournamentWaiting(`Watching: ${data.match?.player1 || data.currentMatch?.player1} vs ${data.match?.player2 || data.currentMatch?.player2}`);
             }, 100);
+        });
+        
+        // Démarrage de la finale - événement dédié pour charger le jeu
+        socket.on('tournamentFinalStart', (data: any) => {
+            console.log('🏆 Tournament FINAL starting!', data);
+            
+            // Définir le paddle contrôlé
+            window.controlledPaddle = data.paddle;
+            (window as any).maxPlayers = 2;
+            (window as any).isSpectator = false;
+            
+            // Mettre à jour les key bindings
+            if ((window as any).updatePaddleKeyBindings) {
+                (window as any).updatePaddleKeyBindings();
+            }
+            
+            // Charger la page de jeu
+            load('game');
+            
+            // Attendre que le canvas soit dans le DOM puis initialiser
+            const initGame = () => {
+                const mapCanvas = document.getElementById('map');
+                if (mapCanvas) {
+                    console.log('🎮 Final: Canvas found, initializing game...');
+                    if (typeof (window as any).setupGameEventListeners === 'function') {
+                        (window as any).setupGameEventListeners();
+                    }
+                    if (typeof (window as any).initPongRenderer === 'function') {
+                        (window as any).initPongRenderer('map');
+                    }
+                } else {
+                    setTimeout(initGame, 50);
+                }
+            };
+            setTimeout(initGame, 100);
         });
         
         // Tournoi terminé
@@ -565,6 +637,14 @@ function cleanupGameEventListeners() {
         socket.removeAllListeners('gameFinished');
         gameFinishedListenerActive = false;
 	}
+    if (tournamentSemifinalFinishedListenerActive) {
+        socket.removeAllListeners('tournamentSemifinalFinished');
+        tournamentSemifinalFinishedListenerActive = false;
+    }
+    if (tournamentFinalFinishedListenerActive) {
+        socket.removeAllListeners('tournamentFinalFinished');
+        tournamentFinalFinishedListenerActive = false;
+    }
 	if (spectatorGameFinishedListenerActive) {
         socket.removeAllListeners('spectatorGameFinished');
         spectatorGameFinishedListenerActive = false;
@@ -578,6 +658,7 @@ function cleanupGameEventListeners() {
 
 // Fonction pour configurer les event listeners du jeu (une seule fois)
 function setupGameEventListeners() {
+    console.log('🎮 setupGameEventListeners called, gameStateListenerActive:', gameStateListenerActive);
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
     
@@ -588,7 +669,9 @@ function setupGameEventListeners() {
     
     // Event listener pour les états de jeu
     if (!gameStateListenerActive) {
+        console.log('🎮 Adding gameState listener');
         socket.on('gameState', (state: any) => {
+            console.log('🎮 gameState received:', state?.ball ? 'valid' : 'invalid');
             // Utiliser le système d'interpolation si disponible
             if (typeof (window as any).addGameState === 'function') {
                 // Ajouter l'état au buffer d'interpolation
@@ -604,6 +687,9 @@ function setupGameEventListeners() {
             }
         });
         gameStateListenerActive = true;
+        console.log('🎮 gameState listener added successfully');
+    } else {
+        console.log('⚠️ gameState listener already active, skipping');
     }
 
     // Nettoyage lors de la déconnexion d'une room
@@ -635,6 +721,32 @@ function setupGameEventListeners() {
             }
         });
 	}
+    
+    // Event listener pour fin de demi-finale de tournoi
+    if (!tournamentSemifinalFinishedListenerActive) {
+        socket.on('tournamentSemifinalFinished', (data: any) => {
+            tournamentSemifinalFinishedListenerActive = true;
+            
+            // Arrêter le rendu du jeu
+            cleanupGameState();
+            
+            // Afficher l'écran de fin de demi-finale
+            load('tournamentSemifinalFinished', data);
+        });
+    }
+    
+    // Event listener pour fin de finale de tournoi
+    if (!tournamentFinalFinishedListenerActive) {
+        socket.on('tournamentFinalFinished', (data: any) => {
+            tournamentFinalFinishedListenerActive = true;
+            
+            // Arrêter le rendu du jeu
+            cleanupGameState();
+            
+            // Afficher l'écran de fin de finale
+            load('tournamentFinalFinished', data);
+        });
+    }
     
     // Event listener spécial pour les spectateurs
     if (!spectatorGameFinishedListenerActive) {

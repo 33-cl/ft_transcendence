@@ -7,6 +7,7 @@ import { rooms } from '../roomManager.js';
 import { PongGame } from '../../../game/PongGame.js';
 import { updateUserStats } from '../../user.js';
 import { getGlobalIo } from '../socketHandlers.js';
+import { getSocketIdForUser } from '../socketAuth.js';
 
 /**
  * Émet un événement quand un joueur rejoint ou quitte un tournoi
@@ -303,8 +304,12 @@ function handleSemifinalEnd(
     const semifinal = semifinalNumber === 1 ? state.semifinal1 : state.semifinal2;
     if (!semifinal) return;
     
-    // Déterminer le gagnant
+    // Éviter double exécution
+    if (semifinal.finished) return;
+    
+    // Déterminer le gagnant et le perdant
     const winnerId = winner.side === 'LEFT' ? semifinal.player1 : semifinal.player2;
+    const loserId = winner.side === 'LEFT' ? semifinal.player2 : semifinal.player1;
     semifinal.winner = winnerId;
     semifinal.finished = true;
     
@@ -316,9 +321,27 @@ function handleSemifinalEnd(
     }
     
     const winnerName = state.playerUsernames[winnerId] || 'Player';
+    const loserName = state.playerUsernames[loserId] || 'Player';
+    const winnerScore = winner.score;
+    const loserScore = winner.side === 'LEFT' 
+        ? (semifinal.pongGame?.state?.score?.C || 0)
+        : (semifinal.pongGame?.state?.score?.A || 0);
+    
     console.log(`🏆 Tournament: Semi-final ${semifinalNumber} complete - Winner: ${winnerName}`);
     
-    // Notifier les joueurs de cette demi-finale
+    // Envoyer tournamentSemifinalFinished aux joueurs de cette demi-finale pour afficher l'écran de fin
+    io.to(semifinal.player1).emit('tournamentSemifinalFinished', {
+        winner: { side: winner.side, score: winnerScore, username: winnerName },
+        loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
+        semifinalNumber
+    });
+    io.to(semifinal.player2).emit('tournamentSemifinalFinished', {
+        winner: { side: winner.side, score: winnerScore, username: winnerName },
+        loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
+        semifinalNumber
+    });
+    
+    // Notifier les joueurs de cette demi-finale via tournamentUpdate aussi
     io.to(semifinal.player1).emit('tournamentUpdate', {
         phase: `semifinal${semifinalNumber}_complete`,
         message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
@@ -333,6 +356,15 @@ function handleSemifinalEnd(
     // Vérifier si les 2 demi-finales sont terminées
     if (state.semifinal1?.finished && state.semifinal2?.finished) {
         console.log(`🎯 Tournament: Both semi-finals complete, starting final...`);
+        
+        // IMPORTANT: Arrêter les jeux des demi-finales avant de les supprimer
+        // Sinon leurs setInterval continuent à tourner !
+        if (state.semifinal1.pongGame) {
+            state.semifinal1.pongGame.stop();
+        }
+        if (state.semifinal2.pongGame) {
+            state.semifinal2.pongGame.stop();
+        }
         
         // Nettoyer les jeux des demi-finales
         state.semifinal1.pongGame = null;
@@ -379,7 +411,7 @@ function startTournamentGame(
     room: RoomType,
     roomName: string,
     io: Server,
-    onMatchEnd: (winnerId: string, loserId: string) => void
+    onMatchEnd: (winnerId: string, loserId: string, winnerScore: number, loserScore: number) => void
 ): void {
     const currentMatch = room.tournamentState?.currentMatch;
     if (!currentMatch) return;
@@ -398,12 +430,14 @@ function startTournamentGame(
             loserId = currentMatch.player1;
         }
         
-        onMatchEnd(winnerId, loserId);
+        onMatchEnd(winnerId, loserId, winner.score, loser.score);
     };
     
     room.pongGame = new PongGame(2, gameEndCallback);
     room.pongGame.start();
     room.gameState = room.pongGame.state;
+    
+    console.log(`📡 Sending roomJoined to ${currentMatch.player1} and ${currentMatch.player2}`);
     
     // Envoyer les assignations de paddle aux joueurs du match
     io.to(currentMatch.player1).emit('roomJoined', {
@@ -443,40 +477,120 @@ function startTournamentGame(
  * Démarre la finale du tournoi
  */
 function startFinal(
-    room: RoomType,
+    _room: RoomType,  // Paramètre ignoré - on utilise rooms[roomName] directement
     roomName: string,
     io: Server,
     fastify: FastifyInstance
 ): void {
-    if (!room.tournamentState) return;
+    // IMPORTANT: Utiliser rooms[roomName] directement car le paramètre room peut être obsolète
+    // après les setTimeout dans handleSemifinalEnd
+    const room = rooms[roomName] as RoomType;
+    if (!room || !room.tournamentState) {
+        console.error(`❌ startFinal: Room ${roomName} not found or no tournamentState`);
+        return;
+    }
+    
+    // Éviter double démarrage
+    if (room.tournamentState.phase === 'final') return;
     
     const state = room.tournamentState;
     state.phase = 'final';
     
-    const player1 = state.semifinal1Winner!;
-    const player2 = state.semifinal2Winner!;
+    // Debug: vérifier que la phase est bien changée
+    console.log(`🔥 startFinal: phase changed to '${state.phase}' for room ${roomName}`);
+    console.log(`🔥 Room in rooms object: phase=${(rooms[roomName] as any)?.tournamentState?.phase}, pongGame=${!!(rooms[roomName] as any)?.pongGame}`);
+    
+    // Les anciens socket IDs des gagnants
+    const oldPlayer1SocketId = state.semifinal1Winner!;
+    const oldPlayer2SocketId = state.semifinal2Winner!;
+    
+    // Récupérer les user IDs
+    const player1UserId = state.playerUserIds[oldPlayer1SocketId];
+    const player2UserId = state.playerUserIds[oldPlayer2SocketId];
+    
+    // Récupérer les socket IDs ACTUELS (peuvent avoir changé si le joueur s'est reconnecté)
+    const player1CurrentSocketId = getSocketIdForUser(player1UserId) || oldPlayer1SocketId;
+    const player2CurrentSocketId = getSocketIdForUser(player2UserId) || oldPlayer2SocketId;
+    
+    console.log(`📡 Final: Player 1 userId=${player1UserId}, old socket=${oldPlayer1SocketId}, current socket=${player1CurrentSocketId}`);
+    console.log(`📡 Final: Player 2 userId=${player2UserId}, old socket=${oldPlayer2SocketId}, current socket=${player2CurrentSocketId}`);
+    
+    // Utiliser les socket IDs actuels pour la finale
+    const player1 = player1CurrentSocketId;
+    const player2 = player2CurrentSocketId;
     
     state.currentMatch = { player1, player2 };
     
-    console.log(`🎮 Tournament: Starting FINAL - ${state.playerUsernames[player1]} vs ${state.playerUsernames[player2]}`);
+    const player1Name = state.playerUsernames[oldPlayer1SocketId] || 'Finalist 1';
+    const player2Name = state.playerUsernames[oldPlayer2SocketId] || 'Finalist 2';
     
-    // Notifier tous les joueurs
-    io.to(roomName).emit('tournamentUpdate', {
-        phase: 'final',
-        message: '🏆 FINAL starting!',
-        match: {
-            player1: state.playerUsernames[player1] || 'Finalist 1',
-            player2: state.playerUsernames[player2] || 'Finalist 2'
-        }
-    });
+    console.log(`🎮 Tournament: Starting FINAL - ${player1Name} vs ${player2Name}`);
     
-    // Configurer le match
+    // Configurer le match (paddles et inputs) avec les nouveaux socket IDs
     setupTournamentMatch(room, player1, player2);
     
-    // Démarrer le jeu final
-    startTournamentGame(room, roomName, io, (winnerId, loserId) => {
-        handleFinalEnd(winnerId, loserId, room, roomName, io, fastify);
+    // Créer le jeu Pong pour la finale
+    const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+        console.log(`🎮 Final gameEndCallback called! winner=${winner.side} score=${winner.score}, loser=${loser.side} score=${loser.score}`);
+        
+        let winnerId: string;
+        let loserId: string;
+        
+        if (winner.side === 'LEFT') {
+            winnerId = oldPlayer1SocketId; // Utiliser les anciens IDs pour le mapping username
+            loserId = oldPlayer2SocketId;
+        } else {
+            winnerId = oldPlayer2SocketId;
+            loserId = oldPlayer1SocketId;
+        }
+        
+        handleFinalEnd(winnerId, loserId, winner.score, loser.score, room, roomName, io, fastify);
+    };
+    
+    room.pongGame = new PongGame(2, gameEndCallback);
+    
+    // Log AVANT start pour voir l'état initial
+    console.log(`🎮 Final game BEFORE start: running=${room.pongGame.state.running}, scores=[${room.pongGame.state.paddles?.map((p: any) => p.score).join(',')}], ballX=${room.pongGame.state.ballX}, ballY=${room.pongGame.state.ballY}`);
+    
+    room.pongGame.start();
+    room.gameState = room.pongGame.state;
+    
+    console.log(`🎮 Final game AFTER start: running=${room.pongGame.state.running}, scores=[${room.pongGame.state.paddles?.map((p: any) => p.score).join(',')}], win=${room.pongGame.state.win}`);
+    
+    // Envoyer roomJoined avec les socket IDs ACTUELS
+    console.log(`📡 Sending roomJoined for FINAL to: ${player1} and ${player2}`);
+    
+    io.to(player1).emit('roomJoined', {
+        paddle: 'LEFT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true,
+        isFinal: true
     });
+    
+    io.to(player2).emit('roomJoined', {
+        paddle: 'RIGHT',
+        maxPlayers: 2,
+        players: 2,
+        spectator: false,
+        isTournament: true,
+        isFinal: true
+    });
+    
+    // Les perdants des demi-finales deviennent spectateurs
+    // Utiliser aussi les socket IDs actuels
+    for (const oldSocketId of state.players) {
+        if (oldSocketId !== oldPlayer1SocketId && oldSocketId !== oldPlayer2SocketId) {
+            const loserUserId = state.playerUserIds[oldSocketId];
+            const loserCurrentSocketId = getSocketIdForUser(loserUserId) || oldSocketId;
+            io.to(loserCurrentSocketId).emit('tournamentSpectator', {
+                phase: 'final',
+                message: 'Watch the final!',
+                match: { player1: player1Name, player2: player2Name }
+            });
+        }
+    }
 }
 
 /**
@@ -485,12 +599,17 @@ function startFinal(
 function handleFinalEnd(
     winnerId: string,
     loserId: string,
+    winnerScore: number,
+    loserScore: number,
     room: RoomType,
     roomName: string,
     io: Server,
     fastify: FastifyInstance
 ): void {
     if (!room.tournamentState) return;
+    
+    // Éviter double exécution
+    if (room.tournamentState.phase === 'completed') return;
     
     room.tournamentState.finalWinner = winnerId;
     room.tournamentState.phase = 'completed';
@@ -499,6 +618,16 @@ function handleFinalEnd(
     const loserName = room.tournamentState.playerUsernames[loserId] || 'Player';
     
     console.log(`🏆🏆🏆 Tournament COMPLETE - Champion: ${winnerName}`);
+    
+    // Envoyer tournamentFinalFinished aux finalistes pour afficher l'écran de fin
+    io.to(winnerId).emit('tournamentFinalFinished', {
+        winner: { side: 'LEFT', score: winnerScore, username: winnerName },
+        loser: { side: 'RIGHT', score: loserScore, username: loserName }
+    });
+    io.to(loserId).emit('tournamentFinalFinished', {
+        winner: { side: 'LEFT', score: winnerScore, username: winnerName },
+        loser: { side: 'RIGHT', score: loserScore, username: loserName }
+    });
     
     // Notifier tous les joueurs de la fin du tournoi
     io.to(roomName).emit('tournamentComplete', {

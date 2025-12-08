@@ -106,7 +106,16 @@ export function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io:
     {
         if (rooms[rName].players.includes(socket.id))
         {
-            const room = rooms[rName];
+            const room = rooms[rName] as RoomType;
+            
+            // PROTECTION TOURNOI : Ne pas nettoyer pendant un tournoi actif
+            if (room.isTournament && room.tournamentState) {
+                const phase = room.tournamentState.phase;
+                if (phase === 'waiting' || phase === 'semifinals' || phase === 'waiting_final' || phase === 'final') {
+                    console.log(`🛡️ cleanUpPlayerRooms: BLOCKED cleanup of ${socket.id} from ${rName} - tournament in phase '${phase}'`);
+                    continue; // Ne pas nettoyer cette room
+                }
+            }
             
             const roomIsEmpty = removePlayerFromRoomPlayers(room, socket.id);
             

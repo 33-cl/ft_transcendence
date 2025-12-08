@@ -134,4 +134,39 @@
     .game-finished-btn:active {
         transform: scale(0.98);
     }
+
+    /* Tournament specific styles */
+    .tournament-badge {
+        @apply mb-4;
+        @apply px-6 py-2;
+        @apply border border-gray-500;
+        @apply text-gray-400 text-sm uppercase tracking-widest;
+    }
+
+    .tournament-result-message {
+        @apply text-lg text-gray-300 mb-6;
+    }
+
+    .tournament-waiting-message {
+        @apply mt-6 mb-4;
+    }
+
+    .waiting-text {
+        @apply text-gray-400 italic;
+    }
+
+    .eliminated-text {
+        @apply text-red-400;
+    }
+
+    .waiting-spinner {
+        @apply w-8 h-8;
+        @apply border-2 border-gray-600 border-t-white;
+        @apply rounded-full;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 }
