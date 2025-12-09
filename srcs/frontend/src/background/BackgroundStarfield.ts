@@ -396,25 +396,22 @@ export class BackgroundStarfield {
       planet.draw(this.ctx);
     });
 
-    // En mode throttle (pendant le jeu), skip les éléments lourds
-    if (!this.throttleMode) {
-      // Handle shooting stars - don't create more if black hole is in collapse or reset
-      if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
-        this.spawnShootingStar();
-      }
-      this.updateShootingStars();
-      
-      // Update and draw black hole (if visible)
-      if (this.blackHole) {
-        this.blackHole.update();
-        this.blackHole.draw(this.ctx);
-      }
-      
-      // Draw shooting stars
-      this.shootingStars.forEach(shootingStar => {
-        shootingStar.draw(this.ctx);
-      });
+    // Handle shooting stars - don't create more if black hole is in collapse or reset
+    if (!this.blackHole || (this.blackHole.collapseState === CollapseState.NORMAL)) {
+      this.spawnShootingStar();
     }
+    this.updateShootingStars();
+    
+    // Update and draw black hole (if visible)
+    if (this.blackHole) {
+      this.blackHole.update();
+      this.blackHole.draw(this.ctx);
+    }
+    
+    // Draw shooting stars
+    this.shootingStars.forEach(shootingStar => {
+      shootingStar.draw(this.ctx);
+    });
 
     // Update and draw long press ring
     this.updateLongPress();
