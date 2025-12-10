@@ -12,7 +12,8 @@ import { updateMatchmakingForTournament, updateTournamentWaiting } from './match
 // pour centraliser la gestion des mises à jour de la friendlist et éviter les conflits
 
 // Fonction pour afficher l'overlay de session déconnectée
-function showSessionDisconnectedOverlay(message: string) {
+function showSessionDisconnectedOverlay(message: string)
+{
     
     // Éviter les doublons
     const existingOverlay = document.getElementById('sessionDisconnectedOverlay');
