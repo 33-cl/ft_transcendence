@@ -2,6 +2,7 @@ import { FastifyReply, FastifyInstance } from 'fastify';
 import { isUserAlreadyConnected } from '../../socket/socketAuth.js';
 import { validateLength, checkRateLimit } from '../../security.js';
 import { isValidEmail } from '../../services/validation.service.js';
+import { removeHtmlTags } from '../../utils/sanitize.js';
 import { 
   generateJwt, 
   storeActiveToken, 
@@ -130,7 +131,7 @@ export function validateAndGetUser(login: string, password: string, clientIp: st
 
 function getUserByLoginCredential(login: string): DbUser | undefined
 {
-  const cleanLogin = login.replace(/<[^>]*>/g, '');
+  const cleanLogin = removeHtmlTags(login);
   const looksLikeEmail = isValidEmail(cleanLogin);
   if (looksLikeEmail)
   {

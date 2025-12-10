@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { getSocketIdForUser } from '../socket/socketAuth.js';
 import { getPlayerRoom, isUsernameInGame } from '../socket/roomManager.js';
 import { validateLength, sanitizeUsername, validateId, checkRateLimit, RATE_LIMITS } from '../security.js';
+import { removeAngleBrackets } from '../utils/sanitize.js';
 import { parseCookies, getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 import { notifyFriendAdded, notifyFriendRemoved } from '../socket/notificationHandlers.js';
 import { getGlobalIo } from '../socket/socketHandlers.js';
@@ -160,8 +161,8 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         return { users: [] };
       }
 
-      // SECURITY: Sanitize search query to prevent SQL injection (additional protection)
-      const sanitizedQuery = query.replace(/[<>]/g, '').trim();
+      // SECURITY: Sanitize search query to prevent injection (supprime < et >)
+      const sanitizedQuery = removeAngleBrackets(query).trim();
 
 
       // Chercher des utilisateurs qui ne sont pas déjà amis et qui ne sont pas l'utilisateur actuel

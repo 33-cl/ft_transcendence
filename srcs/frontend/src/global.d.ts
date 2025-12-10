@@ -36,7 +36,7 @@ declare global
 {
 	interface Window
 	{
-		// === SOCKET & COMMUNICATION ===
+		// socket et communication
 		socket: SocketIO;
 		joinOrCreateRoom: (maxPlayers: number, isLocalGame?: boolean) => Promise<void>;
 		sendPing: () => void;
@@ -44,7 +44,7 @@ declare global
 		reconnectWebSocket: () => void;
 		leaveCurrentRoomAsync: () => Promise<void>;
 
-		// === GAME STATE ===
+		// game state
 		controlledPaddle: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP' | null;
 		isLocalGame: boolean;
 		setIsLocalGame: (isLocal: boolean) => void;
@@ -56,7 +56,7 @@ declare global
 		isTournamentMode: boolean;
 		lastGameType?: 'local2p' | 'local4p' | 'soloAI' | 'ranked1v1' | 'multiplayer4p' | 'tournament';
 
-		// === GAME FUNCTIONS ===
+		// game fucntions
 		setupGameEventListeners: () => void;
 		cleanupGameEventListeners: () => void;
 		initPongRenderer: (canvasId: string) => void;
@@ -71,25 +71,25 @@ declare global
 		_pongControlsRoomJoinedListener: boolean;
 		_roomJoinedHandlerSet: boolean;
 
-		// === PONG RENDERER ===
+		// rendu pong
 		drawPongGame: (state: GameState) => void;
 		resetPongRenderer: () => void;
 		draw: (gameState: GameState) => void;
 		cleanupPongControls: () => void;
 
-		// === BACKGROUND ===
+		// background
 		setBackgroundThrottle: (enabled: boolean) => void;
 		isBackgroundThrottled: () => boolean;
 
-		// === NAVIGATION FLAGS ===
+		// nav flags
 		_navigationListenerSet: boolean;
 		_popStateListenerSet: boolean;
 
-		// === TOURNAMENT ===
+		// tournament
 		currentTournamentId: string | null;
 		currentMatchId: string | null;
 
-		// === USER & AUTH ===
+		// user et auth
 		currentUser: {
 			id: number;
 			email?: string;
@@ -105,7 +105,7 @@ declare global
 		logout: () => Promise<void>;
 		refreshUserStats: () => Promise<boolean>;
 
-		// === 2FA PENDING STATE ===
+		// 2fa pending state
 		pending2FACredentials?: {
 			login: string;
 			password: string;
@@ -114,7 +114,7 @@ declare global
 			tempToken: string;
 		};
 
-		// === PROFILE & NAVIGATION ===
+		// profile et nav
 		selectedProfileUser: any | null;
 		selectedMatchData: any | null;
 		selectedContextUser: any | null;
@@ -122,17 +122,17 @@ declare global
 		load: (page: string, data?: any) => Promise<void>;
 		cleanupLandingHandlers: (() => void) | null;
 
-		// === FRIENDS ===
+		// friends
 		stopFriendListAutoRefresh: () => void;
 		refreshFriendList: () => void;
 
-		// === PAGES ===
+		// spect
 		spectatorGameFinishedPage: any;
 
-		// === FILES ===
+		// avatar
 		temporaryAvatarFile?: File;
 
-		// === DEBUG ===
+		// debug
 		__sessionDebug?: any;
 	}
 }

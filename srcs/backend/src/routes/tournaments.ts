@@ -4,6 +4,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
 import { validateLength, sanitizeUsername, validateId, validateUUID, checkRateLimit } from '../security.js';
+import { removeHtmlTags } from '../utils/sanitize.js';
 import jwt from 'jsonwebtoken';
 import { getJwtFromRequest } from '../helpers/http/cookie.helper.js';
 import { generateBracket, updateMatchResult } from '../tournament.js';
@@ -85,8 +86,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Tournament name must be between 1 and 50 characters' });
             }
             
-            // Sanitize le nom pour éviter les injections
-            const sanitizedName = name.replace(/<[^>]*>/g, '').trim();
+            // Sanitize le nom pour éviter les injections (supprime les balises HTML)
+            const sanitizedName = removeHtmlTags(name).trim();
 
             // SECURITY: Validation stricte - 4 joueurs uniquement pour les specs
             if (maxPlayers !== 4) {

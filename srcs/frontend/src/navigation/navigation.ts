@@ -105,8 +105,8 @@ export function isDOMReady(): boolean {
  */
 export function getPageFromURL(): string {
     const path = window.location.pathname;
-    // Enlever le slash initial
-    const cleanPath = path.replace(/^\//, '') || 'signIn';
+    // Enlever le slash initial si présent
+    const cleanPath = (path.startsWith('/') ? path.substring(1) : path) || 'signIn';
     
     // Handle tournament detail URLs: /tournaments/:id
     if (cleanPath.startsWith('tournaments/') && cleanPath.split('/').length === 2) {

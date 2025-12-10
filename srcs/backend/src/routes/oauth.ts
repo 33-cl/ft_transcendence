@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import db from '../db.js';
 import jwt from 'jsonwebtoken';
 import { sanitizeUsername } from '../security.js';
+import { keepAlphanumericAndUnderscore } from '../utils/sanitize.js';
 import { isValidUsername } from '../services/validation.service.js';
 import { getJwtExpiry } from '../services/auth.service.js';
 import { isTwoFactorEnabled, generateTwoFactorCode, storeTwoFactorCode, sendTwoFactorEmail } from '../services/twoFactor.service.js';
@@ -20,7 +21,8 @@ function parseUsernameFromEmail(email: string): string {
   
     const rawUsername = email.split('@')[0];
   
-    let cleaned = rawUsername.replace(/[^a-zA-Z0-9_]/g, '');
+    // Ne garde que les caractères alphanumériques et underscore
+    let cleaned = keepAlphanumericAndUnderscore(rawUsername);
     
     if (!cleaned) {
         cleaned = 'user';

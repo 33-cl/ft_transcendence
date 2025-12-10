@@ -1,5 +1,7 @@
 // Security utilities for XSS prevention
 
+import { removeHtmlTags, keepAlphanumericAndUnderscore } from '../utils/sanitize.js';
+
 /**
  * Escape HTML special characters to prevent XSS attacks
  * Converts: < > & " ' to their HTML entity equivalents
@@ -9,12 +11,30 @@ export function escapeHtml(unsafe: string): string {
         return '';
     }
     
-    return unsafe
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    // Remplace les caractères spéciaux HTML par leurs entités
+    let result = '';
+    for (const char of unsafe) {
+        switch (char) {
+            case '&':
+                result += '&amp;';
+                break;
+            case '<':
+                result += '&lt;';
+                break;
+            case '>':
+                result += '&gt;';
+                break;
+            case '"':
+                result += '&quot;';
+                break;
+            case "'":
+                result += '&#039;';
+                break;
+            default:
+                result += char;
+        }
+    }
+    return result;
 }
 
 /**
@@ -86,7 +106,8 @@ export function sanitizeUsername(username: string): string {
     }
     
     // Remove any HTML tags and only keep alphanumeric + underscore
-    return username.replace(/<[^>]*>/g, '').replace(/[^a-zA-Z0-9_]/g, '');
+    const withoutHtml = removeHtmlTags(username);
+    return keepAlphanumericAndUnderscore(withoutHtml);
 }
 
 /**

@@ -4,6 +4,7 @@
  */
 
 import { sanitizeEmail, sanitizeUsername, validateLength } from '../security.js';
+import { removeHtmlTags } from '../utils/sanitize.js';
 
 // ============================================
 // Types pour les erreurs de validation
@@ -192,8 +193,8 @@ export function validateLoginInput(data: {
     return { success: false, error: 'Password length invalid' };
   }
 
-  // Sanitize le login
-  const sanitizedLogin = login.toLowerCase().replace(/<[^>]*>/g, '');
+  // Sanitize le login (supprime les balises HTML)
+  const sanitizedLogin = removeHtmlTags(login).toLowerCase();
 
   return {
     success: true,
