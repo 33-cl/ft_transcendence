@@ -141,6 +141,11 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
             return false; // Pas de collision
         }
         
+        // Anti-tunneling: Éviter les rebonds multiples sur le même paddle
+        if (ballState.lastContact === paddleIndex) {
+            return false;
+        }
+        
         // Déterminer quelle face du paddle est touchée en fonction de la position relative
         const isInsideHorizontally = ballCenterX >= paddleLeft && ballCenterX <= paddleRight;
         const isInsideVertically = ballCenterY >= paddleTop && ballCenterY <= paddleBottom;
@@ -150,19 +155,19 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
         
         // Collision avec les faces verticales (gauche/droite) du paddle - Paddles A (0) et C (2)
         if (isInsideVertically && !isInsideHorizontally) {
-            if (paddleIndex === 0 && state.ballSpeedX < 0) { // Paddle A (gauche), balle vers gauche
+            if (paddleIndex === 0) { // Paddle A (gauche)
                 // Rebond angulaire basé sur la zone d'impact verticale
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
-                state.ballSpeedX = currentSpeed * Math.cos(bounceAngle); // Direction positive (vers droite)
+                state.ballSpeedX = Math.abs(currentSpeed * Math.cos(bounceAngle)); // Force direction positive (vers droite)
                 state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                 state.ballX = paddleRight + ballRadius; // Repositionner à droite du paddle
                 accelerateBall(state, ballState);
                 ballState.lastContact = 0;
                 return true;
-            } else if (paddleIndex === 2 && state.ballSpeedX > 0) { // Paddle C (droite), balle vers droite
+            } else if (paddleIndex === 2) { // Paddle C (droite)
                 // Rebond angulaire basé sur la zone d'impact verticale
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
-                state.ballSpeedX = -currentSpeed * Math.cos(bounceAngle); // Direction négative (vers gauche)
+                state.ballSpeedX = -Math.abs(currentSpeed * Math.cos(bounceAngle)); // Force direction négative (vers gauche)
                 state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                 state.ballX = paddleLeft - ballRadius; // Repositionner à gauche du paddle
                 accelerateBall(state, ballState);
@@ -173,20 +178,20 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
         
         // Collision avec les faces horizontales (haut/bas) du paddle - Paddles B (1) et D (3)
         if (isInsideHorizontally && !isInsideVertically) {
-            if (paddleIndex === 1 && state.ballSpeedY > 0) { // Paddle B (bas), balle vers bas
+            if (paddleIndex === 1) { // Paddle B (bas)
                 // Rebond angulaire basé sur la zone d'impact horizontale
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
                 state.ballSpeedX = currentSpeed * Math.sin(bounceAngle); // Composante horizontale basée sur l'angle
-                state.ballSpeedY = -currentSpeed * Math.cos(bounceAngle); // Direction négative (vers haut)
+                state.ballSpeedY = -Math.abs(currentSpeed * Math.cos(bounceAngle)); // Force direction négative (vers haut)
                 state.ballY = paddleTop - ballRadius; // Repositionner au-dessus du paddle
                 accelerateBall(state, ballState);
                 ballState.lastContact = 1;
                 return true;
-            } else if (paddleIndex === 3 && state.ballSpeedY < 0) { // Paddle D (haut), balle vers haut
+            } else if (paddleIndex === 3) { // Paddle D (haut)
                 // Rebond angulaire basé sur la zone d'impact horizontale
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
                 state.ballSpeedX = currentSpeed * Math.sin(bounceAngle); // Composante horizontale basée sur l'angle
-                state.ballSpeedY = currentSpeed * Math.cos(bounceAngle); // Direction positive (vers bas)
+                state.ballSpeedY = Math.abs(currentSpeed * Math.cos(bounceAngle)); // Force direction positive (vers bas)
                 state.ballY = paddleBottom + ballRadius; // Repositionner en-dessous du paddle
                 accelerateBall(state, ballState);
                 ballState.lastContact = 3;
@@ -203,17 +208,17 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
             // Rebond selon la direction avec la plus petite distance (face la plus proche)
             if (horizontalDistance < verticalDistance) {
                 // Collision principalement sur une face verticale (Paddles A et C)
-                if (paddleIndex === 0 && state.ballSpeedX < 0) {
+                if (paddleIndex === 0) {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
-                    state.ballSpeedX = currentSpeed * Math.cos(bounceAngle);
+                    state.ballSpeedX = Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                     state.ballX = paddleRight + ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 0;
                     return true;
-                } else if (paddleIndex === 2 && state.ballSpeedX > 0) {
+                } else if (paddleIndex === 2) {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
-                    state.ballSpeedX = -currentSpeed * Math.cos(bounceAngle);
+                    state.ballSpeedX = -Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                     state.ballX = paddleLeft - ballRadius;
                     accelerateBall(state, ballState);
@@ -222,18 +227,18 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
                 }
             } else {
                 // Collision principalement sur une face horizontale (Paddles B et D)
-                if (paddleIndex === 1 && state.ballSpeedY > 0) {
+                if (paddleIndex === 1) {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
                     state.ballSpeedX = currentSpeed * Math.sin(bounceAngle);
-                    state.ballSpeedY = -currentSpeed * Math.cos(bounceAngle);
+                    state.ballSpeedY = -Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballY = paddleTop - ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 1;
                     return true;
-                } else if (paddleIndex === 3 && state.ballSpeedY < 0) {
+                } else if (paddleIndex === 3) {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
                     state.ballSpeedX = currentSpeed * Math.sin(bounceAngle);
-                    state.ballSpeedY = currentSpeed * Math.cos(bounceAngle);
+                    state.ballSpeedY = Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballY = paddleBottom + ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 3;
