@@ -210,7 +210,7 @@ export async function initSessionBroadcast(): Promise<void> {
             startOverlayWatchdog();
             
             // Clear current user in this tab only (don't logout as it would destroy the session for all tabs)
-            (window as any).currentUser = null;
+            window.currentUser = null;
         }
         else if (event.data.type === 'SESSION_DESTROYED')
         {
@@ -280,7 +280,7 @@ export async function initSessionBroadcast(): Promise<void> {
             startOverlayWatchdog();
             
             // Clear current user in this tab
-            (window as any).currentUser = null;
+            window.currentUser = null;
         }
     };
     
@@ -354,7 +354,7 @@ export function cleanupSessionBroadcast() {
 // 🔍 DEBUG MODE: Expose functions to window for console testing
 // Only for development/testing purposes
 if (typeof window !== 'undefined') {
-    (window as any).__sessionDebug = {
+    window.__sessionDebug = {
         isSessionBlocked,
         getTabId: () => TAB_ID,
         getKnownTabs: () => Array.from(knownSessionTabs),

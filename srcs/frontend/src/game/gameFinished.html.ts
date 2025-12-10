@@ -7,7 +7,7 @@ export const gameFinishedHTML = (data?: any) => {
     const mode = data?.mode; // 'ai', 'local', ou undefined pour online
     
     // Détecter si c'est un match de tournoi
-    const isTournamentMatch = !!(window as any).currentTournamentId || !!(window as any).currentMatchId;
+    const isTournamentMatch = !!window.currentTournamentId || !!window.currentMatchId;
     
     // Determine if this is a local/AI game (side-based) or online game (username-based)
     const isLocalOrAIGame = (winner?.side && !winner?.username) || mode === 'ai' || mode === 'local';

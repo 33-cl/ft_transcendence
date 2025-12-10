@@ -9,7 +9,7 @@ export const tournamentSemifinalFinishedHTML = (data?: any) => {
     const loserScore = loser?.score ?? 0;
     
     // Déterminer si le joueur actuel a gagné
-    const currentUsername = (window as any).currentUser?.username;
+    const currentUsername = window.currentUser?.username;
     const isWinner = currentUsername === winnerName;
     
     // Le listener roomJoined principal de websocket.ts gérera le démarrage de la finale

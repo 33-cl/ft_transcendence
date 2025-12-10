@@ -46,10 +46,10 @@ export function resetPongRenderer(): void {
 }
 
 // Expose la fonction de reset globalement pour le cleanup
-(window as any).resetPongRenderer = resetPongRenderer;
+window.resetPongRenderer = resetPongRenderer;
 
 // Exposer la fonction de dessin pour être utilisée par le système d'interpolation
-(window as any).drawPongGame = draw;
+window.drawPongGame = draw;
 
 export function draw(gameState: any)
 {   
@@ -177,5 +177,5 @@ export function draw(gameState: any)
     }
 }
 
-(window as any).draw = draw;
-(window as any).initPongRenderer = initPongRenderer;
+window.draw = draw;
+window.initPongRenderer = initPongRenderer;

@@ -12,14 +12,7 @@ import '../landing/landing.js'; // Import to load Landing handlers
 import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)
 // import { waitForSocketConnection } from '../game/socketLoading.js';
 
-// Declare global interface for Window
-declare global {
-    interface Window {
-        socket?: any;
-        _roomJoinedHandlerSet?: boolean;
-        // ... do not redeclare currentUser/logout here; defined in global.d.ts
-    }
-}
+// Global interface is defined in global.d.ts
 
 // Fonction pour récupérer les informations d'un utilisateur par son nom
 async function fetchUserByUsername(username: string) {
@@ -102,10 +95,10 @@ function initializeComponents(): void
     // show('signIn');
 
     // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
-    if ((window as any)._navigationListenerSet) {
+    if (window._navigationListenerSet) {
         return;
     }
-    (window as any)._navigationListenerSet = true;
+    window._navigationListenerSet = true;
     
     // Global click debounce to prevent double-clicks
     let lastClickTime = 0;
@@ -153,13 +146,13 @@ function initializeComponents(): void
             setStarsHoverColor(null);
             
             // Nettoyage des variables de tournoi
-            (window as any).currentTournamentId = null;
-            (window as any).currentMatchId = null;
+            window.currentTournamentId = null;
+            window.currentMatchId = null;
             
             // Wait for proper room cleanup before proceeding
-            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+            if (window.socket && window.leaveCurrentRoomAsync) {
                 try {
-                    await (window as any).leaveCurrentRoomAsync();
+                    await window.leaveCurrentRoomAsync();
                 } catch (error) {
                     console.warn('Room cleanup failed, proceeding anyway:', error);
                 }
@@ -173,9 +166,9 @@ function initializeComponents(): void
         }
         // Handler pour retour au tournoi après un match
         if (target.id === 'backToTournamentBtn') {
-            const tournamentId = (window as any).currentTournamentId;
+            const tournamentId = window.currentTournamentId;
             // Nettoyage des variables de tournoi match
-            (window as any).currentMatchId = null;
+            window.currentMatchId = null;
             
             // Cleanup game state
             cleanupGameState();
@@ -197,14 +190,14 @@ function initializeComponents(): void
         {
             // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
             // Cela évite un double chargement qui cause le bug des paddles
-            (window as any).lastGameType = 'local2p'; // Sauvegarder le type de jeu pour restart
+            window.lastGameType = 'local2p'; // Sauvegarder le type de jeu pour restart
             await window.joinOrCreateRoom(2, true);
             // Ne pas appeler load('game') ici ! Le handler roomJoined s'en occupe
         }
         if (target.id === 'local4p')
         {
             // Même principe pour le jeu 4 joueurs
-            (window as any).lastGameType = 'local4p'; // Sauvegarder le type de jeu pour restart
+            window.lastGameType = 'local4p'; // Sauvegarder le type de jeu pour restart
             await window.joinOrCreateRoom(4, true);
             // Ne pas appeler load('game4') ici !
         }
@@ -213,10 +206,10 @@ function initializeComponents(): void
         if (target.id === 'localGameBtn')
         {
             // Relancer le même type de jeu qui vient de se terminer
-            const lastGameType = (window as any).lastGameType;
+            const lastGameType = window.lastGameType;
             if (lastGameType === 'soloAI') {
                 // Relancer un jeu vs IA
-                (window as any).aiMode = true;
+                window.aiMode = true;
                 await window.joinOrCreateRoom(2, true);
             } else if (lastGameType === 'local4p') {
                 // Relancer un jeu local 4 joueurs
@@ -280,7 +273,7 @@ function initializeComponents(): void
             }
             
             // Stocker l'utilisateur sélectionné globalement
-            (window as any).selectedProfileUser = selectedUser;
+            window.selectedProfileUser = selectedUser;
             await load('profile');
         }
         
@@ -293,7 +286,7 @@ function initializeComponents(): void
                 const match = matches[parseInt(matchIndex)];
                 if (match) {
                     // Stocker les données du match pour la page de stats
-                    (window as any).selectedMatchData = match;
+                    window.selectedMatchData = match;
                     await load('gameStats');
                 }
             }
@@ -335,14 +328,14 @@ function initializeComponents(): void
         // MULTIPLAYER
         if (target.id === 'ranked1v1Btn') {
             // Sauvegarder le type de jeu pour restart
-            (window as any).lastGameType = 'ranked1v1';
+            window.lastGameType = 'ranked1v1';
             // Réinitialiser le mode tournoi
-            (window as any).isTournamentMode = false;
+            window.isTournamentMode = false;
             
             // Ensure any previous room is cleaned up first
-            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+            if (window.socket && window.leaveCurrentRoomAsync) {
                 try {
-                    await (window as any).leaveCurrentRoomAsync();
+                    await window.leaveCurrentRoomAsync();
                 } catch (error) {
                     console.warn('Pre-cleanup failed, proceeding anyway:', error);
                 }
@@ -360,14 +353,14 @@ function initializeComponents(): void
         }
         if (target.id === 'multiplayer4pBtn') {
             // Sauvegarder le type de jeu pour restart
-            (window as any).lastGameType = 'multiplayer4p';
+            window.lastGameType = 'multiplayer4p';
             // Réinitialiser le mode tournoi
-            (window as any).isTournamentMode = false;
+            window.isTournamentMode = false;
             
             // Ensure any previous room is cleaned up first
-            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+            if (window.socket && window.leaveCurrentRoomAsync) {
                 try {
-                    await (window as any).leaveCurrentRoomAsync();
+                    await window.leaveCurrentRoomAsync();
                 } catch (error) {
                     console.warn('Pre-cleanup failed, proceeding anyway:', error);
                 }
@@ -385,9 +378,9 @@ function initializeComponents(): void
         }
         if (target.id === 'cancelSearchBtn')
         {
-            if (window.socket && (window as any).leaveCurrentRoomAsync) {
+            if (window.socket && window.leaveCurrentRoomAsync) {
                 try {
-                    await (window as any).leaveCurrentRoomAsync();
+                    await window.leaveCurrentRoomAsync();
                 } catch (error) {
                     console.warn('Room cleanup failed, proceeding anyway:', error);
                 }
@@ -401,8 +394,8 @@ function initializeComponents(): void
         // Bouton "4 Player Tournaments" - rejoindre/créer une room de tournoi
         if (target.id === 'tournamentCreateBtn')
         {
-            (window as any).isTournamentMode = true;
-            (window as any).lastGameType = 'tournament';
+            window.isTournamentMode = true;
+            window.lastGameType = 'tournament';
             try {
                 await window.joinOrCreateRoom(4, false); // 4 joueurs, mode online (pas local)
             } catch (error) {
@@ -450,11 +443,11 @@ function initializeComponents(): void
                 const isInGame = currentElement?.getAttribute('data-is-in-game') === 'true';
                 
                 if (username && userId) {
-                    (window as any).selectedContextUser = { username, userId: parseInt(userId), isInGame };
+                    window.selectedContextUser = { username, userId: parseInt(userId), isInGame };
                 }
 
                 // Régénérer le menu contextuel avec ou sans le bouton Spectate
-                (window as any).contextMenuIsInGame = isInGame;
+                window.contextMenuIsInGame = isInGame;
                 show('contextMenu');
                 
                 // Positionner le menu contextuel
@@ -486,11 +479,11 @@ function initializeComponents(): void
                 if (target.id === 'profileBtn')
                 {
                     // Gérer l'affichage du profil depuis le context menu
-                    const selectedUser = (window as any).selectedContextUser;
+                    const selectedUser = window.selectedContextUser;
                     if (selectedUser && selectedUser.username)
                     {
                         const userProfile = await fetchUserByUsername(selectedUser.username);
-                        (window as any).selectedProfileUser = userProfile;
+                        window.selectedProfileUser = userProfile;
                         await load('profile');
                     }
                     hide('contextMenu');
@@ -499,7 +492,7 @@ function initializeComponents(): void
                 if (target.id === 'removeFriendBtn')
                 {
                     // Gérer la suppression d'ami
-                    const selectedUser = (window as any).selectedContextUser;
+                    const selectedUser = window.selectedContextUser;
                     if (selectedUser && selectedUser.userId) {
                         removeFriend(selectedUser.userId, selectedUser.username);
                     }
@@ -509,7 +502,7 @@ function initializeComponents(): void
                 if (target.id === 'spectateBtn')
                 {
                     // Gérer le spectate
-                    const selectedUser = (window as any).selectedContextUser;
+                    const selectedUser = window.selectedContextUser;
                     if (selectedUser && selectedUser.username) {
                         spectateFreind(selectedUser.username);
                     }

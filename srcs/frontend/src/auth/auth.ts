@@ -33,8 +33,8 @@ export async function checkSessionOnce() {
             }
             
             // Force websocket reconnection after successful auth verification
-            if (window.currentUser && (window as any).reconnectWebSocket)
-                (window as any).reconnectWebSocket();
+            if (window.currentUser && window.reconnectWebSocket)
+                window.reconnectWebSocket();
 
         }
         else
@@ -156,7 +156,7 @@ async function handleSignIn(): Promise<void> {
         await load('mainMenu');
     } else if (result.requires2FA) {
         // 2FA required - stocker les credentials et rediriger vers la page 2FA
-        (window as any).pending2FACredentials = { login, password };
+        window.pending2FACredentials = { login, password };
         // Rediriger directement vers la page 2FA
         await load('twoFactor');
     } else {
@@ -202,8 +202,8 @@ async function handleVerify2FA(): Promise<void> {
     }
     
     // Vérifier si c'est une vérification OAuth ou login classique
-    const oauthData = (window as any).pendingOAuth2FA;
-    const credentials = (window as any).pending2FACredentials;
+    const oauthData = window.pendingOAuth2FA;
+    const credentials = window.pending2FACredentials;
     
     if (oauthData) {
         // Mode OAuth - appeler l'endpoint de vérification OAuth
@@ -218,16 +218,16 @@ async function handleVerify2FA(): Promise<void> {
             if (response.ok) {
                 const data = await response.json();
                 // Nettoyer les données OAuth stockées
-                delete (window as any).pendingOAuth2FA;
+                delete window.pendingOAuth2FA;
                 
                 // Stocker l'utilisateur globalement
                 if (data.user) {
-                    (window as any).currentUser = data.user;
+                    window.currentUser = data.user;
                 }
                 
                 // Reconnecter le WebSocket avec les nouveaux credentials
-                if ((window as any).reconnectWebSocket) {
-                    (window as any).reconnectWebSocket();
+                if (window.reconnectWebSocket) {
+                    window.reconnectWebSocket();
                 }
                 
                 showSuccessMessage(msg, 'Signed in.');
@@ -249,7 +249,7 @@ async function handleVerify2FA(): Promise<void> {
         
         if (result.success) {
             // Nettoyer les credentials stockés
-            delete (window as any).pending2FACredentials;
+            delete window.pending2FACredentials;
             showSuccessMessage(msg, 'Signed in.');
             console.log('🔐 2FA: Login successful, navigating to mainMenu...');
             await load('mainMenu');
@@ -283,8 +283,8 @@ document.addEventListener('componentsReady', () => {
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
             // Nettoyer les données stockées (OAuth ou login classique)
-            delete (window as any).pending2FACredentials;
-            delete (window as any).pendingOAuth2FA;
+            delete window.pending2FACredentials;
+            delete window.pendingOAuth2FA;
             load('signIn');
         });
     }
@@ -322,7 +322,7 @@ document.addEventListener('componentsReady', () => {
             if (event.data.type === 'oauth-2fa-required') {
                 // L'utilisateur a la 2FA activée - stocker le tempToken et rediriger vers la page 2FA
                 const tempToken = event.data.tempToken;
-                (window as any).pendingOAuth2FA = { tempToken };
+                window.pendingOAuth2FA = { tempToken };
                 
                 // Cleanup
                 window.removeEventListener('message', messageHandler);
@@ -361,4 +361,4 @@ document.addEventListener('componentsReady', () => {
 });
 
 // Expose refreshUserStats globally for post-game stats refresh
-(window as any).refreshUserStats = refreshUserStats;
+window.refreshUserStats = refreshUserStats;

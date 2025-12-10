@@ -30,8 +30,8 @@ export function cleanupGameState(): void {
     cleanupState.cleanupCount++;
     
     // OPTIMISATION: Vérifier rapidement s'il y a vraiment quelque chose à nettoyer
-    const hasGameState = (window as any).controlledPaddle || 
-                        (window as any).isLocalGame || 
+    const hasGameState = window.controlledPaddle || 
+                        window.isLocalGame || 
                         cleanupState.gameStateInitialized ||
                         cleanupState.canvas;
     
@@ -41,9 +41,9 @@ export function cleanupGameState(): void {
     }
     
     // 1. Reset des variables globales du jeu
-    (window as any).controlledPaddle = null;
-    (window as any).isLocalGame = false;
-    (window as any).maxPlayers = 2;
+    window.controlledPaddle = null;
+    window.isLocalGame = false;
+    window.maxPlayers = 2;
     
     // 2. Nettoyage du canvas et du contexte de rendu
     if (cleanupState.canvas) {
@@ -60,8 +60,8 @@ export function cleanupGameState(): void {
     cleanupPongControls();
     
     // 4. Nettoyage des event listeners WebSocket
-    if ((window as any).cleanupGameEventListeners) {
-        (window as any).cleanupGameEventListeners();
+    if (window.cleanupGameEventListeners) {
+        window.cleanupGameEventListeners();
     }
     
     // 5. NOUVEAU : Forcer la sortie de la room côté serveur pour éviter les rooms fantômes
@@ -75,14 +75,14 @@ export function cleanupGameState(): void {
     cleanupState.sessionId = sessionId;
     
     // 6b. Arrêter la boucle d'interpolation si elle existe
-    if (typeof (window as any).stopRenderLoop === 'function') {
-        (window as any).stopRenderLoop();
+    if (typeof window.stopRenderLoop === 'function') {
+        window.stopRenderLoop();
     }
     
     // 7. Reset des listeners WebSocket partiels
-    (window as any)._pongControlsRoomJoinedListener = false;
-    (window as any)._roomJoinedHandlerSet = false;
-    (window as any)._navigationListenerSet = false; // Reset du flag de navigation
+    window._pongControlsRoomJoinedListener = false;
+    window._roomJoinedHandlerSet = false;
+    window._navigationListenerSet = false; // Reset du flag de navigation
     
     // CLEANUP TERMINÉ - État remis à zéro pour la prochaine session
 }
@@ -90,24 +90,24 @@ export function cleanupGameState(): void {
 // Force la sortie de la room actuelle pour éviter les conflits
 function forceLeaveCurrentRoom(): void {
     
-    if ((window as any).socket && (window as any).socket.connected) {
-        (window as any).socket.emit('leaveAllRooms');
+    if (window.socket && window.socket.connected) {
+        window.socket.emit('leaveAllRooms');
     }
 }
 
 // Force la réinitialisation du renderer Pong
 function resetPongRenderer(): void {
     // Cette fonction sera appelée par le renderer pour se reset
-    if ((window as any).resetPongRenderer) {
-        (window as any).resetPongRenderer();
+    if (window.resetPongRenderer) {
+        window.resetPongRenderer();
     }
 }
 
 // Force la réinitialisation des contrôles Pong
 function cleanupPongControls(): void {
     // Cette fonction sera appelée par les contrôles pour se reset
-    if ((window as any).cleanupPongControls) {
-        (window as any).cleanupPongControls();
+    if (window.cleanupPongControls) {
+        window.cleanupPongControls();
     }
 }
 

@@ -8,7 +8,7 @@ let tournamentListenersActive = false;
  * Configure les listeners WebSocket pour les événements de tournoi
  */
 export function setupTournamentSocketListeners(): void {
-    const socket = (window as any).socket;
+    const socket = window.socket;
     if (!socket) {
         console.warn('⚠️ Socket not available for tournament listeners');
         return;
@@ -35,7 +35,7 @@ export function setupTournamentSocketListeners(): void {
         // Si on est sur la page de détail du tournoi, rafraîchir
         const tournamentDetailPage = document.getElementById('tournamentDetailPage');
         if (tournamentDetailPage && tournamentDetailPage.style.display !== 'none') {
-            const currentTournamentId = (window as any).currentTournamentId;
+            const currentTournamentId = window.currentTournamentId;
             if (currentTournamentId === data.tournament_id) {
                 console.log('🔄 Refreshing tournament bracket...');
                 // Recharger la page de détail du tournoi
@@ -66,7 +66,7 @@ export function setupTournamentSocketListeners(): void {
         // Si on est sur la page de détail du tournoi, rafraîchir
         const tournamentDetailPage = document.getElementById('tournamentDetailPage');
         if (tournamentDetailPage && tournamentDetailPage.style.display !== 'none') {
-            const currentTournamentId = (window as any).currentTournamentId;
+            const currentTournamentId = window.currentTournamentId;
             if (currentTournamentId === data.tournament_id) {
                 import('./tournamentDetail.js').then(module => {
                     module.default(data.tournament_id);
@@ -89,7 +89,7 @@ export function setupTournamentSocketListeners(): void {
         // Rafraîchir la page de détail si on y est
         const tournamentDetailPage = document.getElementById('tournamentDetailPage');
         if (tournamentDetailPage && tournamentDetailPage.style.display !== 'none') {
-            const currentTournamentId = (window as any).currentTournamentId;
+            const currentTournamentId = window.currentTournamentId;
             if (currentTournamentId === data.tournament_id) {
                 import('./tournamentDetail.js').then(module => {
                     module.default(data.tournament_id);
@@ -121,7 +121,7 @@ export function setupTournamentSocketListeners(): void {
         
         const tournamentDetailPage = document.getElementById('tournamentDetailPage');
         if (tournamentDetailPage && tournamentDetailPage.style.display !== 'none') {
-            const currentTournamentId = (window as any).currentTournamentId;
+            const currentTournamentId = window.currentTournamentId;
             if (currentTournamentId === data.tournament_id) {
                 import('./tournamentDetail.js').then(module => {
                     module.default(data.tournament_id);
@@ -139,7 +139,7 @@ export function setupTournamentSocketListeners(): void {
         console.log('🎮 Tournament match ready:', data);
         
         // Vérifier si le joueur courant est dans ce match
-        const currentUserId = (window as any).currentUser?.id;
+        const currentUserId = window.currentUser?.id;
         if (currentUserId === data.match.player1_id || currentUserId === data.match.player2_id) {
             // Déterminer le nom du round
             const roundName = data.match.round === 1 ? 'Semi-Final' : 'Final';
@@ -154,7 +154,7 @@ export function setupTournamentSocketListeners(): void {
  * Nettoie les listeners WebSocket de tournoi
  */
 export function cleanupTournamentSocketListeners(): void {
-    const socket = (window as any).socket;
+    const socket = window.socket;
     if (!socket) return;
 
     socket.off('tournament:match_finished');
@@ -171,7 +171,7 @@ export function cleanupTournamentSocketListeners(): void {
  * Rejoint la room WebSocket du tournoi
  */
 export function joinTournamentRoom(tournamentId: string): void {
-    const socket = (window as any).socket;
+    const socket = window.socket;
     if (!socket) return;
 
     socket.emit('joinTournamentRoom', { tournamentId });
@@ -182,7 +182,7 @@ export function joinTournamentRoom(tournamentId: string): void {
  * Quitte la room WebSocket du tournoi
  */
 export function leaveTournamentRoom(tournamentId: string): void {
-    const socket = (window as any).socket;
+    const socket = window.socket;
     if (!socket) return;
 
     socket.emit('leaveTournamentRoom', { tournamentId });

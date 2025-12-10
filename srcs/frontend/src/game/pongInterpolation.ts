@@ -72,8 +72,8 @@ function renderLoop(_timestamp: number): void {
     const currentState = getCurrentInterpolatedState();
     
     // Si on a un état à rendre, appeler la fonction de rendu externe
-    if (currentState && (window as any).drawPongGame) {
-        (window as any).drawPongGame(currentState);
+    if (currentState && window.drawPongGame) {
+        window.drawPongGame(currentState);
     }
     
     // Continuer la boucle
@@ -81,6 +81,6 @@ function renderLoop(_timestamp: number): void {
 }
 
 // Exporter les fonctions vers l'espace global pour les tests
-(window as any).addGameState = addGameState;
-(window as any).startRenderLoop = startRenderLoop;
-(window as any).stopRenderLoop = stopRenderLoop;
+window.addGameState = addGameState;
+window.startRenderLoop = startRenderLoop;
+window.stopRenderLoop = stopRenderLoop;

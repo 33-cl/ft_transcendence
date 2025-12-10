@@ -34,8 +34,8 @@ export function preventBackNavigationAfterLogout(): void {
  */
 export function setupPopStateHandler(): void {
     // Vérifier si le listener n'est pas déjà ajouté
-    if ((window as any)._popStateListenerSet) return;
-    (window as any)._popStateListenerSet = true;
+    if (window._popStateListenerSet) return;
+    window._popStateListenerSet = true;
     
     window.addEventListener('popstate', async function(event) {
         

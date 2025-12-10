@@ -39,7 +39,7 @@ let socket = io('', {
   secure: true,
   withCredentials: true  // IMPORTANT: Permet la transmission des cookies de session
 });
-(window as any).socket = socket;
+window.socket = socket;
 
 // Variables pour éviter la duplication d'event listeners globaux
 let connectListenerSet = false;
@@ -85,24 +85,24 @@ function setupGlobalSocketListeners() {
                 window.controlledPaddle = null;
             }
             if (data && data.maxPlayers) {
-                (window as any).maxPlayers = data.maxPlayers;
+                window.maxPlayers = data.maxPlayers;
             }
             
             // Store spectator status
             if (data && typeof data.spectator === 'boolean') {
-                (window as any).isSpectator = data.spectator;
+                window.isSpectator = data.spectator;
             } else {
-                (window as any).isSpectator = false;
+                window.isSpectator = false;
             }
             
             // Update paddle key bindings immediately after setting controlledPaddle
-            if ((window as any).updatePaddleKeyBindings) {
-                (window as any).updatePaddleKeyBindings();
+            if (window.updatePaddleKeyBindings) {
+                window.updatePaddleKeyBindings();
             }
             
             // Use pre-imported load function instead of dynamic import
             // Si mode local, on affiche directement la page de jeu
-            if ((window as any).isLocalGame) {
+            if (window.isLocalGame) {
                 if (data.maxPlayers === 3) {
                     load('game3');
                 } else {
@@ -112,7 +112,7 @@ function setupGlobalSocketListeners() {
             }
             
             // Si c'est un spectateur, aller directement à la page de jeu
-            if ((window as any).isSpectator) {
+            if (window.isSpectator) {
                 if (data.maxPlayers === 4) {
                     load('game4');
                 } else if (data.maxPlayers === 3) {
@@ -124,11 +124,11 @@ function setupGlobalSocketListeners() {
                 setTimeout(() => {
                     const mapCanvas = document.getElementById('map');
                     if (mapCanvas) {
-                        if (typeof (window as any).setupGameEventListeners === 'function') {
-                            (window as any).setupGameEventListeners();
+                        if (typeof window.setupGameEventListeners === 'function') {
+                            window.setupGameEventListeners();
                         }
-                        if (typeof (window as any).initPongRenderer === 'function') {
-                            (window as any).initPongRenderer('map');
+                        if (typeof window.initPongRenderer === 'function') {
+                            window.initPongRenderer('map');
                         }
                     }
                 }, 200);
@@ -140,7 +140,7 @@ function setupGlobalSocketListeners() {
                 if (data.players < data.maxPlayers) {
                     load('matchmaking');
                     // Si mode tournoi, mettre à jour l'affichage après le chargement
-                    if ((window as any).isTournamentMode) {
+                    if (window.isTournamentMode) {
                         setTimeout(() => {
                             updateMatchmakingForTournament(data.players, data.maxPlayers);
                         }, 100);
@@ -167,19 +167,19 @@ function setupGlobalSocketListeners() {
                                 const mapCanvas = document.getElementById('map');
                                 if (mapCanvas) {
                                     console.log('🎮 Canvas found, initializing game...');
-                                    console.log('🎮 setupGameEventListeners available:', typeof (window as any).setupGameEventListeners);
-                                    console.log('🎮 initPongRenderer available:', typeof (window as any).initPongRenderer);
-                                    if (typeof (window as any).setupGameEventListeners === 'function') {
+                                    console.log('🎮 setupGameEventListeners available:', typeof window.setupGameEventListeners);
+                                    console.log('🎮 initPongRenderer available:', typeof window.initPongRenderer);
+                                    if (typeof window.setupGameEventListeners === 'function') {
                                         console.log('🎮 Calling setupGameEventListeners...');
-                                        (window as any).setupGameEventListeners();
+                                        window.setupGameEventListeners();
                                     } else {
                                         console.error('❌ setupGameEventListeners NOT available on window!');
                                         // Fallback: appeler directement la fonction locale
                                         setupGameEventListeners();
                                     }
-                                    if (typeof (window as any).initPongRenderer === 'function') {
+                                    if (typeof window.initPongRenderer === 'function') {
                                         console.log('🎮 Calling initPongRenderer...');
-                                        (window as any).initPongRenderer('map');
+                                        window.initPongRenderer('map');
                                     } else {
                                         console.error('❌ initPongRenderer NOT available on window!');
                                         // Fallback: appeler directement
@@ -255,8 +255,8 @@ function setupGlobalSocketListeners() {
                     }
                     
                     // Stop friend list auto-refresh to prevent background requests
-                    if ((window as any).stopFriendListAutoRefresh) {
-                        (window as any).stopFriendListAutoRefresh();
+                    if (window.stopFriendListAutoRefresh) {
+                        window.stopFriendListAutoRefresh();
                     }
                     
                     // Disconnect the socket
@@ -328,12 +328,12 @@ function setupGlobalSocketListeners() {
             
             // Définir le paddle contrôlé
             window.controlledPaddle = data.paddle;
-            (window as any).maxPlayers = 2;
-            (window as any).isSpectator = false;
+            window.maxPlayers = 2;
+            window.isSpectator = false;
             
             // Mettre à jour les key bindings
-            if ((window as any).updatePaddleKeyBindings) {
-                (window as any).updatePaddleKeyBindings();
+            if (window.updatePaddleKeyBindings) {
+                window.updatePaddleKeyBindings();
             }
             
             // Charger la page de jeu
@@ -344,11 +344,11 @@ function setupGlobalSocketListeners() {
                 const mapCanvas = document.getElementById('map');
                 if (mapCanvas) {
                     console.log('🎮 Final: Canvas found, initializing game...');
-                    if (typeof (window as any).setupGameEventListeners === 'function') {
-                        (window as any).setupGameEventListeners();
+                    if (typeof window.setupGameEventListeners === 'function') {
+                        window.setupGameEventListeners();
                     }
-                    if (typeof (window as any).initPongRenderer === 'function') {
-                        (window as any).initPongRenderer('map');
+                    if (typeof window.initPongRenderer === 'function') {
+                        window.initPongRenderer('map');
                     }
                 } else {
                     setTimeout(initGame, 50);
@@ -361,7 +361,7 @@ function setupGlobalSocketListeners() {
         socket.on('tournamentComplete', (data: any) => {
             console.log('🏆 Tournament complete!', data);
             // Réinitialiser le mode tournoi
-            (window as any).isTournamentMode = false;
+            window.isTournamentMode = false;
             
             // Afficher un écran de fin de tournoi
             alert(`🏆 Tournament Champion: ${data.winner}!`);
@@ -437,7 +437,7 @@ function reconnectWebSocket() {
             forceNew: true  // Force a new connection
         });
         
-        (window as any).socket = socket;
+        window.socket = socket;
         
         // Reset listener flags to re-setup listeners
         connectListenerSet = false;
@@ -511,7 +511,7 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
     lastJoinAttempt = now;
     joinInProgress = true;
     
-    (window as any).setIsLocalGame(isLocalGame);
+    window.setIsLocalGame(isLocalGame);
     
     return new Promise<void>((resolve, reject) =>
     {
@@ -530,15 +530,15 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
         const roomData: any = { maxPlayers, isLocalGame };
         
         // Ajouter les informations IA si le mode IA est activé
-        if ((window as any).aiMode) {
+        if (window.aiMode) {
             roomData.enableAI = true;
-            roomData.aiDifficulty = (window as any).aiDifficulty || 'medium';
+            roomData.aiDifficulty = window.aiDifficulty || 'medium';
             // Reset du flag après utilisation
-            //(window as any).aiMode = false; retirer car cela empeche le blocage de W/S en mode IA
+            //window.aiMode = false; retirer car cela empeche le blocage de W/S en mode IA
         }
         
         // Ajouter le flag tournoi si le mode tournoi est activé
-        if ((window as any).isTournamentMode) {
+        if (window.isTournamentMode) {
             roomData.isTournament = true;
         }
         
@@ -577,18 +577,18 @@ async function leaveCurrentRoomAsync(): Promise<void> {
 }
 
 // Expose the async cleanup function globally
-(window as any).leaveCurrentRoomAsync = leaveCurrentRoomAsync;
+window.leaveCurrentRoomAsync = leaveCurrentRoomAsync;
 
 // Expose the function for test in the console navigateur
 window.joinOrCreateRoom = joinOrCreateRoom;
 
 // Expose reconnectWebSocket globally for auth-triggered reconnections
-(window as any).reconnectWebSocket = reconnectWebSocket;
+window.reconnectWebSocket = reconnectWebSocket;
 
 // Note: setIsLocalGame is defined in pongControls.ts and includes updateDifficultySelector() call
 
 // Expose reconnectWebSocket globally for auth-triggered reconnections
-(window as any).reconnectWebSocket = reconnectWebSocket;
+window.reconnectWebSocket = reconnectWebSocket;
 
 import { initPongRenderer, draw } from './pongRenderer.js';
 import { cleanupGameState } from './gameCleanup.js';
@@ -607,8 +607,8 @@ document.addEventListener('componentsReady', () => {
             setupGameEventListeners();
             
             // Initialiser le sélecteur de difficulté IA
-            if (typeof (window as any).initAIDifficultySelector === 'function') {
-                (window as any).initAIDifficultySelector();
+            if (typeof window.initAIDifficultySelector === 'function') {
+                window.initAIDifficultySelector();
             }
         }
     }, 100);
@@ -652,8 +652,8 @@ function cleanupGameEventListeners() {
 	}
     
     // Désactive le throttle du background quand le jeu se termine
-    if (typeof (window as any).setBackgroundThrottle === 'function') {
-        (window as any).setBackgroundThrottle(false);
+    if (typeof window.setBackgroundThrottle === 'function') {
+        window.setBackgroundThrottle(false);
     }
 }
 
@@ -664,8 +664,8 @@ function setupGameEventListeners() {
     cleanupGameEventListeners();
     
     // Active le throttle du background pour améliorer les performances du jeu
-    if (typeof (window as any).setBackgroundThrottle === 'function') {
-        (window as any).setBackgroundThrottle(true);
+    if (typeof window.setBackgroundThrottle === 'function') {
+        window.setBackgroundThrottle(true);
     }
     
     // Event listener pour les états de jeu
@@ -674,13 +674,13 @@ function setupGameEventListeners() {
         socket.on('gameState', (state: any) => {
             console.log('🎮 gameState received:', state?.ball ? 'valid' : 'invalid');
             // Utiliser le système d'interpolation si disponible
-            if (typeof (window as any).addGameState === 'function') {
+            if (typeof window.addGameState === 'function') {
                 // Ajouter l'état au buffer d'interpolation
-                (window as any).addGameState(state);
+                window.addGameState(state);
                 
                 // Démarrer la boucle de rendu si pas déjà active
-                if (typeof (window as any).startRenderLoop === 'function') {
-                    (window as any).startRenderLoop();
+                if (typeof window.startRenderLoop === 'function') {
+                    window.startRenderLoop();
                 }
             } else {
                 // Fallback: dessiner directement avec la fonction standard
@@ -766,8 +766,8 @@ function setupGameEventListeners() {
 }
 
 // Exposer les fonctions de cleanup globalement
-(window as any).cleanupGameEventListeners = cleanupGameEventListeners;
-(window as any).setupGameEventListeners = setupGameEventListeners;
+window.cleanupGameEventListeners = cleanupGameEventListeners;
+window.setupGameEventListeners = setupGameEventListeners;
 
 // Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
 import './pongControls.js'; // Ajoute les contrôles clavier (modularité)

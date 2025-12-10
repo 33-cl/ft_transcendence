@@ -22,12 +22,12 @@ export function initGameConfigManagers(): void {
         (vsPlayerBtn as any)._listenerSet = true;
         vsPlayerBtn.addEventListener('click', async () => {
             // Disable AI mode
-            (window as any).aiMode = false;
-            (window as any).lastGameType = 'local2P';
+            window.aiMode = false;
+            window.lastGameType = 'local2p';
             
             try {
                 // Join room in local mode
-                await (window as any).joinOrCreateRoom(2, true);
+                await window.joinOrCreateRoom(2, true);
             } catch (error) {
                 console.error('Error starting local game:', error);
                 alert('Error starting game. Please try again.');
@@ -50,13 +50,13 @@ export function initAIConfigManagers(): void {
      */
     async function startAIGame(difficulty: 'easy' | 'medium' | 'hard') {
         // Enable AI mode and set difficulty
-        (window as any).aiMode = true;
-        (window as any).aiDifficulty = difficulty;
-        (window as any).lastGameType = 'soloAI';
+        window.aiMode = true;
+        window.aiDifficulty = difficulty;
+        window.lastGameType = 'soloAI';
         
         try {
             // Join room in local mode with AI
-            await (window as any).joinOrCreateRoom(2, true);
+            await window.joinOrCreateRoom(2, true);
             // Navigation to game page will be handled by roomJoined handler
         } catch (error) {
             console.error('Error starting AI game:', error);
@@ -111,5 +111,5 @@ declare global {
 }
 
 // Make functions globally accessible
-(window as any).initGameConfigManagers = initGameConfigManagers;
-(window as any).initAIConfigManagers = initAIConfigManagers;
+window.initGameConfigManagers = initGameConfigManagers;
+window.initAIConfigManagers = initAIConfigManagers;

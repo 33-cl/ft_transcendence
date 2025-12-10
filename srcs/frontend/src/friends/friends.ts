@@ -460,7 +460,7 @@ function updateFriendStatus(username: string, status: string): void {
  * Si l'utilisateur n'est plus en jeu, on retire le bouton Spectate
  */
 function updateContextMenuForUser(username: string, status: string): void {
-    const selectedUser = (window as any).selectedContextUser;
+    const selectedUser = window.selectedContextUser;
     
     // Vérifier si le menu contextuel est ouvert pour cet utilisateur
     if (!selectedUser || selectedUser.username !== username) {
@@ -477,7 +477,7 @@ function updateContextMenuForUser(username: string, status: string): void {
     
     // Mettre à jour l'état stocké
     selectedUser.isInGame = isInGame;
-    (window as any).contextMenuIsInGame = isInGame;
+    window.contextMenuIsInGame = isInGame;
     
     if (!isInGame && spectateBtn) {
         // L'ami n'est plus en game → retirer le bouton Spectate

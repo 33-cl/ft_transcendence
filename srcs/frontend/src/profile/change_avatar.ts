@@ -197,8 +197,8 @@ export function initAvatarHandlers(): void {
                             window.currentUser.avatar_url = result.avatar_url;
                         }
                         // Force refresh des composants qui utilisent l'avatar
-                        if ((window as any).refreshUserStats) {
-                            (window as any).refreshUserStats();
+                        if (window.refreshUserStats) {
+                            window.refreshUserStats();
                         }
                     } else {
                         messageEl.style.color = '#ef4444';

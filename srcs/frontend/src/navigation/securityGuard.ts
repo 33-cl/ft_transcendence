@@ -21,7 +21,7 @@ export function guardFunction<T extends (...args: any[]) => any>(
         
         // Vérifier si l'utilisateur est connecté (pour les fonctions qui nécessitent une auth)
         if (requiresAuth) {
-            const currentUser = (window as any).currentUser;
+            const currentUser = window.currentUser;
             if (!currentUser) {
                 console.error(`Security: Blocked call to ${functionName} - User not authenticated`);
                 return Promise.reject(new Error(`Action blocked: User not authenticated`));
@@ -95,7 +95,7 @@ export function installFetchGuard() {
         
         // Vérifier si l'utilisateur est connecté pour les requêtes API protégées
         if (url.includes('/api/')) {
-            const currentUser = (window as any).currentUser;
+            const currentUser = window.currentUser;
             if (!currentUser) {
                 console.error(`Security: Blocked fetch to ${url} - No active user session`);
                 return Promise.reject(new Error(`Fetch blocked: User not authenticated`));
@@ -114,7 +114,7 @@ export function installFetchGuard() {
  */
 export function installSocketGuard()
 {
-    const socket = (window as any).socket;
+    const socket = window.socket;
     if (!socket)
     {
         console.warn('Socket not found, will retry socket guard installation later');
@@ -158,7 +158,7 @@ export function installSocketGuard()
         
         // Vérifier auth pour les événements sensibles
         if (sensitiveEvents.includes(event)) {
-            const currentUser = (window as any).currentUser;
+            const currentUser = window.currentUser;
             if (!currentUser)
             {
                 console.error(`Security: Blocked socket.emit('${event}') - User not authenticated`);

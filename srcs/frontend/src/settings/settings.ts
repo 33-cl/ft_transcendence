@@ -469,8 +469,8 @@ async function savePasswordDirectly(currentPassword: string, newPassword: string
             showMessage(result.message || 'Password updated successfully');
             
             // Refresh les données utilisateur
-            if ((window as any).refreshUserStats) {
-                await (window as any).refreshUserStats();
+            if (window.refreshUserStats) {
+                await window.refreshUserStats();
             }
 
             // Ne recharger la page que si on est toujours sur settings
@@ -621,8 +621,8 @@ async function saveChangedFields(): Promise<void> {
             }
             
             // Refresh les données utilisateur
-            if ((window as any).refreshUserStats) {
-                await (window as any).refreshUserStats();
+            if (window.refreshUserStats) {
+                await window.refreshUserStats();
             }
             
             // NOTE: Le leaderboard est maintenant rafraîchi automatiquement via WebSocket

@@ -23,13 +23,13 @@ function setupSpectatorGameFinishedEventListeners(): void {
         
         mainMenuBtn.addEventListener('click', async () => {
              // Clean up any game-related state
-            if ((window as any).leaveCurrentRoomAsync) {
-                await (window as any).leaveCurrentRoomAsync();
+            if (window.leaveCurrentRoomAsync) {
+                await window.leaveCurrentRoomAsync();
             }
             
             // Refresh friend list to update game statuses
-            if ((window as any).refreshFriendList) {
-                await (window as any).refreshFriendList();
+            if (window.refreshFriendList) {
+                await window.refreshFriendList();
             }
 
             // Navigate to main menu
@@ -40,4 +40,4 @@ function setupSpectatorGameFinishedEventListeners(): void {
 }
 
 // Make the page available globally
-(window as any).spectatorGameFinishedPage = spectatorGameFinishedPage;
+window.spectatorGameFinishedPage = spectatorGameFinishedPage;

@@ -38,7 +38,7 @@ export function initLandingHandlers(): void {
     };
     
     // Stocker la fonction de nettoyage
-    (window as any).cleanupLandingHandlers = cleanup;
+    window.cleanupLandingHandlers = cleanup;
 }
 
 // Initialiser automatiquement quand les composants sont prêts

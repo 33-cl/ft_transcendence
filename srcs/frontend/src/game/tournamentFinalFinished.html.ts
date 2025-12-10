@@ -8,7 +8,7 @@ export const tournamentFinalFinishedHTML = (data?: any) => {
     const loserScore = loser?.score ?? 0;
     
     // Déterminer si le joueur actuel a gagné
-    const currentUsername = (window as any).currentUser?.username;
+    const currentUsername = window.currentUser?.username;
     const isChampion = currentUsername === winnerName;
     
     return /*html*/`

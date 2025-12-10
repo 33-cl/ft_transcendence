@@ -10,10 +10,10 @@ window.addEventListener('DOMContentLoaded', () => {
   backgroundInstance = new BackgroundStarfield('background');
   
   // Expose throttle mode globally for game performance optimization
-  (window as any).setBackgroundThrottle = (enabled: boolean) => {
+  window.setBackgroundThrottle = (enabled: boolean) => {
     if (backgroundInstance) backgroundInstance.setThrottleMode(enabled);
   };
-  (window as any).isBackgroundThrottled = () => {
+  window.isBackgroundThrottled = () => {
     return backgroundInstance ? backgroundInstance.isThrottled() : false;
   };
 });

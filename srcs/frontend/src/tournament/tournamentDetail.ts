@@ -105,7 +105,7 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
     joinTournamentRoom(tournamentId);
     
     // Store tournament ID in window for back button handler
-    (window as any).currentTournamentId = tournamentId;
+    window.currentTournamentId = tournamentId;
 
     const contentContainer = document.getElementById('tournament-content');
     if (!contentContainer) return;
@@ -438,7 +438,7 @@ function renderTournamentContent(data: TournamentDetailResponse): string {
     const { tournament, participants, matches } = data;
     
     // Get current user ID from global state
-    const currentUserId = (window as any).currentUser?.id || null;
+    const currentUserId = window.currentUser?.id || null;
     
     // Use helpers to process data
     const playerAliasMap = createPlayerAliasMap(participants);
@@ -603,11 +603,11 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                         console.log(`🎮 Joining tournament match room: ${roomName}`);
                         
                         // Join the room via WebSocket
-                        const socket = (window as any).socket;
+                        const socket = window.socket;
                         if (socket) {
                             // Store tournament context for later use (e.g., returning to bracket)
-                            (window as any).currentTournamentId = tournamentId;
-                            (window as any).currentMatchId = matchId;
+                            window.currentTournamentId = tournamentId;
+                            window.currentMatchId = matchId;
                             
                             // Close the tournament detail overlay before joining the game
                             const detailPage = document.getElementById('tournamentDetailPage');

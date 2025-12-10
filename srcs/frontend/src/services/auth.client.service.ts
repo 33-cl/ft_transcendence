@@ -49,7 +49,7 @@ export async function registerUser(
             const user = data?.user || null;
 
             // Stocker l'utilisateur globalement
-            (window as any).currentUser = user;
+            window.currentUser = user;
 
             // Marquer la session comme active
             markSessionActive();
@@ -63,8 +63,8 @@ export async function registerUser(
             broadcastSessionCreated();
 
             // Reconnecter le WebSocket
-            if ((window as any).currentUser && (window as any).reconnectWebSocket) {
-                (window as any).reconnectWebSocket();
+            if (window.currentUser && window.reconnectWebSocket) {
+                window.reconnectWebSocket();
             }
 
             return { success: true, user };
@@ -126,7 +126,7 @@ export async function loginUser(
             const user = data?.user || null;
 
             // Stocker l'utilisateur globalement
-            (window as any).currentUser = user;
+            window.currentUser = user;
 
             // Vérifier la session (optionnel)
             try {
@@ -140,8 +140,8 @@ export async function loginUser(
             broadcastSessionCreated();
 
             // Reconnecter le WebSocket
-            if ((window as any).currentUser && (window as any).reconnectWebSocket) {
-                (window as any).reconnectWebSocket();
+            if (window.currentUser && window.reconnectWebSocket) {
+                window.reconnectWebSocket();
             }
 
             return { success: true, user };
@@ -169,7 +169,7 @@ export async function logoutUser(): Promise<void> {
     } catch {}
 
     // Nettoyer l'utilisateur courant
-    (window as any).currentUser = null;
+    window.currentUser = null;
 
     // Marquer la session comme inactive
     markSessionInactive();

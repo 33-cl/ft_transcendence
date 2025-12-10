@@ -53,20 +53,20 @@ async function show(pageName: keyof typeof components, data?: any)
             
             // Cas spécial pour le profil - passer l'utilisateur sélectionné
             if (pageName === 'profile') {
-                const selectedUser = (window as any).selectedProfileUser;
+                const selectedUser = window.selectedProfileUser;
                 htmlResult = component.html(selectedUser);
                 // Ne pas nettoyer tout de suite - on en a besoin pour profileDashboard
             }
             // Cas spécial pour le profileDashboard - passer l'utilisateur sélectionné
             else if (pageName === 'profileDashboard') {
-                const selectedUser = (window as any).selectedProfileUser;
+                const selectedUser = window.selectedProfileUser;
                 htmlResult = component.html(selectedUser);
                 // Nettoyer après utilisation du dashboard
-                (window as any).selectedProfileUser = null;
+                window.selectedProfileUser = null;
             } 
             // Cas spécial pour gameStats - passer les données du match
             else if (pageName === 'gameStats') {
-                const matchData = (window as any).selectedMatchData;
+                const matchData = window.selectedMatchData;
                 const userId = window.currentUser?.id || 0;
                 htmlResult = component.html(matchData, userId);
             }
@@ -88,7 +88,7 @@ async function show(pageName: keyof typeof components, data?: any)
             }
             // Cas spécial pour contextMenu - passer isInGame
             else if (pageName === 'contextMenu') {
-                const isInGame = (window as any).contextMenuIsInGame || false;
+                const isInGame = window.contextMenuIsInGame || false;
                 htmlResult = component.html(isInGame);
             }
             else {
@@ -126,9 +126,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     
     // Nettoyer les event listeners de la page landing si on la quitte
-    if ((window as any).cleanupLandingHandlers) {
-        (window as any).cleanupLandingHandlers();
-        (window as any).cleanupLandingHandlers = null;
+    if (window.cleanupLandingHandlers) {
+        window.cleanupLandingHandlers();
+        window.cleanupLandingHandlers = null;
     }
     
     hideAllPages();
@@ -148,12 +148,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('landing');
     else if (pageName === 'mainMenu')
     {
-         if ((window as any).aiMode) {
-            (window as any).aiMode = false; //Retour au menu - reset du flag IA 🤖 
+         if (window.aiMode) {
+            window.aiMode = false; //Retour au menu - reset du flag IA 🤖 
          } 
         // Refresh user stats BEFORE showing components to ensure displayed data is current
-        if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then(async (_statsChanged: boolean) => {
+        if (window.currentUser && window.refreshUserStats) {
+            window.refreshUserStats().then(async (_statsChanged: boolean) => {
                 if (myLoadId !== currentLoadId) return; // Abort if newer load
 
             // Show components after stats are refreshed
@@ -270,8 +270,8 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     else if (pageName === 'profile')
     {
         // Refresh user stats BEFORE showing profile to ensure displayed data is current
-        if (window.currentUser && (window as any).refreshUserStats) {
-            (window as any).refreshUserStats().then(async (_statsChanged: boolean) => {
+        if (window.currentUser && window.refreshUserStats) {
+            window.refreshUserStats().then(async (_statsChanged: boolean) => {
                 if (myLoadId !== currentLoadId) return; // Abort if newer load
       
                 // Show components after stats are refreshed
@@ -284,7 +284,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 setTimeout(async () => {
                     if (myLoadId !== currentLoadId) return; // Abort if newer load
                     const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                    const user = (window as any).selectedProfileUser || window.currentUser;
+                    const user = window.selectedProfileUser || window.currentUser;
                     const wins = user?.wins || 0;
                     const losses = user?.losses || 0;
                     initializeStatsChart(wins, losses);
@@ -305,7 +305,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 setTimeout(async () => {
                     if (myLoadId !== currentLoadId) return; // Abort if newer load
                     const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                    const user = (window as any).selectedProfileUser || window.currentUser;
+                    const user = window.selectedProfileUser || window.currentUser;
                     const wins = user?.wins || 0;
                     const losses = user?.losses || 0;
                     initializeStatsChart(wins, losses);
@@ -325,7 +325,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             setTimeout(async () => {
                 if (myLoadId !== currentLoadId) return; // Abort if newer load
                 const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                const user = (window as any).selectedProfileUser || window.currentUser;
+                const user = window.selectedProfileUser || window.currentUser;
                 const wins = user?.wins || 0;
                 const losses = user?.losses || 0;
                 initializeStatsChart(wins, losses);
@@ -344,7 +344,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         setTimeout(async () => {
             if (myLoadId !== currentLoadId) return;
             const { initializeGameStatsCharts } = await import('../profile/gamestats.js');
-            const matchData = (window as any).selectedMatchData;
+            const matchData = window.selectedMatchData;
             if (matchData) {
                 initializeGameStatsCharts(matchData);
             }
@@ -356,7 +356,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('goToMain');
         setTimeout(() => {
             if (myLoadId !== currentLoadId) return; // Abort if newer load
-            if ((window as any).initGameConfigManagers) (window as any).initGameConfigManagers();
+            if (window.initGameConfigManagers) window.initGameConfigManagers();
         }, 100);
     }
     else if (pageName === 'aiConfig') 
@@ -365,7 +365,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         await show('goToMain');
         setTimeout(() => {
             if (myLoadId !== currentLoadId) return; // Abort if newer load
-            if ((window as any).initAIConfigManagers) (window as any).initAIConfigManagers();
+            if (window.initAIConfigManagers) window.initAIConfigManagers();
         }, 100);
     }
     else if (pageName === 'tournaments') {
@@ -420,4 +420,4 @@ function hideAllPages(): void
 
 export { show, load, hideAllPages, hide };
 // Exposer load globalement pour les autres modules avec protection
-(window as any).load = guardFunction(load, 'load'); 
+window.load = guardFunction(load, 'load'); 
