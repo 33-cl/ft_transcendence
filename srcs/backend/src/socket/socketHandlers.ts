@@ -6,7 +6,7 @@
 /*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/31 16:43:18 by qordoux           #+#    #+#             */
-/*   Updated: 2025/12/06 18:51:15 by qordoux          ###   ########.fr       */
+/*   Updated: 2025/12/11 20:34:53 by qordoux          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,24 +101,11 @@ function handleTournamentSemifinalInput(socketId: string, message: any, room: Ro
         semifinalNumber = 2;
     }
     
-    if (!semifinal) {
-        console.log(`⚠️ Tournament Input: Socket ${socketId} not found in any semifinal`);
-        console.log(`   SF1 players: ${state.semifinal1?.player1}, ${state.semifinal1?.player2}`);
-        console.log(`   SF2 players: ${state.semifinal2?.player1}, ${state.semifinal2?.player2}`);
-        return;
-    }
-    
-    if (!semifinal.pongGame) {
-        console.log(`⚠️ Tournament Input: No pongGame for semifinal ${semifinalNumber}`);
-        return;
-    }
+    if (!semifinal || !semifinal.pongGame) return;
     
     // Vérifier que le joueur contrôle bien ce paddle
     const allowedPaddle = semifinal.paddleBySocket[socketId];
-    if (player !== allowedPaddle) {
-        console.log(`⚠️ Tournament Input: Player ${player} not allowed for socket ${socketId} (allowed: ${allowedPaddle})`);
-        return;
-    }
+    if (player !== allowedPaddle) return;
     
     // Valider le paddle et la direction
     if (player !== 'LEFT' && player !== 'RIGHT') return;

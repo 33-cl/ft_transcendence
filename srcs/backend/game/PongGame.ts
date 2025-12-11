@@ -54,12 +54,6 @@ export class PongGame {
         // Mettre à jour le timestamp pour le client
         this.state.timestamp = Date.now();
         
-        // DEBUG: Log le countdown toutes les 500ms environ (tous les 60 ticks)
-        const timeElapsed = Date.now() - this.ballStartTime;
-        if (this.isFirstLaunch && timeElapsed < 3500 && timeElapsed % 500 < 10) {
-            console.log(`⏱️ tick: timeElapsed=${timeElapsed}ms, isFirstLaunch=${this.isFirstLaunch}, ballCountdown=${this.state.ballCountdown}`);
-        }
-        
         // Exécuter exactement 1 update physique (dt = 1/120 seconde)
         // Normalisation: update() utilise dt * 60 pour normaliser à 60FPS
         // Donc pour 120Hz: dt = 1/120, moveFactor = (1/120) * 60 = 0.5
@@ -159,7 +153,6 @@ export class PongGame {
             // Vérifier la fin de partie
             const gameEndInfo = checkGameEnd2Players(this.state);
             if (gameEndInfo) {
-                console.log(`🏁 PongGame: Game end detected! winner=${gameEndInfo.winner.side} score=${gameEndInfo.winner.score}, paddles=[${this.state.paddles?.map(p => p.score).join(',')}]`);
                 this.stop();
                 if (this.onGameEnd) {
                     this.onGameEnd(gameEndInfo.winner, gameEndInfo.loser);

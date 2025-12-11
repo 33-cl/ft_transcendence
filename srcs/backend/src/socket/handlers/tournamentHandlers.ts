@@ -436,8 +436,6 @@ function startTournamentGame(
     room.pongGame.start();
     room.gameState = room.pongGame.state;
     
-    console.log(`📡 Sending roomJoined to ${currentMatch.player1} and ${currentMatch.player2}`);
-    
     // Envoyer les assignations de paddle aux joueurs du match
     io.to(currentMatch.player1).emit('roomJoined', {
         paddle: 'LEFT',
@@ -495,10 +493,6 @@ function startFinal(
     const state = room.tournamentState;
     state.phase = 'final';
     
-    // Debug: vérifier que la phase est bien changée
-    console.log(`🔥 startFinal: phase changed to '${state.phase}' for room ${roomName}`);
-    console.log(`🔥 Room in rooms object: phase=${(rooms[roomName] as any)?.tournamentState?.phase}, pongGame=${!!(rooms[roomName] as any)?.pongGame}`);
-    
     // Les anciens socket IDs des gagnants
     const oldPlayer1SocketId = state.semifinal1Winner!;
     const oldPlayer2SocketId = state.semifinal2Winner!;
@@ -511,9 +505,6 @@ function startFinal(
     const player1CurrentSocketId = getSocketIdForUser(player1UserId) || oldPlayer1SocketId;
     const player2CurrentSocketId = getSocketIdForUser(player2UserId) || oldPlayer2SocketId;
     
-    console.log(`📡 Final: Player 1 userId=${player1UserId}, old socket=${oldPlayer1SocketId}, current socket=${player1CurrentSocketId}`);
-    console.log(`📡 Final: Player 2 userId=${player2UserId}, old socket=${oldPlayer2SocketId}, current socket=${player2CurrentSocketId}`);
-    
     // Utiliser les socket IDs actuels pour la finale
     const player1 = player1CurrentSocketId;
     const player2 = player2CurrentSocketId;
@@ -523,15 +514,11 @@ function startFinal(
     const player1Name = state.playerUsernames[oldPlayer1SocketId] || 'Finalist 1';
     const player2Name = state.playerUsernames[oldPlayer2SocketId] || 'Finalist 2';
     
-    console.log(`🎮 Tournament: Starting FINAL - ${player1Name} vs ${player2Name}`);
-    
     // Configurer le match (paddles et inputs) avec les nouveaux socket IDs
     setupTournamentMatch(room, player1, player2);
     
     // Créer le jeu Pong pour la finale
     const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
-        console.log(`🎮 Final gameEndCallback called! winner=${winner.side} score=${winner.score}, loser=${loser.side} score=${loser.score}`);
-        
         let winnerId: string;
         let loserId: string;
         
@@ -547,18 +534,10 @@ function startFinal(
     };
     
     room.pongGame = new PongGame(2, gameEndCallback);
-    
-    // Log AVANT start pour voir l'état initial
-    console.log(`🎮 Final game BEFORE start: running=${room.pongGame.state.running}, scores=[${room.pongGame.state.paddles?.map((p: any) => p.score).join(',')}], ballX=${room.pongGame.state.ballX}, ballY=${room.pongGame.state.ballY}`);
-    
     room.pongGame.start();
     room.gameState = room.pongGame.state;
     
-    console.log(`🎮 Final game AFTER start: running=${room.pongGame.state.running}, scores=[${room.pongGame.state.paddles?.map((p: any) => p.score).join(',')}], win=${room.pongGame.state.win}`);
-    
     // Envoyer roomJoined avec les socket IDs ACTUELS
-    console.log(`📡 Sending roomJoined for FINAL to: ${player1} and ${player2}`);
-    
     io.to(player1).emit('roomJoined', {
         paddle: 'LEFT',
         maxPlayers: 2,
