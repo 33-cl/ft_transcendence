@@ -66,10 +66,50 @@ function updatePaddleKeyBindings() {
     else {
         // Mode online : chaque joueur utilise les flèches directionnelles
         if (paddle === 'LEFT' || paddle === 'DOWN' || paddle === 'RIGHT' || paddle === 'TOP') {
-            keyToMove = {
-                ArrowUp: { player: paddle, direction: 'up' },
-                ArrowDown: { player: paddle, direction: 'down' }
-            };
+            // En mode 4 joueurs online avec rotation du canvas,
+            // on utilise gauche/droite car le paddle est visuellement en bas
+            if (window.maxPlayers === 4) {
+                // La rotation CSS fait que chaque joueur voit son paddle en bas.
+                // Il faut adapter le mapping des touches selon la rotation appliquée
+                // pour que gauche visuel = gauche sur l'écran.
+                //
+                // Rotations appliquées (voir pongRenderer.ts applyCanvasRotation):
+                // - DOWN: 0° → pas d'inversion
+                // - LEFT: -90° → le paddle LEFT devient horizontal en bas, mais les axes sont pivotés
+                // - RIGHT: +90° → le paddle RIGHT devient horizontal en bas, mais les axes sont pivotés
+                // - TOP: 180° → tout est inversé
+                //
+                // Pour LEFT et RIGHT, après rotation de ±90°, la gauche visuelle correspond 
+                // à l'inverse de ce qu'on enverrait normalement.
+                // Pour TOP, après rotation de 180°, gauche et droite sont aussi inversés.
+                
+                if (paddle === 'DOWN') {
+                    // Rotation 0° : pas d'inversion
+                    keyToMove = {
+                        ArrowLeft: { player: paddle, direction: 'up' },   // Gauche visuel = 'up' 
+                        ArrowRight: { player: paddle, direction: 'down' } // Droite visuel = 'down'
+                    };
+                } else if (paddle === 'LEFT' || paddle === 'RIGHT') {
+                    // Rotation ±90° : il faut inverser les directions
+                    // Car après rotation, la gauche visuelle devient la droite logique
+                    keyToMove = {
+                        ArrowLeft: { player: paddle, direction: 'down' },  // Gauche visuel = 'down' (inversé)
+                        ArrowRight: { player: paddle, direction: 'up' }    // Droite visuel = 'up' (inversé)
+                    };
+                } else if (paddle === 'TOP') {
+                    // Rotation 180° : tout est inversé, donc on inverse aussi
+                    keyToMove = {
+                        ArrowLeft: { player: paddle, direction: 'down' },  // Gauche visuel = 'down' (inversé)
+                        ArrowRight: { player: paddle, direction: 'up' }    // Droite visuel = 'up' (inversé)
+                    };
+                }
+            } else {
+                // Mode 1v1 online : utiliser haut/bas classique
+                keyToMove = {
+                    ArrowUp: { player: paddle, direction: 'up' },
+                    ArrowDown: { player: paddle, direction: 'down' }
+                };
+            }
         } else {
             keyToMove = {};
         }

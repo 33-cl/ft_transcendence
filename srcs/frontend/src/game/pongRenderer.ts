@@ -18,17 +18,66 @@ function getColorForSide(side: string): string {
     return colors[side] || '#ffffff';
 }
 
+/**
+ * Applique une rotation CSS au canvas pour que le joueur ait toujours
+ * son paddle en bas de l'écran visuellement (mode 4 joueurs uniquement)
+ */
+export function applyCanvasRotation(paddle: string | null, canvasId: string = 'map'): void {
+    const canvasElement = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (!canvasElement) return;
+    
+    // Ne pas appliquer de rotation en mode 1v1 (seulement LEFT/RIGHT)
+    // ou si pas de paddle assigné
+    if (!paddle || (paddle !== 'LEFT' && paddle !== 'DOWN' && paddle !== 'RIGHT' && paddle !== 'TOP')) {
+        canvasElement.style.transform = '';
+        return;
+    }
+    
+    // Calculer l'angle de rotation pour que le paddle soit toujours en bas
+    let rotation = 0;
+    switch (paddle) {
+        case 'DOWN':
+            rotation = 0;      // Déjà en bas, pas de rotation
+            break;
+        case 'LEFT':
+            rotation = -90;    // Paddle gauche → tourner de -90° pour le mettre en bas
+            break;
+        case 'TOP':
+            rotation = 180;    // Paddle haut → tourner de 180° pour le mettre en bas
+            break;
+        case 'RIGHT':
+            rotation = 90;     // Paddle droite → tourner de 90° pour le mettre en bas
+            break;
+    }
+    
+    // Appliquer la rotation CSS avec une transition fluide
+    canvasElement.style.transition = 'transform 0.3s ease';
+    canvasElement.style.transform = rotation !== 0 ? `rotate(${rotation}deg)` : '';
+}
+
+/**
+ * Réinitialise la rotation du canvas (appelé au cleanup)
+ */
+export function resetCanvasRotation(canvasId: string = 'map'): void {
+    const canvasElement = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (canvasElement) {
+        canvasElement.style.transform = '';
+        canvasElement.style.transition = '';
+    }
+}
+
+// Fonction d'initialisation du renderer Pong
 export function initPongRenderer(canvasId: string = 'map')
 {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
-        console.error(`❌ Canvas #${canvasId} not found in DOM!`);
+        console.error(` Canvas #${canvasId} not found in DOM!`);
         return;
     }
     
     ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error(`❌ Could not get 2D context from canvas`);
+        console.error(` Could not get 2D context from canvas`);
         return;
     }
 }
@@ -44,6 +93,10 @@ export function resetPongRenderer(): void {
 
 // Expose la fonction de reset globalement pour le cleanup
 window.resetPongRenderer = resetPongRenderer;
+
+// Exposer les fonctions de rotation globalement
+window.applyCanvasRotation = applyCanvasRotation;
+window.resetCanvasRotation = resetCanvasRotation;
 
 // Exposer la fonction de dessin pour être utilisée par le système d'interpolation
 window.drawPongGame = draw;
@@ -122,14 +175,35 @@ export function draw(gameState: any)
     if (gameState.ballCountdown && gameState.ballCountdown > 0) {
         ctx.save();
         
+        const centerX = gameState.canvasWidth / 2;
+        const centerY = gameState.canvasHeight / 2;
+        
+        // Appliquer une contre-rotation pour que le texte reste lisible
+        // quand le canvas est tourné en mode 4 joueurs
+        const paddle = window.controlledPaddle;
+        if (paddle && gameState.paddles && gameState.paddles.length === 4) {
+            ctx.translate(centerX, centerY);
+            switch (paddle) {
+                case 'LEFT':
+                    ctx.rotate(Math.PI / 2);  // +90° pour contrer la rotation -90°
+                    break;
+                case 'RIGHT':
+                    ctx.rotate(-Math.PI / 2); // -90° pour contrer la rotation +90°
+                    break;
+                case 'TOP':
+                    ctx.rotate(Math.PI);      // 180° pour contrer la rotation 180°
+                    break;
+                // DOWN: pas de rotation nécessaire
+            }
+            ctx.translate(-centerX, -centerY);
+        }
+        
         // Configuration de la typographie selon la DA du site
         ctx.font = 'bold 96px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
         const countdownText = gameState.ballCountdown.toString();
-        const centerX = gameState.canvasWidth / 2;
-        const centerY = gameState.canvasHeight / 2;
         
         // Effet d'ombre portée pour plus de visibilité
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';

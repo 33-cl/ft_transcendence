@@ -56,6 +56,11 @@ export function cleanupGameState(): void {
     // Reset des références canvas dans le renderer
     resetPongRenderer();
     
+    // Reset de la rotation du canvas (mode 4 joueurs)
+    if (window.resetCanvasRotation) {
+        window.resetCanvasRotation('map');
+    }
+    
     // 3. Nettoyage des event listeners de contrôle
     cleanupPongControls();
     

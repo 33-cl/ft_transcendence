@@ -177,6 +177,18 @@ function setupGlobalSocketListeners() {
                         }
                     } else if (data.maxPlayers === 4) {
                         load('game4');
+                        // Appliquer la rotation du canvas pour que le paddle contrôlé soit en bas
+                        // Attendre que le canvas soit dans le DOM
+                        const waitForCanvasRotation = () => {
+                            const mapCanvas = document.getElementById('map');
+                            if (mapCanvas && typeof window.applyCanvasRotation === 'function') {
+                                console.log(`🔄 Applying rotation for paddle: ${window.controlledPaddle}`);
+                                window.applyCanvasRotation(window.controlledPaddle, 'map');
+                            } else {
+                                setTimeout(waitForCanvasRotation, 50);
+                            }
+                        };
+                        setTimeout(waitForCanvasRotation, 100);
                     } else if (data.maxPlayers === 3) {
                         load('game3');
                     } else {

@@ -19,7 +19,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Cookie parsing is provided by helpers/cookie.helper.ts
 
 // Helper pour notifier qu'une nouvelle demande d'ami a été reçue
-function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance) {
+function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance)
+{
   try {
     
     const sender = db.prepare('SELECT id, username FROM users WHERE id = ?').get(senderId) as { id: number; username: string } | undefined;
@@ -45,7 +46,7 @@ function notifyFriendRequestReceived(receiverId: number, senderId: number, fasti
       }
     } 
   } catch (error) {
-    console.error('❌ [NOTIFY] Error notifying friend request received:', error);
+    console.error('[NOTIFY] Error notifying friend request received:', error);
   }
 }
 
