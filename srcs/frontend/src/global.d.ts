@@ -63,6 +63,16 @@ declare global
 		addGameState: (state: GameState) => void;
 		startRenderLoop: () => void;
 		stopRenderLoop: () => void;
+		getCurrentInterpolatedState: () => GameState | null;
+		getInterpolationDiagnostics: () => {
+			bufferSize: number;
+			renderDelayMs: number;
+			serverTimeOffset: number;
+			latestServerTs: number | null;
+			renderTs: number;
+			isExtrapolating: boolean;
+			extrapolationMs: number;
+		};
 		updatePaddleKeyBindings: () => void;
 		initAIDifficultySelector: () => void;
 		initGameConfigManagers: () => void;

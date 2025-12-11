@@ -443,6 +443,7 @@ export class BackgroundStarfield {
 
   /**
    * Met en pause l'animation du background (arret complet)
+   * Le canvas reste visible mais figé
    */
   public pause(): void {
     this.isPaused = true;

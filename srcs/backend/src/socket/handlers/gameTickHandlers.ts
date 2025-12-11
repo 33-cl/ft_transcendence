@@ -179,6 +179,7 @@ export function cleanupFinishedRoom(room: RoomType, roomName: string, io: Server
 
 /**
  * Met à jour et broadcast un match de demi-finale de tournoi
+ * IMPORTANT: Appelle tick() pour avancer la physique PUIS broadcast
  */
 function updateSemifinalMatch(
     semifinal: any,
@@ -199,6 +200,9 @@ function updateSemifinalMatch(
         }
     }
     
+    // Avancer la physique d'un tick AVANT de broadcast
+    semifinal.pongGame.tick();
+    
     // Envoyer l'état du jeu aux joueurs de ce match
     io.to(semifinal.player1).emit('gameState', semifinal.pongGame.state);
     io.to(semifinal.player2).emit('gameState', semifinal.pongGame.state);
@@ -206,9 +210,13 @@ function updateSemifinalMatch(
 
 /**
  * Boucle principale du jeu (appelée 120 fois par seconde)
+ * - Avance la physique d'un tick (via pongGame.tick())
  * - Met à jour les positions des paddles
  * - Envoie l'état aux clients
  * - Nettoie les rooms terminées
+ * 
+ * NOTE: La physique et le broadcast sont maintenant synchronisés dans la même boucle.
+ * Cela évite les duplicates et les sauts visuels causés par deux boucles désynchronisées.
  */
 let tickDebugCounter = 0;
 export function handleGameTick(io: any, fastify: FastifyInstance): void
@@ -237,7 +245,7 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
         
         // Gestion des tournois avec demi-finales simultanées
         if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'semifinals') {
-            // Mettre à jour les 2 demi-finales
+            // Mettre à jour les 2 demi-finales (tick + broadcast dans la fonction)
             updateSemifinalMatch(typedRoom.tournamentState.semifinal1, 1, io);
             updateSemifinalMatch(typedRoom.tournamentState.semifinal2, 2, io);
             continue;
@@ -248,6 +256,9 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
         {
             ensurePaddleInputsInitialized(typedRoom);
             updateAllPaddlesPositions(typedRoom);
+            
+            // Avancer la physique d'un tick AVANT de broadcast
+            typedRoom.pongGame.tick();
             
             // Pour la finale de tournoi, envoyer directement aux socket IDs actuels
             if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'final') {

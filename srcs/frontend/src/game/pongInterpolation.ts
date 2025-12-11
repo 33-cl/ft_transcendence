@@ -29,13 +29,26 @@ interface GameState {
 
 // Delai de rendu en ms (buffer pour absorber le jitter reseau)
 // Plus eleve = plus fluide mais plus de latence visuelle
-const RENDER_DELAY_MS = 50;
+// 80ms permet d'absorber les bursts de ~60ms observes dans les logs
+const RENDER_DELAY_MS = 80;
 
 // Nombre max d'etats dans le buffer
-const MAX_BUFFER_SIZE = 10;
+const MAX_BUFFER_SIZE = 15;
 
 // Duree max d'extrapolation en ms (au dela on freeze)
 const MAX_EXTRAPOLATION_MS = 100;
+
+// Seuil pour considerer deux positions comme identiques (duplicates serveur)
+const DUPLICATE_THRESHOLD = 0.01;
+
+// Seuil d'age max pour accepter un etat (ignore les etats trop vieux arrives en burst)
+const MAX_STATE_AGE_MS = 200;
+
+// Conversion des vitesses serveur
+// La vitesse serveur est en "pixels par frame à 60 FPS" (normalisée avec dt * 60)
+// Vitesse réelle en px/sec = ballSpeed * 60
+// Vitesse en px/ms = ballSpeed * 60 / 1000 = ballSpeed * 0.06
+const SPEED_TO_PX_PER_MS = 0.06; // Facteur de conversion: speed * 0.06 = px/ms
 
 // ============================================================================
 // ETAT DU MODULE
@@ -82,17 +95,51 @@ function cloneState(state: GameState): GameState {
 /**
  * Ajoute un nouvel etat au buffer
  * Maintient le buffer trie par timestamp et limite sa taille
+ * Filtre les duplicates et les etats trop vieux
  */
 export function addGameState(gameState: GameState): void {
-    // S'assurer que l'etat a un timestamp
+    // Normaliser et coerce les champs numeriques pour eviter des strings ou undefined
     if (!gameState.timestamp) {
         gameState.timestamp = Date.now();
     }
-    
-    // Mettre a jour l'offset serveur (moyenne glissante simple)
+    gameState.timestamp = Number(gameState.timestamp);
+    gameState.ballX = Number(gameState.ballX);
+    gameState.ballY = Number(gameState.ballY);
+    if (gameState.ballSpeedX !== undefined) gameState.ballSpeedX = Number(gameState.ballSpeedX);
+    if (gameState.ballSpeedY !== undefined) gameState.ballSpeedY = Number(gameState.ballSpeedY);
+    if (gameState.ballRadius !== undefined) gameState.ballRadius = Number(gameState.ballRadius);
+
     const now = Date.now();
+    
+    // Ignorer les etats trop vieux (arrives en burst retarde)
+    const stateAge = now - gameState.timestamp;
+    if (stateAge > MAX_STATE_AGE_MS) {
+        return;
+    }
+
+    // Filtrer les duplicates: meme position que le dernier etat
+    if (stateBuffer.length > 0) {
+        const last = stateBuffer[stateBuffer.length - 1]!;
+        const dx = Math.abs(gameState.ballX - last.ballX);
+        const dy = Math.abs(gameState.ballY - last.ballY);
+        if (dx < DUPLICATE_THRESHOLD && dy < DUPLICATE_THRESHOLD) {
+            return;
+        }
+    }
+
+    // Mettre a jour l'offset serveur (moyenne glissante plus stable)
+    // On utilise un facteur plus faible pour eviter les fluctuations dues aux bursts reseau
     const newOffset = gameState.timestamp - now;
-    serverTimeOffset = serverTimeOffset * 0.9 + newOffset * 0.1;
+    // Ne mettre à jour que si la différence n'est pas trop grande (éviter les sauts)
+    const offsetDiff = Math.abs(newOffset - serverTimeOffset);
+    if (serverTimeOffset === 0) {
+        // Premier état - initialiser directement
+        serverTimeOffset = newOffset;
+    } else if (offsetDiff < 50) {
+        // Différence raisonnable - mise à jour progressive
+        serverTimeOffset = serverTimeOffset * 0.95 + newOffset * 0.05;
+    }
+    // Si offsetDiff >= 50ms, ignorer cette mise à jour (probablement un burst)
     
     // Ajouter au buffer
     const newState = cloneState(gameState);
@@ -105,6 +152,20 @@ export function addGameState(gameState: GameState): void {
     while (stateBuffer.length > MAX_BUFFER_SIZE) {
         stateBuffer.shift();
     }
+}
+
+// Helper: calcule la vitesse (pixels par milliseconde) a partir des deux derniers etats du buffer
+function computeVelocityFromBuffer(): { vx: number; vy: number } | null {
+    if (stateBuffer.length < 2) return null;
+    const last = stateBuffer[stateBuffer.length - 1]!;
+    const prev = stateBuffer[stateBuffer.length - 2]!;
+    const tLast = Number(last.timestamp || 0);
+    const tPrev = Number(prev.timestamp || 0);
+    const dt = tLast - tPrev;
+    if (!dt) return null;
+    const vx = (last.ballX - prev.ballX) / dt; // pixels per ms
+    const vy = (last.ballY - prev.ballY) / dt; // pixels per ms
+    return { vx, vy };
 }
 
 /**
@@ -170,23 +231,34 @@ function extrapolateState(baseState: GameState, deltaMs: number): GameState {
     
     // Limiter l'extrapolation
     const limitedDelta = Math.min(deltaMs, MAX_EXTRAPOLATION_MS);
-    const deltaSeconds = limitedDelta / 1000;
-    
-    // Extrapoler la balle avec sa vitesse
-    // Note: les vitesses sont en pixels par frame a 60 FPS
-    const speedMultiplier = 60; // Conversion vers pixels/seconde
+
+    // Determiner la vitesse en pixels/millisecondes
+    let vx: number = 0;
+    let vy: number = 0;
+
     if (result.ballSpeedX !== undefined && result.ballSpeedY !== undefined) {
-        result.ballX += result.ballSpeedX * speedMultiplier * deltaSeconds;
-        result.ballY += result.ballSpeedY * speedMultiplier * deltaSeconds;
-        
-        // Borner dans le canvas (simple, sans rebond)
-        const radius = result.ballRadius || 15;
-        result.ballX = Math.max(radius, Math.min(result.canvasWidth - radius, result.ballX));
-        result.ballY = Math.max(radius, Math.min(result.canvasHeight - radius, result.ballY));
+        // Convertir de "pixels par frame à 60FPS" vers px/ms
+        // Vitesse réelle = ballSpeed * 60 pixels/sec = ballSpeed * 0.06 px/ms
+        vx = result.ballSpeedX * SPEED_TO_PX_PER_MS;
+        vy = result.ballSpeedY * SPEED_TO_PX_PER_MS;
+    } else {
+        // Fallback: calculer a partir des deux derniers etats
+        const derived = computeVelocityFromBuffer();
+        if (derived) {
+            vx = derived.vx;
+            vy = derived.vy;
+        }
     }
-    
-    // Les paddles ne sont pas extrapoles (on n'a pas leur direction)
-    
+
+    // Extrapoler la balle: position = position + vitesse * delta_ms
+    result.ballX += vx * limitedDelta;
+    result.ballY += vy * limitedDelta;
+
+    // Borner dans le canvas (simple, sans rebond)
+    const radius = result.ballRadius || 15;
+    result.ballX = Math.max(radius, Math.min(result.canvasWidth - radius, result.ballX));
+    result.ballY = Math.max(radius, Math.min(result.canvasHeight - radius, result.ballY));
+
     return result;
 }
 
@@ -277,9 +349,52 @@ function renderLoop(_timestamp: number): void {
 }
 
 // ============================================================================
+// DIAGNOSTICS
+// ============================================================================
+
+/**
+ * Retourne des informations de diagnostic pour le debug
+ */
+export function getInterpolationDiagnostics(): {
+    bufferSize: number;
+    renderDelayMs: number;
+    serverTimeOffset: number;
+    latestServerTs: number | null;
+    renderTs: number;
+    isExtrapolating: boolean;
+    extrapolationMs: number;
+} {
+    const renderTime = getServerTime() - RENDER_DELAY_MS;
+    const latestState = stateBuffer.length > 0 ? stateBuffer[stateBuffer.length - 1] : null;
+    const latestServerTs = latestState?.timestamp || null;
+    
+    let isExtrapolating = false;
+    let extrapolationMs = 0;
+    
+    if (latestServerTs !== null && renderTime > latestServerTs) {
+        isExtrapolating = true;
+        extrapolationMs = renderTime - latestServerTs;
+    }
+    
+    return {
+        bufferSize: stateBuffer.length,
+        renderDelayMs: RENDER_DELAY_MS,
+        serverTimeOffset,
+        latestServerTs,
+        renderTs: renderTime,
+        isExtrapolating,
+        extrapolationMs
+    };
+}
+
+// Expose for debug
+window.getInterpolationDiagnostics = getInterpolationDiagnostics;
+
+// ============================================================================
 // EXPORT GLOBAL
 // ============================================================================
 
 window.addGameState = addGameState;
 window.startRenderLoop = startRenderLoop;
 window.stopRenderLoop = stopRenderLoop;
+window.getCurrentInterpolatedState = getCurrentInterpolatedState;

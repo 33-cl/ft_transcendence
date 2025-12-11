@@ -20,20 +20,17 @@ function getColorForSide(side: string): string {
 
 export function initPongRenderer(canvasId: string = 'map')
 {
-    console.log(`🎨 initPongRenderer called with canvasId: ${canvasId}`);
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
         console.error(`❌ Canvas #${canvasId} not found in DOM!`);
         return;
     }
-    console.log(`🎨 Canvas found:`, canvas.width, 'x', canvas.height);
     
     ctx = canvas.getContext('2d');
     if (!ctx) {
         console.error(`❌ Could not get 2D context from canvas`);
         return;
     }
-    console.log(`🎨 initPongRenderer SUCCESS - canvas and ctx ready`);
 }
 
 // Fonction de nettoyage du renderer
@@ -155,24 +152,29 @@ export function draw(gameState: any)
         ctx.restore();
     }
 
-    // --- AFFICHAGE DES SCORES ---
+    // --- AFFICHAGE DES SCORES (avec cache pour éviter les modifications DOM inutiles) ---
     const scoreElem = document.getElementById('score');
     if (scoreElem) {
+        let newScoreHTML = '';
         if (gameState.paddles && Array.isArray(gameState.paddles)) {
             if (gameState.paddles.length === 4) {
                 // Mode 1v1v1v1 : scores des 4 joueurs
-                scoreElem.innerHTML = gameState.paddles.map((p: any, i: number) => `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${p.side}: ${p.score || 0}</span>`).join(' | ');
+                newScoreHTML = gameState.paddles.map((p: any, i: number) => `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${p.side}: ${p.score || 0}</span>`).join(' | ');
             } else if (gameState.paddles.length === 2) {
                 // Mode 1v1 : gauche vs droite
                 const leftScore = gameState.paddles[0]?.score || 0;
                 const rightScore = gameState.paddles[1]?.score || 0;
-                scoreElem.innerHTML = `<span id='leftScore'>${leftScore}</span> - <span id='rightScore'>${rightScore}</span>`;
+                newScoreHTML = `<span id='leftScore'>${leftScore}</span> - <span id='rightScore'>${rightScore}</span>`;
             }
         } else {
             // Fallback pour ancienne structure
             const left = gameState.leftScore ?? 0;
             const right = gameState.rightScore ?? 0;
-            scoreElem.innerHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
+            newScoreHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
+        }
+        // Ne mettre à jour le DOM que si le contenu a changé
+        if (scoreElem.innerHTML !== newScoreHTML) {
+            scoreElem.innerHTML = newScoreHTML;
         }
     }
 }

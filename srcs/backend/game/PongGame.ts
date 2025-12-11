@@ -20,12 +20,6 @@ export class PongGame {
         lastContact: -1
     };
     
-    // Nouvelles propriétés pour la boucle de jeu à pas fixe
-    private lastUpdateTime: number = 0;
-    private accumulator: number = 0;
-    private readonly fixedDeltaTime: number = 1000 / 120; // 120Hz pour la simulation physique
-    private updateCount: number = 0; // Debug counter
-
     constructor(numPlayers: number = 2, onGameEnd?: (winner: { side: string; score: number }, loser: { side: string; score: number }) => void) {
         this.state = createInitialGameState(numPlayers);
         this.onGameEnd = onGameEnd;
@@ -35,56 +29,40 @@ export class PongGame {
     }
 
     start() {
-        if (this.interval) return;
+        if (this.state.running) return;
         this.state.running = true;
         
         // Initialisation des timers pour la boucle à pas fixe
         const now = Date.now();
         this.ballStartTime = now; // Enregistre le moment où le jeu commence
-        this.lastUpdateTime = now; // Pour le calcul du deltaTime
-        this.accumulator = 0;      // Réinitialiser l'accumulateur
-        
-        // 120 FPS pour matcher le tick rate du broadcast
-        this.interval = setInterval(() => this.gameLoop(), 1000 / 120);
     }
 
     stop() {
-        if (this.interval) clearInterval(this.interval);
+        // Plus de clearInterval car plus de boucle autonome
         this.interval = null;
         this.state.running = false;
     }
 
-    movePaddle(player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down') {
-        movePaddle(this.state, player, direction);
+    /**
+     * Méthode publique appelée par handleGameTick pour avancer d'un tick
+     * La boucle externe (setInterval) gère le timing à 120Hz.
+     * Cette méthode fait exactement 1 update par appel.
+     */
+    tick(): void {
+        if (!this.state.running) return;
+        
+        // Mettre à jour le timestamp pour le client
+        this.state.timestamp = Date.now();
+        
+        // Exécuter exactement 1 update physique (dt = 1/120 seconde)
+        // Normalisation: update() utilise dt * 60 pour normaliser à 60FPS
+        // Donc pour 120Hz: dt = 1/120, moveFactor = (1/120) * 60 = 0.5
+        // Cela donne un mouvement 2x plus lent par tick, mais 2x plus de ticks = même vitesse
+        this.update(1 / 120);
     }
 
-    gameLoop() {
-        // Calculer le deltaTime depuis la dernière mise à jour
-        const currentTime = Date.now();
-        let deltaTime = currentTime - this.lastUpdateTime;
-        this.lastUpdateTime = currentTime;
-        
-        // Log de debug pour les premiers appels
-        if (this.updateCount < 5) {
-            console.log(`🎮 PongGame.gameLoop: deltaTime=${deltaTime}ms, accumulator=${this.accumulator.toFixed(2)}, scores=[${this.state.paddles?.map(p => p.score).join(',')}]`);
-        }
-        this.updateCount++;
-        
-        // Limiter deltaTime pour éviter les "spiral of death" lors de retards
-        if (deltaTime > 200) deltaTime = 200;
-        if (deltaTime > 200) deltaTime = 200;
-        
-        // Accumulation du temps pour des pas de simulation fixes
-        this.accumulator += deltaTime;
-        
-        // Mise à jour à pas fixe (peut exécuter plusieurs fois si nécessaire)
-        while (this.accumulator >= this.fixedDeltaTime) {
-            this.update(this.fixedDeltaTime / 1000); // Convertir ms en secondes pour la physique
-            this.accumulator -= this.fixedDeltaTime;
-        }
-        
-        // Mettre à jour le timestamp dans l'état du jeu pour l'interpolation client
-        this.state.timestamp = currentTime;
+    movePaddle(player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down') {
+        movePaddle(this.state, player, direction);
     }
 
     update(dt: number = 1/60) { // dt par défaut à 1/60 seconde pour rétrocompatibilité

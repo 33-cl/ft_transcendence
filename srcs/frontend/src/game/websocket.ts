@@ -70,10 +70,6 @@ function setupGlobalSocketListeners() {
     // Event listener roomJoined
     if (!roomJoinedListenerSet) {
         socket.on('roomJoined', (data: any) => {
-            console.log('🎮 roomJoined received:', data);
-            console.log('🎮 Current page:', window.location.hash || document.querySelector('[data-page]:not([style*="display: none"])'));
-            console.log('🎮 isFinal:', data?.isFinal, 'isTournament:', data?.isTournament);
-            
             // Set global variables
             if (data && data.paddle) {
                 window.controlledPaddle = data.paddle;
@@ -155,34 +151,25 @@ function setupGlobalSocketListeners() {
                             }, 100);
                         } else {
                             // Match de tournoi 1v1 - utiliser game standard (contrôle haut/bas)
-                            console.log('🎮 Loading game for tournament match...');
                             load('game');
                             // Reconfigurer les listeners de jeu après chargement de la page
                             // Attendre que le canvas soit dans le DOM
                             const waitForCanvas = () => {
                                 const mapCanvas = document.getElementById('map');
                                 if (mapCanvas) {
-                                    console.log('🎮 Canvas found, initializing game...');
-                                    console.log('🎮 setupGameEventListeners available:', typeof window.setupGameEventListeners);
-                                    console.log('🎮 initPongRenderer available:', typeof window.initPongRenderer);
                                     if (typeof window.setupGameEventListeners === 'function') {
-                                        console.log('🎮 Calling setupGameEventListeners...');
                                         window.setupGameEventListeners();
                                     } else {
-                                        console.error('❌ setupGameEventListeners NOT available on window!');
                                         // Fallback: appeler directement la fonction locale
                                         setupGameEventListeners();
                                     }
                                     if (typeof window.initPongRenderer === 'function') {
-                                        console.log('🎮 Calling initPongRenderer...');
                                         window.initPongRenderer('map');
                                     } else {
-                                        console.error('❌ initPongRenderer NOT available on window!');
                                         // Fallback: appeler directement
                                         initPongRenderer('map');
                                     }
                                 } else {
-                                    console.log('⏳ Waiting for canvas...');
                                     setTimeout(waitForCanvas, 50);
                                 }
                             };
@@ -228,7 +215,6 @@ function setupGlobalSocketListeners() {
 
             // Handle tournament isolation error
             if (data && data.code === 'TOURNAMENT_ISOLATION') {
-                console.log('⚠️ WebSocket: TOURNAMENT_ISOLATION - User is in active tournament');
                 // Show a user-friendly message
                 alert(data.error || 'You cannot join online games while in an active tournament.');
                 return;
@@ -282,8 +268,7 @@ function setupGlobalSocketListeners() {
     // ========================================
     if (!tournamentListenersSet) {
         // Tournoi démarre
-        socket.on('tournamentStart', (data: any) => {
-            console.log('🏁 Tournament starting!', data);
+        socket.on('tournamentStart', (_data: any) => {
             // Afficher l'écran de matchmaking avec info tournoi
             load('matchmaking');
             setTimeout(() => {
@@ -293,8 +278,6 @@ function setupGlobalSocketListeners() {
         
         // Mise à jour du tournoi (phases, matchs)
         socket.on('tournamentUpdate', (data: any) => {
-            console.log('📊 Tournament update:', data);
-            
             if (data.phase === 'semifinal1' || data.phase === 'semifinal2' || data.phase === 'final') {
                 // Un match commence - le jeu va être chargé via roomJoined
                 updateTournamentWaiting(data.message || 'Match starting...');
@@ -309,7 +292,6 @@ function setupGlobalSocketListeners() {
         
         // Spectateur pendant un match
         socket.on('tournamentSpectator', (data: any) => {
-            console.log('👀 Tournament spectator mode:', data);
             load('matchmaking');
             setTimeout(() => {
                 const title = document.getElementById('matchmakingTitle');
@@ -320,8 +302,6 @@ function setupGlobalSocketListeners() {
         
         // Démarrage de la finale - événement dédié pour charger le jeu
         socket.on('tournamentFinalStart', (data: any) => {
-            console.log('🏆 Tournament FINAL starting!', data);
-            
             // Définir le paddle contrôlé
             window.controlledPaddle = data.paddle;
             window.maxPlayers = 2;
@@ -339,7 +319,6 @@ function setupGlobalSocketListeners() {
             const initGame = () => {
                 const mapCanvas = document.getElementById('map');
                 if (mapCanvas) {
-                    console.log('🎮 Final: Canvas found, initializing game...');
                     if (typeof window.setupGameEventListeners === 'function') {
                         window.setupGameEventListeners();
                     }
@@ -355,7 +334,6 @@ function setupGlobalSocketListeners() {
         
         // Tournoi terminé
         socket.on('tournamentComplete', (data: any) => {
-            console.log('🏆 Tournament complete!', data);
             // Réinitialiser le mode tournoi
             window.isTournamentMode = false;
             
@@ -661,7 +639,6 @@ function cleanupGameEventListeners()
 // Fonction pour configurer les event listeners du jeu (une seule fois)
 function setupGameEventListeners()
 {
-    console.log('setupGameEventListeners called, gameStateListenerActive:', gameStateListenerActive);
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
     
@@ -672,9 +649,7 @@ function setupGameEventListeners()
     // Event listener pour les états de jeu
     if (!gameStateListenerActive)
     {
-        console.log('Adding gameState listener');
         socket.on('gameState', (state: any) => {
-            console.log('🎮 gameState received:', state?.ball ? 'valid' : 'invalid');
             // Utiliser le système d'interpolation si disponible
             if (typeof window.addGameState === 'function')
             {
@@ -692,9 +667,6 @@ function setupGameEventListeners()
             }
         });
         gameStateListenerActive = true;
-        console.log('gameState listener added successfully');
-    } else {
-        console.log('gameState listener already active, skipping');
     }
 
     // Nettoyage lors de la déconnexion d'une room
