@@ -122,7 +122,6 @@ export function broadcastGameState(room: RoomType, roomName: string, io: Server)
  * Envoie l'état du jeu aux joueurs de la finale de tournoi
  * Utilise les user IDs pour trouver les socket IDs actuels
  */
-let finalLogCounter = 0;
 export function broadcastFinalGameState(room: RoomType, io: Server): void
 {
     if (!room.tournamentState || !room.tournamentState.currentMatch) return;
@@ -138,11 +137,6 @@ export function broadcastFinalGameState(room: RoomType, io: Server): void
     // Récupérer les socket IDs actuels
     const player1CurrentSocketId = getSocketIdForUser(player1UserId);
     const player2CurrentSocketId = getSocketIdForUser(player2UserId);
-    
-    // Log une fois sur 100 pour debug
-    if (finalLogCounter++ % 100 === 0) {
-        console.log(`🎮 Final gameState: sending to ${player1CurrentSocketId} and ${player2CurrentSocketId}`);
-    }
     
     // Envoyer à chaque joueur
     if (player1CurrentSocketId) {
@@ -186,7 +180,9 @@ function updateSemifinalMatch(
     semifinalNumber: number,
     io: any
 ): void {
-    if (!semifinal || !semifinal.pongGame || !semifinal.pongGame.state.running) return;
+    // Vérification robuste : le match peut être null ou le jeu peut être arrêté pendant la transition
+    if (!semifinal || !semifinal.pongGame) return;
+    if (!semifinal.pongGame.state || !semifinal.pongGame.state.running) return;
     
     // Mettre à jour les positions des paddles
     const paddleInputs = semifinal.paddleInputs;
@@ -203,9 +199,12 @@ function updateSemifinalMatch(
     // Avancer la physique d'un tick AVANT de broadcast
     semifinal.pongGame.tick();
     
-    // Envoyer l'état du jeu aux joueurs de ce match
-    io.to(semifinal.player1).emit('gameState', semifinal.pongGame.state);
-    io.to(semifinal.player2).emit('gameState', semifinal.pongGame.state);
+    // Vérifier que le jeu existe toujours avant d'envoyer (peut être null après tick si fin de match)
+    if (semifinal.pongGame && semifinal.pongGame.state) {
+        // Envoyer l'état du jeu aux joueurs de ce match
+        io.to(semifinal.player1).emit('gameState', semifinal.pongGame.state);
+        io.to(semifinal.player2).emit('gameState', semifinal.pongGame.state);
+    }
 }
 
 /**
@@ -218,30 +217,11 @@ function updateSemifinalMatch(
  * NOTE: La physique et le broadcast sont maintenant synchronisés dans la même boucle.
  * Cela évite les duplicates et les sauts visuels causés par deux boucles désynchronisées.
  */
-let tickDebugCounter = 0;
 export function handleGameTick(io: any, fastify: FastifyInstance): void
 {
-    // Log toutes les rooms une fois sur 100 (plus fréquent pour debug)
-    if (tickDebugCounter++ % 100 === 0) {
-        const roomInfo = Object.entries(rooms).map(([name, r]) => {
-            const room = r as RoomType;
-            return `${name}(phase=${room.tournamentState?.phase}, pong=${!!room.pongGame}, running=${room.pongGame?.state?.running})`;
-        });
-        if (roomInfo.length > 0) {
-            console.log(`🔍 TICK[${tickDebugCounter}]: ${roomInfo.join(' | ')}`);
-        }
-    }
-    
     for (const [roomName, room] of Object.entries(rooms))
     {
         const typedRoom = room as RoomType;
-        
-        // Debug log une fois sur 200 pour les tournois en phase finale
-        if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'final') {
-            if (tickDebugCounter % 200 === 0) {
-                console.log(`🔍 TICK DEBUG - Room: ${roomName}, phase: ${typedRoom.tournamentState?.phase}, pongGame exists: ${!!typedRoom.pongGame}, running: ${typedRoom.pongGame?.state?.running}`);
-            }
-        }
         
         // Gestion des tournois avec demi-finales simultanées
         if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'semifinals') {

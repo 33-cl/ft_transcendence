@@ -357,20 +357,19 @@ function handleSemifinalEnd(
     if (state.semifinal1?.finished && state.semifinal2?.finished) {
         console.log(`🎯 Tournament: Both semi-finals complete, starting final...`);
         
-        // IMPORTANT: Arrêter les jeux des demi-finales avant de les supprimer
-        // Sinon leurs setInterval continuent à tourner !
+        // IMPORTANT: Changer la phase AVANT d'arrêter les jeux
+        // Sinon handleGameTick peut voir phase='semifinals' avec pongGame=null et crasher
+        state.phase = 'waiting_final';
+        
+        // Arrêter les jeux des demi-finales
         if (state.semifinal1.pongGame) {
             state.semifinal1.pongGame.stop();
+            state.semifinal1.pongGame = null;
         }
         if (state.semifinal2.pongGame) {
             state.semifinal2.pongGame.stop();
+            state.semifinal2.pongGame = null;
         }
-        
-        // Nettoyer les jeux des demi-finales
-        state.semifinal1.pongGame = null;
-        state.semifinal2.pongGame = null;
-        
-        state.phase = 'waiting_final';
         
         // Notifier tout le monde
         io.to(roomName).emit('tournamentUpdate', {

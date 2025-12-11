@@ -10,6 +10,7 @@ interface GameState {
     ballSpeedX?: number;
     ballSpeedY?: number;
     ballRadius?: number;
+    ballCountdown?: number;
     canvasWidth: number;
     canvasHeight: number;
     paddles: {
@@ -118,11 +119,14 @@ export function addGameState(gameState: GameState): void {
     }
 
     // Filtrer les duplicates: meme position que le dernier etat
+    // IMPORTANT: Ne pas filtrer si le ballCountdown a changé (sinon le 3-2-1 ne s'affiche pas)
     if (stateBuffer.length > 0) {
         const last = stateBuffer[stateBuffer.length - 1]!;
         const dx = Math.abs(gameState.ballX - last.ballX);
         const dy = Math.abs(gameState.ballY - last.ballY);
-        if (dx < DUPLICATE_THRESHOLD && dy < DUPLICATE_THRESHOLD) {
+        const countdownChanged = (gameState.ballCountdown !== undefined && 
+                                   gameState.ballCountdown !== last.ballCountdown);
+        if (dx < DUPLICATE_THRESHOLD && dy < DUPLICATE_THRESHOLD && !countdownChanged) {
             return;
         }
     }
@@ -219,6 +223,9 @@ function interpolateStates(before: GameState, after: GameState, t: number): Game
     // Copier les vitesses de l'etat le plus recent (pour extrapolation future)
     if (after.ballSpeedX !== undefined) result.ballSpeedX = after.ballSpeedX;
     if (after.ballSpeedY !== undefined) result.ballSpeedY = after.ballSpeedY;
+    
+    // Copier le countdown de l'etat le plus recent (pour affichage 3-2-1)
+    if (after.ballCountdown !== undefined) result.ballCountdown = after.ballCountdown;
     
     return result;
 }
