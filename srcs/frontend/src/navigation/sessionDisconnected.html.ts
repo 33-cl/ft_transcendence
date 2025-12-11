@@ -15,6 +15,3 @@ export function sessionDisconnectedHTML(message: string): string {
     `;
 }
 
-export function initializeSessionDisconnectedListeners() {
-    // Plus de listener nécessaire - l'overlay reste affiché jusqu'à ce que l'utilisateur ferme l'onglet
-}

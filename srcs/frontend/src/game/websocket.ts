@@ -5,7 +5,7 @@ declare var io: any;
 
 // Pre-import load to avoid dynamic imports in event handlers
 import { load } from '../navigation/utils.js';
-import { sessionDisconnectedHTML, initializeSessionDisconnectedListeners } from '../navigation/sessionDisconnected.html.js';
+import { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.js';
 import { updateMatchmakingForTournament, updateTournamentWaiting } from './matchmaking.html.js';
 
 // NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
@@ -17,9 +17,8 @@ function showSessionDisconnectedOverlay(message: string)
     
     // Éviter les doublons
     const existingOverlay = document.getElementById('sessionDisconnectedOverlay');
-    if (existingOverlay) {
+    if (existingOverlay)
         existingOverlay.remove();
-    }
     
     // Créer un élément div pour contenir l'overlay
     const overlayDiv = document.createElement('div');
@@ -28,9 +27,6 @@ function showSessionDisconnectedOverlay(message: string)
     
     // Ajouter l'overlay au body
     document.body.appendChild(overlayDiv);
-    
-    // Initialiser les event listeners pour le bouton
-    initializeSessionDisconnectedListeners();
 }
 
 // Connexion socket.io sur le même domaine
@@ -500,13 +496,11 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
     const now = Date.now();
     
     // Debounce check - prevent too rapid successive calls
-    if (now - lastJoinAttempt < JOIN_DEBOUNCE_MS) {
+    if (now - lastJoinAttempt < JOIN_DEBOUNCE_MS)
         return;
-    }
     
-    if (joinInProgress) {
+    if (joinInProgress)
         return;
-    }
     
     lastJoinAttempt = now;
     joinInProgress = true;
@@ -621,80 +615,91 @@ let leftRoomListenerActive = false;
 let spectatorGameFinishedListenerActive = false;
 
 // Fonction pour nettoyer les event listeners du jeu
-function cleanupGameEventListeners() {
-    if (gameStateListenerActive) {
+function cleanupGameEventListeners()
+{
+    if (gameStateListenerActive)
+    {
         socket.removeAllListeners('gameState');
         gameStateListenerActive = false;
     }
-    if (disconnectListenerActive) {
+    if (disconnectListenerActive)
+    {
         socket.removeAllListeners('disconnect');
         disconnectListenerActive = false;
     }
-    if (leftRoomListenerActive) {
+    if (leftRoomListenerActive)
+    {
         socket.removeAllListeners('leftRoom');
         leftRoomListenerActive = false;
     }
-	if (gameFinishedListenerActive) {
+	if (gameFinishedListenerActive)
+    {
         socket.removeAllListeners('gameFinished');
         gameFinishedListenerActive = false;
 	}
-    if (tournamentSemifinalFinishedListenerActive) {
+    if (tournamentSemifinalFinishedListenerActive)
+    {
         socket.removeAllListeners('tournamentSemifinalFinished');
         tournamentSemifinalFinishedListenerActive = false;
     }
-    if (tournamentFinalFinishedListenerActive) {
+    if (tournamentFinalFinishedListenerActive)
+    {
         socket.removeAllListeners('tournamentFinalFinished');
         tournamentFinalFinishedListenerActive = false;
     }
-	if (spectatorGameFinishedListenerActive) {
+	if (spectatorGameFinishedListenerActive)
+    {
         socket.removeAllListeners('spectatorGameFinished');
         spectatorGameFinishedListenerActive = false;
 	}
     
     // Désactive le throttle du background quand le jeu se termine
-    if (typeof window.setBackgroundThrottle === 'function') {
+    if (typeof window.setBackgroundThrottle === 'function')
         window.setBackgroundThrottle(false);
-    }
 }
 
 // Fonction pour configurer les event listeners du jeu (une seule fois)
-function setupGameEventListeners() {
-    console.log('🎮 setupGameEventListeners called, gameStateListenerActive:', gameStateListenerActive);
+function setupGameEventListeners()
+{
+    console.log('setupGameEventListeners called, gameStateListenerActive:', gameStateListenerActive);
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
     
     // Active le throttle du background pour améliorer les performances du jeu
-    if (typeof window.setBackgroundThrottle === 'function') {
+    if (typeof window.setBackgroundThrottle === 'function')
         window.setBackgroundThrottle(true);
-    }
     
     // Event listener pour les états de jeu
-    if (!gameStateListenerActive) {
-        console.log('🎮 Adding gameState listener');
+    if (!gameStateListenerActive)
+    {
+        console.log('Adding gameState listener');
         socket.on('gameState', (state: any) => {
             console.log('🎮 gameState received:', state?.ball ? 'valid' : 'invalid');
             // Utiliser le système d'interpolation si disponible
-            if (typeof window.addGameState === 'function') {
+            if (typeof window.addGameState === 'function')
+            {
                 // Ajouter l'état au buffer d'interpolation
                 window.addGameState(state);
                 
                 // Démarrer la boucle de rendu si pas déjà active
-                if (typeof window.startRenderLoop === 'function') {
+                if (typeof window.startRenderLoop === 'function')
                     window.startRenderLoop();
-                }
-            } else {
+            }
+            else
+            {
                 // Fallback: dessiner directement avec la fonction standard
                 draw(state);
             }
         });
         gameStateListenerActive = true;
-        console.log('🎮 gameState listener added successfully');
+        console.log('gameState listener added successfully');
     } else {
-        console.log('⚠️ gameState listener already active, skipping');
+        console.log('gameState listener already active, skipping');
     }
 
     // Nettoyage lors de la déconnexion d'une room
-    if (!disconnectListenerActive) {
+    if (!disconnectListenerActive)
+    {
         socket.on('disconnect', () => {
             cleanupGameState();
             cleanupGameEventListeners();
@@ -703,14 +708,16 @@ function setupGameEventListeners() {
     }
 
     // Nettoyage lors de la sortie d'une room
-    if (!leftRoomListenerActive) {
+    if (!leftRoomListenerActive)
+    {
         socket.on('leftRoom', () => {
             cleanupGameState();
         });
         leftRoomListenerActive = true;
     }
 
-	if (!gameFinishedListenerActive) {
+	if (!gameFinishedListenerActive)
+    {
         socket.on('gameFinished', (data: any) => {
             gameFinishedListenerActive = true;
 
@@ -724,7 +731,8 @@ function setupGameEventListeners() {
 	}
     
     // Event listener pour fin de demi-finale de tournoi
-    if (!tournamentSemifinalFinishedListenerActive) {
+    if (!tournamentSemifinalFinishedListenerActive)
+    {
         socket.on('tournamentSemifinalFinished', (data: any) => {
             tournamentSemifinalFinishedListenerActive = true;
             
@@ -737,7 +745,8 @@ function setupGameEventListeners() {
     }
     
     // Event listener pour fin de finale de tournoi
-    if (!tournamentFinalFinishedListenerActive) {
+    if (!tournamentFinalFinishedListenerActive)
+    {
         socket.on('tournamentFinalFinished', (data: any) => {
             tournamentFinalFinishedListenerActive = true;
             
@@ -750,7 +759,8 @@ function setupGameEventListeners() {
     }
     
     // Event listener spécial pour les spectateurs
-    if (!spectatorGameFinishedListenerActive) {
+    if (!spectatorGameFinishedListenerActive)
+    {
         socket.on('spectatorGameFinished', (data: any) => {
             spectatorGameFinishedListenerActive = true;
             
