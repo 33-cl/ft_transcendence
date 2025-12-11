@@ -111,11 +111,45 @@ export function updateAllPaddlesPositions(room: RoomType): void
 // ========================================
 
 /**
+ * Enrichit l'état du jeu avec les noms des joueurs pour l'affichage
+ */
+function enrichGameStateWithPlayerNames(room: RoomType): any {
+    const state = room.pongGame!.state;
+    
+    // Si pas de mapping paddle->socket ou socket->username, retourner l'état tel quel
+    if (!room.paddleBySocket || !room.playerUsernames) {
+        return state;
+    }
+    
+    // Créer un mapping inversé : PaddleSide -> username
+    const paddleToUsername: Record<string, string> = {};
+    for (const [socketId, paddleSide] of Object.entries(room.paddleBySocket)) {
+        const username = room.playerUsernames[socketId];
+        if (username) {
+            paddleToUsername[paddleSide as string] = username;
+        }
+    }
+    
+    // Enrichir chaque paddle avec le nom du joueur
+    const enrichedPaddles = state.paddles.map((paddle: any) => ({
+        ...paddle,
+        playerName: paddleToUsername[paddle.side] || paddle.side
+    }));
+    
+    // Retourner l'état enrichi (sans modifier l'original)
+    return {
+        ...state,
+        paddles: enrichedPaddles
+    };
+}
+
+/**
  * Envoie l'état actuel du jeu à tous les clients de la room
  */
 export function broadcastGameState(room: RoomType, roomName: string, io: Server): void
 {
-    io.to(roomName).emit('gameState', room.pongGame!.state);
+    const enrichedState = enrichGameStateWithPlayerNames(room);
+    io.to(roomName).emit('gameState', enrichedState);
 }
 
 /**

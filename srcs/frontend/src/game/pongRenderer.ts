@@ -232,13 +232,19 @@ export function draw(gameState: any)
         let newScoreHTML = '';
         if (gameState.paddles && Array.isArray(gameState.paddles)) {
             if (gameState.paddles.length === 4) {
-                // Mode 1v1v1v1 : scores des 4 joueurs
-                newScoreHTML = gameState.paddles.map((p: any, i: number) => `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${p.side}: ${p.score || 0}</span>`).join(' | ');
+                // Mode 1v1v1v1 : scores des 4 joueurs avec leurs noms
+                newScoreHTML = gameState.paddles.map((p: any, i: number) => {
+                    // Utiliser le nom du joueur si disponible, sinon la position
+                    const displayName = p.playerName || p.side;
+                    return `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${displayName}: ${p.score || 0}</span>`;
+                }).join(' | ');
             } else if (gameState.paddles.length === 2) {
-                // Mode 1v1 : gauche vs droite
+                // Mode 1v1 : gauche vs droite (avec noms si disponibles)
+                const leftName = gameState.paddles[0]?.playerName || 'P1';
+                const rightName = gameState.paddles[1]?.playerName || 'P2';
                 const leftScore = gameState.paddles[0]?.score || 0;
                 const rightScore = gameState.paddles[1]?.score || 0;
-                newScoreHTML = `<span id='leftScore'>${leftScore}</span> - <span id='rightScore'>${rightScore}</span>`;
+                newScoreHTML = `<span id='leftScore'>${leftName}: ${leftScore}</span> - <span id='rightScore'>${rightName}: ${rightScore}</span>`;
             }
         } else {
             // Fallback pour ancienne structure
