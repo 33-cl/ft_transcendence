@@ -118,15 +118,54 @@ export function addGameState(gameState: GameState): void {
         return;
     }
 
+    // Detecter un reset de balle (position au centre + grande teleportation)
+    // Quand cela arrive, vider le buffer pour eviter les artefacts visuels
+    if (stateBuffer.length > 0) {
+        const last = stateBuffer[stateBuffer.length - 1]!;
+        const centerX = gameState.canvasWidth / 2;
+        const centerY = gameState.canvasHeight / 2;
+        const isAtCenter = Math.abs(gameState.ballX - centerX) < 20 && 
+                           Math.abs(gameState.ballY - centerY) < 20;
+        const lastDistance = Math.sqrt(
+            Math.pow(last.ballX - centerX, 2) + 
+            Math.pow(last.ballY - centerY, 2)
+        );
+        // Si la balle est au centre et etait loin avant = reset detecte
+        if (isAtCenter && lastDistance > 100) {
+            // Vider le buffer pour transition immediate
+            stateBuffer = [];
+        }
+    }
+
     // Filtrer les duplicates: meme position que le dernier etat
-    // IMPORTANT: Ne pas filtrer si le ballCountdown a changé (sinon le 3-2-1 ne s'affiche pas)
+    // IMPORTANT: Ne pas filtrer si:
+    // - Le ballCountdown a changé (sinon le 3-2-1 ne s'affiche pas)
+    // - On est en phase de countdown (balle immobile mais paddles bougent)
+    // - Les paddles ont changé de position
     if (stateBuffer.length > 0) {
         const last = stateBuffer[stateBuffer.length - 1]!;
         const dx = Math.abs(gameState.ballX - last.ballX);
         const dy = Math.abs(gameState.ballY - last.ballY);
         const countdownChanged = (gameState.ballCountdown !== undefined && 
                                    gameState.ballCountdown !== last.ballCountdown);
-        if (dx < DUPLICATE_THRESHOLD && dy < DUPLICATE_THRESHOLD && !countdownChanged) {
+        const isInCountdown = gameState.ballCountdown !== undefined && gameState.ballCountdown > 0;
+        
+        // Vérifier si les paddles ont bougé
+        let paddlesMoved = false;
+        if (gameState.paddles && last.paddles && gameState.paddles.length === last.paddles.length) {
+            for (let i = 0; i < gameState.paddles.length; i++) {
+                const curr = gameState.paddles[i];
+                const prev = last.paddles[i];
+                if (curr && prev && (Math.abs(curr.x - prev.x) > 0.5 || Math.abs(curr.y - prev.y) > 0.5)) {
+                    paddlesMoved = true;
+                    break;
+                }
+            }
+        }
+        
+        // Ne pas filtrer si on est en countdown OU si les paddles ont bougé OU si countdown a changé
+        if (dx < DUPLICATE_THRESHOLD && dy < DUPLICATE_THRESHOLD && 
+            !countdownChanged && !isInCountdown && !paddlesMoved) {
             return;
         }
     }
@@ -208,9 +247,19 @@ function findInterpolationStates(targetTime: number): [GameState, GameState, num
 function interpolateStates(before: GameState, after: GameState, t: number): GameState {
     const result = cloneState(before);
     
-    // Interpoler la position de la balle
-    result.ballX = lerp(before.ballX, after.ballX, t);
-    result.ballY = lerp(before.ballY, after.ballY, t);
+    // Copier le countdown de l'etat le plus recent AVANT l'interpolation
+    // pour pouvoir vérifier si on doit geler la balle
+    if (after.ballCountdown !== undefined) result.ballCountdown = after.ballCountdown;
+    
+    // Pendant le countdown, NE PAS interpoler la balle - elle doit rester au centre
+    if (result.ballCountdown && result.ballCountdown > 0) {
+        result.ballX = result.canvasWidth / 2;
+        result.ballY = result.canvasHeight / 2;
+    } else {
+        // Interpoler la position de la balle normalement
+        result.ballX = lerp(before.ballX, after.ballX, t);
+        result.ballY = lerp(before.ballY, after.ballY, t);
+    }
     
     // Interpoler les paddles
     for (let i = 0; i < result.paddles.length && i < after.paddles.length; i++) {
@@ -224,9 +273,6 @@ function interpolateStates(before: GameState, after: GameState, t: number): Game
     if (after.ballSpeedX !== undefined) result.ballSpeedX = after.ballSpeedX;
     if (after.ballSpeedY !== undefined) result.ballSpeedY = after.ballSpeedY;
     
-    // Copier le countdown de l'etat le plus recent (pour affichage 3-2-1)
-    if (after.ballCountdown !== undefined) result.ballCountdown = after.ballCountdown;
-    
     return result;
 }
 
@@ -238,6 +284,16 @@ function extrapolateState(baseState: GameState, deltaMs: number): GameState {
     
     // Limiter l'extrapolation
     const limitedDelta = Math.min(deltaMs, MAX_EXTRAPOLATION_MS);
+    
+    // NE PAS extrapoler la BALLE pendant le countdown - elle doit rester au centre
+    // Mais on continue pour les paddles (pas d'extrapolation nécessaire car elles sont dans l'état)
+    if (result.ballCountdown && result.ballCountdown > 0) {
+        // Forcer la balle au centre pendant le countdown
+        result.ballX = result.canvasWidth / 2;
+        result.ballY = result.canvasHeight / 2;
+        // Ne pas retourner ici - on veut garder les positions de paddles de l'état de base
+        return result;
+    }
 
     // Determiner la vitesse en pixels/millisecondes
     let vx: number = 0;
