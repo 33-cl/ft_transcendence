@@ -16,6 +16,14 @@ window.addEventListener('DOMContentLoaded', () => {
   window.isBackgroundThrottled = () => {
     return backgroundInstance ? backgroundInstance.isThrottled() : false;
   };
+  
+  // Expose pause/resume globally for game
+  window.pauseBackground = () => {
+    if (backgroundInstance) backgroundInstance.pause();
+  };
+  window.resumeBackground = () => {
+    if (backgroundInstance) backgroundInstance.resume();
+  };
 });
 
 // Export functions to control star color

@@ -80,6 +80,8 @@ declare global
 		// background
 		setBackgroundThrottle: (enabled: boolean) => void;
 		isBackgroundThrottled: () => boolean;
+		pauseBackground: () => void;
+		resumeBackground: () => void;
 
 		// nav flags
 		_navigationListenerSet: boolean;

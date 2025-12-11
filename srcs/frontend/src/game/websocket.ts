@@ -647,15 +647,15 @@ function cleanupGameEventListeners()
         socket.removeAllListeners('tournamentFinalFinished');
         tournamentFinalFinishedListenerActive = false;
     }
-	if (spectatorGameFinishedListenerActive)
+    if (spectatorGameFinishedListenerActive)
     {
         socket.removeAllListeners('spectatorGameFinished');
         spectatorGameFinishedListenerActive = false;
 	}
     
-    // Désactive le throttle du background quand le jeu se termine
-    if (typeof window.setBackgroundThrottle === 'function')
-        window.setBackgroundThrottle(false);
+    // Reprend le background quand le jeu se termine
+    if (typeof window.resumeBackground === 'function')
+        window.resumeBackground();
 }
 
 // Fonction pour configurer les event listeners du jeu (une seule fois)
@@ -665,9 +665,9 @@ function setupGameEventListeners()
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
     
-    // Active le throttle du background pour améliorer les performances du jeu
-    if (typeof window.setBackgroundThrottle === 'function')
-        window.setBackgroundThrottle(true);
+    // Met en pause le background pour ameliorer les performances du jeu
+    if (typeof window.pauseBackground === 'function')
+        window.pauseBackground();
     
     // Event listener pour les états de jeu
     if (!gameStateListenerActive)

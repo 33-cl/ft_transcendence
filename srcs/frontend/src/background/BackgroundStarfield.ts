@@ -45,6 +45,9 @@ export class BackgroundStarfield {
   private throttleMode: boolean = false;
   private lastFrameTime: number = 0;
   private readonly THROTTLE_FRAME_TIME = 1000 / 50; // ~20ms entre frames
+  
+  // Pause mode - arrete completement l'animation
+  private isPaused: boolean = false;
 
   constructor(canvasId: string) {
     const canvasElement = document.getElementById(canvasId);
@@ -419,6 +422,11 @@ export class BackgroundStarfield {
   }
 
   private animate(currentTime: number = 0): void {
+    // Si en pause, on arrete l'animation
+    if (this.isPaused) {
+      return;
+    }
+    
     // En mode throttle, skip des frames pour réduire la charge CPU
     if (this.throttleMode) {
       const elapsed = currentTime - this.lastFrameTime;
@@ -431,6 +439,28 @@ export class BackgroundStarfield {
     
     this.draw();
     this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+  }
+
+  /**
+   * Met en pause l'animation du background (arret complet)
+   */
+  public pause(): void {
+    this.isPaused = true;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+  }
+
+  /**
+   * Reprend l'animation du background
+   */
+  public resume(): void {
+    if (this.isPaused) {
+      this.isPaused = false;
+      this.lastFrameTime = performance.now();
+      this.animate();
+    }
   }
 
   /**
