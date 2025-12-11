@@ -81,10 +81,22 @@ export class PongGame {
         if (this.isFirstLaunch && !ballShouldMove && timeElapsed >= 0) {
             const remainingTime = Math.max(0, this.ballDelayMs - timeElapsed);
             this.state.ballCountdown = Math.ceil(remainingTime / 1000);
+            // IMPORTANT: Pendant le countdown, forcer la balle au centre avec vitesse 0
+            // pour éviter que le client extrapole et fasse bouger la balle
+            this.state.ballX = this.state.canvasWidth / 2;
+            this.state.ballY = this.state.canvasHeight / 2;
+            this.state.ballSpeedX = 0;
+            this.state.ballSpeedY = 0;
         } else {
             this.state.ballCountdown = 0;
             if (ballShouldMove && this.isFirstLaunch) {
                 this.isFirstLaunch = false; // Après le premier lancement, plus de countdown
+                // Donner une vitesse initiale à la balle maintenant
+                const angle = Math.random() * Math.PI / 2 - Math.PI / 4; // -45° à +45°
+                const direction = Math.random() < 0.5 ? 1 : -1;
+                const speed = 6.5;
+                this.state.ballSpeedX = Math.cos(angle) * speed * direction;
+                this.state.ballSpeedY = Math.sin(angle) * speed;
             }
         }
         

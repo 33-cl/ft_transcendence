@@ -92,17 +92,33 @@ function handleTournamentSemifinalInput(socketId: string, message: any, room: Ro
     
     // Trouver dans quelle demi-finale est ce joueur
     let semifinal = null;
+    let semifinalNumber = 0;
     if (state.semifinal1 && (socketId === state.semifinal1.player1 || socketId === state.semifinal1.player2)) {
         semifinal = state.semifinal1;
+        semifinalNumber = 1;
     } else if (state.semifinal2 && (socketId === state.semifinal2.player1 || socketId === state.semifinal2.player2)) {
         semifinal = state.semifinal2;
+        semifinalNumber = 2;
     }
     
-    if (!semifinal || !semifinal.pongGame) return;
+    if (!semifinal) {
+        console.log(`⚠️ Tournament Input: Socket ${socketId} not found in any semifinal`);
+        console.log(`   SF1 players: ${state.semifinal1?.player1}, ${state.semifinal1?.player2}`);
+        console.log(`   SF2 players: ${state.semifinal2?.player1}, ${state.semifinal2?.player2}`);
+        return;
+    }
+    
+    if (!semifinal.pongGame) {
+        console.log(`⚠️ Tournament Input: No pongGame for semifinal ${semifinalNumber}`);
+        return;
+    }
     
     // Vérifier que le joueur contrôle bien ce paddle
     const allowedPaddle = semifinal.paddleBySocket[socketId];
-    if (player !== allowedPaddle) return;
+    if (player !== allowedPaddle) {
+        console.log(`⚠️ Tournament Input: Player ${player} not allowed for socket ${socketId} (allowed: ${allowedPaddle})`);
+        return;
+    }
     
     // Valider le paddle et la direction
     if (player !== 'LEFT' && player !== 'RIGHT') return;

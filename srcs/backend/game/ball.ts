@@ -1,6 +1,6 @@
 // ball.ts - Logique de gestion de la balle (reset, accélération, collisions)
 
-import { GameState, createInitialGameState } from './gameState.js';
+import { GameState } from './gameState.js';
 
 /**
  * Calcule l'angle de rebond en fonction de la zone d'impact sur le paddle (mode 1v1)
@@ -53,12 +53,8 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
     // Remettre le dernier contact à -1 pour un nouveau point propre
     ballState.lastContact = -1;
     
-    // Utiliser directement les valeurs initiales du gameState pour la cohérence
-    const initialState = createInitialGameState(state.paddles?.length || 2);
-    const baseSpeed = Math.sqrt(
-        initialState.ballSpeedX * initialState.ballSpeedX + 
-        initialState.ballSpeedY * initialState.ballSpeedY
-    );
+    // Vitesse de base pour les resets (la vitesse initiale dans createInitialGameState est 0 pour le countdown)
+    const baseSpeed = 6.5;
     
     const numPlayers = state.paddles?.length || 2;
     
@@ -69,14 +65,11 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
         state.ballSpeedY = baseSpeed * Math.sin(randomAngle);
     } else {
         // Mode 2 joueurs : direction aléatoire pour X et Y (trajectoire diagonale équilibrée)
-        const baseSpeedX = Math.abs(initialState.ballSpeedX);
-        const baseSpeedY = Math.abs(initialState.ballSpeedY);
-        state.ballSpeedX = baseSpeedX * (Math.random() > 0.5 ? 1 : -1);
-        state.ballSpeedY = baseSpeedY * (Math.random() > 0.5 ? 1 : -1);
+        const angle = Math.random() * Math.PI / 2 - Math.PI / 4; // -45° à +45°
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        state.ballSpeedX = Math.cos(angle) * baseSpeed * direction;
+        state.ballSpeedY = Math.sin(angle) * baseSpeed;
     }
-    
-    // Log pour confirmer le reset de vitesse
-    const resetSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
     
     // For subsequent resets, ensure countdown is disabled
     if (!isFirstLaunch) {
