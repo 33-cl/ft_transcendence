@@ -133,7 +133,7 @@ export function addGameState(gameState: GameState): void {
         // Si la balle est au centre et etait loin avant = reset detecte
         if (isAtCenter && lastDistance > 100) {
             // Vider le buffer pour transition immediate
-            stateBuffer = [];
+            // stateBuffer = []; // COMMENTÉ: On garde le buffer pour permettre l'extrapolation de sortie dans interpolateStates
         }
     }
 
@@ -257,8 +257,26 @@ function interpolateStates(before: GameState, after: GameState, t: number): Game
         result.ballY = result.canvasHeight / 2;
     } else {
         // Interpoler la position de la balle normalement
-        result.ballX = lerp(before.ballX, after.ballX, t);
-        result.ballY = lerp(before.ballY, after.ballY, t);
+        // Detecter un saut important (reset) > 100px
+        const distSq = Math.pow(before.ballX - after.ballX, 2) + Math.pow(before.ballY - after.ballY, 2);
+        
+        if (distSq > 10000) {
+            // C'est un reset ! Extrapoler la trajectoire de sortie au lieu d'interpoler vers le centre
+            let vx = 0, vy = 0;
+            if (before.ballSpeedX !== undefined && before.ballSpeedY !== undefined) {
+                 vx = before.ballSpeedX * SPEED_TO_PX_PER_MS;
+                 vy = before.ballSpeedY * SPEED_TO_PX_PER_MS;
+            }
+            // Extrapoler depuis 'before'
+            const duration = (after.timestamp || 0) - (before.timestamp || 0);
+            const dt = duration * t; // Temps écoulé depuis 'before'
+            
+            result.ballX = before.ballX + vx * dt;
+            result.ballY = before.ballY + vy * dt;
+        } else {
+            result.ballX = lerp(before.ballX, after.ballX, t);
+            result.ballY = lerp(before.ballY, after.ballY, t);
+        }
     }
     
     // Interpoler les paddles
@@ -319,7 +337,8 @@ function extrapolateState(baseState: GameState, deltaMs: number): GameState {
 
     // Borner dans le canvas (simple, sans rebond)
     const radius = result.ballRadius || 15;
-    result.ballX = Math.max(radius, Math.min(result.canvasWidth - radius, result.ballX));
+    // Ne pas borner X pour laisser la balle sortir visuellement
+    // result.ballX = Math.max(radius, Math.min(result.canvasWidth - radius, result.ballX));
     result.ballY = Math.max(radius, Math.min(result.canvasHeight - radius, result.ballY));
 
     return result;
