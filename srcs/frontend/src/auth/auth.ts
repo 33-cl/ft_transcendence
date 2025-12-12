@@ -13,6 +13,36 @@ import {
     addEnterKeyListeners 
 } from '../shared/ui/ui.helpers.js';
 
+// Stockage sécurisé des credentials 2FA (privé au module, non exposé dans window)
+let pending2FACredentials: { login: string; password: string } | null = null;
+let pendingOAuth2FAToken: string | null = null;
+
+// Fonctions d'accès sécurisées pour les credentials login
+function setPending2FACredentials(login: string, password: string): void {
+    pending2FACredentials = { login, password };
+}
+
+function getPending2FACredentials(): { login: string; password: string } | null {
+    return pending2FACredentials;
+}
+
+function clearPending2FACredentials(): void {
+    pending2FACredentials = null;
+}
+
+// Fonctions d'accès sécurisées pour le token OAuth 2FA
+function setPendingOAuth2FAToken(token: string): void {
+    pendingOAuth2FAToken = token;
+}
+
+function getPendingOAuth2FAToken(): string | null {
+    return pendingOAuth2FAToken;
+}
+
+function clearPendingOAuth2FAToken(): void {
+    pendingOAuth2FAToken = null;
+}
+
 export async function checkSessionOnce() {
     if (isSessionBlocked())
     {
@@ -155,8 +185,8 @@ async function handleSignIn(): Promise<void> {
         showSuccessMessage(msg, 'Signed in.');
         await load('mainMenu');
     } else if (result.requires2FA) {
-        // 2FA required - stocker les credentials et rediriger vers la page 2FA
-        window.pending2FACredentials = { login, password };
+        // 2FA required - stocker les credentials de manière sécurisée (non exposé dans window)
+        setPending2FACredentials(login, password);
         // Rediriger directement vers la page 2FA
         await load('twoFactor');
     } else {
@@ -202,23 +232,23 @@ async function handleVerify2FA(): Promise<void> {
     }
     
     // Vérifier si c'est une vérification OAuth ou login classique
-    const oauthData = window.pendingOAuth2FA;
-    const credentials = window.pending2FACredentials;
+    const oauthTempToken = getPendingOAuth2FAToken();
+    const credentials = getPending2FACredentials();
     
-    if (oauthData) {
+    if (oauthTempToken) {
         // Mode OAuth - appeler l'endpoint de vérification OAuth
         try {
             const response = await fetch('https://localhost:8080/auth/2fa/verify-oauth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ tempToken: oauthData.tempToken, code: twoFactorCode.trim() })
+                body: JSON.stringify({ tempToken: oauthTempToken, code: twoFactorCode.trim() })
             });
 
             if (response.ok) {
                 const data = await response.json();
-                // Nettoyer les données OAuth stockées
-                delete window.pendingOAuth2FA;
+                // Nettoyer les données OAuth stockées de manière sécurisée
+                clearPendingOAuth2FAToken();
                 
                 // Stocker l'utilisateur globalement
                 if (data.user) {
@@ -248,8 +278,8 @@ async function handleVerify2FA(): Promise<void> {
         console.log('🔐 2FA: loginUser result:', result);
         
         if (result.success) {
-            // Nettoyer les credentials stockés
-            delete window.pending2FACredentials;
+            // Nettoyer les credentials stockés de manière sécurisée
+            clearPending2FACredentials();
             showSuccessMessage(msg, 'Signed in.');
             console.log('🔐 2FA: Login successful, navigating to mainMenu...');
             await load('mainMenu');
@@ -282,9 +312,9 @@ document.addEventListener('componentsReady', () => {
         (cancelBtn as any)._bound = true;
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // Nettoyer les données stockées (OAuth ou login classique)
-            delete window.pending2FACredentials;
-            delete window.pendingOAuth2FA;
+            // Nettoyer les données stockées (OAuth ou login classique) de manière sécurisée
+            clearPending2FACredentials();
+            clearPendingOAuth2FAToken();
             load('signIn');
         });
     }
@@ -320,9 +350,9 @@ document.addEventListener('componentsReady', () => {
             messageReceived = true;
             
             if (event.data.type === 'oauth-2fa-required') {
-                // L'utilisateur a la 2FA activée - stocker le tempToken et rediriger vers la page 2FA
+                // L'utilisateur a la 2FA activée - stocker le tempToken de manière sécurisée (non exposé dans window)
                 const tempToken = event.data.tempToken;
-                window.pendingOAuth2FA = { tempToken };
+                setPendingOAuth2FAToken(tempToken);
                 
                 // Cleanup
                 window.removeEventListener('message', messageHandler);

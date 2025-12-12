@@ -119,15 +119,6 @@ declare global
 		logout: () => Promise<void>;
 		refreshUserStats: () => Promise<boolean>;
 
-		// 2fa pending state
-		pending2FACredentials?: {
-			login: string;
-			password: string;
-		};
-		pendingOAuth2FA?: {
-			tempToken: string;
-		};
-
 		// profile et nav
 		selectedProfileUser: any | null;
 		selectedMatchData: any | null;
