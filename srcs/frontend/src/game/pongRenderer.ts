@@ -4,6 +4,9 @@
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 
+// Stocker le dernier état de jeu pour pouvoir le redessiner lors d'un resize
+let lastGameState: any = null;
+
 // Importer le système d'interpolation
 import './pongInterpolation.js';
 
@@ -74,21 +77,39 @@ export function initPongRenderer(canvasId: string = 'map')
         console.error(` Canvas #${canvasId} not found in DOM!`);
         return;
     }
-    
     ctx = canvas.getContext('2d');
     if (!ctx) {
         console.error(` Could not get 2D context from canvas`);
         return;
     }
+
+    // Ajout d'un listener resize pour forcer le redraw
+    window.addEventListener('resize', handlePongResize);
+}
+
+// Redessine le canvas Pong lors d'un resize avec le dernier état connu
+function handlePongResize() {
+    if (!canvas || !ctx) return;
+    // Si on a un dernier état connu, on le redessine
+    if (lastGameState) {
+        draw(lastGameState);
+    } else {
+        // Sinon on efface juste pour éviter le blanc
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 }
 
 // Fonction de nettoyage du renderer
 export function resetPongRenderer(): void {
+    // Retirer le listener resize
+    window.removeEventListener('resize', handlePongResize);
+    
     if (canvas && ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     canvas = null;
     ctx = null;
+    lastGameState = null;
 }
 
 // Expose la fonction de reset globalement pour le cleanup
@@ -106,6 +127,9 @@ export function draw(gameState: any)
     if (!ctx || !canvas) {
         return;
     }
+
+    // Stocker le dernier état pour pouvoir le redessiner lors d'un resize
+    lastGameState = gameState;
 
     // Obtenir les dimensions du terrain de jeu depuis le gameState
     const gameWidth = gameState.canvasWidth || canvas.width;

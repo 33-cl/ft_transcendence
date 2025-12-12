@@ -23,7 +23,8 @@ export interface TournamentMatch {
  * @param tournamentId - UUID du tournoi
  * @throws Error si le tournoi n'a pas exactement 4 participants
  */
-export function generateBracket(tournamentId: string): void {
+export function generateBracket(tournamentId: string): void
+{
     // 1. Récupérer les 4 participants du tournoi
     const participants = db.prepare(`
         SELECT user_id FROM tournament_participants 

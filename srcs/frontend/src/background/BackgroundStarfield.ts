@@ -91,6 +91,11 @@ export class BackgroundStarfield {
         (!this.blackHole || (!this.blackHole.shouldReset() && !this.hasResetStarted))) {
       this.createStars();
     }
+    
+    // Si en pause, redessiner une frame pour éviter un écran vide après resize
+    if (this.isPaused) {
+      this.draw();
+    }
   }
 
   private createStars(): void {
