@@ -7,6 +7,7 @@ declare var io: any;
 import { load } from '../navigation/utils.js';
 import { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.js';
 import { updateMatchmakingForTournament, updateTournamentWaiting } from './matchmaking.html.js';
+import { installSocketGuard } from '../navigation/securityGuard.js';
 
 // NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
 // pour centraliser la gestion des mises à jour de la friendlist et éviter les conflits
@@ -36,6 +37,9 @@ let socket = io('', {
   withCredentials: true  // IMPORTANT: Permet la transmission des cookies de session
 });
 window.socket = socket;
+
+// Installer le guard de sécurité sur le socket
+installSocketGuard();
 
 // Variables pour éviter la duplication d'event listeners globaux
 let connectListenerSet = false;
@@ -422,6 +426,9 @@ function reconnectWebSocket() {
         });
         
         window.socket = socket;
+        
+        // Réinstaller le guard de sécurité sur le nouveau socket
+        installSocketGuard();
         
         // Reset listener flags to re-setup listeners
         connectListenerSet = false;

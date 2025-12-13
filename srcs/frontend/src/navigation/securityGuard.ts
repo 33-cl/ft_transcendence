@@ -3,6 +3,62 @@
 import { isSessionBlocked } from './sessionBroadcast.js';
 
 /**
+ * Bloque tous les inputs, boutons et liens quand la session est bloquée
+ * Utilise un MutationObserver pour bloquer aussi les éléments ajoutés dynamiquement
+ */
+export function installInputBlocker() {
+    // Fonction qui bloque un élément
+    const blockElement = (el: HTMLElement) => {
+        if (el instanceof HTMLInputElement || 
+            el instanceof HTMLButtonElement || 
+            el instanceof HTMLTextAreaElement ||
+            el instanceof HTMLSelectElement) {
+            el.disabled = true;
+            el.style.pointerEvents = 'none';
+        }
+        if (el instanceof HTMLAnchorElement) {
+            el.style.pointerEvents = 'none';
+        }
+    };
+
+    // Fonction qui bloque tous les éléments interactifs
+    const blockAllInteractiveElements = () => {
+        if (!isSessionBlocked()) return;
+        
+        document.querySelectorAll('input, button, textarea, select, a').forEach(el => {
+            blockElement(el as HTMLElement);
+        });
+    };
+
+    // Observer pour les nouveaux éléments ajoutés au DOM
+    const observer = new MutationObserver((mutations) => {
+        if (!isSessionBlocked()) return;
+        
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node instanceof HTMLElement) {
+                    // Bloquer l'élément lui-même s'il est interactif
+                    blockElement(node);
+                    // Bloquer ses enfants interactifs
+                    node.querySelectorAll('input, button, textarea, select, a').forEach(el => {
+                        blockElement(el as HTMLElement);
+                    });
+                }
+            });
+        });
+    });
+
+    // Démarrer l'observation
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Bloquer les éléments existants
+    blockAllInteractiveElements();
+    
+    // Vérifier périodiquement (au cas où)
+    setInterval(blockAllInteractiveElements, 500);
+}
+
+/**
  * Wrapper pour protéger une fonction sensible
  * Vérifie que l'onglet n'est pas bloqué avant d'exécuter la fonction
  */
@@ -68,22 +124,14 @@ export function installFetchGuard() {
     window.fetch = function(...args: Parameters<typeof fetch>): Promise<Response> {
         const url = args[0]?.toString() || 'unknown';
         
-        // Autoriser toujours les requêtes de LOGIN (pas logout depuis un onglet bloqué)
-        if (url.includes('/auth/login') || 
-            url.includes('/auth/register') || 
-            url.includes('/auth/me') ||
-            url.includes('/oauth/')) {
-            return originalFetch.apply(this, args);
-        }
-        
-        // Bloquer logout depuis un onglet bloqué (empêche de déconnecter l'autre onglet)
-        if (url.includes('/auth/logout') && isSessionBlocked()) {
-            return Promise.reject(new Error(`Logout blocked: This tab does not have an active session`));
-        }
-        
-        // Vérifier si la session est bloquée pour les autres requêtes
+        // Si session bloquée, tout bloquer sauf /auth/me (pour vérifier l'état)
         if (isSessionBlocked()) {
-            return Promise.reject(new Error(`Fetch blocked: This tab does not have an active session`));
+            // Seul /auth/me est autorisé pour vérifier l'état de la session
+            if (url.includes('/auth/me')) {
+                return originalFetch.apply(this, args);
+            }
+            // Tout le reste est bloqué
+            return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
         }
         
         // Vérifier si l'utilisateur est connecté pour les requêtes API protégées
@@ -120,40 +168,20 @@ export function installSocketGuard()
     // Sauvegarder la référence originale
     const originalEmit = socket.emit.bind(socket);
     
-    // Événements toujours autorisés (même si bloqué)
+    // Événements toujours autorisés (même si bloqué - heartbeat)
     const allowedWhenBlocked = ['ping', 'disconnect'];
-    
-    // Événements sensibles qui nécessitent une session active
-    const sensitiveEvents = [
-        'joinRoom', 
-        'leaveRoom', 
-        'startGame', 
-        'playerMove', 
-        'sendMessage',
-        'createRoom',
-        'leaveAllRooms'
-    ];
     
     // Remplacer emit par une version protégée
     socket.emit = function(event: string, ...args: any[]) {
-        // Autoriser certains événements même si bloqué
+        // Autoriser certains événements même si bloqué (heartbeat)
         if (allowedWhenBlocked.includes(event)) {
             return originalEmit(event, ...args);
         }
         
-        // Bloquer si session bloquée
+        // Bloquer TOUT si session bloquée (sauf ping/disconnect)
         if (isSessionBlocked())
         {
             return socket; // Retourner le socket pour le chaînage
-        }
-        
-        // Vérifier auth pour les événements sensibles
-        if (sensitiveEvents.includes(event)) {
-            const currentUser = window.currentUser;
-            if (!currentUser)
-            {
-                return socket;
-            }
         }
         
         return originalEmit(event, ...args);
@@ -169,8 +197,11 @@ export function installSocketGuard()
  */
 export function installAllSecurityGuards()
 {
-    // Fetch Guard
+    // Fetch Guard - bloque les requêtes HTTP
     installFetchGuard();
+    
+    // Input Blocker - bloque les inputs si session bloquée
+    installInputBlocker();
     
     // Socket Guard - on vérifie périodiquement si le socket existe
     const checkSocket = setInterval(() => {
