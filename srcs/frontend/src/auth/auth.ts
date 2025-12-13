@@ -50,12 +50,6 @@ export async function checkSessionOnce() {
         return;
     }
     
-    // Ne pas appeler /auth/me si aucun cookie de session n'existe
-    if (!document.cookie.includes('token=')) {
-        window.currentUser = null;
-        return;
-    }
-    
     try {
         const res = await fetch('/auth/me', { credentials: 'include' });
         if (res.ok)
@@ -380,15 +374,19 @@ document.addEventListener('componentsReady', () => {
         window.addEventListener('message', messageHandler);
         
         const checkInterval = setInterval(() => {
-            if (authWindow?.closed) {
-                clearInterval(checkInterval);
-                window.removeEventListener('message', messageHandler);
-                
-                // Si un message 2FA a été reçu, ne pas recharger (on attend la saisie du code)
-                // Sinon, recharger pour afficher l'état authentifié
-                if (!messageReceived) {
-                    setTimeout(() => window.location.reload(), 500);
+            try {
+                if (authWindow?.closed) {
+                    clearInterval(checkInterval);
+                    window.removeEventListener('message', messageHandler);
+                    
+                    // Si un message 2FA a été reçu, ne pas recharger (on attend la saisie du code)
+                    // Sinon, recharger pour afficher l'état authentifié
+                    if (!messageReceived) {
+                        setTimeout(() => window.location.reload(), 500);
+                    }
                 }
+            } catch {
+                // COOP peut bloquer l'accès à window.closed - ignorer silencieusement
             }
         }, 500);
     });
