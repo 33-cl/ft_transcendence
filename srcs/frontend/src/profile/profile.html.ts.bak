@@ -6,7 +6,6 @@ export async function fetchUserMatches(userId: string) {
             return data.matches || [];
         }
     } catch (error) {
-        console.error('Error fetching user matches:', error);
     }
     return [];
 }

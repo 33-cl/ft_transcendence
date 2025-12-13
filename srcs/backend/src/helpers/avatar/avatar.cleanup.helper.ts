@@ -14,6 +14,5 @@ export function cleanupTempAvatars(): void
         fs.unlinkSync(filePath);
     });
   } catch (error) {
-    console.error('Cleanup error:', error);
   }
 }

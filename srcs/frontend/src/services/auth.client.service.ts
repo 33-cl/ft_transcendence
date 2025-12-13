@@ -54,11 +54,6 @@ export async function registerUser(
             // Marquer la session comme active
             markSessionActive();
 
-            // Vérifier la session (optionnel)
-            try {
-                await fetch('/auth/me', { credentials: 'include' });
-            } catch {}
-
             // Notifier les autres onglets
             broadcastSessionCreated();
 
@@ -127,11 +122,6 @@ export async function loginUser(
 
             // Stocker l'utilisateur globalement
             window.currentUser = user;
-
-            // Vérifier la session (optionnel)
-            try {
-                await fetch('/auth/me', { credentials: 'include' });
-            } catch {}
 
             // Marquer la session comme active
             markSessionActive();

@@ -108,7 +108,6 @@ export async function friendListHTML() {
         `;
         
     } catch (error) {
-        console.error('Error loading friends:', error);
         // Même en cas d'erreur, essayer de récupérer le nombre de demandes
         let friendRequestsCount = 0;
         try {

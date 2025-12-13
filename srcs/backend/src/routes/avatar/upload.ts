@@ -44,7 +44,6 @@ export async function avatarUploadRoute(request: FastifyRequest, reply: FastifyR
       info
     });
   } catch (error: any) {
-    console.error('Avatar upload error:', error);
     
     // Retourner l'erreur spécifique si elle provient de la validation
     if (error.message && error.message.includes('File too large'))

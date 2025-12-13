@@ -36,7 +36,6 @@ export async function fetchLeaderboard(limit: number = 10, offset: number = 0) {
     
     return await response.json();
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
     return { leaderboard: [], stats: { totalPlayers: 0, totalGames: 0, averageWinRate: 0 } };
   }
 }
@@ -62,7 +61,6 @@ export async function fetchUserRank(userId: number): Promise<UserRanking | null>
     const data = await response.json();
     return data.ranking;
   } catch (error) {
-    console.error('Error fetching user rank:', error);
     return null;
   }
 }
@@ -85,7 +83,6 @@ export async function fetchLeaderboardAroundRank(rank: number, radius: number = 
     
     return await response.json();
   } catch (error) {
-    console.error('Error fetching leaderboard around rank:', error);
     return { leaderboard: [], centerRank: rank, radius };
   }
 }

@@ -55,7 +55,6 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
       avatar_url: finalAvatarUrl 
     });
   } catch (error: any) {
-    console.error('Avatar save error:', error);
     
     if (error.message && error.message.includes('Invalid temporary avatar URL'))
       return reply.code(400).send({ error: error.message });

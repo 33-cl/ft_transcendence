@@ -27,7 +27,6 @@ async function updateProfile(profileData: {
 
         return { ok: true, message: data.message };
     } catch (error) {
-        console.error('Profile update error:', error);
         return { ok: false, error: 'Network error' };
     }
 }

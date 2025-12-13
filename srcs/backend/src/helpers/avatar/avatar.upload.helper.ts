@@ -35,7 +35,6 @@ export async function processImageSecurely(buffer: Buffer, mimeType: string): Pr
         return await sharpPipeline.jpeg({ quality: AVATAR_CONFIG.QUALITY, mozjpeg: true }).toBuffer();
     }
   } catch (sharpError) {
-    console.error('Sharp processing error:', sharpError);
     throw new Error('Invalid or corrupted image file');
   }
 }

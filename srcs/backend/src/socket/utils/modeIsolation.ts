@@ -43,7 +43,6 @@ export function getUserActiveTournament(userId: number): ActiveTournament | null
 
         return result || null;
     } catch (error) {
-        console.error('Error checking user active tournament:', error);
         return null;
     }
 }

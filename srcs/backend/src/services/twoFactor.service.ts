@@ -167,7 +167,6 @@ The ft_transcendence Team
   try {
     const info = await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('❌ Error sending 2FA email:', error);
     throw new Error('Failed to send 2FA code. Please try again later.');
   }
 }

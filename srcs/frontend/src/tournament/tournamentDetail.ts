@@ -136,7 +136,6 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
 
         // Validation of critical data
         if (!data.tournament || !data.tournament.id) {
-            console.error('❌ Invalid tournament data:', data);
             throw new Error('Invalid tournament data');
         }
         
@@ -148,7 +147,6 @@ export default async function renderTournamentDetail(tournamentId: string): Prom
         // Attach event listeners for action buttons
         attachTournamentActionListeners(data.tournament);
     } catch (error) {
-        console.error('Error loading tournament:', error);
         contentContainer.innerHTML = `
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                 <h2 class="text-xl font-bold mb-2">Error</h2>
@@ -560,7 +558,6 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                     (joinBtn as HTMLButtonElement).disabled = false;
                 }
             } catch (error) {
-                console.error('Tournament join error:', error);
                 alert('Error when joining tournament');
                 joinBtn.textContent = `➕ Join Tournament (${tournament.current_players}/${tournament.max_players})`;
                 (joinBtn as HTMLButtonElement).disabled = false;
@@ -580,7 +577,6 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                 const matchId = target.dataset.matchId;
                 
                 if (!tournamentId || !matchId) {
-                    console.error('Missing tournament or match ID');
                     return;
                 }
                 
@@ -619,7 +615,6 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                             socket.emit('joinRoom', { roomName });
                             // The 'roomJoined' event handler in websocket.ts will navigate to the game page
                         } else {
-                            console.error('Socket not available');
                             alert('Connection error. Please refresh the page.');
                             target.textContent = '🎮 Play Match';
                             target.disabled = false;
@@ -631,7 +626,6 @@ function attachTournamentActionListeners(tournament: Tournament): void {
                         target.disabled = false;
                     }
                 } catch (error) {
-                    console.error('Match start error:', error);
                     alert('Error starting match');
                     target.textContent = '🎮 Play Match';
                     target.disabled = false;

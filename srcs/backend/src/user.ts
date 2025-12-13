@@ -55,7 +55,6 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
     transaction();
 
   } catch (error) {
-    console.error(`[BACKEND] Erreur lors de l'enregistrement des statistiques:`, error);
   }
 }
 
@@ -81,7 +80,6 @@ export function getMatchHistory(userId: string, limit: number = 10) {
 
     return matches;
   } catch (error) {
-    console.error(`[BACKEND] Erreur lors de la récupération de l'historique:`, error);
     return [];
   }
 }

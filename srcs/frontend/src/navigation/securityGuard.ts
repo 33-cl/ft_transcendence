@@ -8,13 +8,12 @@ import { isSessionBlocked } from './sessionBroadcast.js';
  */
 export function guardFunction<T extends (...args: any[]) => any>(
     fn: T,
-    functionName: string,
+    _functionName: string,
     requiresAuth: boolean = false
 ): T {
     return ((...args: any[]) => {
         // Vérifier si la session est bloquée
         if (isSessionBlocked()) {
-            console.error(`Security: Blocked call to ${functionName} - Session is blocked in this tab`);
             console.trace('Call stack:');
             return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
         }
@@ -23,7 +22,6 @@ export function guardFunction<T extends (...args: any[]) => any>(
         if (requiresAuth) {
             const currentUser = window.currentUser;
             if (!currentUser) {
-                console.error(`Security: Blocked call to ${functionName} - User not authenticated`);
                 return Promise.reject(new Error(`Action blocked: User not authenticated`));
             }
         }
@@ -38,9 +36,7 @@ export function guardFunction<T extends (...args: any[]) => any>(
  */
 export function canExecuteAction(): boolean {
     const blocked = isSessionBlocked();
-    if (blocked) {
-        console.error('Security: Action blocked - This tab does not have an active session');
-    }
+
     return !blocked;
 }
 
@@ -50,11 +46,10 @@ export function canExecuteAction(): boolean {
  */
 export function guardEventHandler<T extends Event>(
     handler: (event: T) => void,
-    actionName: string
+    _actionName: string
 ): (event: T) => void {
     return (event: T) => {
         if (isSessionBlocked()) {
-            console.error(`Security: Blocked event handler for ${actionName}`);
             event.preventDefault();
             event.stopPropagation();
             return;
@@ -83,13 +78,11 @@ export function installFetchGuard() {
         
         // Bloquer logout depuis un onglet bloqué (empêche de déconnecter l'autre onglet)
         if (url.includes('/auth/logout') && isSessionBlocked()) {
-            console.error(`Security: Blocked logout from blocked tab`);
             return Promise.reject(new Error(`Logout blocked: This tab does not have an active session`));
         }
         
         // Vérifier si la session est bloquée pour les autres requêtes
         if (isSessionBlocked()) {
-            console.error(`Security: Blocked fetch to ${url} - Session is blocked in this tab`);
             return Promise.reject(new Error(`Fetch blocked: This tab does not have an active session`));
         }
         
@@ -97,7 +90,6 @@ export function installFetchGuard() {
         if (url.includes('/api/')) {
             const currentUser = window.currentUser;
             if (!currentUser) {
-                console.error(`Security: Blocked fetch to ${url} - No active user session`);
                 return Promise.reject(new Error(`Fetch blocked: User not authenticated`));
             }
         }
@@ -152,7 +144,6 @@ export function installSocketGuard()
         // Bloquer si session bloquée
         if (isSessionBlocked())
         {
-            console.error(`Security: Blocked socket.emit('${event}') - Session is blocked in this tab`);
             return socket; // Retourner le socket pour le chaînage
         }
         
@@ -161,7 +152,6 @@ export function installSocketGuard()
             const currentUser = window.currentUser;
             if (!currentUser)
             {
-                console.error(`Security: Blocked socket.emit('${event}') - User not authenticated`);
                 return socket;
             }
         }

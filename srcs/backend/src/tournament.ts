@@ -167,7 +167,6 @@ function advanceWinnerToFinal(tournamentId: string, winnerId: number): void {
     `).get(tournamentId) as TournamentMatch | undefined;
 
     if (!finalMatch) {
-        console.error(`❌ No final match found for tournament ${tournamentId}`);
         return;
     }
 
@@ -192,8 +191,6 @@ function advanceWinnerToFinal(tournamentId: string, winnerId: number): void {
             player1_id: finalMatch.player1_id,
             player2_id: winnerId
         });
-    } else {
-        console.error(`❌ Final match ${finalMatch.id} already has both players assigned`);
     }
 }
 

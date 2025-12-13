@@ -66,7 +66,6 @@ export async function verify2FARoute(request: FastifyRequest, reply: FastifyRepl
       message: 'Two-Factor Authentication has been successfully enabled!' 
     });
   } catch (error) {
-    console.error('Error verifying 2FA code:', error);
     return reply.status(500).send({ error: 'Failed to verify code. Please try again.' });
   }
 }

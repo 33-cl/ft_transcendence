@@ -268,8 +268,7 @@ function setupGlobalSocketListeners() {
             
             // Handle other errors by showing them to the user
             if (data && data.error) {
-                // console.error('Server error:', data.error);
-                // You could show a toast notification or alert here
+                // show error here
             }
         });
         errorListenerSet = true;
@@ -388,7 +387,6 @@ function setupGlobalSocketListeners() {
                         const { leaderboardHTML } = await import('../leaderboard/leaderboard.html.js');
                         leaderboardContainer.innerHTML = await leaderboardHTML();
                     } catch (error) {
-                        console.error('Error refreshing leaderboard:', error);
                     }
                 }
             }

@@ -483,7 +483,6 @@ function startFinal(
     // après les setTimeout dans handleSemifinalEnd
     const room = rooms[roomName] as RoomType;
     if (!room || !room.tournamentState) {
-        console.error(`❌ startFinal: Room ${roomName} not found or no tournamentState`);
         return;
     }
     
@@ -623,7 +622,6 @@ function handleFinalEnd(
             // Score par défaut pour le tournoi (on pourrait le récupérer du dernier match)
             updateUserStats(winnerUserId, loserUserId, 7, 0, 'tournament');
         } catch (error) {
-            console.error('Error recording tournament final result:', error);
         }
     }
     

@@ -46,7 +46,6 @@ async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: stri
 
         return { ok: true, message: data.message || 'Avatar uploaded', temp_avatar_url: data.temp_avatar_url };
     } catch (error) {
-        console.error('Avatar upload error:', error);
         return { ok: false, error: 'Network error. Please check your connection and try again.' };
     }
 }
@@ -81,7 +80,6 @@ export async function saveAvatar(): Promise<{ ok: boolean; error?: string; messa
 
         return { ok: true, message: data.message || 'Avatar saved successfully', avatar_url: data.avatar_url };
     } catch (error) {
-        console.error('Avatar save error:', error);
         return { ok: false, error: 'Network error' };
     }
 }
@@ -102,7 +100,6 @@ async function resetAvatar(): Promise<{ ok: boolean; error?: string; message?: s
 
         return { ok: true, message: data.message || 'Avatar reset successfully', avatar_url: data.avatar_url };
     } catch (error) {
-        console.error('Avatar reset error:', error);
         return { ok: false, error: 'Network error' };
     }
 }

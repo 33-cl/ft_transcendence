@@ -41,7 +41,6 @@ export async function disable2FARoute(request: FastifyRequest, reply: FastifyRep
       message: 'Two-Factor Authentication has been successfully disabled' 
     });
   } catch (error) {
-    console.error('Error disabling 2FA:', error);
     return reply.status(500).send({ error: 'Failed to disable 2FA. Please try again.' });
   }
 }

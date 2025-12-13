@@ -46,7 +46,6 @@ function notifyFriendRequestReceived(receiverId: number, senderId: number, fasti
       }
     } 
   } catch (error) {
-    console.error('[NOTIFY] Error notifying friend request received:', error);
   }
 }
 
@@ -63,7 +62,6 @@ function notifyFriendRequestCountChanged(userId: number, fastify: FastifyInstanc
       }
     }
   } catch (error) {
-    console.error('Error notifying friend request count changed:', error);
   }
 }
 
@@ -113,7 +111,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       
       return { users: friends };
     } catch (error) {
-      console.error('Error fetching friends:', error);
       return reply.status(500).send({ error: 'Failed to fetch friends' });
     }
   });
@@ -203,7 +200,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { users: usersWithRequestStatus };
     } catch (error) {
-      console.error('Error searching users:', error);
       return reply.status(500).send({ error: 'Failed to search users' });
     }
   });
@@ -280,7 +276,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { success: true, message: 'Friend request sent' };
     } catch (error) {
-      console.error('Error sending friend request:', error);
       return reply.status(500).send({ error: 'Failed to send friend request' });
     }
   });
@@ -321,7 +316,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { requests };
     } catch (error) {
-      console.error('Error fetching friend requests:', error);
       return reply.status(500).send({ error: 'Failed to fetch friend requests' });
     }
   });
@@ -386,7 +380,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { success: true, message: 'Friend request accepted' };
     } catch (error) {
-      console.error('Error accepting friend request:', error);
       return reply.status(500).send({ error: 'Failed to accept friend request' });
     }
   });
@@ -444,7 +437,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { success: true, message: 'Friend request rejected' };
     } catch (error) {
-      console.error('Error rejecting friend request:', error);
       return reply.status(500).send({ error: 'Failed to reject friend request' });
     }
   });
@@ -518,7 +510,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { success: true, message: 'Friend removed successfully' };
     } catch (error) {
-      console.error('Error removing friend:', error);
       return reply.status(500).send({ error: 'Failed to remove friend' });
     }
   });
@@ -551,7 +542,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
       return reply.status(500).send({ error: 'Failed to fetch leaderboard' });
     }
   });
@@ -574,7 +564,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       
       return { ranking: rankingInfo };
     } catch (error) {
-      console.error('Error fetching user rank:', error);
       return reply.status(500).send({ error: 'Failed to fetch user rank' });
     }
   });
@@ -603,7 +592,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
         radius
       };
     } catch (error) {
-      console.error('Error fetching leaderboard around rank:', error);
       return reply.status(500).send({ error: 'Failed to fetch leaderboard around rank' });
     }
   });
@@ -660,7 +648,6 @@ export default async function usersRoutes(fastify: FastifyInstance) {
 
       return { friendsStatus };
     } catch (error) {
-      console.error('Error fetching friends online status:', error);
       return reply.status(500).send({ error: 'Failed to fetch friends online status' });
     }
   });

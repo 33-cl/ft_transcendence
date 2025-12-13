@@ -25,7 +25,6 @@ export default async function matchesRoutes(fastify: FastifyInstance) {
       const matches = getMatchHistory(userId.toString(), limitNum);
       return reply.send({ matches });
     } catch (error) {
-      console.error('Error fetching match history:', error);
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });

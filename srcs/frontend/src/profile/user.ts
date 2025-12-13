@@ -3,7 +3,6 @@ export function initAvatarChange(): void {
     const fileInput = document.getElementById('avatarUpload') as HTMLInputElement | null;
     
     if (!changeButton || !fileInput) {
-        console.error("Éléments pour le changement d'avatar non trouvés");
         return;
     }
     

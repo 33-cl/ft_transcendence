@@ -53,7 +53,6 @@ export async function loginRoute(request: FastifyRequest, reply: FastifyReply, f
           message: 'A verification code has been sent to your email. Please enter it to complete login.' 
         });
       } catch (error) {
-        console.error('Error sending 2FA code during login:', error);
         return reply.status(500).send({ error: 'Failed to send verification code. Please try again.' });
       }
     } else {

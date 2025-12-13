@@ -33,7 +33,6 @@ export async function avatarResetRoute(request: FastifyRequest, reply: FastifyRe
       avatar_url: avatarUrl
     });
   } catch (error) {
-    console.error('Error resetting avatar:', error);
     return reply.code(500).send({ error: 'Failed to reset avatar' });
   }
 }

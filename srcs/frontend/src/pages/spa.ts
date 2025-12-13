@@ -48,7 +48,6 @@ async function fetchUserByUsername(username: string) {
         
         return user;
     } catch (error) {
-        console.error('Error fetching user by username:', error);
         return null;
     }
 }
@@ -77,7 +76,6 @@ async function removeFriend(userId: number, _username: string) {
         }
 
     } catch (error) {
-        console.error('Error removing friend:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         alert('Error removing friend: ' + errorMessage);
     }
@@ -221,7 +219,6 @@ function initializeComponents(): void
                 try {
                     await window.joinOrCreateRoom(2);
                 } catch (error) {
-                    console.error('Error in joinOrCreateRoom(2):', error);
                     if (window.socket) {
                         window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
                     }
@@ -233,7 +230,6 @@ function initializeComponents(): void
                 try {
                     await window.joinOrCreateRoom(4);
                 } catch (error) {
-                    console.error('Error in joinOrCreateRoom(4):', error);
                     if (window.socket) {
                         window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
                     }
@@ -301,7 +297,6 @@ function initializeComponents(): void
                 try {
                     await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
                 } catch (e) {
-                    console.error('Logout request failed:', e);
                 }
                 window.currentUser = null;
             }
@@ -344,7 +339,6 @@ function initializeComponents(): void
             try {
                 await window.joinOrCreateRoom(2);
             } catch (error) {
-                console.error('Error in joinOrCreateRoom(2):', error);
                 // Show error to user
                 if (window.socket) {
                     window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
@@ -369,7 +363,6 @@ function initializeComponents(): void
             try {
                 await window.joinOrCreateRoom(4);
             } catch (error) {
-                console.error('Error in joinOrCreateRoom(4):', error);
                 // Show error to user
                 if (window.socket) {
                     window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
@@ -399,7 +392,6 @@ function initializeComponents(): void
             try {
                 await window.joinOrCreateRoom(4, false); // 4 joueurs, mode online (pas local)
             } catch (error) {
-                console.error('Error joining tournament room:', error);
             }
         }
         });

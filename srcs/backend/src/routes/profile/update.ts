@@ -90,7 +90,6 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
       }
     });
   } catch (error) {
-    console.error('Profile update error:', error);
     return reply.code(500).send({ error: 'Internal server error' });
   }
 }

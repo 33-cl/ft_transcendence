@@ -62,7 +62,6 @@ export class RankingSystem {
       }));
       
     } catch (error) {
-      console.error('[RANKING] Erreur lors de la récupération du leaderboard:', error);
       return [];
     }
   }
@@ -92,7 +91,6 @@ export class RankingSystem {
       return result ? result.rank : null;
       
     } catch (error) {
-      console.error('[RANKING] Erreur lors de la récupération du rang utilisateur:', error);
       return null;
     }
   }
@@ -137,7 +135,6 @@ export class RankingSystem {
       };
       
     } catch (error) {
-      console.error('[RANKING] Erreur lors de la récupération des infos de classement:', error);
       return null;
     }
   }
@@ -205,7 +202,6 @@ export class RankingSystem {
       };
       
     } catch (error) {
-      console.error('[RANKING] Erreur lors de la récupération des stats:', error);
       return { totalPlayers: 0, totalGames: 0, averageWinRate: 0 };
     }
   }

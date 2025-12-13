@@ -176,7 +176,6 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
     try {
       disableTwoFactor(userId);
     } catch (error) {
-      console.error('Error disabling 2FA after email change:', error);
       // On continue quand même, l'update du profil a réussi
     }
   }

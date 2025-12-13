@@ -74,12 +74,10 @@ export function initPongRenderer(canvasId: string = 'map')
 {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvas) {
-        console.error(` Canvas #${canvasId} not found in DOM!`);
         return;
     }
     ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error(` Could not get 2D context from canvas`);
         return;
     }
 

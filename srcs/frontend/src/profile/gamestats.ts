@@ -10,13 +10,11 @@ declare const Chart: any;
 export function initializePointsDistributionChart(match: MatchData): void {
     const canvas = document.getElementById('points-distribution-chart') as HTMLCanvasElement;
     if (!canvas) {
-        console.error('Canvas points-distribution-chart not found');
         return;
     }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error('Could not get 2d context');
         return;
     }
 
@@ -29,7 +27,6 @@ export function initializePointsDistributionChart(match: MatchData): void {
     }
 
     if (!Chart) {
-        console.error('Chart.js not loaded');
         return;
     }
 
@@ -90,13 +87,11 @@ export function initializePointsDistributionChart(match: MatchData): void {
 export function initializeScoreProgressionChart(match: MatchData): void {
     const canvas = document.getElementById('score-progression-chart') as HTMLCanvasElement;
     if (!canvas) {
-        console.error('Canvas score-progression-chart not found');
         return;
     }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error('Could not get 2d context');
         return;
     }
 
@@ -109,7 +104,6 @@ export function initializeScoreProgressionChart(match: MatchData): void {
     }
 
     if (!Chart) {
-        console.error('Chart.js not loaded');
         return;
     }
 

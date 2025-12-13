@@ -45,7 +45,6 @@ export async function leaderboardHTML() {
         `;
         
     } catch (error) {
-        console.error('Error loading leaderboard:', error);
         return /*html*/`
             <div id="leaderboard" class="user-list">
                 <h2>Leaderboard</h2>

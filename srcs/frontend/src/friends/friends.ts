@@ -21,7 +21,6 @@ async function addFriend(userId: number, buttonElement?: HTMLButtonElement): Pro
             buttonElement.classList.add('sent');
         }
     } catch (error) {
-        console.error('Error adding friend:', error);
     }
 }
 
@@ -47,7 +46,6 @@ async function acceptFriendRequest(requestId: number): Promise<void> {
         const { updateFriendRequestsBadge } = await import('./friendList.html.js');
         await updateFriendRequestsBadge();
     } catch (error) {
-        console.error('Error accepting friend request:', error);
     }
 }
 
@@ -73,7 +71,6 @@ async function rejectFriendRequest(requestId: number): Promise<void> {
         const { updateFriendRequestsBadge } = await import('./friendList.html.js');
         await updateFriendRequestsBadge();
     } catch (error) {
-        console.error('Error rejecting friend request:', error);
     }
 }
 
@@ -124,7 +121,6 @@ async function refreshFriendRequests(): Promise<void> {
         // Réinitialiser les event listeners
         initializeFriendRequestListeners();
     } catch (error) {
-        console.error('Error refreshing friend requests:', error);
     }
 }
 
@@ -215,7 +211,6 @@ export function initializeAddFriendSearch(): void {
 
                     searchResults.classList.remove('hidden');
                 } catch (error) {
-                    console.error('Error searching users:', error);
                     searchResults.innerHTML = '<div class="search-error">Error searching users</div>';
                     searchResults.classList.remove('hidden');
                 }
@@ -392,7 +387,6 @@ export async function fetchInitialFriendStatuses(): Promise<void> {
             updateFriendStatus(friend.username, friend.status);
         }
     } catch (error) {
-        console.error('Error fetching initial friend statuses:', error);
     }
 }
 
@@ -529,7 +523,6 @@ async function reloadFriendList(): Promise<void> {
             await fetchInitialFriendStatuses();
         }, 100);
     } catch (error) {
-        console.error('Error reloading friend list:', error);
     }
 }
 
@@ -572,7 +565,6 @@ export async function spectateFreind(username: string): Promise<void> {
             alert('WebSocket connection not available');
         }
     } catch (error: any) {
-        console.error('Error spectating friend:', error);
         alert('Failed to spectate friend: ' + (error.message || 'Unknown error'));
     }
 }
@@ -610,7 +602,6 @@ export async function updateFriendRequestsBadge(): Promise<void> {
             }
         }
     } catch (error) {
-        console.error('Error updating friend requests badge:', error);
     }
 }
 

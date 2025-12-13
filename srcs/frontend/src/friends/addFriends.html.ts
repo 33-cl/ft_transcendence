@@ -16,7 +16,6 @@ export async function addFriendsHTML() {
             friendRequests = data.requests || [];
         }
     } catch (error) {
-        console.error('Error fetching friend requests:', error);
     }
     
     let requestsHTML = '';

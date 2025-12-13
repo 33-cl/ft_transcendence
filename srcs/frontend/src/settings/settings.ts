@@ -36,7 +36,6 @@ async function updateProfile(profileData: {
             twoFactorDisabled: data.updated?.twoFactorDisabled 
         };
     } catch (error) {
-        console.error('Profile update error:', error);
         return { ok: false, error: 'Network error' };
     }
 }
@@ -132,7 +131,6 @@ async function toggle2FA(): Promise<void> {
             show2FAMessage('2FA disabled successfully');
             
         } catch (error) {
-            console.error('2FA disable error:', error);
             show2FAMessage('Network error occurred', true);
         }
     } else {
@@ -188,7 +186,6 @@ async function toggle2FA(): Promise<void> {
             }, 30000);
             
         } catch (error) {
-            console.error('2FA enable error:', error);
             show2FAMessage('Network error occurred', true);
             // Réactiver le bouton après 30 secondes en cas d'erreur réseau
             setTimeout(() => {
@@ -247,7 +244,6 @@ async function verify2FACode(): Promise<void> {
         show2FAMessage('2FA enabled successfully!');
         
     } catch (error) {
-        console.error('2FA verify error:', error);
         show2FAMessage('Network error occurred', true);
     }
 }

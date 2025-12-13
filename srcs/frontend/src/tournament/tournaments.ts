@@ -36,7 +36,6 @@ async function handleJoinTournament(tournamentId: string) {
         }
     } catch (error) {
         alert('Error when joining tournament');
-        console.error('Tournament join error:', error);
     }
 }
 
@@ -57,7 +56,6 @@ async function handleLeaveTournament(tournamentId: string) {
         }
     } catch (error) {
         alert('Error when leaving tournament');
-        console.error('Tournament leave error:', error);
     }
 }
 
@@ -92,7 +90,6 @@ async function handleCreateTournament() {
         }
     } catch (error) {
         alert('Error creating tournament');
-        console.error('Tournament creation error:', error);
     }
 }
 
@@ -121,7 +118,6 @@ async function handleDeleteTournament(tournamentId: string) {
         }
     } catch (error) {
         alert('Error deleting tournament');
-        console.error('Tournament deletion error:', error);
     }
 }
 
@@ -181,7 +177,6 @@ async function loadTournamentsList() {
     const listContainer = document.getElementById('tournaments-list');
     console.log('📦 listContainer:', listContainer);
     if (!listContainer) {
-        console.error('❌ tournaments-list container not found!');
         return;
     }
     
@@ -310,7 +305,6 @@ async function loadTournamentsList() {
             }
         });
     } catch (error) {
-        console.error('Error loading tournaments:', error);
         listContainer!.innerHTML = '<p class="text-red-500 text-center py-4">Error loading tournaments.</p>';
     }
 }

@@ -29,7 +29,6 @@ export function initGameConfigManagers(): void {
                 // Join room in local mode
                 await window.joinOrCreateRoom(2, true);
             } catch (error) {
-                console.error('Error starting local game:', error);
                 alert('Error starting game. Please try again.');
             }
         });
@@ -59,7 +58,6 @@ export function initAIConfigManagers(): void {
             await window.joinOrCreateRoom(2, true);
             // Navigation to game page will be handled by roomJoined handler
         } catch (error) {
-            console.error('Error starting AI game:', error);
             alert('Error starting game. Please try again.');
         }
     }

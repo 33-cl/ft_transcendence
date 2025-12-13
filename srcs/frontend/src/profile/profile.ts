@@ -4,13 +4,11 @@ declare const Chart: any;
 export function initializeStatsChart(wins: number, losses: number) {
     const canvas = document.getElementById('stats-chart') as HTMLCanvasElement;
     if (!canvas) {
-        console.error('Canvas stats-chart not found');
         return;
     }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-        console.error('Could not get 2d context');
         return;
     }
 
@@ -23,7 +21,6 @@ export function initializeStatsChart(wins: number, losses: number) {
     }
 
     if (!Chart) {
-        console.error('Chart.js not loaded');
         return;
     }
 
@@ -68,7 +65,6 @@ export function initializeStatsChart(wins: number, losses: number) {
 export async function initializeWinRateHistoryChart(userId: string) {
     const canvas = document.getElementById('winrate-history-chart') as HTMLCanvasElement;
     if (!canvas) {
-        console.error('Canvas winrate-history-chart not found');
         return;
     }
 
@@ -76,7 +72,6 @@ export async function initializeWinRateHistoryChart(userId: string) {
     try {
         const response = await fetch(`/matches/history/${userId}`);
         if (!response.ok) {
-            console.error('Failed to fetch match history');
             return;
         }
         
@@ -92,7 +87,6 @@ export async function initializeWinRateHistoryChart(userId: string) {
         
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-            console.error('Could not get 2d context');
             return;
         }
 
@@ -105,7 +99,6 @@ export async function initializeWinRateHistoryChart(userId: string) {
         }
 
         if (!Chart) {
-            console.error('Chart.js not loaded');
             return;
         }
 
@@ -171,7 +164,6 @@ export async function initializeWinRateHistoryChart(userId: string) {
         });
         
     } catch (error) {
-        console.error('Error initializing win rate history chart:', error);
     }
 }
 

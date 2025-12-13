@@ -70,8 +70,6 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 			
 			return { rooms };
 		} catch (error) {
-			console.error('Error in GET /rooms:', error);
-			console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
 			return reply.status(500).send({ error: 'Internal server error' });
 		}
 	});
@@ -145,7 +143,6 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 
 			return reply.status(404).send({ error: 'Friend is not in any active game' });
 		} catch (error) {
-			console.error('Error finding friend room:', error);
 			return reply.status(500).send({ error: 'Internal server error' });
 		}
 	});

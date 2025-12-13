@@ -50,6 +50,12 @@ export async function checkSessionOnce() {
         return;
     }
     
+    // Ne pas appeler /auth/me si aucun cookie de session n'existe
+    if (!document.cookie.includes('token=')) {
+        window.currentUser = null;
+        return;
+    }
+    
     try {
         const res = await fetch('/auth/me', { credentials: 'include' });
         if (res.ok)
@@ -103,7 +109,6 @@ export async function refreshUserStats() {
         }
         return false; // No change
     } catch (error) {
-        console.error('Failed to refresh user stats:', error);
         return false;
     }
 }
@@ -268,7 +273,6 @@ async function handleVerify2FA(): Promise<void> {
                 showErrorMessage(msg, data.error || 'Invalid verification code.');
             }
         } catch (error) {
-            console.error('Error verifying OAuth 2FA code:', error);
             showErrorMessage(msg, 'Network error. Please try again.');
         }
     } else if (credentials) {
