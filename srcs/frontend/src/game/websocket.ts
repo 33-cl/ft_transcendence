@@ -659,9 +659,9 @@ function setupGameEventListeners()
     // Nettoyer d'abord les anciens listeners
     cleanupGameEventListeners();
     
-    // Met en pause le background pour ameliorer les performances du jeu
-    if (typeof window.pauseBackground === 'function')
-        window.pauseBackground();
+    // NOTE: Background pause désactivé pour tester les performances après optimisations
+    // if (typeof window.pauseBackground === 'function')
+    //     window.pauseBackground();
     
     // Event listener pour les états de jeu
     if (!gameStateListenerActive)
