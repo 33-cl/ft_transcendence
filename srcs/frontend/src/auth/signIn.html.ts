@@ -1,7 +1,7 @@
 export const signInHTML = /*html*/`
     <h2>Sign in</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
+    <input type="text" id="username" placeholder="Username" maxlength="10">
+    <input type="password" id="password" placeholder="Password" maxlength="255">
     <button id="signInButton" class="default-button">SIGN IN</button>
     <div id="signInMsg" style="margin-top:8px"></div>
 

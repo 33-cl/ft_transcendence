@@ -55,6 +55,7 @@ export async function addFriendsHTML() {
                     placeholder="Search users..." 
                     class="add-friends-search-input"
                     autocomplete="off"
+                    maxlength="10"
                 >
                 <div id="searchResults" class="add-friends-search-results hidden"></div>
             </div>
