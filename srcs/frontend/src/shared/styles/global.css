@@ -35,6 +35,21 @@
         scrollbar-color: white transparent;
     }
 
+    /* Permettre le clic sur les scrollbars même si le parent est en pointer-events: none */
+    *::-webkit-scrollbar {
+        pointer-events: auto;
+    }
+
+    [style*="overflow"], 
+    .overflow-auto, 
+    .overflow-y-auto, 
+    .overflow-x-auto,
+    .overflow-scroll,
+    .overflow-y-scroll,
+    .overflow-x-scroll {
+        pointer-events: auto;
+    }
+
     .clickable {
         @apply pointer-events-auto;
     }
