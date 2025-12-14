@@ -9,8 +9,16 @@
 
     .user-list {
         @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
-        @apply overflow-y-auto p-[1vh];            /* Scroll and padding */
+        @apply overflow-hidden p-[1vh];            /* No scroll on container */
         @apply pointer-events-none;
+        @apply flex flex-col;                      /* Flex layout for header + scrollable content */
+    }
+
+    /* Scrollable friends list content */
+    #friendsList {
+        @apply flex-1 overflow-y-auto;
+        @apply flex flex-col items-center;
+        @apply w-full;
     }
 
     .user-list img {
@@ -66,18 +74,6 @@
     }
 
     /* AddFriends page styles */
-    .add-friends-back-btn {
-        @apply absolute top-0 right-0 w-8 h-8;
-        @apply bg-black hover:bg-gray-900;
-        @apply border border-gray-600 rounded;
-        @apply flex items-center justify-center;
-        @apply transition-colors p-1.5;
-    }
-
-    .add-friends-back-btn img {
-        @apply w-full h-full;
-    }
-
     .add-friends-search-container {
         @apply my-2.5;
     }
@@ -174,16 +170,28 @@
     }
 
     /* FriendList page styles */
-    .friend-list-add-btn {
-        @apply absolute top-0 right-0 w-8 h-8;
+    .friend-list-header {
+        @apply flex items-center justify-between mb-4;
+    }
+
+    .friend-list-header h2 {
+        @apply m-0;
+    }
+
+    .friend-header-btn {
+        @apply w-8 h-8;
         @apply bg-black hover:bg-gray-900;
         @apply border border-gray-600 rounded;
         @apply flex items-center justify-center;
         @apply transition-colors p-1.5;
     }
 
-    .friend-list-add-btn img {
+    .friend-header-btn img {
         @apply w-full h-full;
+    }
+
+    .friend-header-btn-placeholder {
+        @apply w-8 h-8 border border-transparent;
     }
 
     .friend-list-empty {
@@ -195,7 +203,7 @@
     }
 
     .friend-item {
-        @apply relative;
+        @apply relative w-full;
     }
 
     .friend-avatar-container {

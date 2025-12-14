@@ -93,9 +93,10 @@ export async function friendListHTML() {
 
         return /*html*/`
             <div id="friendList" class="user-list">
-                <div class="relative">
+                <div class="friend-list-header">
+                    <div class="friend-header-btn-placeholder"></div>
                     <h2>Friends</h2>
-                    <button id="addFriendsBtn" class="friend-list-add-btn" title="Add Friends">
+                    <button id="addFriendsBtn" class="friend-header-btn right" title="Add Friends">
                         <img src="./img/add-friend-icon.svg" alt="Add Friend">
                         ${requestsBadge}
                     </button>
@@ -129,9 +130,10 @@ export async function friendListHTML() {
 
         return /*html*/`
             <div id="friendList" class="user-list">
-                <div class="relative">
+                <div class="friend-list-header">
+                    <div class="friend-header-btn-placeholder"></div>
                     <h2>Friends</h2>
-                    <button id="addFriendsBtn" class="friend-list-add-btn" title="Add Friends">
+                    <button id="addFriendsBtn" class="friend-header-btn right" title="Add Friends">
                         <img src="./img/add-friend-icon.svg" alt="Add Friend">
                         ${requestsBadge}
                     </button>
