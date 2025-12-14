@@ -12,6 +12,29 @@
         @apply bg-gray-500 text-white;
     }
 
+    /* Custom scrollbar styling - Global */
+    ::-webkit-scrollbar {
+        @apply w-2;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-white rounded-full;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-gray-200;
+    }
+
+    /* Firefox scrollbar */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: white transparent;
+    }
+
     .clickable {
         @apply pointer-events-auto;
     }

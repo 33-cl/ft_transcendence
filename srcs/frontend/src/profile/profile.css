@@ -124,23 +124,6 @@
         @apply list-none p-0 max-h-64 overflow-y-auto pr-2;
     }
 
-    /* Custom scrollbar styling */
-    #match-list::-webkit-scrollbar {
-        @apply w-2;
-    }
-
-    #match-list::-webkit-scrollbar-track {
-        @apply bg-transparent;
-    }
-
-    #match-list::-webkit-scrollbar-thumb {
-        @apply bg-white rounded-full;
-    }
-
-    #match-list::-webkit-scrollbar-thumb:hover {
-        @apply bg-gray-200;
-    }
-
     .match-item {
         @apply text-xl py-2 cursor-pointer transition-all duration-200;
     }
