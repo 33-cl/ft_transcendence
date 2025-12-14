@@ -151,21 +151,21 @@ export function cleanupPongControls(): void {
 // Expose la fonction de cleanup globalement
 window.cleanupPongControls = cleanupPongControls;
 
-document.addEventListener("keydown", function (e) {
-    const move = keyToMove[e.key as string];
-    if (move && !pressedKeys[e.key]) {
-        sendKeyEvent('keydown', move.player, move.direction);
-        pressedKeys[e.key] = true;
-    }
-});
 
-document.addEventListener("keyup", function (e) {
-    const move = keyToMove[e.key as string];
-    if (move && pressedKeys[e.key]) {
-        sendKeyEvent('keyup', move.player, move.direction);
-        pressedKeys[e.key] = false;
+function handleKeyEvent(event: KeyboardEvent, type: 'keydown' | 'keyup') {
+    const mapping = keyToMove[event.key as string];
+    if (!mapping) return;
+    if (type === 'keydown' && !pressedKeys[event.key]) {
+        sendKeyEvent('keydown', mapping.player, mapping.direction);
+        pressedKeys[event.key] = true;
+    } else if (type === 'keyup' && pressedKeys[event.key]) {
+        sendKeyEvent('keyup', mapping.player, mapping.direction);
+        pressedKeys[event.key] = false;
     }
-});
+}
+
+document.addEventListener("keydown", (e) => handleKeyEvent(e, 'keydown'));
+document.addEventListener("keyup", (e) => handleKeyEvent(e, 'keyup'));
 
 window.sendKeyEvent = sendKeyEvent;
 
