@@ -127,94 +127,73 @@ export function predictBallLanding(state: GameState): number {
  */
 export function updateAITarget(state: GameState): void {
     if (!state.aiConfig) return;
-    
-    const now = Date.now();
-    const ai = state.aiConfig;
-    
-    // Vérifier si c'est le moment de mettre à jour (1 fois par seconde max)
-    // Moins de mises à jour en mode facile pour un comportement plus "humain"
-    const updateInterval = ai.difficulty === 'easy' ? 2200 : // 2.2 secondes en mode facile 
-                          ai.difficulty === 'medium' ? 1600 : // 1.6 secondes en mode moyen
-                          1000; // 1 seconde en mode difficile
-                          
-    if (now - ai.lastUpdate < updateInterval) return;
-    
-    // Détecter le mode panique selon la distance de la balle
+
+    const currentTime = Date.now();
+    const aiConfig = state.aiConfig;
+
+    const updateInterval = aiConfig.difficulty === 'easy' ? 2200 :
+        aiConfig.difficulty === 'medium' ? 1600 : 1000;
+    if (currentTime - aiConfig.lastUpdate < updateInterval) return;
+
     const ballDistance = Math.abs(state.ballX - (state.paddleMargin + state.paddleWidth));
-    const wasPanic = ai.panicMode;
-    ai.panicMode = ballDistance <= ai.panicThreshold && state.ballSpeedX < 0; // Balle qui approche
-    
-    // Compteur de panique
-    if (ai.panicMode && !wasPanic)
-    {
-        ai.panicCount++;
+    const wasPanic = aiConfig.panicMode;
+    aiConfig.panicMode = ballDistance <= aiConfig.panicThreshold && state.ballSpeedX < 0;
+    if (aiConfig.panicMode && !wasPanic) {
+        aiConfig.panicCount++;
     }
-    
-    // Système de persistance : ne pas changer d'avis trop souvent
+
     let baseTargetY;
     let isNewDecision = false;
-    
-    if (ai.lastDecisionTime > 0 && (now - ai.lastDecisionTime) < ai.persistanceTime) {
-        // Garder l'ancienne cible de base si on est encore dans la période de persistance
-        baseTargetY = ai.targetY;  // ✅ Pas de nouveau calcul, on garde l'ancien
+    if (aiConfig.lastDecisionTime > 0 && (currentTime - aiConfig.lastDecisionTime) < aiConfig.persistanceTime) {
+        baseTargetY = aiConfig.targetY;
     } else {
-        // Nouvelle décision autorisée : calculer une nouvelle cible de base
-        let predictedY = predictBallLanding(state);  // ✅ Calcul SEULEMENT quand nécessaire
-        
-        // En mode facile, appliquer principalement de petits offsets pour paraître humain
-        if (ai.difficulty === 'easy') {
-            // Petit offset fréquent
-            const smallOffset = (Math.random() - 0.5) * ai.errorMargin; // ± errorMargin/2
+        let predictedY = predictBallLanding(state);
+        if (aiConfig.difficulty === 'easy') {
+            const smallOffset = (Math.random() - 0.5) * aiConfig.errorMargin;
             predictedY += smallOffset;
-
-            // Très rarement, faire une grosse erreur (miss) pour varier le comportement
-            if (Math.random() < 0.05) { // 5% chance
-                const bigMiss = (Math.random() - 0.5) * ai.errorMargin * 5;
+            if (Math.random() < 0.05) {
+                const bigMiss = (Math.random() - 0.5) * aiConfig.errorMargin * 5;
                 predictedY += bigMiss;
             }
         }
-        
-        
-        baseTargetY = predictedY;  // ✅ Utilise la nouvelle prédiction
-        ai.lastDecisionTime = now;
-        ai.decisionCount++;
+        baseTargetY = predictedY;
+        aiConfig.lastDecisionTime = currentTime;
+        aiConfig.decisionCount++;
         isNewDecision = true;
-        
     }
-    // ✅ ERREURS APPLIQUÉES À CHAQUE ÉVALUATION (indépendamment de la persistance)
     let targetY = baseTargetY;
-    
-    // Appliquer les erreurs selon la fréquence maximale et le mode panique
-    const errorChance = ai.panicMode ? ai.maxErrorFrequency * 1.5 : ai.maxErrorFrequency;
+    const errorChance = aiConfig.panicMode ? aiConfig.maxErrorFrequency * 1.5 : aiConfig.maxErrorFrequency;
     if (Math.random() < errorChance) {
-        // Erreur importante : décalage aléatoire
-        const errorOffset = (Math.random() - 0.5) * ai.errorMargin * 2;
+        const errorOffset = (Math.random() - 0.5) * aiConfig.errorMargin * 2;
         targetY += errorOffset;
-        ai.errorCount++;
-        
+        aiConfig.errorCount++;
     }
-    
-    // Micro-corrections : petits ajustements aléatoires pour simuler l'imprécision humaine
-    if (Math.random() < ai.microcorrectionChance) {
-        const microError = (Math.random() - 0.5) * (ai.errorMargin * 0.3);
+    if (Math.random() < aiConfig.microcorrectionChance) {
+        const microError = (Math.random() - 0.5) * (aiConfig.errorMargin * 0.3);
         targetY += microError;
-        
     }
-    
-    
-    // S'assurer que la cible reste dans les limites du canvas
     const paddleHeight = state.paddles[0]?.height || state.paddleHeight;
-    const minY = paddleHeight / 2; // Centre du paddle au minimum
-    const maxY = state.canvasHeight - paddleHeight / 2; // Centre du paddle au maximum
+    const minY = paddleHeight / 2;
+    const maxY = state.canvasHeight - paddleHeight / 2;
     targetY = Math.max(minY, Math.min(maxY, targetY));
-    
-    // Mettre à jour la configuration IA
-    ai.targetY = targetY;
-    ai.lastUpdate = now;
-    
-    // Seuil de mouvement adaptatif : plus précis en mode difficile, plus large en facile
-    const movementThreshold = ai.panicMode ? 3 : (ai.difficulty === 'hard' ? 4 : ai.difficulty === 'medium' ? 6 : 8);
-    ai.isMoving = Math.abs(targetY - ai.currentY) > movementThreshold;
+    aiConfig.targetY = targetY;
+    aiConfig.lastUpdate = currentTime;
+    aiConfig.isMoving = Math.abs(targetY - aiConfig.currentY) > getAdaptiveThreshold(aiConfig);
+}
+
+function getAdaptiveThreshold(aiConfig: AIConfig): number {
+    if (aiConfig.panicMode) return 3;
+    if (aiConfig.difficulty === 'hard') return 4;
+    if (aiConfig.difficulty === 'medium') return 6;
+    return 8;
+}
+
+function getAdaptiveReactionTime(aiConfig: AIConfig): number {
+    return aiConfig.panicMode ? aiConfig.reactionTime * 0.7 : aiConfig.reactionTime;
+}
+
+function getAdaptiveHoldDuration(aiConfig: AIConfig): number {
+    return aiConfig.panicMode ? aiConfig.keyHoldDuration * 0.6 : aiConfig.keyHoldDuration;
 }
 
 /**
@@ -225,101 +204,71 @@ export function updateAITarget(state: GameState): void {
     */
 export function simulateKeyboardInput(state: GameState): void {
     if (!state.aiConfig || !state.aiConfig.enabled) return;
-    const ai = state.aiConfig;
-    const now = Date.now();
+    const aiConfig = state.aiConfig;
+    const currentTime = Date.now();
 
-    // L'IA ne s'endort plus : elle peut se tromper mais restera cohérente dans ses réactions
-
-    // Mettre à jour la position actuelle basée sur le paddle réel
     if (state.paddles && state.paddles.length >= 1) {
-        ai.currentY = state.paddles[0].y;
-    }
-    
-    // La vitesse est maintenant gérée directement dans movePaddle()
-    // Nous n'avons plus besoin de modifier temporairement state.paddleSpeed
-
-    // Gestion du timer de micro-corrections
-    if (ai.microcorrectionTimer > 0) {
-        ai.microcorrectionTimer = Math.max(0, ai.microcorrectionTimer - 16); // ~60fps
+        aiConfig.currentY = state.paddles[0].y;
     }
 
-    // Si le paddle doit bouger mais que le délai de réaction n'a pas commencé, on l'initialise
-    if (ai.isMoving && ai.reactionStartTime === 0) {
-        ai.reactionStartTime = now;
-        return; // On attend le délai avant de bouger
+    if (aiConfig.microcorrectionTimer > 0) {
+        aiConfig.microcorrectionTimer = Math.max(0, aiConfig.microcorrectionTimer - 16);
     }
-    
-    // Délai de réaction adaptatif : plus court en mode panique
-    const adaptiveReactionTime = ai.panicMode ? ai.reactionTime * 0.7 : ai.reactionTime;
-    
-    // Si le délai de réaction n'est pas écoulé, on ne bouge pas
-    if (ai.isMoving && now - ai.reactionStartTime < adaptiveReactionTime) {
-        return;
-    }
-    
-    // Si on n'est pas censé bouger, on reset le délai et les touches
-    if (!ai.isMoving) {
-        ai.reactionStartTime = 0;
-        ai.keyPressed = null;
-        ai.keyPressStartTime = 0;
+
+    if (aiConfig.isMoving && aiConfig.reactionStartTime === 0) {
+        aiConfig.reactionStartTime = currentTime;
         return;
     }
 
-    // Déterminer quelle direction prendre
-    const paddleCenter = ai.currentY + (state.paddles[0]?.height || state.paddleHeight) / 2;
-    const difference = ai.targetY - paddleCenter;
-    
-    // Seuil de précision adaptatif selon la difficulté et le mode panique
-    let threshold = ai.panicMode ? 2 : (ai.difficulty === 'hard' ? 4 : ai.difficulty === 'medium' ? 6 : 8);
-    
-    // Si on est assez proche de la cible, arrêter de bouger
-    if (Math.abs(difference) <= threshold) {
-        ai.keyPressed = null;
-        ai.keyPressStartTime = 0;
+    const adaptiveReactionTime = getAdaptiveReactionTime(aiConfig);
+    if (aiConfig.isMoving && currentTime - aiConfig.reactionStartTime < adaptiveReactionTime) {
         return;
     }
 
-    // Déterminer la direction nécessaire
-    const requiredDirection: 'up' | 'down' = difference < 0 ? 'up' : 'down';
+    if (!aiConfig.isMoving) {
+        aiConfig.reactionStartTime = 0;
+        aiConfig.keyPressed = null;
+        aiConfig.keyPressStartTime = 0;
+        return;
+    }
 
-    // Gestion des touches : presser, maintenir, ou relâcher
-    if (!ai.keyPressed) {
-        // Aucune touche pressée : en presser une nouvelle
-        ai.keyPressed = requiredDirection;
-        ai.keyPressStartTime = now;
+    const paddleCenter = aiConfig.currentY + (state.paddles[0]?.height || state.paddleHeight) / 2;
+    const distanceToTarget = aiConfig.targetY - paddleCenter;
+
+    const threshold = aiConfig.panicMode ? 2 : getAdaptiveThreshold(aiConfig);
+    if (Math.abs(distanceToTarget) <= threshold) {
+        aiConfig.keyPressed = null;
+        aiConfig.keyPressStartTime = 0;
+        return;
+    }
+
+    const requiredDirection: 'up' | 'down' = distanceToTarget < 0 ? 'up' : 'down';
+
+    if (!aiConfig.keyPressed) {
+        aiConfig.keyPressed = requiredDirection;
+        aiConfig.keyPressStartTime = currentTime;
         movePaddle(state, 'LEFT', requiredDirection);
-    } else if (ai.keyPressed === requiredDirection) {
-        // Bonne direction : continuer ou relâcher selon les paramètres
-        const keyHeldDuration = now - ai.keyPressStartTime;
-        
-        // Durée de maintien adaptative : plus courte en mode panique
-        const adaptiveHoldDuration = ai.panicMode ? ai.keyHoldDuration * 0.6 : ai.keyHoldDuration;
-        
-        // Chance de relâchement adapative : plus élevée en mode panique pour easy/medium
-        let adaptiveReleaseChance = ai.keyReleaseChance;
-        if (ai.panicMode && ai.difficulty !== 'hard') {
-            adaptiveReleaseChance *= 1.5; // Augmente les erreurs en mode panique
+    } else if (aiConfig.keyPressed === requiredDirection) {
+        const keyHeldDuration = currentTime - aiConfig.keyPressStartTime;
+        const adaptiveHoldDuration = getAdaptiveHoldDuration(aiConfig);
+        let adaptiveReleaseChance = aiConfig.keyReleaseChance;
+        if (aiConfig.panicMode && aiConfig.difficulty !== 'hard') {
+            adaptiveReleaseChance *= 1.5;
         }
-        
-        // Vérifier si on doit relâcher prématurément (simulation d'erreur humaine)
         if (keyHeldDuration >= adaptiveHoldDuration && Math.random() < adaptiveReleaseChance) {
-            ai.keyPressed = null;
-            ai.keyPressStartTime = 0;
-            
-            // Démarrer le timer de micro-correction après un relâchement
-            if (Math.random() < ai.microcorrectionChance) {
-                ai.microcorrectionTimer = 100 + Math.random() * 200; // 100-300ms
+            aiConfig.keyPressed = null;
+            aiConfig.keyPressStartTime = 0;
+            if (Math.random() < aiConfig.microcorrectionChance) {
+                aiConfig.microcorrectionTimer = 100 + Math.random() * 200;
             }
         } else {
-            // Continuer à maintenir la touche
             movePaddle(state, 'LEFT', requiredDirection);
         }
     } else {
-        // Mauvaise direction : relâcher et changer (mais avec une certaine inertie)
-        const directionChangeDelay = ai.panicMode ? 50 : 150; // Plus rapide en panique
-        if (now - ai.keyPressStartTime >= directionChangeDelay) {
-            ai.keyPressed = requiredDirection;
-            ai.keyPressStartTime = now;
+        const directionChangeDelay = aiConfig.panicMode ? 50 : 150;
+        if (currentTime - aiConfig.keyPressStartTime >= directionChangeDelay) {
+            aiConfig.keyPressed = requiredDirection;
+            aiConfig.keyPressStartTime = currentTime;
             movePaddle(state, 'LEFT', requiredDirection);
         }
     }
