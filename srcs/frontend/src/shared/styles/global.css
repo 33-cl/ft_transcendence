@@ -13,6 +13,7 @@
     }
 
     /* Custom scrollbar styling - Global */
+    /* Scrollbar invisible par défaut, visible au survol */
     ::-webkit-scrollbar {
         @apply w-2;
     }
@@ -22,16 +23,25 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        @apply bg-white rounded-full;
+        @apply bg-transparent rounded-full transition-colors duration-300;
     }
 
-    ::-webkit-scrollbar-thumb:hover {
+    /* Afficher la scrollbar au survol du conteneur */
+    *:hover::-webkit-scrollbar-thumb {
+        @apply bg-white;
+    }
+
+    *:hover::-webkit-scrollbar-thumb:hover {
         @apply bg-gray-200;
     }
 
-    /* Firefox scrollbar */
+    /* Firefox scrollbar - auto-hide */
     * {
         scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+    }
+
+    *:hover {
         scrollbar-color: white transparent;
     }
 
