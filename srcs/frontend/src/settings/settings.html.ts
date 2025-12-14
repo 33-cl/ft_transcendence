@@ -11,7 +11,7 @@ export function settingsHTML() {
     <div id="settings-form">
         <div class="settings-row">
             <span class="settings-label">USERNAME</span>
-            <input type="text" id="settings-username" placeholder="${username}" maxlength="10">
+            <input type="text" id="settings-username" placeholder="${username}">
         </div>
         <div class="settings-row">
             <span class="settings-label">AVATAR</span>
@@ -22,12 +22,12 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">EMAIL</span>
-            <input type="email" id="settings-email" placeholder="${email}" maxlength="255">
+            <input type="email" id="settings-email" placeholder="${email}">
             ${hasTemporaryEmail ? '<span id="temp-email-warning" style="color: #f59e0b; font-size: 0.8em; margin-left: 10px;">[Update required]</span>' : ''}
         </div>
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>
-            <input type="password" id="settings-password" placeholder="New password" maxlength="255">
+            <input type="password" id="settings-password" placeholder="New password">
         </div>
         <div class="settings-row">
             <span class="settings-label">2 Factor Auth</span>

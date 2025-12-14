@@ -160,7 +160,7 @@ export function initAvatarHandlers(): void {
                 messageEl.style.display = 'block';
                 if (result.ok) {
                     messageEl.style.color = '#22c55e';
-                    messageEl.textContent = 'Photo uploaded, click Save to confirm';
+                    messageEl.textContent = 'Avatar change pending - click [SAVE] to apply';
                     // Store temporary avatar URL for later confirmation
                     if (result.temp_avatar_url) {
                         window.tempAvatarUrl = result.temp_avatar_url;
