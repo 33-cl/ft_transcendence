@@ -1,66 +1,109 @@
+
 // pongRenderer.ts
 // Gère l'affichage du jeu Pong à partir de l'état reçu du backend
 
-let canvas: HTMLCanvasElement | null = null;
-let ctx: CanvasRenderingContext2D | null = null;
-
-// Stocker le dernier état de jeu pour pouvoir le redessiner lors d'un resize
-let lastGameState: any = null;
-
-// Importer le système d'interpolation
 import './pongInterpolation.js';
 
-// Fonction pour obtenir la couleur selon le paddle
-function getColorForSide(side: string): string {
-    const colors: Record<string, string> = {
-        'LEFT': '#ffffff',   // Gauche
-        'DOWN': '#ffffff',   // Bas  
-        'RIGHT': '#ffffff',  // Droite
-        'TOP': '#ffffff'     // Haut
-    };
-    return colors[side] || '#ffffff';
+// ============================================================================
+// CONFIGURATION & THEME
+// ============================================================================
+
+const THEME = {
+    colors: {
+        white: '#ffffff',
+        red: '#ff0000',
+        blue: '#0000ff',
+        green: '#22c55e',
+        shadow: 'rgba(0, 0, 0, 0.8)',
+        paddles: {
+            LEFT: '#ffffff',
+            DOWN: '#ffffff',
+            RIGHT: '#ffffff',
+            TOP: '#ffffff',
+            default: '#ffffff'
+        }
+    },
+    fonts: {
+        countdown: 'bold 96px "Press Start 2P", monospace'
+    },
+    layout: {
+        lineWidth: 4,
+        defaultPaddleWidth: 10,
+        defaultPaddleHeight: 100,
+        defaultMargin: 10
+    }
+};
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface PaddleState {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    side: string;
+    score: number;
+    color?: string;
+    playerName?: string;
 }
 
-/**
- * Applique une rotation CSS au canvas pour que le joueur ait toujours
- * son paddle en bas de l'écran visuellement (mode 4 joueurs uniquement)
- */
+interface GameState {
+    canvasWidth: number;
+    canvasHeight: number;
+    paddles: PaddleState[];
+    paddleWidth?: number;
+    paddleHeight?: number;
+    paddleMargin?: number;
+    leftPaddleY?: number;
+    rightPaddleY?: number;
+    leftScore?: number;
+    rightScore?: number;
+    ballX: number;
+    ballY: number;
+    ballRadius: number;
+    ballCountdown?: number;
+    [key: string]: any; // Allow flexibility for other props
+}
+
+// ============================================================================
+// STATE
+// ============================================================================
+
+let canvas: HTMLCanvasElement | null = null;
+let ctx: CanvasRenderingContext2D | null = null;
+let lastGameState: GameState | null = null;
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function getColorForSide(side: string): string {
+    return (THEME.colors.paddles as any)[side] || THEME.colors.paddles.default;
+}
+
 export function applyCanvasRotation(paddle: string | null, canvasId: string = 'map'): void {
     const canvasElement = document.getElementById(canvasId) as HTMLCanvasElement;
     if (!canvasElement) return;
     
-    // Ne pas appliquer de rotation en mode 1v1 (seulement LEFT/RIGHT)
-    // ou si pas de paddle assigné
     if (!paddle || (paddle !== 'LEFT' && paddle !== 'DOWN' && paddle !== 'RIGHT' && paddle !== 'TOP')) {
         canvasElement.style.transform = '';
         return;
     }
     
-    // Calculer l'angle de rotation pour que le paddle soit toujours en bas
     let rotation = 0;
     switch (paddle) {
-        case 'DOWN':
-            rotation = 0;      // Déjà en bas, pas de rotation
-            break;
-        case 'LEFT':
-            rotation = -90;    // Paddle gauche → tourner de -90° pour le mettre en bas
-            break;
-        case 'TOP':
-            rotation = 180;    // Paddle haut → tourner de 180° pour le mettre en bas
-            break;
-        case 'RIGHT':
-            rotation = 90;     // Paddle droite → tourner de 90° pour le mettre en bas
-            break;
+        case 'LEFT': rotation = -90; break;
+        case 'TOP': rotation = 180; break;
+        case 'RIGHT': rotation = 90; break;
+        case 'DOWN': rotation = 0; break;
     }
     
-    // Appliquer la rotation CSS avec une transition fluide
     canvasElement.style.transition = 'transform 0.3s ease';
     canvasElement.style.transform = rotation !== 0 ? `rotate(${rotation}deg)` : '';
 }
 
-/**
- * Réinitialise la rotation du canvas (appelé au cleanup)
- */
 export function resetCanvasRotation(canvasId: string = 'map'): void {
     const canvasElement = document.getElementById(canvasId) as HTMLCanvasElement;
     if (canvasElement) {
@@ -69,37 +112,30 @@ export function resetCanvasRotation(canvasId: string = 'map'): void {
     }
 }
 
-// Fonction d'initialisation du renderer Pong
-export function initPongRenderer(canvasId: string = 'map')
-{
-    canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvas) {
-        return;
-    }
-    ctx = canvas.getContext('2d');
-    if (!ctx) {
-        return;
-    }
+// ============================================================================
+// INITIALIZATION & CLEANUP
+// ============================================================================
 
-    // Ajout d'un listener resize pour forcer le redraw
+export function initPongRenderer(canvasId: string = 'map') {
+    canvas = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (!canvas) return;
+    
+    ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     window.addEventListener('resize', handlePongResize);
 }
 
-// Redessine le canvas Pong lors d'un resize avec le dernier état connu
 function handlePongResize() {
     if (!canvas || !ctx) return;
-    // Si on a un dernier état connu, on le redessine
     if (lastGameState) {
         draw(lastGameState);
     } else {
-        // Sinon on efface juste pour éviter le blanc
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 }
 
-// Fonction de nettoyage du renderer
 export function resetPongRenderer(): void {
-    // Retirer le listener resize
     window.removeEventListener('resize', handlePongResize);
     
     if (canvas && ctx) {
@@ -110,176 +146,168 @@ export function resetPongRenderer(): void {
     lastGameState = null;
 }
 
-// Expose la fonction de reset globalement pour le cleanup
-window.resetPongRenderer = resetPongRenderer;
+// ============================================================================
+// DRAWING FUNCTIONS
+// ============================================================================
 
-// Exposer les fonctions de rotation globalement
-window.applyCanvasRotation = applyCanvasRotation;
-window.resetCanvasRotation = resetCanvasRotation;
+function drawField(ctx: CanvasRenderingContext2D, state: GameState, width: number, height: number) {
+    ctx.save();
+    ctx.lineWidth = THEME.layout.lineWidth;
+    
+    if (state.paddles && state.paddles.length === 4) {
+        ctx.strokeStyle = THEME.colors.red;
+    } else {
+        ctx.strokeStyle = THEME.colors.blue;
+    }
+    
+    ctx.strokeRect(0, 0, width, height);
+    ctx.restore();
+}
 
-// Exposer la fonction de dessin pour être utilisée par le système d'interpolation
-window.drawPongGame = draw;
+function drawPaddles(ctx: CanvasRenderingContext2D, state: GameState) {
+    if (state.paddles && state.paddles.length > 0) {
+        for (const paddle of state.paddles) {
+            const width = paddle.width ?? state.paddleWidth ?? THEME.layout.defaultPaddleWidth;
+            const height = paddle.height ?? state.paddleHeight ?? THEME.layout.defaultPaddleHeight;
+            
+            let x = paddle.x;
+            if (x === undefined) {
+                const margin = state.paddleMargin ?? THEME.layout.defaultMargin;
+                if (paddle.side === 'LEFT') x = margin;
+                else if (paddle.side === 'RIGHT') x = (state.canvasWidth ?? ctx.canvas.width) - margin - width;
+                else x = 0;
+            }
+            
+            const y = paddle.y ?? 0;
+            
+            ctx.save();
+            ctx.fillStyle = paddle.color || THEME.colors.white;
+            ctx.fillRect(x, y, width, height);
+            ctx.restore();
+        }
+    } else {
+        // Fallback 1v1 legacy
+        const margin = state.paddleMargin ?? THEME.layout.defaultMargin;
+        const width = state.paddleWidth ?? THEME.layout.defaultPaddleWidth;
+        const height = state.paddleHeight ?? THEME.layout.defaultPaddleHeight;
+        
+        ctx.fillStyle = THEME.colors.white;
+        ctx.fillRect(margin, state.leftPaddleY!, width, height);
+        ctx.fillRect(state.canvasWidth - margin - width, state.rightPaddleY!, width, height);
+    }
+}
 
-export function draw(gameState: any)
-{   
-    if (!ctx || !canvas) {
-        return;
+function drawBall(ctx: CanvasRenderingContext2D, state: GameState) {
+    ctx.beginPath();
+    ctx.arc(state.ballX, state.ballY, state.ballRadius, 0, Math.PI * 2);
+    ctx.fillStyle = THEME.colors.white;
+    ctx.fill();
+}
+
+function drawCountdown(ctx: CanvasRenderingContext2D, state: GameState) {
+    if (!state.ballCountdown || state.ballCountdown <= 0) return;
+
+    ctx.save();
+    const centerX = state.canvasWidth / 2;
+    const centerY = state.canvasHeight / 2;
+    
+    // Counter-rotation logic
+    const paddle = (window as any).controlledPaddle;
+    if (paddle && state.paddles && state.paddles.length === 4) {
+        ctx.translate(centerX, centerY);
+        switch (paddle) {
+            case 'LEFT': ctx.rotate(Math.PI / 2); break;
+            case 'RIGHT': ctx.rotate(-Math.PI / 2); break;
+            case 'TOP': ctx.rotate(Math.PI); break;
+        }
+        ctx.translate(-centerX, -centerY);
+    }
+    
+    ctx.font = THEME.fonts.countdown;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const text = state.ballCountdown.toString();
+    
+    // Shadow
+    ctx.fillStyle = THEME.colors.shadow;
+    ctx.fillText(text, centerX + 4, centerY + 4);
+    
+    // Outline
+    ctx.strokeStyle = THEME.colors.white;
+    ctx.lineWidth = THEME.layout.lineWidth;
+    ctx.strokeText(text, centerX, centerY);
+    
+    // Main text
+    ctx.fillStyle = THEME.colors.green;
+    ctx.fillText(text, centerX, centerY);
+    
+    // Glow
+    ctx.shadowColor = THEME.colors.green;
+    ctx.shadowBlur = 20;
+    ctx.fillText(text, centerX, centerY);
+    
+    ctx.restore();
+}
+
+function updateScoreBoard(state: GameState) {
+    const scoreElem = document.getElementById('score');
+    if (!scoreElem) return;
+
+    let newScoreHTML = '';
+    if (state.paddles && Array.isArray(state.paddles)) {
+        if (state.paddles.length === 4) {
+            newScoreHTML = state.paddles.map((p, i) => {
+                const displayName = p.playerName || p.side;
+                return `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${displayName}: ${p.score || 0}</span>`;
+            }).join(' | ');
+        } else if (state.paddles.length === 2) {
+            const leftName = state.paddles[0]?.playerName || 'P1';
+            const rightName = state.paddles[1]?.playerName || 'P2';
+            const leftScore = state.paddles[0]?.score || 0;
+            const rightScore = state.paddles[1]?.score || 0;
+            newScoreHTML = `<span id='leftScore'>${leftName}: ${leftScore}</span> - <span id='rightScore'>${rightName}: ${rightScore}</span>`;
+        }
+    } else {
+        const left = state.leftScore ?? 0;
+        const right = state.rightScore ?? 0;
+        newScoreHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
     }
 
-    // Stocker le dernier état pour pouvoir le redessiner lors d'un resize
+    if (scoreElem.innerHTML !== newScoreHTML) {
+        scoreElem.innerHTML = newScoreHTML;
+    }
+}
+
+export function draw(gameState: GameState) {   
+    if (!ctx || !canvas) return;
+
     lastGameState = gameState;
 
-    // Obtenir les dimensions du terrain de jeu depuis le gameState
     const gameWidth = gameState.canvasWidth || canvas.width;
     const gameHeight = gameState.canvasHeight || canvas.height;
 
-    // Mettre à jour les dimensions du canvas si nécessaire
     if (canvas.width !== gameWidth || canvas.height !== gameHeight) {
         canvas.width = gameWidth;
         canvas.height = gameHeight;
     }
 
-    // Clear le canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // --- DESSIN DU TERRAIN ---
-    if (gameState.paddles && gameState.paddles.length === 4) {
-        // Mode 1v1v1v1 : carré avec bordures ROUGES
-        ctx.save();
-        ctx.strokeStyle = '#ff0000';  // Rouge pour mode 4 joueurs
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0, 0, gameWidth, gameHeight);
-        ctx.restore();
-    } else {
-        // Mode 1v1 : rectangle classique avec bordures BLEUES
-        ctx.save();
-        ctx.strokeStyle = '#0000ff';  // Bleu pour mode 2 joueurs
-        ctx.lineWidth = 4;
-        ctx.strokeRect(0, 0, gameWidth, gameHeight);
-        ctx.restore();
-    }
-
-    // --- DESSIN DES PADDLES ---
-    if (gameState.paddles && gameState.paddles.length > 0) {
-        for (const paddle of gameState.paddles) {
-            // Fallback pour les propriétés manquantes (1v1 local)
-            const width = paddle.width ?? gameState.paddleWidth ?? 10;
-            const height = paddle.height ?? gameState.paddleHeight ?? 100;
-            let x = paddle.x;
-            if (x === undefined) {
-                if (paddle.side === 'LEFT')
-                    x = gameState.paddleMargin ?? 10;
-                else if (paddle.side === 'RIGHT')
-                    x = (gameState.canvasWidth ?? canvas.width) - (gameState.paddleMargin ?? 10) - width;
-                else
-                    x = 0;
-            }
-            const y = paddle.y ?? 0;
-            ctx.save();
-            ctx.fillStyle = paddle.color || 'white';
-            ctx.fillRect(x, y, width, height);
-            ctx.restore();
-        }
-    } else {
-        // Rétrocompatibilité 1v1
-        ctx.fillStyle = 'white';
-        ctx.fillRect(gameState.paddleMargin, gameState.leftPaddleY, gameState.paddleWidth, gameState.paddleHeight);
-        ctx.fillRect(gameState.canvasWidth - gameState.paddleMargin - gameState.paddleWidth, gameState.rightPaddleY, gameState.paddleWidth, gameState.paddleHeight);
-    }
-
-    // --- DESSIN DE LA BALLE ---
-    ctx.beginPath();
-    ctx.arc(gameState.ballX, gameState.ballY, gameState.ballRadius, 0, Math.PI * 2);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-
-    // --- AFFICHAGE DU COMPTE À REBOURS ---
-    if (gameState.ballCountdown && gameState.ballCountdown > 0) {
-        ctx.save();
-        
-        const centerX = gameState.canvasWidth / 2;
-        const centerY = gameState.canvasHeight / 2;
-        
-        // Appliquer une contre-rotation pour que le texte reste lisible
-        // quand le canvas est tourné en mode 4 joueurs
-        const paddle = window.controlledPaddle;
-        if (paddle && gameState.paddles && gameState.paddles.length === 4) {
-            ctx.translate(centerX, centerY);
-            switch (paddle) {
-                case 'LEFT':
-                    ctx.rotate(Math.PI / 2);  // +90° pour contrer la rotation -90°
-                    break;
-                case 'RIGHT':
-                    ctx.rotate(-Math.PI / 2); // -90° pour contrer la rotation +90°
-                    break;
-                case 'TOP':
-                    ctx.rotate(Math.PI);      // 180° pour contrer la rotation 180°
-                    break;
-                // DOWN: pas de rotation nécessaire
-            }
-            ctx.translate(-centerX, -centerY);
-        }
-        
-        // Configuration de la typographie selon la DA du site
-        ctx.font = 'bold 96px "Press Start 2P", monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        const countdownText = gameState.ballCountdown.toString();
-        
-        // Effet d'ombre portée pour plus de visibilité
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillText(countdownText, centerX + 4, centerY + 4);
-        
-        // Contour blanc pour un meilleur contraste
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 4;
-        ctx.strokeText(countdownText, centerX, centerY);
-        
-        // Texte principal en vert selon la DA du site
-        ctx.fillStyle = '#22c55e'; // Vert conforme à la palette du site
-        ctx.fillText(countdownText, centerX, centerY);
-        
-        // Effet de brillance/glow
-        ctx.shadowColor = '#22c55e';
-        ctx.shadowBlur = 20;
-        ctx.fillText(countdownText, centerX, centerY);
-        
-        ctx.restore();
-    }
-
-    // --- AFFICHAGE DES SCORES (avec cache pour éviter les modifications DOM inutiles) ---
-    const scoreElem = document.getElementById('score');
-    if (scoreElem) {
-        let newScoreHTML = '';
-        if (gameState.paddles && Array.isArray(gameState.paddles)) {
-            if (gameState.paddles.length === 4) {
-                // Mode 1v1v1v1 : scores des 4 joueurs avec leurs noms
-                newScoreHTML = gameState.paddles.map((p: any, i: number) => {
-                    // Utiliser le nom du joueur si disponible, sinon la position
-                    const displayName = p.playerName || p.side;
-                    return `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${displayName}: ${p.score || 0}</span>`;
-                }).join(' | ');
-            } else if (gameState.paddles.length === 2) {
-                // Mode 1v1 : gauche vs droite (avec noms si disponibles)
-                const leftName = gameState.paddles[0]?.playerName || 'P1';
-                const rightName = gameState.paddles[1]?.playerName || 'P2';
-                const leftScore = gameState.paddles[0]?.score || 0;
-                const rightScore = gameState.paddles[1]?.score || 0;
-                newScoreHTML = `<span id='leftScore'>${leftName}: ${leftScore}</span> - <span id='rightScore'>${rightName}: ${rightScore}</span>`;
-            }
-        } else {
-            // Fallback pour ancienne structure
-            const left = gameState.leftScore ?? 0;
-            const right = gameState.rightScore ?? 0;
-            newScoreHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
-        }
-        // Ne mettre à jour le DOM que si le contenu a changé
-        if (scoreElem.innerHTML !== newScoreHTML) {
-            scoreElem.innerHTML = newScoreHTML;
-        }
-    }
+    drawField(ctx, gameState, gameWidth, gameHeight);
+    drawPaddles(ctx, gameState);
+    drawBall(ctx, gameState);
+    drawCountdown(ctx, gameState);
+    updateScoreBoard(gameState);
 }
 
-window.draw = draw;
-window.initPongRenderer = initPongRenderer;
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+(window as any).resetPongRenderer = resetPongRenderer;
+(window as any).applyCanvasRotation = applyCanvasRotation;
+(window as any).resetCanvasRotation = resetCanvasRotation;
+(window as any).drawPongGame = draw;
+(window as any).draw = draw;
+(window as any).initPongRenderer = initPongRenderer;
