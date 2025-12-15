@@ -135,8 +135,8 @@ export function isUserInGame(socketId: string): boolean
   
   const room = rooms[playerRoom];
   // L'utilisateur est en jeu s'il est dans une room avec au moins 2 joueurs
-  // et que le jeu a commencé (existence de pongGame)
-  return room.players.length >= 2 && !!room.pongGame;
+	// et que le jeu est réellement en cours (pongGame.running)
+	return room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true;
 }
 
 // Helper: vérifier si un utilisateur (par username) est en jeu
@@ -149,7 +149,7 @@ export function isUsernameInGame(username: string): boolean
 	{
       // Vérifier si ce username est dans cette room et si le jeu a commencé
       const usernameInRoom = Object.values(room.playerUsernames).includes(username);
-      if (usernameInRoom && room.players.length >= 2 && !!room.pongGame)
+			if (usernameInRoom && room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true)
         return true;
     }
   }

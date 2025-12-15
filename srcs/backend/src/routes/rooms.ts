@@ -129,7 +129,8 @@ export default async function roomsRoutes(fastify: FastifyInstance)
 				if (room.playerUsernames) {
 					// Chercher par username dans les joueurs authentifiés
 					for (const [socketId, playerUsername] of Object.entries(room.playerUsernames)) {
-						if (playerUsername === username && room.players.includes(socketId)) {
+						const isActiveGame = room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true;
+						if (playerUsername === username && room.players.includes(socketId) && isActiveGame) {
 							return { 
 								roomName, 
 								maxPlayers: room.maxPlayers,

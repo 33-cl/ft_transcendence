@@ -8,6 +8,7 @@ import { PongGame } from '../../../game/PongGame.js';
 import { updateUserStats } from '../../user.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { getSocketIdForUser } from '../socketAuth.js';
+import { notifyFriendsGameEnded } from './gameEndHandlers.js';
 
 /**
  * Émet un événement quand un joueur rejoint ou quitte un tournoi
@@ -605,6 +606,15 @@ function handleFinalEnd(
         winner: { side: 'LEFT', score: winnerScore, username: winnerName },
         loser: { side: 'RIGHT', score: loserScore, username: loserName }
     });
+
+    // Le match est terminé: arrêter et retirer le pongGame pour ne pas laisser les joueurs "in-game"
+    if (room.pongGame) {
+        room.pongGame.stop();
+        room.pongGame = null;
+    }
+
+    // Remettre immédiatement les statuts à "online" côté amis
+    notifyFriendsGameEnded(room, fastify);
     
     // Notifier tous les joueurs de la fin du tournoi
     io.to(roomName).emit('tournamentComplete', {
