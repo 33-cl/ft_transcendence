@@ -182,17 +182,26 @@ function setupGlobalSocketListeners() {
                     } else if (data.maxPlayers === 4) {
                         load('game4');
                         // Appliquer la rotation du canvas pour que le paddle contrôlé soit en bas
-                        // Attendre que le canvas soit dans le DOM
+                        // Le canvas est caché par défaut (visibility: hidden dans game4.html.ts)
                         const waitForCanvasRotation = () => {
-                            const mapCanvas = document.getElementById('map');
+                            const mapCanvas = document.getElementById('map') as HTMLCanvasElement;
                             if (mapCanvas && typeof window.applyCanvasRotation === 'function') {
-                                console.log(`🔄 Applying rotation for paddle: ${window.controlledPaddle}`);
+                                // Appliquer la rotation pendant que le canvas est caché
                                 window.applyCanvasRotation(window.controlledPaddle, 'map');
+                                
+                                // Forcer le navigateur à appliquer le CSS avant de rendre visible
+                                // Le double requestAnimationFrame garantit que le style est appliqué
+                                requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                        mapCanvas.style.visibility = 'visible';
+                                    });
+                                });
                             } else {
-                                setTimeout(waitForCanvasRotation, 50);
+                                setTimeout(waitForCanvasRotation, 20);
                             }
                         };
-                        setTimeout(waitForCanvasRotation, 100);
+                        // Démarrer immédiatement
+                        waitForCanvasRotation();
                     } else if (data.maxPlayers === 3) {
                         load('game3');
                     } else {
