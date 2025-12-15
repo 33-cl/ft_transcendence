@@ -1,6 +1,8 @@
+import { getSafeAvatarUrl } from '../services/avatarProxy.js';
+
 export async function profileCardHTML() {
     const username = window.currentUser?.username || 'a';
-    const avatarUrl = window.currentUser?.avatar_url || './img/planet.gif';
+    const avatarUrl = getSafeAvatarUrl(window.currentUser?.avatar_url);
     
     // Check if user is first in leaderboard
     let crown = '';
