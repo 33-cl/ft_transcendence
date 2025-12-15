@@ -34,7 +34,11 @@ function showSessionDisconnectedOverlay(message: string)
 let socket = io('', { 
   transports: ["websocket"], 
   secure: true,
-  withCredentials: true  // IMPORTANT: Permet la transmission des cookies de session
+  withCredentials: true,  // IMPORTANT: Permet la transmission des cookies de session
+  reconnection: true,
+  reconnectionAttempts: 5,      // Limite à 5 tentatives de reconnexion
+  reconnectionDelay: 1000,      // Délai initial de 1 seconde
+  reconnectionDelayMax: 5000    // Délai max de 5 secondes
 });
 window.socket = socket;
 
@@ -431,7 +435,11 @@ function reconnectWebSocket() {
             transports: ["websocket"], 
             secure: true,
             withCredentials: true,
-            forceNew: true  // Force a new connection
+            forceNew: true,  // Force a new connection
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000
         });
         
         window.socket = socket;
