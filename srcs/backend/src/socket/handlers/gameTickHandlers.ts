@@ -144,6 +144,25 @@ function enrichGameStateWithPlayerNames(room: RoomType): any {
 }
 
 /**
+ * Enrichit un état avec un mapping explicite PaddleSide -> playerName.
+ * Utile pour les matchs de tournoi (où l'état est broadcast sans passer par broadcastGameState).
+ */
+function enrichStateWithSideNames(state: any, sideToName: Record<string, string>): any {
+    if (!state || !Array.isArray(state.paddles))
+        return state;
+
+    const enrichedPaddles = state.paddles.map((paddle: any) => ({
+        ...paddle,
+        playerName: sideToName[paddle.side] || paddle.playerName || paddle.side
+    }));
+
+    return {
+        ...state,
+        paddles: enrichedPaddles
+    };
+}
+
+/**
  * Envoie l'état actuel du jeu à tous les clients de la room
  */
 export function broadcastGameState(room: RoomType, roomName: string, io: Server): void
@@ -171,13 +190,18 @@ export function broadcastFinalGameState(room: RoomType, io: Server): void
     // Récupérer les socket IDs actuels
     const player1CurrentSocketId = getSocketIdForUser(player1UserId);
     const player2CurrentSocketId = getSocketIdForUser(player2UserId);
+
+    // Enrichir avec les usernames (finale = LEFT: semifinal1Winner, RIGHT: semifinal2Winner)
+    const leftName = state.playerUsernames[oldPlayer1SocketId] || 'P1';
+    const rightName = state.playerUsernames[oldPlayer2SocketId] || 'P2';
+    const enrichedState = enrichStateWithSideNames(room.pongGame!.state, { LEFT: leftName, RIGHT: rightName });
     
     // Envoyer à chaque joueur
     if (player1CurrentSocketId) {
-        io.to(player1CurrentSocketId).emit('gameState', room.pongGame!.state);
+        io.to(player1CurrentSocketId).emit('gameState', enrichedState);
     }
     if (player2CurrentSocketId) {
-        io.to(player2CurrentSocketId).emit('gameState', room.pongGame!.state);
+        io.to(player2CurrentSocketId).emit('gameState', enrichedState);
     }
 }
 
@@ -212,6 +236,7 @@ export function cleanupFinishedRoom(room: RoomType, roomName: string, io: Server
 function updateSemifinalMatch(
     semifinal: any,
     semifinalNumber: number,
+    playerUsernames: Record<string, string> | undefined,
     io: any
 ): void {
     // Vérification robuste : le match peut être null ou le jeu peut être arrêté pendant la transition
@@ -235,9 +260,13 @@ function updateSemifinalMatch(
     
     // Vérifier que le jeu existe toujours avant d'envoyer (peut être null après tick si fin de match)
     if (semifinal.pongGame && semifinal.pongGame.state) {
+        const leftName = playerUsernames?.[semifinal.player1] || 'P1';
+        const rightName = playerUsernames?.[semifinal.player2] || 'P2';
+        const enrichedState = enrichStateWithSideNames(semifinal.pongGame.state, { LEFT: leftName, RIGHT: rightName });
+
         // Envoyer l'état du jeu aux joueurs de ce match
-        io.to(semifinal.player1).emit('gameState', semifinal.pongGame.state);
-        io.to(semifinal.player2).emit('gameState', semifinal.pongGame.state);
+        io.to(semifinal.player1).emit('gameState', enrichedState);
+        io.to(semifinal.player2).emit('gameState', enrichedState);
     }
 }
 
@@ -260,8 +289,8 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
         // Gestion des tournois avec demi-finales simultanées
         if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'semifinals') {
             // Mettre à jour les 2 demi-finales (tick + broadcast dans la fonction)
-            updateSemifinalMatch(typedRoom.tournamentState.semifinal1, 1, io);
-            updateSemifinalMatch(typedRoom.tournamentState.semifinal2, 2, io);
+            updateSemifinalMatch(typedRoom.tournamentState.semifinal1, 1, typedRoom.tournamentState.playerUsernames, io);
+            updateSemifinalMatch(typedRoom.tournamentState.semifinal2, 2, typedRoom.tournamentState.playerUsernames, io);
             continue;
         }
         
