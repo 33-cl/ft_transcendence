@@ -8,6 +8,11 @@ export interface GameEndInfo {
     loser: { side: string; score: number };
 }
 
+// Fonction utilitaire interne pour marquer qu'un point a été attribué
+function markPointScored(ballState: BallState): void {
+    ballState.pointScored = true;
+}
+
 export function checkScoring4Players(state: GameState, ballState: BallState): void {
     const { canvasWidth, canvasHeight, ballRadius } = state;
     const paddles = state.paddles;
@@ -21,28 +26,28 @@ export function checkScoring4Players(state: GameState, ballState: BallState): vo
         if (ballState.lastContact === 1) paddles[1].score++; // B gagne
         else if (ballState.lastContact === 2) paddles[2].score++; // C gagne
         else if (ballState.lastContact === 3) paddles[3].score++; // D gagne
-        ballState.pointScored = true; // Marquer qu'un point a été attribué
+        markPointScored(ballState); // Marquer qu'un point a été attribué
     }
     // Si la moitié de la balle sort par le côté droit - joueur C éliminé
     else if (state.ballX - ballRadius/2 >= canvasWidth) {
         if (ballState.lastContact === 0) paddles[0].score++; // A gagne
         else if (ballState.lastContact === 1) paddles[1].score++; // B gagne
         else if (ballState.lastContact === 3) paddles[3].score++; // D gagne
-        ballState.pointScored = true; // Marquer qu'un point a été attribué
+        markPointScored(ballState); // Marquer qu'un point a été attribué
     }
     // Si la moitié de la balle sort par le bas - joueur B éliminé
     else if (state.ballY - ballRadius/2 >= canvasHeight) {
         if (ballState.lastContact === 0) paddles[0].score++; // A gagne
         else if (ballState.lastContact === 2) paddles[2].score++; // C gagne
         else if (ballState.lastContact === 3) paddles[3].score++; // D gagne
-        ballState.pointScored = true; // Marquer qu'un point a été attribué
+        markPointScored(ballState); // Marquer qu'un point a été attribué
     }
     // Si la moitié de la balle sort par le haut - joueur D éliminé
     else if (state.ballY + ballRadius/2 <= 0) {
         if (ballState.lastContact === 0) paddles[0].score++; // A gagne
         else if (ballState.lastContact === 1) paddles[1].score++; // B gagne
         else if (ballState.lastContact === 2) paddles[2].score++; // C gagne
-        ballState.pointScored = true; // Marquer qu'un point a été attribué
+        markPointScored(ballState); // Marquer qu'un point a été attribué
     }
 }
 
@@ -57,12 +62,12 @@ export function checkScoring2Players(state: GameState, ballState: BallState): vo
     // But à gauche - la moitié de la balle sort par la gauche
     if (state.ballX + ballRadius/2 <= 0) {
         paddles[1].score++;
-        ballState.pointScored = true; // Marquer qu'un point a été attribué
+        markPointScored(ballState); // Marquer qu'un point a été attribué
     }
     // But à droite - la moitié de la balle sort par la droite
     else if (state.ballX - ballRadius/2 >= canvasWidth) {
         paddles[0].score++;
-        ballState.pointScored = true; // Marquer qu'un point a été attribué
+        markPointScored(ballState); // Marquer qu'un point a été attribué
     }
 }
 
@@ -72,13 +77,13 @@ export function checkGameEnd4Players(state: GameState): GameEndInfo | null {
     if (!paddles || paddles.length !== 4) return null;
 
     // Fin de partie si un joueur atteint le score cible
-    for (const p of paddles) {
-        if (p.score >= state.win) {
-            // Find winner and loser for 1v1v1 mode
+    for (const paddle of paddles) {
+        if (paddle.score >= state.win) {
+            // Trouver le gagnant et le perdant pour le mode 1v1v1
             const winner = paddles.find(paddle => paddle.score >= state.win);
             const losers = paddles.filter(paddle => paddle.score < state.win);
             if (winner && losers.length > 0) {
-                // For 1v1v1, we'll pick the loser with the lowest score
+                // Pour le 1v1v1, on prend le perdant avec le score le plus bas
                 const loser = losers.reduce((prev, curr) => prev.score < curr.score ? prev : curr);
                 return {
                     winner: { side: winner.side, score: winner.score },
