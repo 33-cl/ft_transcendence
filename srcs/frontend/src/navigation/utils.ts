@@ -269,6 +269,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'profile')
     {
+        // Capturer l'utilisateur sélectionné AVANT les show() car profileDashboard le reset à null
+        const targetUser = window.selectedProfileUser || window.currentUser;
+        
         // Refresh user stats BEFORE showing profile to ensure displayed data is current
         if (window.currentUser && window.refreshUserStats) {
             window.refreshUserStats().then(async (_statsChanged: boolean) => {
@@ -284,12 +287,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 setTimeout(async () => {
                     if (myLoadId !== currentLoadId) return; // Abort if newer load
                     const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                    const user = window.selectedProfileUser || window.currentUser;
-                    const wins = user?.wins || 0;
-                    const losses = user?.losses || 0;
+                    const wins = targetUser?.wins || 0;
+                    const losses = targetUser?.losses || 0;
                     initializeStatsChart(wins, losses);
-                    if (user?.id) {
-                        await initializeWinRateHistoryChart(user.id);
+                    if (targetUser?.id) {
+                        await initializeWinRateHistoryChart(targetUser.id);
                     }
                 }, 100);
             }).catch(async (error: any) => {
@@ -305,12 +307,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 setTimeout(async () => {
                     if (myLoadId !== currentLoadId) return; // Abort if newer load
                     const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                    const user = window.selectedProfileUser || window.currentUser;
-                    const wins = user?.wins || 0;
-                    const losses = user?.losses || 0;
+                    const wins = targetUser?.wins || 0;
+                    const losses = targetUser?.losses || 0;
                     initializeStatsChart(wins, losses);
-                    if (user?.id) {
-                        await initializeWinRateHistoryChart(user.id);
+                    if (targetUser?.id) {
+                        await initializeWinRateHistoryChart(targetUser.id);
                     }
                 }, 100);
             });
@@ -325,12 +326,11 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             setTimeout(async () => {
                 if (myLoadId !== currentLoadId) return; // Abort if newer load
                 const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                const user = window.selectedProfileUser || window.currentUser;
-                const wins = user?.wins || 0;
-                const losses = user?.losses || 0;
+                const wins = targetUser?.wins || 0;
+                const losses = targetUser?.losses || 0;
                 initializeStatsChart(wins, losses);
-                if (user?.id) {
-                    await initializeWinRateHistoryChart(user.id);
+                if (targetUser?.id) {
+                    await initializeWinRateHistoryChart(targetUser.id);
                 }
             }, 100);
         }
