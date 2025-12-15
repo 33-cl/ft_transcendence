@@ -195,7 +195,10 @@ export function handleOnlineGamePreparation(
     if (!user)
         return false;
     
-    notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, getGlobalIo());
+    // Ne pas notifier "in-game" pour les tournois
+    if (!room.isTournament)
+        notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, getGlobalIo());
+    
     return true;
 }
 

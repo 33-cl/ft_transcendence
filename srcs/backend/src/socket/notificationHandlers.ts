@@ -158,6 +158,12 @@ export function broadcastUserStatusChange(globalIo: Server | null, userId: numbe
     if (!globalIo) 
         return;
     
+    // DEBUG: Tracer tous les appels in-game
+    if (status === 'in-game') {
+        console.log(`🔴 broadcastUserStatusChange IN-GAME called for userId=${userId}`);
+        console.trace('Stack trace:');
+    }
+    
     try {
         const user = getUserBasicInfo(userId);
         if (!user)
