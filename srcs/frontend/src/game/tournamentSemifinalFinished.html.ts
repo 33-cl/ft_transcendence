@@ -56,7 +56,13 @@ export const tournamentSemifinalFinishedHTML = (data?: any) => {
                 
                 <div class="game-finished-actions">
                     ${isWinner 
-                        ? '<div class="waiting-spinner"></div>'
+                        ? `<div class="mini-pong-animation">
+                            <div class="mini-pong-container">
+                                <div class="mini-pong-paddle-left"></div>
+                                <div class="mini-pong-paddle-right"></div>
+                                <div class="mini-pong-ball"></div>
+                            </div>
+                        </div>`
                         : '<button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>'}
                 </div>
             </div>

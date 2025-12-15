@@ -233,36 +233,7 @@
         height: 20px;
     }
 
-    .mini-pong-animation {
-        @apply inline-block ml-3 w-8 h-5;
-        animation: spin 3s linear infinite;
-    }
 
-    .mini-pong-container {
-        @apply relative w-full h-full bg-white bg-opacity-20 rounded-sm overflow-hidden;
-    }
-
-    .mini-pong-paddle-left {
-        @apply absolute left-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2;
-    }
-
-    .mini-pong-paddle-right {
-        @apply absolute right-0 top-1/2 w-0.5 h-2 bg-white -translate-y-1/2;
-    }
-
-    .mini-pong-ball {
-        @apply absolute top-1/2 w-1 h-1 bg-white rounded-full -translate-y-1/2;
-        animation: ballMove 1s ease-in-out infinite alternate;
-    }
-
-    @keyframes ballMove {
-        from {
-            left: 10%;
-        }
-        to {
-            left: 85%;
-        }
-    }
 
     /* Context menu for friend list */
     #contextMenu {

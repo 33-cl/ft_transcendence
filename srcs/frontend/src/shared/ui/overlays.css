@@ -180,6 +180,34 @@
         to { transform: rotate(360deg); }
     }
 
+    /* Mini Pong animation for tournament waiting */
+    .mini-pong-animation {
+        @apply inline-block w-16 h-10;
+        animation: spin 2.5s linear infinite;
+    }
+
+    .mini-pong-container {
+        @apply relative w-full h-full rounded-sm overflow-hidden;
+    }
+
+    .mini-pong-paddle-left {
+        @apply absolute left-1 top-1/2 w-1 h-4 bg-white -translate-y-1/2;
+    }
+
+    .mini-pong-paddle-right {
+        @apply absolute right-1 top-1/2 w-1 h-4 bg-white -translate-y-1/2;
+    }
+
+    .mini-pong-ball {
+        @apply absolute top-1/2 w-2 h-2 bg-white rounded-full -translate-y-1/2;
+        animation: ballMove 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes ballMove {
+        from { left: 15%; }
+        to { left: 80%; }
+    }
+
     /* Spectate indicator */
     .spectate-indicator {
         @apply fixed top-4 left-1/2 transform -translate-x-1/2;

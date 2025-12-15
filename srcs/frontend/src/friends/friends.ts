@@ -429,8 +429,6 @@ function updateFriendStatus(username: string, status: string): void {
     if (!friendElement) return;
 
     const statusIndicator = friendElement.querySelector('.friend-status-indicator') as HTMLElement;
-    const friendNameElement = friendElement.querySelector('.friend-username') as HTMLElement;
-
     if (!statusIndicator) return;
 
     let statusColor = '#666';
@@ -448,25 +446,7 @@ function updateFriendStatus(username: string, status: string): void {
     friendElement.setAttribute('data-status', status);
     friendElement.setAttribute('data-is-in-game', status === 'in-game' ? 'true' : 'false');
 
-    if (friendNameElement) {
-        const currentAnimation = friendNameElement.querySelector('.mini-pong-animation');
-        const shouldShowAnimation = status === 'in-game';
 
-        if (shouldShowAnimation && !currentAnimation) {
-            const miniPongHTML = `
-                <div class="mini-pong-animation">
-                    <div class="mini-pong-container">
-                        <div class="mini-pong-paddle-left"></div>
-                        <div class="mini-pong-paddle-right"></div>
-                        <div class="mini-pong-ball"></div>
-                    </div>
-                </div>
-            `;
-            friendNameElement.insertAdjacentHTML('beforeend', miniPongHTML);
-        } else if (!shouldShowAnimation && currentAnimation) {
-            currentAnimation.remove();
-        }
-    }
 }
 
 /**
