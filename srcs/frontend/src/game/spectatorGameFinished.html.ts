@@ -4,7 +4,8 @@ export function spectatorGameFinishedHTML(data?: any) {
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
     const forfeitMessage = data?.forfeitMessage || '';
-    
+    const numPlayers = data?.numPlayers || 2;
+    const is4PlayerGame = numPlayers === 4;
     
     // Determine display names
     const winnerName = winner?.username || winner?.side || 'Winner';
@@ -12,7 +13,28 @@ export function spectatorGameFinishedHTML(data?: any) {
     const winnerScore = winner?.score ?? 0;
     const loserScore = loser?.score ?? 0;
     
-    // Utiliser les mêmes styles que gameFinished pour la cohérence visuelle
+    // Layout pour parties 4 joueurs - afficher seulement le gagnant
+    if (is4PlayerGame) {
+        return /*html*/`
+            <div class="game-finished-overlay">
+                <div class="game-finished-box">
+                    <h2 class="game-finished-title">GAME OVER</h2>
+                    
+                    <div class="game-finished-4player-result">
+                        <div class="game-finished-winner-announcement">
+                            ${winnerName} WINS!
+                        </div>
+                    </div>
+                    
+                    <div class="game-finished-actions">
+                        <button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Utiliser les mêmes styles que gameFinished pour la cohérence visuelle (1v1)
     return /*html*/`
         <div class="game-finished-overlay">
             <div class="game-finished-box">
