@@ -89,6 +89,23 @@ function cloneState(state: GameState): GameState {
     };
 }
 
+// Utilitaire : calcule la distance entre deux points
+function distanceToCenter(x: number, y: number, centerX: number, centerY: number): number {
+    return Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+}
+
+// Utilitaire : vérifie si les paddles ont bougé
+function paddlesHaveMoved(paddlesA: {x: number, y: number}[], paddlesB: {x: number, y: number}[]): boolean {
+    for (let i = 0; i < paddlesA.length; i++) {
+        const curr = paddlesA[i];
+        const prev = paddlesB[i];
+        if (curr && prev && (Math.abs(curr.x - prev.x) > 0.5 || Math.abs(curr.y - prev.y) > 0.5)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // ============================================================================
 // GESTION DU BUFFER
 // ============================================================================
@@ -99,7 +116,7 @@ function cloneState(state: GameState): GameState {
  * Filtre les duplicates et les etats trop vieux
  */
 export function addGameState(gameState: GameState): void {
-    // Normaliser et coerce les champs numeriques pour eviter des strings ou undefined
+    // Normaliser et forcer les champs numériques pour éviter des strings ou undefined
     if (!gameState.timestamp) {
         gameState.timestamp = Date.now();
     }
@@ -112,40 +129,37 @@ export function addGameState(gameState: GameState): void {
 
     const now = Date.now();
     
-    // Ignorer les etats trop vieux (arrives en burst retarde)
+    // Ignorer les états trop vieux (arrivés en burst retardé)
     const stateAge = now - gameState.timestamp;
     if (stateAge > MAX_STATE_AGE_MS) {
         return;
     }
 
-    // Detecter un reset de balle (position au centre + grande teleportation)
-    // Quand cela arrive, vider le buffer pour eviter les artefacts visuels
+    // Détecter un reset de balle (position au centre + grande téléportation)
+    // Quand cela arrive, vider le buffer pour éviter les artefacts visuels
     if (stateBuffer.length > 0) {
         const last = stateBuffer[stateBuffer.length - 1]!;
         const centerX = gameState.canvasWidth / 2;
         const centerY = gameState.canvasHeight / 2;
         const isAtCenter = Math.abs(gameState.ballX - centerX) < 20 && 
                            Math.abs(gameState.ballY - centerY) < 20;
-        const lastDistance = Math.sqrt(
-            Math.pow(last.ballX - centerX, 2) + 
-            Math.pow(last.ballY - centerY, 2)
-        );
-        // Si la balle est au centre et etait loin avant = reset detecte
+        const lastDistance = distanceToCenter(last.ballX, last.ballY, centerX, centerY);
+        // Si la balle est au centre et était loin avant = reset détecté
         if (isAtCenter && lastDistance > 100) {
-            // Vider le buffer pour transition immediate
-            // stateBuffer = []; // COMMENTÉ: On garde le buffer pour permettre l'extrapolation de sortie dans interpolateStates
+            // Vider le buffer pour transition immédiate
+            // stateBuffer = []; // COMMENTÉ : On garde le buffer pour permettre l'extrapolation de sortie dans interpolateStates
         }
     }
 
-    // Filtrer les duplicates: meme position que le dernier etat
-    // IMPORTANT: Ne pas filtrer si:
+    // Filtrer les duplicates : même position que le dernier état
+    // IMPORTANT : Ne pas filtrer si :
     // - Le ballCountdown a changé (sinon le 3-2-1 ne s'affiche pas)
     // - On est en phase de countdown (balle immobile mais paddles bougent)
     // - Les paddles ont changé de position
     if (stateBuffer.length > 0) {
         const last = stateBuffer[stateBuffer.length - 1]!;
-        const dx = Math.abs(gameState.ballX - last.ballX);
-        const dy = Math.abs(gameState.ballY - last.ballY);
+        const deltaBallX = Math.abs(gameState.ballX - last.ballX);
+        const deltaBallY = Math.abs(gameState.ballY - last.ballY);
         const countdownChanged = (gameState.ballCountdown !== undefined && 
                                    gameState.ballCountdown !== last.ballCountdown);
         const isInCountdown = gameState.ballCountdown !== undefined && gameState.ballCountdown > 0;
@@ -153,25 +167,18 @@ export function addGameState(gameState: GameState): void {
         // Vérifier si les paddles ont bougé
         let paddlesMoved = false;
         if (gameState.paddles && last.paddles && gameState.paddles.length === last.paddles.length) {
-            for (let i = 0; i < gameState.paddles.length; i++) {
-                const curr = gameState.paddles[i];
-                const prev = last.paddles[i];
-                if (curr && prev && (Math.abs(curr.x - prev.x) > 0.5 || Math.abs(curr.y - prev.y) > 0.5)) {
-                    paddlesMoved = true;
-                    break;
-                }
-            }
+            paddlesMoved = paddlesHaveMoved(gameState.paddles, last.paddles);
         }
         
         // Ne pas filtrer si on est en countdown OU si les paddles ont bougé OU si countdown a changé
-        if (dx < DUPLICATE_THRESHOLD && dy < DUPLICATE_THRESHOLD && 
+        if (deltaBallX < DUPLICATE_THRESHOLD && deltaBallY < DUPLICATE_THRESHOLD && 
             !countdownChanged && !isInCountdown && !paddlesMoved) {
             return;
         }
     }
 
-    // Mettre a jour l'offset serveur (moyenne glissante plus stable)
-    // On utilise un facteur plus faible pour eviter les fluctuations dues aux bursts reseau
+    // Mettre à jour l'offset serveur (moyenne glissante plus stable)
+    // On utilise un facteur plus faible pour éviter les fluctuations dues aux bursts réseau
     const newOffset = gameState.timestamp - now;
     // Ne mettre à jour que si la différence n'est pas trop grande (éviter les sauts)
     const offsetDiff = Math.abs(newOffset - serverTimeOffset);
@@ -188,7 +195,7 @@ export function addGameState(gameState: GameState): void {
     const newState = cloneState(gameState);
     stateBuffer.push(newState);
     
-    // Trier par timestamp (normalement deja trie mais securite)
+    // Trier par timestamp (normalement déjà trié mais sécurité)
     stateBuffer.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     
     // Limiter la taille du buffer
@@ -202,12 +209,12 @@ function computeVelocityFromBuffer(): { vx: number; vy: number } | null {
     if (stateBuffer.length < 2) return null;
     const last = stateBuffer[stateBuffer.length - 1]!;
     const prev = stateBuffer[stateBuffer.length - 2]!;
-    const tLast = Number(last.timestamp || 0);
-    const tPrev = Number(prev.timestamp || 0);
-    const dt = tLast - tPrev;
-    if (!dt) return null;
-    const vx = (last.ballX - prev.ballX) / dt; // pixels per ms
-    const vy = (last.ballY - prev.ballY) / dt; // pixels per ms
+    const lastTimestamp = Number(last.timestamp || 0);
+    const prevTimestamp = Number(prev.timestamp || 0);
+    const deltaTime = lastTimestamp - prevTimestamp;
+    if (!deltaTime) return null;
+    const vx = (last.ballX - prev.ballX) / deltaTime; // pixels per ms
+    const vy = (last.ballY - prev.ballY) / deltaTime; // pixels per ms
     return { vx, vy };
 }
 
