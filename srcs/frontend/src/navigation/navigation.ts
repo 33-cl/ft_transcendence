@@ -7,7 +7,10 @@ import { load } from './utils.js';
  * @param pageName - Nom de la page à ajouter à l'historique
  */
 export function pushHistoryState(pageName: string): void {
-    window.history.pushState({ page: pageName }, '', `/${pageName}`);
+    // Les pages de fin de jeu restent sur /game dans l'URL
+    const gameFinishedPages = ['gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+    const urlPath = gameFinishedPages.includes(pageName) ? 'game' : pageName;
+    window.history.pushState({ page: pageName }, '', `/${urlPath}`);
 }
 
 /**
@@ -15,7 +18,10 @@ export function pushHistoryState(pageName: string): void {
  * @param pageName - Nom de la page pour remplacer l'état actuel
  */
 export function replaceHistoryState(pageName: string): void {
-    window.history.replaceState({ page: pageName }, '', `/${pageName}`);
+    // Les pages de fin de jeu restent sur /game dans l'URL
+    const gameFinishedPages = ['gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+    const urlPath = gameFinishedPages.includes(pageName) ? 'game' : pageName;
+    window.history.replaceState({ page: pageName }, '', `/${urlPath}`);
 }
 
 /**
