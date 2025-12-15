@@ -171,6 +171,10 @@ export function initializeScoreProgressionChart(match: MatchData): void {
  * Initialise tous les graphiques de la page de statistiques
  */
 export function initializeGameStatsCharts(match: MatchData): void {
+    if (!match) {
+        console.warn('No match data provided for charts');
+        return;
+    }
     initializePointsDistributionChart(match);
     initializeScoreProgressionChart(match);
 }

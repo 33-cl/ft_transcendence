@@ -12,6 +12,18 @@ export interface MatchData {
 }
 
 export function gameStatsHTML(match: MatchData, _currentUserId: number): string {
+    // Protection contre les données manquantes
+    if (!match) {
+        return /*html*/ `
+        <div class="gamestats-container">
+            <div class="gamestats-header">
+                <h1 class="gamestats-title">Match Statistics</h1>
+                <p class="gamestats-error">No match data available</p>
+            </div>
+        </div>
+        `;
+    }
+    
     // Formater la date
     const matchDate = new Date(match.created_at);
     const formattedDate = matchDate.toLocaleDateString('en-US', {
