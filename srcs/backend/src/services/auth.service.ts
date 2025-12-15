@@ -38,8 +38,6 @@ export interface CreateUserInput {
 
 export interface JwtPayload {
   userId: number;
-  username: string;
-  email: string;
 }
 
 // ============================================
@@ -146,9 +144,7 @@ export function getUserById(userId: number): UserData | undefined {
 export function generateJwt(user: UserData): string {
   return jwt.sign(
     {
-      userId: user.id,
-      username: user.username,
-      email: user.email
+      userId: user.id
     } as JwtPayload,
     JWT_SECRET,
     { expiresIn: `${JWT_EXPIRY_DAYS}d` }

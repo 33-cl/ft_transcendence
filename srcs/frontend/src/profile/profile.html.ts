@@ -1,3 +1,5 @@
+import { getSafeAvatarUrl } from '../services/avatarProxy.js';
+
 export async function fetchUserMatches(userId: string) {
     try {
         const response = await fetch(`/matches/history/${userId}?limit=50`);
@@ -23,7 +25,7 @@ export async function profileHTML(targetUser?: any) {
     const username = user?.username || 'user';
     const wins = user?.wins || 0;
     const losses = user?.losses || 0;
-    const avatarUrl = user?.avatar_url || './img/planet.gif';
+    const avatarUrl = getSafeAvatarUrl(user?.avatar_url);
     
     // Récupérer les vrais matchs de l'utilisateur
     const matches = user?.id ? await fetchUserMatches(user.id) : [];

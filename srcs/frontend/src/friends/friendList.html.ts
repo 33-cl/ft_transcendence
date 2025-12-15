@@ -10,6 +10,7 @@ export {
     destroyLoadingIcons,
     updateFriendRequestsBadge
 } from './friends.js';
+import { getSafeAvatarUrl } from '../services/avatarProxy.js';
 
 export async function friendListHTML() {
     try {
@@ -56,7 +57,7 @@ export async function friendListHTML() {
         let userItems = '';
 
         users.forEach((user: any) => {
-            const avatarUrl = user.avatar_url || './img/planet.gif';
+            const avatarUrl = getSafeAvatarUrl(user.avatar_url);
             const isFirstRank = user.id === firstRankUserId;
             const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon">' : '';
             

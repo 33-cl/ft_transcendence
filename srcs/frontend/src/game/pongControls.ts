@@ -89,18 +89,27 @@ function updatePaddleKeyBindings() {
                         ArrowLeft: { player: paddle, direction: 'up' },   // Gauche visuel = 'up' 
                         ArrowRight: { player: paddle, direction: 'down' } // Droite visuel = 'down'
                     };
-                } else if (paddle === 'LEFT' || paddle === 'RIGHT') {
-                    // Rotation ±90° : il faut inverser les directions
-                    // Car après rotation, la gauche visuelle devient la droite logique
+                } else if (paddle === 'LEFT') {
+                    // Rotation -90° (antihoraire) : 
+                    // - Gauche visuelle → va vers le haut du canvas original → 'up'
+                    // - Droite visuelle → va vers le bas du canvas original → 'down'
                     keyToMove = {
-                        ArrowLeft: { player: paddle, direction: 'down' },  // Gauche visuel = 'down' (inversé)
-                        ArrowRight: { player: paddle, direction: 'up' }    // Droite visuel = 'up' (inversé)
+                        ArrowLeft: { player: paddle, direction: 'up' },
+                        ArrowRight: { player: paddle, direction: 'down' }
+                    };
+                } else if (paddle === 'RIGHT') {
+                    // Rotation +90° (horaire) :
+                    // - Gauche visuelle → va vers le bas du canvas original → 'down'
+                    // - Droite visuelle → va vers le haut du canvas original → 'up'
+                    keyToMove = {
+                        ArrowLeft: { player: paddle, direction: 'down' },
+                        ArrowRight: { player: paddle, direction: 'up' }
                     };
                 } else if (paddle === 'TOP') {
-                    // Rotation 180° : tout est inversé, donc on inverse aussi
+                    // Rotation 180° : tout est inversé
                     keyToMove = {
-                        ArrowLeft: { player: paddle, direction: 'down' },  // Gauche visuel = 'down' (inversé)
-                        ArrowRight: { player: paddle, direction: 'up' }    // Droite visuel = 'up' (inversé)
+                        ArrowLeft: { player: paddle, direction: 'down' },
+                        ArrowRight: { player: paddle, direction: 'up' }
                     };
                 }
             } else {

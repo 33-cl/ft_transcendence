@@ -200,7 +200,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
         // Generate JWT token like normal login
         const maxAge = 60 * 60 * 24 * 7; // 7 days
         const jwtToken = jwt.sign(
-            { userId: user.id, username: user.username, email: user.email },
+            { userId: user.id },
             JWT_SECRET,
             { expiresIn: '7d' }
         );

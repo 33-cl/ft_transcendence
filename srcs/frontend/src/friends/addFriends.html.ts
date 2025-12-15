@@ -1,5 +1,6 @@
 // Export functions from friends.ts
 export { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from './friends.js';
+import { getSafeAvatarUrl } from '../services/avatarProxy.js';
 
 export async function addFriendsHTML() {
     
@@ -22,7 +23,7 @@ export async function addFriendsHTML() {
     if (friendRequests.length > 0) {
         requestsHTML = friendRequests.map((request: any) => `
             <div class="friend-request-item">
-                <img src="${request.avatar_url || './img/planet.gif'}" 
+                <img src="${getSafeAvatarUrl(request.avatar_url)}" 
                      alt="${request.username}"
                      onerror="this.onerror=null;this.src='./img/planet.gif';">
                 <span>${request.username}</span>

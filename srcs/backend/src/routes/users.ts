@@ -204,83 +204,8 @@ export default async function usersRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Endpoint pour envoyer une demande d'ami
-  fastify.post('/users/:id/friend', async (request, reply) => {
-    try {
-      
-      // Récupérer le JWT depuis les cookies
-      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
-      const jwtToken = cookies['jwt'];
-      
-      if (!jwtToken) {
-        return reply.status(401).send({ error: 'Not authenticated' });
-      }
-
-      let currentUserId: number | null = null;
-      try {
-        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-        if (active) {
-          currentUserId = payload.userId;
-        }
-      } catch (err) {
-        return reply.status(401).send({ error: 'Invalid token' });
-      }
-
-      if (!currentUserId) {
-        return reply.status(401).send({ error: 'Not authenticated' });
-      }
-
-      // SECURITY: Rate limiting for friend requests to prevent spam
-      const friendRequestRateLimitKey = `friend_request_${currentUserId}`;
-      if (!checkRateLimit(friendRequestRateLimitKey, RATE_LIMITS.FRIEND_REQUEST.max, RATE_LIMITS.FRIEND_REQUEST.window)) {
-        return reply.status(429).send({ error: 'Too many friend requests. Please wait a moment.' });
-      }
-
-      // SECURITY: Validate ID parameter
-      const friendId = validateId((request.params as any).id);
-      if (!friendId) {
-        return reply.status(400).send({ error: 'Invalid friend ID' });
-      }
-      
-      if (friendId === currentUserId) {
-        return reply.status(400).send({ error: 'Cannot add yourself as a friend' });
-      }
-
-      // Vérifier que l'utilisateur existe
-      const friendExists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(friendId);
-      if (!friendExists) {
-        return reply.status(404).send({ error: 'User not found' });
-      }
-
-      // Vérifier que la relation d'amitié n'existe pas déjà (dans les deux sens)
-      const existingFriendship = db.prepare(
-        'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
-      ).get(currentUserId, friendId, friendId, currentUserId);
-      if (existingFriendship) {
-        return reply.status(400).send({ error: 'Already friends' });
-      }
-
-      // Vérifier qu'il n'y a pas déjà une demande en attente
-      const existingRequest = db.prepare('SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?').get(currentUserId, friendId, 'pending');
-      if (existingRequest) {
-        return reply.status(400).send({ error: 'Friend request already sent' });
-      }
-
-      // Envoyer la demande d'ami
-      db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
-      
-      // Notifier le destinataire de la demande d'ami
-      notifyFriendRequestReceived(friendId, currentUserId, fastify);
-      
-
-      return { success: true, message: 'Friend request sent' };
-    } catch (error) {
-      return reply.status(500).send({ error: 'Failed to send friend request' });
-    }
-  });
-
   // Endpoint pour obtenir les demandes d'amis reçues
+  // IMPORTANT: Ces routes doivent être définies AVANT /users/:id/friend pour éviter les conflits de routage
   fastify.get('/users/friend-requests/received', async (request, reply) => {
     try {
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
@@ -438,6 +363,82 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       return { success: true, message: 'Friend request rejected' };
     } catch (error) {
       return reply.status(500).send({ error: 'Failed to reject friend request' });
+    }
+  });
+
+  // Endpoint pour envoyer une demande d'ami
+  fastify.post('/users/:id/friend', async (request, reply) => {
+    try {
+      
+      // Récupérer le JWT depuis les cookies
+      const cookies = parseCookies(request.headers['cookie'] as string | undefined);
+      const jwtToken = cookies['jwt'];
+      
+      if (!jwtToken) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      let currentUserId: number | null = null;
+      try {
+        const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
+        const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
+        if (active) {
+          currentUserId = payload.userId;
+        }
+      } catch (err) {
+        return reply.status(401).send({ error: 'Invalid token' });
+      }
+
+      if (!currentUserId) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+
+      // SECURITY: Rate limiting for friend requests to prevent spam
+      const friendRequestRateLimitKey = `friend_request_${currentUserId}`;
+      if (!checkRateLimit(friendRequestRateLimitKey, RATE_LIMITS.FRIEND_REQUEST.max, RATE_LIMITS.FRIEND_REQUEST.window)) {
+        return reply.status(429).send({ error: 'Too many friend requests. Please wait a moment.' });
+      }
+
+      // SECURITY: Validate ID parameter
+      const friendId = validateId((request.params as any).id);
+      if (!friendId) {
+        return reply.status(400).send({ error: 'Invalid friend ID' });
+      }
+      
+      if (friendId === currentUserId) {
+        return reply.status(400).send({ error: 'Cannot add yourself as a friend' });
+      }
+
+      // Vérifier que l'utilisateur existe
+      const friendExists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(friendId);
+      if (!friendExists) {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      // Vérifier que la relation d'amitié n'existe pas déjà (dans les deux sens)
+      const existingFriendship = db.prepare(
+        'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
+      ).get(currentUserId, friendId, friendId, currentUserId);
+      if (existingFriendship) {
+        return reply.status(400).send({ error: 'Already friends' });
+      }
+
+      // Vérifier qu'il n'y a pas déjà une demande en attente
+      const existingRequest = db.prepare('SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?').get(currentUserId, friendId, 'pending');
+      if (existingRequest) {
+        return reply.status(400).send({ error: 'Friend request already sent' });
+      }
+
+      // Envoyer la demande d'ami
+      db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
+      
+      // Notifier le destinataire de la demande d'ami
+      notifyFriendRequestReceived(friendId, currentUserId, fastify);
+      
+
+      return { success: true, message: 'Friend request sent' };
+    } catch (error) {
+      return reply.status(500).send({ error: 'Failed to send friend request' });
     }
   });
 

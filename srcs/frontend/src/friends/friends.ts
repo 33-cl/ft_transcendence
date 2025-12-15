@@ -1,3 +1,5 @@
+import { getSafeAvatarUrl } from '../services/avatarProxy.js';
+
 /**
  * Ajoute un ami en envoyant une demande
  */
@@ -98,7 +100,7 @@ async function refreshFriendRequests(): Promise<void> {
         if (friendRequests.length > 0) {
             requestsHTML = friendRequests.map((request: any) => `
                 <div class="friend-request-item">
-                    <img src="${request.avatar_url || './img/planet.gif'}" 
+                    <img src="${getSafeAvatarUrl(request.avatar_url)}" 
                          alt="${request.username}"
                          onerror="this.onerror=null;this.src='./img/planet.gif';">
                     <span>${request.username}</span>
@@ -164,7 +166,7 @@ export function initializeAddFriendSearch(): void {
                     const users = data.users || [];
 
                     // Import security utilities
-                    const { escapeHtml, sanitizeUrl } = await import('../navigation/security.js');
+                    const { escapeHtml } = await import('../navigation/security.js');
 
                     if (users.length === 0) {
                         searchResults.innerHTML = '<div class="search-no-results">No users found</div>';
@@ -178,7 +180,7 @@ export function initializeAddFriendSearch(): void {
                             // SECURITY: Escape all user-controlled content to prevent XSS
                             const safeUserId = parseInt(user.id) || 0;
                             const safeUsername = escapeHtml(user.username || 'Unknown');
-                            const safeAvatarUrl = sanitizeUrl(user.avatar_url || './img/planet.gif');
+                            const safeAvatarUrl = getSafeAvatarUrl(user.avatar_url);
                             
                             return `
                                 <div class="search-result-item" data-user-id="${safeUserId}">
@@ -271,9 +273,18 @@ export function initializeFriendRequestListeners(): void {
     // Event listeners pour les boutons d'acceptation
     const acceptButtons = document.querySelectorAll('.friend-request-accept-btn');
     acceptButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const requestId = parseInt((e.target as HTMLElement).dataset.requestId || '0');
+        // Remove existing listeners by cloning the button
+        const newButton = button.cloneNode(true) as HTMLElement;
+        button.parentNode?.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', async (e) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            if (btn.disabled) return; // Prevent double-click
+            
+            const requestId = parseInt(btn.dataset.requestId || '0');
             if (requestId) {
+                btn.disabled = true;
+                btn.textContent = '...';
                 await acceptFriendRequest(requestId);
             }
         });
@@ -282,9 +293,18 @@ export function initializeFriendRequestListeners(): void {
     // Event listeners pour les boutons de rejet
     const rejectButtons = document.querySelectorAll('.friend-request-reject-btn');
     rejectButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const requestId = parseInt((e.target as HTMLElement).dataset.requestId || '0');
+        // Remove existing listeners by cloning the button
+        const newButton = button.cloneNode(true) as HTMLElement;
+        button.parentNode?.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', async (e) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            if (btn.disabled) return; // Prevent double-click
+            
+            const requestId = parseInt(btn.dataset.requestId || '0');
             if (requestId) {
+                btn.disabled = true;
+                btn.textContent = '...';
                 await rejectFriendRequest(requestId);
             }
         });

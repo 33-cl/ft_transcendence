@@ -15,6 +15,7 @@ import matchesRoutes from './src/routes/matches.js'; // Route /matches (match re
 import tournamentsRoutes from './src/routes/tournaments.js'; // Route /tournaments (tournois)
 import oauthRoutes from './src/routes/oauth.js'; // Route /auth/google/callback (OAuth)
 import gamesRoutes from './src/routes/games.js'; // Route /api/games (CLI game control)
+import avatarProxyRoutes from './src/routes/avatar-proxy.js'; // Route /avatar-proxy (proxy avatars Google)
 import { validateId } from './src/security.js'; // Import security helpers
 
 import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
@@ -126,6 +127,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
     app.register(tournamentsRoutes); // Ajoute les routes /tournaments
     app.register(oauthRoutes); // Ajoute les routes OAuth Google
     app.register(gamesRoutes); // Ajoute les routes /api/games (CLI)
+    app.register(avatarProxyRoutes); // Ajoute les routes /avatar-proxy (proxy avatars Google)
 
     // Route GET pour recup un profil par ID
     app.get('/profile/:id', async (request, reply) => {

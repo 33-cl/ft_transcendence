@@ -73,7 +73,7 @@ export async function verifyOAuth2FARoute(request: FastifyRequest, reply: Fastif
   // Générer le JWT final
   const maxAge = 60 * 60 * 24 * 7; // 7 days
   const jwtToken = jwt.sign(
-    { userId: user.id, username: user.username, email: user.email },
+    { userId: user.id },
     JWT_SECRET,
     { expiresIn: '7d' }
   );

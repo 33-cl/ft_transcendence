@@ -119,16 +119,16 @@ export function guardEventHandler<T extends Event>(
  * Doit être appelé au démarrage de l'application
  */
 export function installFetchGuard() {
-    const originalFetch = window.fetch;
+    const originalFetch = window.fetch.bind(window);
     
-    window.fetch = function(...args: Parameters<typeof fetch>): Promise<Response> {
-        const url = args[0]?.toString() || 'unknown';
+    window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const url = input?.toString() || 'unknown';
         
         // Si session bloquée, tout bloquer sauf /auth/me (pour vérifier l'état)
         if (isSessionBlocked()) {
             // Seul /auth/me est autorisé pour vérifier l'état de la session
             if (url.includes('/auth/me')) {
-                return originalFetch.apply(this, args);
+                return originalFetch(input, init);
             }
             // Tout le reste est bloqué
             return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
@@ -143,7 +143,7 @@ export function installFetchGuard() {
         }
         
         // Si tout est OK, exécuter normalement
-        return originalFetch.apply(this, args);
+        return originalFetch(input, init);
     };
     
 }
