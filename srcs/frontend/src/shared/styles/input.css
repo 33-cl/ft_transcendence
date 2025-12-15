@@ -21,6 +21,7 @@
 @import '../../leaderboard/leaderboard.css';
 @import '../../navigation/navigation.css';
 @import '../../tournament/tournament.css';
+@import '../../rules/rules.css';
 @import './toast.css';
 
 @tailwind base;

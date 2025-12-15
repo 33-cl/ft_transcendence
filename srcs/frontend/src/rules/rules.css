@@ -1,0 +1,91 @@
+@layer components {
+    /*
+        /rules uses an overlay-style layout.
+        The base `.page` rule applies a transform which would otherwise constrain
+        `position: fixed` descendants. Override specifically for #rules.
+    */
+    #rules.page {
+        @apply fixed inset-0 p-4 flex flex-col items-center justify-center min-h-screen gap-4;
+        transform: none !important;
+    }
+
+    .rules-overlay {
+        @apply fixed inset-0 z-[60];
+        @apply flex items-center justify-center;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .rules-box {
+        @apply flex flex-col items-center justify-center;
+        @apply p-12;
+        @apply bg-black;
+        @apply border-2 border-white;
+        @apply w-full max-w-5xl;
+        text-align: center;
+    }
+
+    .rules-title {
+        @apply text-3xl font-bold mb-8 text-white;
+        letter-spacing: 0.2em;
+    }
+
+    .rules-content {
+        @apply w-full;
+        text-align: left;
+    }
+
+    .rules-section-title {
+        @apply text-xl font-bold text-white mb-2;
+    }
+
+    .rules-section-title.spaced {
+        margin-top: 1.5rem;
+    }
+
+    .rules-muted {
+        @apply text-gray-300 mb-4;
+    }
+
+    .rules-mode-title {
+        @apply text-white font-bold;
+        margin-top: 0.75rem;
+    }
+
+    .rules-mode-title.first {
+        margin-top: 0;
+    }
+
+    .rules-line {
+        @apply text-gray-300;
+    }
+
+    .rules-line.spaced {
+        margin-bottom: 0.75rem;
+    }
+
+    .rules-key {
+        @apply text-white;
+    }
+
+    .rules-actions {
+        @apply flex flex-row gap-6 mt-6;
+        @apply justify-center;
+    }
+
+    .rules-btn {
+        @apply px-8 py-3 text-base font-bold;
+        @apply bg-black text-white;
+        @apply border-2 border-white;
+        @apply transition-all duration-200;
+        @apply cursor-pointer;
+        letter-spacing: 0.1em;
+    }
+
+    .rules-btn:hover {
+        @apply bg-white text-black;
+    }
+
+    .rules-btn:active {
+        transform: scale(0.98);
+    }
+}

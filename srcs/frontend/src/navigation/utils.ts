@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -33,6 +33,7 @@ const components = {
     gameConfig: {id: 'gameConfig', html: gameConfigHTML},
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
     tournaments: {id: 'tournaments', html: tournamentsHTML},
+    rules: {id: 'rules', html: rulesHTML},
 };
 
 async function show(pageName: keyof typeof components, data?: any)
@@ -409,6 +410,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             if (myLoadId !== currentLoadId) return; // Abort if newer load
             if (window.initAIConfigManagers) window.initAIConfigManagers();
         }, 100);
+    }
+    else if (pageName === 'rules')
+    {
+        stopFriendListRealtimeUpdates();
+        await show('rules');
+        await show('goToMain');
     }
     else if (pageName === 'tournaments') {
         stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
