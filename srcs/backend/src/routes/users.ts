@@ -639,7 +639,8 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       const friendsStatus = friends.map((friend: FriendRow) => {
         const socketId = getSocketIdForUser(friend.id);
         const isOnline = !!socketId;
-        const isInGame = isOnline && isUsernameInGame(friend.username);
+        // Exclure les tournois pour le statut "in-game"
+        const isInGame = isOnline && isUsernameInGame(friend.username, true);
         
         return {
           username: friend.username,

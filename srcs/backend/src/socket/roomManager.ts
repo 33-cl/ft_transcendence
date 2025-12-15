@@ -140,7 +140,8 @@ export function isUserInGame(socketId: string): boolean
 }
 
 // Helper: vérifier si un utilisateur (par username) est en jeu
-export function isUsernameInGame(username: string): boolean
+// excludeTournaments: si true, ignore les rooms de tournoi
+export function isUsernameInGame(username: string, excludeTournaments: boolean = false): boolean
 {
   for (const roomName in rooms)
 {
@@ -149,8 +150,12 @@ export function isUsernameInGame(username: string): boolean
 	{
       // Vérifier si ce username est dans cette room et si le jeu a commencé
       const usernameInRoom = Object.values(room.playerUsernames).includes(username);
-			if (usernameInRoom && room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true)
+			if (usernameInRoom && room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true) {
+        // Si on exclut les tournois et c'est un tournoi, on skip
+        if (excludeTournaments && (room as any).isTournament)
+          continue;
         return true;
+      }
     }
   }
   return false;
