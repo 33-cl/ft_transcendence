@@ -58,6 +58,16 @@
         @apply w-full;
     }
 
+    /* Layout spécifique pour parties 4 joueurs */
+    .game-finished-4player-result {
+        @apply flex flex-col items-center justify-center mb-8;
+        @apply w-full;
+    }
+
+    .game-finished-winner-score {
+        @apply text-2xl text-gray-400 mt-2;
+    }
+
     .game-finished-winner-announcement {
         @apply text-4xl font-bold mb-6 text-white;
         @apply tracking-widest;

@@ -92,10 +92,12 @@ export function handleLocalGameEnd(
     if (room && room.players && room.players.length > 0)
     {
         const isAIGame = room.pongGame?.state?.aiConfig?.enabled || false;
+        const numPlayers = room.maxPlayers || 2;
         io.to(roomName).emit('gameFinished', {
             winner,
             loser,
-            mode: isAIGame ? 'ai' : 'local'
+            mode: isAIGame ? 'ai' : 'local',
+            numPlayers
         });
     }
 }
@@ -197,6 +199,7 @@ export function notifyPlayersAndSpectators(
     
     const connectedSockets = Array.from(io.sockets.adapter.rooms.get(roomName) || []) as string[];
     const spectators = connectedSockets.filter(socketId => !room.players.includes(socketId));
+    const numPlayers = room.maxPlayers || 2;
     
     // Notifier les joueurs
     for (const socketId of room.players)
@@ -207,7 +210,8 @@ export function notifyPlayersAndSpectators(
             playerSocket.emit('gameFinished', {
                 winner: { ...winner, username: displayWinnerUsername },
                 loser: { ...loser, username: displayLoserUsername },
-                isPlayer: true
+                isPlayer: true,
+                numPlayers
             });
         }
     }
@@ -221,7 +225,8 @@ export function notifyPlayersAndSpectators(
             spectatorSocket.emit('spectatorGameFinished', {
                 winner: { ...winner, username: displayWinnerUsername },
                 loser: { ...loser, username: displayLoserUsername },
-                isSpectator: true
+                isSpectator: true,
+                numPlayers
             });
         }
     }

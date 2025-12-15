@@ -5,6 +5,8 @@ export const gameFinishedHTML = (data?: any) => {
     const isForfeit = data?.forfeit === true;
     const forfeitMessage = data?.forfeitMessage || '';
     const mode = data?.mode; // 'ai', 'local', ou undefined pour online
+    const numPlayers = data?.numPlayers || 2;
+    const is4PlayerGame = numPlayers === 4;
     
     // Détecter si c'est un match de tournoi
     const isTournamentMatch = !!window.currentTournamentId || !!window.currentMatchId;
@@ -21,7 +23,38 @@ export const gameFinishedHTML = (data?: any) => {
     // Show restart button only for local/AI games, NEVER for tournament matches or online games
     const showRestartBtn = !isTournamentMatch && isLocalOrAIGame;
     
-    // Layout pour parties locales/IA (plus simple, centré)
+    // Layout pour parties 4 joueurs (local ou online) - afficher seulement le gagnant
+    if (is4PlayerGame) {
+        // Convertir le side en nom lisible pour le mode local
+        const sideNames: { [key: string]: string } = {
+            'LEFT': 'LEFT PLAYER',
+            'RIGHT': 'RIGHT PLAYER', 
+            'TOP': 'TOP PLAYER',
+            'DOWN': 'BOTTOM PLAYER'
+        };
+        const displayWinnerName = isLocalOrAIGame ? (sideNames[winnerName] || winnerName) : winnerName;
+        
+        return /*html*/`
+            <div class="game-finished-overlay">
+                <div class="game-finished-box">
+                    <h2 class="game-finished-title">GAME OVER</h2>
+                    
+                    <div class="game-finished-4player-result">
+                        <div class="game-finished-winner-announcement">
+                            ${displayWinnerName} WINS!
+                        </div>
+                    </div>
+                    
+                    <div class="game-finished-actions">
+                        ${showRestartBtn ? '<button id="localGameBtn" class="game-finished-btn">PLAY AGAIN</button>' : ''}
+                        <button id="mainMenuBtn" class="game-finished-btn">MAIN MENU</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Layout pour parties locales/IA 2 joueurs (plus simple, centré)
     if (isLocalOrAIGame) {
         // Déterminer le texte du gagnant
         let winnerText = '';
@@ -67,7 +100,7 @@ export const gameFinishedHTML = (data?: any) => {
         `;
     }
     
-    // Layout pour parties en ligne (avec noms de joueurs)
+    // Layout pour parties en ligne 1v1 (avec noms de joueurs)
     return /*html*/`
         <div class="game-finished-overlay">
             <div class="game-finished-box">

@@ -236,7 +236,8 @@ export function startLocalGame(
         io.to(roomName).emit('gameFinished', {
             winner,
             loser,
-            mode: params.enableAI ? 'ai' : 'local'
+            mode: params.enableAI ? 'ai' : 'local',
+            numPlayers: room.maxPlayers || 2
         });
     };
     
