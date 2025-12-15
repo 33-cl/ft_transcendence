@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -15,6 +15,8 @@ const components = {
     matchmaking: {id: 'matchmaking', html: matchmakingHTML},
     game: {id: 'game', html: gameHTML},
     game4: {id: 'game4', html: game4HTML},
+    spectate: {id: 'spectate', html: spectateHTML},
+    spectate4: {id: 'spectate4', html: spectate4HTML},
     signIn: {id: 'signIn', html: signInHTML},
     signUp: {id: 'signUp', html: signUpHTML},
     twoFactor: {id: 'twoFactor', html: twoFactorHTML},
@@ -116,7 +118,7 @@ async function show(pageName: keyof typeof components, data?: any)
 let currentLoadId = 0;
 
 // Pages considérées comme "en jeu" - quitter ces pages ne doit pas déclencher de forfait
-const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+const gamePages = ['game', 'game4', 'spectate', 'spectate4', 'matchmaking', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
 
 // Variable pour tracker la page actuelle
 let currentPage: string | null = null;
@@ -153,10 +155,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                 console.warn('Room cleanup on navigation failed:', error);
             }
         }
-    } else {
-        // Reset du flag si on ne quitte pas le jeu
+    } else if (goingToGame) {
+        // Reset du flag uniquement si on va vers une page de jeu (nouveau jeu)
         window.isNavigatingAwayFromGame = false;
     }
+    // Note: On ne reset PAS le flag si on va vers une page non-jeu,
+    // car l'événement gameFinished/spectatorGameFinished pourrait encore arriver
     
     // Mettre à jour la page courante
     currentPage = pageName;
@@ -287,6 +291,14 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     else if (pageName === 'game4') {
         stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('game4');
+    }
+    else if (pageName === 'spectate') {
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+        await show('spectate');
+    }
+    else if (pageName === 'spectate4') {
+        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+        await show('spectate4');
     }
     else if (pageName === 'matchmaking')
     {

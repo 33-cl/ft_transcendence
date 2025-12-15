@@ -179,4 +179,15 @@
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
+
+    /* Spectate indicator */
+    .spectate-indicator {
+        @apply fixed top-4 left-1/2 transform -translate-x-1/2;
+        @apply px-4 py-2;
+        @apply bg-black bg-opacity-80;
+        @apply border border-white;
+        @apply text-white text-sm;
+        @apply z-50;
+        letter-spacing: 0.1em;
+    }
 }

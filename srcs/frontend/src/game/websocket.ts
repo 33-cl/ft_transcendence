@@ -111,14 +111,14 @@ function setupGlobalSocketListeners() {
                 return;
             }
             
-            // Si c'est un spectateur, aller directement à la page de jeu
+            // Si c'est un spectateur, aller directement à la page spectate
             if (window.isSpectator) {
                 if (data.maxPlayers === 4) {
-                    load('game4');
+                    load('spectate4');
                 } else if (data.maxPlayers === 3) {
-                    load('game3');
+                    load('spectate');
                 } else {
-                    load('game');
+                    load('spectate');
                 }
                 // Force setup of game event listeners after navigation for spectators
                 setTimeout(() => {
@@ -775,6 +775,19 @@ function setupGameEventListeners()
     {
         socket.on('spectatorGameFinished', (data: any) => {
             spectatorGameFinishedListenerActive = true;
+            
+            // Ignorer si l'utilisateur a quitté le jeu volontairement via navigation
+            if (window.isNavigatingAwayFromGame) {
+                window.isNavigatingAwayFromGame = false;
+                return;
+            }
+            
+            // Vérifier qu'on est bien sur une page spectate
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('spectate')) {
+                // Pas sur la page spectate, ignorer l'écran de fin
+                return;
+            }
             
             // Arrêter le jeu et nettoyer l'état
             cleanupGameState();

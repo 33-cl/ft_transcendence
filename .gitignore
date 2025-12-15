@@ -8,6 +8,8 @@ srcs/backend/node_modules
 srcs/frontend/node_modules
 srcs/backend/dist/
 
+en.subject.pdf
+
 # Avatar uploads (user-generated content)
 public/avatars/
 .history/

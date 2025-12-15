@@ -63,9 +63,11 @@ export function setupPopStateHandler(): void {
             targetPage = 'mainMenu';
         }
 
-        // Protection: empêcher le retour aux pages de jeu transitoires (matchmaking, game, etc.)
-        if (['matchmaking', 'game', 'game4', 'gameFinished'].includes(targetPage)) {
+        // Protection: empêcher le retour aux pages de jeu transitoires (matchmaking, game, spectate, etc.)
+        if (['matchmaking', 'game', 'game4', 'spectate', 'spectate4', 'gameFinished', 'spectatorGameFinished'].includes(targetPage)) {
             targetPage = 'mainMenu';
+            // Corriger l'URL pour refléter la redirection
+            replaceHistoryState(targetPage);
         }
         
         // Protection critique: si pas connecté, forcer la connexion

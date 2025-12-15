@@ -11,6 +11,7 @@ export { mainMenuHTML } from '../mainMenu/mainMenu.html.js';
 export { matchmakingHTML } from '../game/matchmaking.html.js'
 export { gameHTML } from '../game/game.html.js';
 export { game4HTML } from '../game/game4.html.js';
+export { spectateHTML, spectate4HTML } from '../game/spectate.html.js';
 export { gameFinishedHTML } from '../game/gameFinished.html.js';
 export { tournamentSemifinalFinishedHTML } from '../game/tournamentSemifinalFinished.html.js';
 export { tournamentFinalFinishedHTML } from '../game/tournamentFinalFinished.html.js';
