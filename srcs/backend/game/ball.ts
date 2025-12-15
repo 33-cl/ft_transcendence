@@ -29,8 +29,6 @@ export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, p
     // Convertir l'angle en radians
     const angleInRadians = angles[zoneIndex] * Math.PI / 180;
     
-    // Log pour debugging (à retirer plus tard)
-    
     return angleInRadians;
 }
 
@@ -78,7 +76,7 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
 }
 
 export function accelerateBall(state: GameState, ballState: BallState): void {
-    const accelerationFactor = 1.07; // Augmentation de 15% de la vitesse (plus visible)
+    const accelerationFactor = 1.15; // Augmentation de 15% de la vitesse (plus visible)
     const maxSpeed = 25; // Vitesse maximale réduite pour garder le jeu jouable
     
     // Calculer la vitesse actuelle AVANT accélération
@@ -125,12 +123,12 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
         const closestY = Math.max(paddleTop, Math.min(ballCenterY, paddleBottom));
         
         // Calculer la distance entre le centre de la balle et le point le plus proche
-        const distanceX = ballCenterX - closestX;
-        const distanceY = ballCenterY - closestY;
-        const distanceSquared = distanceX * distanceX + distanceY * distanceY;
+        const deltaX = ballCenterX - closestX;
+        const deltaY = ballCenterY - closestY;
+        const distanceSq = deltaX * deltaX + deltaY * deltaY;
         
         // Collision si la distance est inférieure ou égale au rayon de la balle
-        if (distanceSquared > ballRadius * ballRadius) {
+        if (distanceSq > ballRadius * ballRadius) {
             return false; // Pas de collision
         }
         
@@ -195,11 +193,11 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
         // Collision aux coins du paddle - déterminer la face dominante
         if (!isInsideHorizontally && !isInsideVertically) {
             // Calculer quelle direction dominerait pour le rebond
-            const horizontalDistance = Math.min(Math.abs(ballCenterX - paddleLeft), Math.abs(ballCenterX - paddleRight));
-            const verticalDistance = Math.min(Math.abs(ballCenterY - paddleTop), Math.abs(ballCenterY - paddleBottom));
+            const deltaXEdge = Math.min(Math.abs(ballCenterX - paddleLeft), Math.abs(ballCenterX - paddleRight));
+            const deltaYEdge = Math.min(Math.abs(ballCenterY - paddleTop), Math.abs(ballCenterY - paddleBottom));
             
             // Rebond selon la direction avec la plus petite distance (face la plus proche)
-            if (horizontalDistance < verticalDistance) {
+            if (deltaXEdge < deltaYEdge) {
                 // Collision principalement sur une face verticale (Paddles A et C)
                 if (paddleIndex === 0) {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
@@ -282,12 +280,12 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
         const closestY = Math.max(paddleTop, Math.min(ballCenterY, paddleBottom));
         
         // Calculer la distance entre le centre de la balle et le point le plus proche
-        const distanceX = ballCenterX - closestX;
-        const distanceY = ballCenterY - closestY;
-        const distanceSquared = distanceX * distanceX + distanceY * distanceY;
+        const deltaX = ballCenterX - closestX;
+        const deltaY = ballCenterY - closestY;
+        const distanceSq = deltaX * deltaX + deltaY * deltaY;
         
         // Collision si la distance est inférieure ou égale au rayon de la balle
-        if (distanceSquared > ballRadius * ballRadius) {
+        if (distanceSq > ballRadius * ballRadius) {
             return false; // Pas de collision
         }
         
@@ -295,7 +293,7 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
         if (isLeftPaddle && state.ballSpeedX > 0) return false; // Balle s'éloigne du paddle gauche
         if (!isLeftPaddle && state.ballSpeedX < 0) return false; // Balle s'éloigne du paddle droit
         
-        // NOUVEAU : Rebond angulaire basé sur la zone d'impact (mode 1v1)
+        // Rebond angulaire basé sur la zone d'impact (mode 1v1)
         // Calculer la vitesse actuelle pour conservation d'énergie
         const currentSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
         
