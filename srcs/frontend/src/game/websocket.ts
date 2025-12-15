@@ -727,6 +727,12 @@ function setupGameEventListeners()
         socket.on('gameFinished', (data: any) => {
             gameFinishedListenerActive = true;
 
+            // Ignorer si l'utilisateur a quitté le jeu volontairement via navigation
+            if (window.isNavigatingAwayFromGame) {
+                window.isNavigatingAwayFromGame = false;
+                return;
+            }
+
             // Affiche la page de fin de partie avec les données reçues
             if (data && data.winner) {
                 load('gameFinished', data);

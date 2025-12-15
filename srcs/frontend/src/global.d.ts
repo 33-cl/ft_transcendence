@@ -44,6 +44,9 @@ declare global
 		reconnectWebSocket: () => void;
 		leaveCurrentRoomAsync: () => Promise<void>;
 
+		// navigation state
+		isNavigatingAwayFromGame: boolean;
+
 		// game state
 		controlledPaddle: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP' | null;
 		isLocalGame: boolean;

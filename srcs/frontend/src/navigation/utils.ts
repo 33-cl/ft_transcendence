@@ -115,6 +115,12 @@ async function show(pageName: keyof typeof components, data?: any)
 
 let currentLoadId = 0;
 
+// Pages considérées comme "en jeu" - quitter ces pages ne doit pas déclencher de forfait
+const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+
+// Variable pour tracker la page actuelle
+let currentPage: string | null = null;
+
 async function load(pageName: string, data?: any, updateHistory: boolean = true)
 {   
     const myLoadId = ++currentLoadId;
@@ -130,6 +136,30 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         window.cleanupLandingHandlers();
         window.cleanupLandingHandlers = null;
     }
+    
+    // 🎮 FORFEIT: Si on quitte une page de jeu pour aller ailleurs, déclencher le forfait
+    const wasInGame = currentPage && gamePages.includes(currentPage);
+    const goingToGame = gamePages.includes(pageName);
+    
+    if (wasInGame && !goingToGame) {
+        // Marquer qu'on quitte le jeu volontairement - ignorer l'écran de fin
+        window.isNavigatingAwayFromGame = true;
+        
+        // Quitter la room = forfait si partie en cours (géré côté backend)
+        if (window.socket && window.leaveCurrentRoomAsync) {
+            try {
+                await window.leaveCurrentRoomAsync();
+            } catch (error) {
+                console.warn('Room cleanup on navigation failed:', error);
+            }
+        }
+    } else {
+        // Reset du flag si on ne quitte pas le jeu
+        window.isNavigatingAwayFromGame = false;
+    }
+    
+    // Mettre à jour la page courante
+    currentPage = pageName;
     
     hideAllPages();
     
