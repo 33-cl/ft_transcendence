@@ -33,30 +33,28 @@ export default async function friendRequestsRoutes(fastify: FastifyInstance)
     }
   });
 
-  // POST /users/friend-requests/:requestId/accept - Accepter une demande d'ami
-  fastify.post('/users/friend-requests/:requestId/accept', async (request, reply) => {
+  // POST Accepter une demande d'ami
+  fastify.post('/users/friend-requests/:requestId/accept', async (request, reply) =>{
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
-      if (!currentUserId) return;
+      if (!currentUserId)
+        return;
 
-      // SECURITY: Rate limiting for accepting friend requests
+      //Rate limiting for accepting friend requests
       const acceptRateLimitKey = `friend_accept_${currentUserId}`;
-      if (!checkRateLimit(acceptRateLimitKey, RATE_LIMITS.FRIEND_ACCEPT.max, RATE_LIMITS.FRIEND_ACCEPT.window)) {
+      if (!checkRateLimit(acceptRateLimitKey, RATE_LIMITS.FRIEND_ACCEPT.max, RATE_LIMITS.FRIEND_ACCEPT.window))
         return reply.status(429).send({ error: 'Too many accept requests. Please wait a moment.' });
-      }
 
-      // SECURITY: Validate requestId parameter
+      //is it a valid id?
       const requestId = validateId((request.params as any).requestId);
-      if (!requestId) {
+      if (!requestId)
         return reply.status(400).send({ error: 'Invalid request ID' });
-      }
       
       // Récupérer la demande d'ami
       const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
       
-      if (!friendRequest) {
+      if (!friendRequest)
         return reply.status(404).send({ error: 'Friend request not found' });
-      }
 
       // Ajouter les deux relations d'amitié (bidirectionnelle)
       db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendRequest.sender_id);
