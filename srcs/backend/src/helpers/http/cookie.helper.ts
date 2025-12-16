@@ -27,14 +27,16 @@ export function getJwtFromRequest(request: FastifyRequest): string | undefined
  */
 export function verifyAuthFromRequest(request: FastifyRequest, reply: FastifyReply): number | null {
   const JWT_SECRET = process.env.JWT_SECRET;
-  if (!JWT_SECRET) {
+  if (!JWT_SECRET)
+  {
     reply.status(500).send({ error: 'Server configuration error' });
     return null;
   }
 
   const jwtToken = getJwtFromRequest(request);
   
-  if (!jwtToken) {
+  if (!jwtToken)
+  {
     reply.status(401).send({ error: 'Authentication required' });
     return null;
   }
@@ -42,7 +44,8 @@ export function verifyAuthFromRequest(request: FastifyRequest, reply: FastifyRep
   try {
     const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
     const active = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
-    if (!active) {
+    if (!active)
+    {
       reply.status(401).send({ error: 'Session expired or logged out' });
       return null;
     }

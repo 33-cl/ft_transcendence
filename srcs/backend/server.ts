@@ -8,7 +8,7 @@ import fs from 'fs'; // Pour lire les fichiers SSL (clé/certificat)
 import path from 'path'; // Pour gérer les chemins de fichiers
 import { Server as SocketIOServer } from 'socket.io';
 
-import usersRoutes from './src/routes/users.js'; // Route /users (API REST)
+import usersRoutes from './src/routes/users/index.js'; // Route /users (API REST) - refactorisé en modules
 import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
 import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
