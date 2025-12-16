@@ -12,7 +12,7 @@ interface SocketUser {
 
 // Map to track recent disconnections (userId -> timestamp)
 const recentDisconnections = new Map<number, number>();
-const RECONNECTION_GRACE_PERIOD = 3000; // 3 seconds - increased from 2 seconds
+const RECONNECTION_GRACE_PERIOD = 5000; // 5 seconds - increased for slow connections (3G)
 
 // Clean up old disconnection timestamps
 function cleanupRecentDisconnections() {
@@ -103,7 +103,8 @@ export function authenticateSocket(socket: Socket, fastify?: FastifyInstance): S
         const now = Date.now();
         
         if (recentDisconnectTime && (now - recentDisconnectTime) < RECONNECTION_GRACE_PERIOD) {
-          // Clean up the old socket reference and allow this new connection
+          // Recent disconnect - clean up the old socket and allow this new connection
+          if (fastify) fastify.log.info(`User ${user.username} reconnecting within grace period`);
           socketUsers.delete(existingSocketId);
           activeUsers.delete(user.id);
           recentDisconnections.delete(user.id);
@@ -140,7 +141,7 @@ export function removeSocketUser(socketId: string): void {
     // Add to recent disconnections for grace period
     recentDisconnections.set(user.id, Date.now());
     
-    // Remove from both maps
+    // Remove from both maps (but keep browserId for reconnection detection)
     activeUsers.delete(user.id);
     socketUsers.delete(socketId);
   }
