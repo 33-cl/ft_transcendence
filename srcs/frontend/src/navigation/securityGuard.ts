@@ -3,6 +3,35 @@
 import { isSessionBlocked } from './sessionBroadcast.js';
 
 /**
+ * Installe un handler global pour les rejets de Promise non gérés
+ * Évite les "Uncaught (in promise)" dans la console
+ */
+export function installUnhandledRejectionHandler() {
+    window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+        // Si c'est une erreur de sécurité connue, on la gère silencieusement
+        const errorMessage = event.reason?.message || event.reason || '';
+        
+        if (typeof errorMessage === 'string' && (
+            errorMessage.includes('Action blocked') ||
+            errorMessage.includes('Fetch blocked') ||
+            errorMessage.includes('not have an active session')
+        )) {
+            // Empêcher l'affichage dans la console
+            event.preventDefault();
+            // Log discret pour le debug (optionnel)
+            // console.debug('[Security] Blocked action:', errorMessage);
+            return;
+        }
+        
+        // Pour les autres erreurs, on les laisse s'afficher normalement
+        // mais on les marque comme gérées pour éviter le "Uncaught"
+        // Note: on peut choisir de les afficher proprement
+        console.warn('[Unhandled Promise]', errorMessage);
+        event.preventDefault();
+    });
+}
+
+/**
  * Bloque tous les inputs, boutons et liens quand la session est bloquée
  * Utilise un MutationObserver pour bloquer aussi les éléments ajoutés dynamiquement
  */
@@ -197,6 +226,9 @@ export function installSocketGuard()
  */
 export function installAllSecurityGuards()
 {
+    // Handler global pour les Promise rejections non gérées
+    installUnhandledRejectionHandler();
+    
     // Fetch Guard - bloque les requêtes HTTP
     installFetchGuard();
     
