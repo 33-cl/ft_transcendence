@@ -203,8 +203,9 @@ export function authenticateOnlinePlayer(
 export function notifyFriendsGameStarted(
     room: RoomType, 
     fastify: FastifyInstance,
-    broadcastUserStatusChange: (io: Server | null, userId: number, status: 'in-game' | 'online' | 'offline', fastify: FastifyInstance) => void,
-    globalIo: Server | null
+    broadcastUserStatusChange: (io: Server | null, userId: number, status: 'in-game' | 'in-tournament' | 'online' | 'offline', fastify: FastifyInstance) => void,
+    globalIo: Server | null,
+    isTournament: boolean = false
 ): void
 {
     if (room.players.length !== room.maxPlayers)
@@ -212,11 +213,13 @@ export function notifyFriendsGameStarted(
     if (!room.playerUsernames)
         return;
     
+    const status = isTournament ? 'in-tournament' : 'in-game';
+    
     for (const [socketId, username] of Object.entries(room.playerUsernames))
     {
         const player = getUserByUsername(username) as { id: number } | undefined;
         if (player)
-            broadcastUserStatusChange(globalIo, player.id, 'in-game', fastify);
+            broadcastUserStatusChange(globalIo, player.id, status, fastify);
     }
 }
 

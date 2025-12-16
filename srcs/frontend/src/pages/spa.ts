@@ -441,13 +441,15 @@ function initializeComponents(): void
                 const username = currentElement?.getAttribute('data-username');
                 const userId = currentElement?.getAttribute('data-user-id');
                 const isInGame = currentElement?.getAttribute('data-is-in-game') === 'true';
+                // Spectate seulement possible si pas en tournoi
+                const canSpectate = currentElement?.getAttribute('data-can-spectate') === 'true';
                 
                 if (username && userId) {
                     window.selectedContextUser = { username, userId: parseInt(userId), isInGame };
                 }
 
                 // Régénérer le menu contextuel avec ou sans le bouton Spectate
-                window.contextMenuIsInGame = isInGame;
+                window.contextMenuIsInGame = canSpectate;
                 show('contextMenu');
                 
                 // Positionner le menu contextuel

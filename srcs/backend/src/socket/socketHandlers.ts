@@ -309,9 +309,18 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
         joinRoomLocks.delete(socket.id);
     
     const previousRoom = getPlayerRoom(socket.id);
+    let wasTournamentPlayer = false;
+    let userId: number | null = null;
+    
     if (previousRoom && rooms[previousRoom])
     {
         const room = rooms[previousRoom];
+        
+        // Vérifier si c'était un joueur de tournoi pour notifier ses amis
+        if ((room as any).isTournament && room.playerUserIds && room.playerUserIds[socket.id]) {
+            wasTournamentPlayer = true;
+            userId = room.playerUserIds[socket.id];
+        }
         
         // Gerer le forfait si partie active
         if (isActiveOnlineGame(room) && room.pongGame)
@@ -335,6 +344,11 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
     
     // Force cleanup complet
     forceCompleteCleanup(socket, fastify, io);
+    
+    // Notifier les amis que le joueur de tournoi est maintenant online
+    if (wasTournamentPlayer && userId) {
+        broadcastUserStatusChange(globalIo, userId, 'online', fastify);
+    }
     
     // Confirmation au client
     socket.emit('leaveAllRoomsComplete', { status: 'success' });

@@ -195,9 +195,8 @@ export function handleOnlineGamePreparation(
     if (!user)
         return false;
     
-    // Ne pas notifier "in-game" pour les tournois
-    if (!room.isTournament)
-        notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, getGlobalIo());
+    // Notifier les amis avec le bon statut (in-game ou in-tournament)
+    notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, getGlobalIo(), room.isTournament);
     
     return true;
 }

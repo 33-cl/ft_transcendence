@@ -67,13 +67,30 @@ export function removePlayerFromRoom(socketId: string): void
 		const typedRoom = room as any;
 		
 		// PROTECTION TOURNOI : Ne pas retirer les joueurs pendant un tournoi actif
-		// Les tournois gèrent leur propre cycle de vie
+		// SAUF les perdants de demi-finale qui peuvent quitter pendant waiting_final/final
 		if (typedRoom.isTournament && typedRoom.tournamentState) {
 			const phase = typedRoom.tournamentState.phase;
-			// Ne pas retirer pendant les phases actives du tournoi
-			if (phase === 'waiting' || phase === 'semifinals' || phase === 'waiting_final' || phase === 'final') {
+			const state = typedRoom.tournamentState;
+			
+			// Pendant waiting_final ou final, seuls les finalistes doivent rester
+			if (phase === 'waiting_final' || phase === 'final') {
+				const finalist1 = state.semifinal1Winner;
+				const finalist2 = state.semifinal2Winner;
+				const isFinalist = socketId === finalist1 || socketId === finalist2;
+				if (!isFinalist) {
+					// C'est un perdant de demi-finale, il peut quitter
+					console.log(`✅ removePlayerFromRoom: Allowing semifinal loser ${socketId} to leave during phase '${phase}'`);
+					// Continue pour le retirer
+				} else {
+					// C'est un finaliste, bloquer
+					console.log(`🛡️ removePlayerFromRoom: BLOCKED removal of finalist ${socketId} during phase '${phase}'`);
+					return;
+				}
+			}
+			// Pendant waiting ou semifinals, bloquer tous les joueurs
+			else if (phase === 'waiting' || phase === 'semifinals') {
 				console.log(`🛡️ removePlayerFromRoom: BLOCKED removal of ${socketId} from ${playerRoom} - tournament in phase '${phase}'`);
-				return; // Ne pas retirer le joueur
+				return;
 			}
 		}
 		

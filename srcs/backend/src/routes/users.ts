@@ -639,12 +639,27 @@ export default async function usersRoutes(fastify: FastifyInstance) {
       const friendsStatus = friends.map((friend: FriendRow) => {
         const socketId = getSocketIdForUser(friend.id);
         const isOnline = !!socketId;
-        // Exclure les tournois pour le statut "in-game"
-        const isInGame = isOnline && isUsernameInGame(friend.username, true);
+        // Vérifier si en jeu normal (spectatable)
+        const isInNormalGame = isOnline && isUsernameInGame(friend.username, true);
+        // Vérifier si en jeu (tout type, y compris tournoi)
+        const isInAnyGame = isOnline && isUsernameInGame(friend.username, false);
+        // En tournoi = en jeu mais pas en jeu normal
+        const isInTournament = isInAnyGame && !isInNormalGame;
+        
+        let status: string;
+        if (isInNormalGame) {
+          status = 'in-game';
+        } else if (isInTournament) {
+          status = 'in-tournament';
+        } else if (isOnline) {
+          status = 'online';
+        } else {
+          status = 'offline';
+        }
         
         return {
           username: friend.username,
-          status: isInGame ? 'in-game' : (isOnline ? 'online' : 'offline')
+          status
         };
       });
 

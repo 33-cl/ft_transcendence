@@ -150,19 +150,13 @@ export function notifyProfileUpdated(globalIo: Server | null, userId: number, up
  * 
  * @param globalIo - Instance Socket.IO globale
  * @param userId - ID de l'utilisateur dont le statut a changé
- * @param status - Le nouveau statut ('online', 'in-game', ou 'offline')
+ * @param status - Le nouveau statut ('online', 'in-game', 'in-tournament', ou 'offline')
  * @param fastify - Instance Fastify pour les logs
  */
-export function broadcastUserStatusChange(globalIo: Server | null, userId: number, status: 'online' | 'in-game' | 'offline', fastify: FastifyInstance)
+export function broadcastUserStatusChange(globalIo: Server | null, userId: number, status: 'online' | 'in-game' | 'in-tournament' | 'offline', fastify: FastifyInstance)
 {
     if (!globalIo) 
         return;
-    
-    // DEBUG: Tracer tous les appels in-game
-    if (status === 'in-game') {
-        console.log(`🔴 broadcastUserStatusChange IN-GAME called for userId=${userId}`);
-        console.trace('Stack trace:');
-    }
     
     try {
         const user = getUserBasicInfo(userId);

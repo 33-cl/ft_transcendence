@@ -9,6 +9,7 @@ import { updateUserStats } from '../../user.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { getSocketIdForUser } from '../socketAuth.js';
 import { notifyFriendsGameEnded } from './gameEndHandlers.js';
+import { broadcastUserStatusChange } from '../notificationHandlers.js';
 
 /**
  * Émet un événement quand un joueur rejoint ou quitte un tournoi
@@ -536,6 +537,14 @@ function startFinal(
     room.pongGame = new PongGame(2, gameEndCallback);
     room.pongGame.start();
     room.gameState = room.pongGame.state;
+    
+    // Notifier les amis que les finalistes sont en tournoi
+    if (player1UserId) {
+        broadcastUserStatusChange(getGlobalIo(), player1UserId, 'in-tournament', fastify);
+    }
+    if (player2UserId) {
+        broadcastUserStatusChange(getGlobalIo(), player2UserId, 'in-tournament', fastify);
+    }
     
     // Envoyer roomJoined avec les socket IDs ACTUELS
     io.to(player1).emit('roomJoined', {
