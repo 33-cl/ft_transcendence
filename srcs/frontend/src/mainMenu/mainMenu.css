@@ -15,6 +15,24 @@
         @apply text-[42px] mb-[2vh];
     }
 
+    .menu-title {
+        @apply flex items-center justify-center gap-4;
+    }
+
+    .menu-info-btn {
+        @apply bg-black border-2 border-white rounded-full;
+        @apply w-8 h-8 flex items-center justify-center;
+        @apply text-xs leading-none cursor-pointer;
+    }
+
+    .menu-info-btn:hover {
+        @apply bg-gray-500;
+    }
+
+    .menu-info-btn:active {
+        @apply bg-gray-700 scale-95;
+    }
+
     #mainMenu button {
         @apply text-3xl;
     }

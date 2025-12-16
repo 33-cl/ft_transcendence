@@ -184,6 +184,14 @@ function initializeComponents(): void
         {
             await load('settings');
         }
+        if (target.id === 'localRulesInfoBtn' || target.id === 'multiplayerRulesInfoBtn' || target.id === 'tournamentsRulesInfoBtn')
+        {
+            if (target.id === 'localRulesInfoBtn') (window as any).rulesContext = 'local';
+            else if (target.id === 'multiplayerRulesInfoBtn') (window as any).rulesContext = 'multiplayer';
+            else (window as any).rulesContext = 'tournament';
+
+            await load('rules');
+        }
         if (target.id === 'local2p')
         {
             // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
