@@ -217,17 +217,30 @@ export function notifyPlayersAndSpectators(
     }
     
     // Notifier les spectateurs
+    // En mode 4 joueurs, envoyer gameFinished pour qu'ils voient le même overlay
+    // En mode 1v1, envoyer spectatorGameFinished pour l'écran spectateur dédié
     for (const socketId of spectators)
     {
         const spectatorSocket = io.sockets.sockets.get(socketId);
         if (spectatorSocket)
         {
-            spectatorSocket.emit('spectatorGameFinished', {
-                winner: { ...winner, username: displayWinnerUsername },
-                loser: { ...loser, username: displayLoserUsername },
-                isSpectator: true,
-                numPlayers
-            });
+            if (numPlayers === 4) {
+                // Mode 4 joueurs : même overlay que les joueurs
+                spectatorSocket.emit('gameFinished', {
+                    winner: { ...winner, username: displayWinnerUsername },
+                    loser: { ...loser, username: displayLoserUsername },
+                    isSpectator: true,
+                    numPlayers
+                });
+            } else {
+                // Mode 1v1 : écran spectateur dédié
+                spectatorSocket.emit('spectatorGameFinished', {
+                    winner: { ...winner, username: displayWinnerUsername },
+                    loser: { ...loser, username: displayLoserUsername },
+                    isSpectator: true,
+                    numPlayers
+                });
+            }
         }
     }
 }
