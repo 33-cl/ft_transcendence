@@ -23,11 +23,9 @@ export function installUnhandledRejectionHandler() {
             return;
         }
         
-        // Pour les autres erreurs, on les laisse s'afficher normalement
-        // mais on les marque comme gérées pour éviter le "Uncaught"
-        // Note: on peut choisir de les afficher proprement
-        console.warn('[Unhandled Promise]', errorMessage);
-        event.preventDefault();
+        // Pour les autres erreurs non liées à la sécurité, on les laisse passer
+        // mais on empêche le "Uncaught" dans la console
+        // Les vraies erreurs seront loggées par leur source
     });
 }
 
@@ -159,15 +157,23 @@ export function installFetchGuard() {
             if (url.includes('/auth/me')) {
                 return originalFetch(input, init);
             }
-            // Tout le reste est bloqué
-            return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
+            // Tout le reste est bloqué - retourner une Response "fake" au lieu de reject
+            return Promise.resolve(new Response(JSON.stringify({ error: 'Session blocked' }), {
+                status: 403,
+                statusText: 'Forbidden',
+                headers: { 'Content-Type': 'application/json' }
+            }));
         }
         
         // Vérifier si l'utilisateur est connecté pour les requêtes API protégées
         if (url.includes('/api/')) {
             const currentUser = window.currentUser;
             if (!currentUser) {
-                return Promise.reject(new Error(`Fetch blocked: User not authenticated`));
+                return Promise.resolve(new Response(JSON.stringify({ error: 'Not authenticated' }), {
+                    status: 401,
+                    statusText: 'Unauthorized',
+                    headers: { 'Content-Type': 'application/json' }
+                }));
             }
         }
         

@@ -12,7 +12,7 @@ import { randomInt } from 'crypto';
 // creation du transporteur une foi sau demarrage du server
 
 if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-  console.warn('⚠️ WARNING: EMAIL_USER or EMAIL_APP_PASSWORD not set. 2FA emails will not work!');
+  console.warn('WARNING: EMAIL_USER or EMAIL_APP_PASSWORD not set. 2FA emails will not work!');
 }
 
 const transporter = nodemailer.createTransport({
@@ -61,8 +61,7 @@ export function verifyTwoFactorCode(userId: number, code: string): boolean
   const allCodes = db.prepare(`
     SELECT * FROM two_factor_codes WHERE user_id = ?
   `).all(userId);
-  console.log(`🔍 2FA Debug - User ${userId}, Input code: "${code}", Now: "${now}"`);
-  console.log(`🔍 2FA Debug - Stored codes:`, allCodes);
+
   
   const result = db.prepare(`
     SELECT * FROM two_factor_codes 
@@ -75,11 +74,9 @@ export function verifyTwoFactorCode(userId: number, code: string): boolean
   {
     // Code valide, on le supprime pour qu'il ne soit utilisable qu'une fois
     db.prepare('DELETE FROM two_factor_codes WHERE id = ?').run(result.id);
-    console.log(`✅ 2FA Debug - Code verified successfully`);
     return true;
   }
   
-  console.log(`❌ 2FA Debug - Code verification failed`);
   return false;
 }
 
