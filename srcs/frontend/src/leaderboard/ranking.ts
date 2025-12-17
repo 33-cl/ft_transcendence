@@ -1,131 +1,72 @@
-/**
- * Utilitaires pour le système de ranking côté frontend
- */
-
-export interface UserRanking {
-  id: number;
-  username: string;
-  avatar_url: string | null;
-  wins: number;
-  losses: number;
-  rank: number;
-  winRate: number;
+export interface UserRanking
+{
+    id: number;
+    username: string;
+    avatar_url: string | null;
+    wins: number;
+    losses: number;
+    rank: number;
+    winRate: number;
 }
 
-export interface LeaderboardStats {
-  totalPlayers: number;
-  totalGames: number;
-  averageWinRate: number;
+export interface LeaderboardStats
+{
+    totalPlayers: number;
+    totalGames: number;
+    averageWinRate: number;
 }
 
-/**
- * Récupère le leaderboard avec pagination
- * @param limit Nombre d'utilisateurs à récupérer
- * @param offset Décalage pour la pagination
- */
-export async function fetchLeaderboard(limit: number = 10, offset: number = 0) {
-  try {
-    const response = await fetch(`/users/leaderboard?limit=${limit}&offset=${offset}`, {
-      method: 'GET',
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch leaderboard');
+// Retrieve the global leaderboard data from the backend with pagination support to handle large datasets.
+export async function fetchLeaderboard(limit: number = 10, offset: number = 0)
+{
+    try
+    {
+        const response = await fetch(`/users/leaderboard?limit=${limit}&offset=${offset}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok)
+            throw new Error('Failed to fetch leaderboard');
+
+        return await response.json();
     }
-    
-    return await response.json();
-  } catch (error) {
-    return { leaderboard: [], stats: { totalPlayers: 0, totalGames: 0, averageWinRate: 0 } };
-  }
+    catch (error)
+    {
+        return { leaderboard: [], stats: { totalPlayers: 0, totalGames: 0, averageWinRate: 0 } };
+    }
 }
 
-// DEAD CODE: Function exists but never called - backend route is commented out
-// /**
-//  * Récupère le rang et les informations de classement d'un utilisateur
-//  * @param userId ID de l'utilisateur
-//  */
-// export async function fetchUserRank(userId: number): Promise<UserRanking | null> {
-//   try {
-//     const response = await fetch(`/users/${userId}/rank`, {
-//       method: 'GET',
-//       credentials: 'include'
-//     });
-    
-//     if (!response.ok) {
-//       if (response.status === 404) {
-//         return null; // Utilisateur pas trouvé ou pas de données de classement
-//       }
-//       throw new Error('Failed to fetch user rank');
-//     }
-    
-//     const data = await response.json();
-//     return data.ranking;
-//   } catch (error) {
-//     return null;
-//   }
-// }
-
-// DEAD CODE: Function exists but never called - backend route is commented out
-// /**
-//  * Récupère le classement autour d'un rang donné
-//  * @param rank Position centrale
-//  * @param radius Nombre d'utilisateurs avant et après
-//  */
-// export async function fetchLeaderboardAroundRank(rank: number, radius: number = 2) {
-//   try {
-//     const response = await fetch(`/users/leaderboard/around/${rank}?radius=${radius}`, {
-//       method: 'GET',
-//       credentials: 'include'
-//     });
-    
-//     if (!response.ok) {
-//       throw new Error('Failed to fetch leaderboard around rank');
-//     }
-    
-//     return await response.json();
-//   } catch (error) {
-//     return { leaderboard: [], centerRank: rank, radius };
-//   }
-// }
-
-/**
- * Formate le taux de victoire en pourcentage
- * @param winRate Taux de victoire (0.0 à 1.0)
- * @param decimals Nombre de décimales
- */
-export function formatWinRate(winRate: number, decimals: number = 1): string {
-  return (winRate * 100).toFixed(decimals) + '%';
+// Convert a decimal win rate into a readable percentage string with configurable precision.
+export function formatWinRate(winRate: number, decimals: number = 1): string
+{
+    return (winRate * 100).toFixed(decimals) + '%';
 }
 
-/**
- * Formate les statistiques d'un utilisateur
- * @param user Données utilisateur avec wins/losses
- */
-export function formatUserStats(user: { wins: number; losses: number }): string {
-  const total = user.wins + user.losses;
-  if (total === 0) return '0W - 0L';
-  
-  const winRate = user.wins / total;
-  return `${user.wins}W - ${user.losses}L (${formatWinRate(winRate)})`;
+// Generate a summary string displaying wins, losses, and calculated win rate for UI display.
+export function formatUserStats(user: { wins: number; losses: number }): string
+{
+    const total = user.wins + user.losses;
+
+    if (total === 0)
+        return '0W - 0L';
+
+    const winRate = user.wins / total;
+    return `${user.wins}W - ${user.losses}L (${formatWinRate(winRate)})`;
 }
 
-/**
- * Compare deux utilisateurs selon les règles de classement
- * (utilisé pour le tri côté client si nécessaire)
- */
-export function compareUsersByRanking(userA: { wins: number; losses: number; username: string }, 
-                                     userB: { wins: number; losses: number; username: string }): number {
-  // D'abord comparer par nombre de victoires (décroissant)
-  if (userA.wins !== userB.wins) {
-    return userB.wins - userA.wins;
-  }
-  
-  // Si même nombre de victoires, comparer par nombre de défaites (croissant)
-  if (userA.losses !== userB.losses) {
-    return userA.losses - userB.losses;
-  }
-  
-  // Si même wins et losses, ordre alphabétique par username
-  return userA.username.localeCompare(userB.username);
+// Determine the ranking order between two users based on wins, then losses, and finally alphabetical order for tie-breaking.
+export function compareUsersByRanking(userA: { wins: number; losses: number; username: string },
+    userB: { wins: number; losses: number; username: string }): number
+{
+    // Prioritize users with a higher win count.
+    if (userA.wins !== userB.wins)
+        return userB.wins - userA.wins;
+
+    // If win counts are equal, prioritize users with fewer losses.
+    if (userA.losses !== userB.losses)
+        return userA.losses - userB.losses;
+
+    // Resolve final ties using alphabetical order of the username.
+    return userA.username.localeCompare(userB.username);
 }

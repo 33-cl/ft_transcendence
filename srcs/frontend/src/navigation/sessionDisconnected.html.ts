@@ -1,5 +1,4 @@
 // Session Disconnected Overlay Component
-
 export function sessionDisconnectedHTML(message: string): string {
     return `
         <div class="session-overlay">

@@ -31,7 +31,7 @@ export async function leaderboardHTML() {
             leaderboardItems = `<p class="text-center text-gray-400 mt-5">No players on the leaderboard yet...</p>'`;
         }
 
-        // Afficher les statistiques globales
+        // Display stats only if there are players
         const statsSection = stats.totalPlayers > 0 ? `
         ` : '';
         

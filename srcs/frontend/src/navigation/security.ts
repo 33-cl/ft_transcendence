@@ -1,20 +1,17 @@
-// Security utilities for XSS prevention
-
 import { removeHtmlTags, keepAlphanumericAndUnderscore } from '../utils/sanitize.js';
 
-/**
- * Escape HTML special characters to prevent XSS attacks
- * Converts: < > & " ' to their HTML entity equivalents
- */
-export function escapeHtml(unsafe: string): string {
-    if (typeof unsafe !== 'string') {
+// Converts potentially dangerous characters into safe HTML entities to neutralize script injection.
+export function escapeHtml(unsafe: string): string
+{
+    if (typeof unsafe !== 'string')
         return '';
-    }
-    
-    // Remplace les caractères spéciaux HTML par leurs entités
+
     let result = '';
-    for (const char of unsafe) {
-        switch (char) {
+
+    for (const char of unsafe)
+    {
+        switch (char)
+        {
             case '&':
                 result += '&amp;';
                 break;
@@ -37,82 +34,67 @@ export function escapeHtml(unsafe: string): string {
     return result;
 }
 
-/**
- * Sanitize URL to prevent javascript: and data: protocols
- * Only allows http:, https:, and relative URLs
- */
-export function sanitizeUrl(url: string): string {
-    if (typeof url !== 'string') {
+// Validates URLs by rejecting schemes that execute code, such as javascript: or vbscript:.
+export function sanitizeUrl(url: string): string
+{
+    if (typeof url !== 'string')
         return '';
-    }
-    
+
     const trimmed = url.trim().toLowerCase();
-    
-    // Block dangerous protocols
-    if (trimmed.startsWith('javascript:') || 
-        trimmed.startsWith('data:') || 
+
+    if (trimmed.startsWith('javascript:') ||
+        trimmed.startsWith('data:') ||
         trimmed.startsWith('vbscript:') ||
-        trimmed.startsWith('file:')) {
+        trimmed.startsWith('file:'))
         return '';
-    }
-    
+
     return url;
 }
 
-/**
- * Create a safe text node (alternative to using innerHTML)
- * This is the safest way to insert user content
- */
-export function setTextContent(element: HTMLElement, text: string): void {
+// Safely inserts text into a DOM node using the textContent property to avoid parsing HTML.
+export function setTextContent(element: HTMLElement, text: string): void
+{
     element.textContent = text;
 }
 
-/**
- * Create DOM elements safely without innerHTML
- * Use this when you need to create elements dynamically
- */
+// Programmatically constructs a DOM element and safely applies attributes to prevent injection attacks.
 export function createElement<K extends keyof HTMLElementTagNameMap>(
     tag: K,
     attributes?: Record<string, string>,
     textContent?: string
-): HTMLElementTagNameMap[K] {
+): HTMLElementTagNameMap[K]
+{
     const element = document.createElement(tag);
-    
-    if (attributes) {
-        for (const [key, value] of Object.entries(attributes)) {
-            // Sanitize URLs for src, href attributes
-            if ((key === 'src' || key === 'href') && value) {
+
+    if (attributes)
+    {
+        for (const [key, value] of Object.entries(attributes))
+        {
+            if ((key === 'src' || key === 'href') && value)
                 element.setAttribute(key, sanitizeUrl(value));
-            } else {
+            else
                 element.setAttribute(key, value);
-            }
         }
     }
-    
-    if (textContent !== undefined) {
+
+    if (textContent !== undefined)
         element.textContent = textContent;
-    }
-    
+
     return element;
 }
 
-/**
- * Validate and sanitize username input
- * Prevents usernames with HTML/script content
- */
-export function sanitizeUsername(username: string): string {
-    if (typeof username !== 'string') {
+// Enforces strict formatting on usernames by stripping HTML and non-alphanumeric characters.
+export function sanitizeUsername(username: string): string
+{
+    if (typeof username !== 'string')
         return '';
-    }
-    
-    // Remove any HTML tags and only keep alphanumeric + underscore
+
     const withoutHtml = removeHtmlTags(username);
     return keepAlphanumericAndUnderscore(withoutHtml);
 }
 
-/**
- * Validate input length to prevent DoS attacks
- */
-export function validateInputLength(input: string, maxLength: number = 1000): boolean {
+// Checks input string length to prevent resource exhaustion or buffer overflow issues.
+export function validateInputLength(input: string, maxLength: number = 1000): boolean
+{
     return typeof input === 'string' && input.length <= maxLength;
 }

@@ -1,3 +1,4 @@
+// 404 error page
 export function notFoundHTML(): string {
     return /*html*/ `
     <div class="notfound-container">

@@ -19,7 +19,6 @@
 @import '../ui/layout.css';
 @import '../../auth/google-button.css';
 @import '../../leaderboard/leaderboard.css';
-@import '../../navigation/navigation.css';
 @import '../../navigation/notFound.css';
 @import '../../tournament/tournament.css';
 @import '../../rules/rules.css';

@@ -1,116 +1,121 @@
-import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML, notFoundHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML, friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML, notFoundHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
 import { pushHistoryState } from './navigation.js';
 
-const components = {
-    landing: {id: 'landing', html: landingHTML},
-    mainMenu: {id: 'mainMenu', html: mainMenuHTML},
-    goToMain: {id: 'goToMain', html: goToMainHTML},
-    profileCard: {id: 'profileCard', html: profileCardHTML},
-    leaderboard: {id: 'leaderboard', html: leaderboardHTML},
-    friendList: {id: 'friendList', html: friendListHTML},
-    addFriends: {id: 'addFriends', html: addFriendsHTML},
-    matchmaking: {id: 'matchmaking', html: matchmakingHTML},
-    game: {id: 'game', html: gameHTML},
-    game4: {id: 'game4', html: game4HTML},
-    spectate: {id: 'spectate', html: spectateHTML},
-    spectate4: {id: 'spectate4', html: spectate4HTML},
-    signIn: {id: 'signIn', html: signInHTML},
-    signUp: {id: 'signUp', html: signUpHTML},
-    twoFactor: {id: 'twoFactor', html: twoFactorHTML},
-    gameFinished: {id: 'gameFinished', html: gameFinishedHTML},
-    tournamentSemifinalFinished: {id: 'tournamentSemifinalFinished', html: tournamentSemifinalFinishedHTML},
-    tournamentFinalFinished: {id: 'tournamentFinalFinished', html: tournamentFinalFinishedHTML},
-    spectatorGameFinished: {id: 'spectatorGameFinished', html: spectatorGameFinishedHTML},
-    profile: {id: 'profile', html: profileHTML},
-    profileDashboard: {id: 'profileDashboard', html: profileDashboardHTML},
-    profileWinRateHistory: {id: 'profileWinRateHistory', html: profileWinRateHistoryHTML},
-    gameStats: {id: 'gameStats', html: gameStatsHTML as any},
-    contextMenu: {id: 'contextMenu', html: contextMenuHTML},
-    settings: {id: 'settings', html: settingsHTML},
-    gameConfig: {id: 'gameConfig', html: gameConfigHTML},
-    aiConfig: {id: 'aiConfig', html: aiConfigHTML},
-    tournaments: {id: 'tournaments', html: tournamentsHTML},
-    rules: {id: 'rules', html: rulesHTML},
-    notFound: {id: 'notFound', html: notFoundHTML},
+// Dictionary mapping page names to their DOM IDs and HTML content generators.
+const components =
+{
+    landing: { id: 'landing', html: landingHTML },
+    mainMenu: { id: 'mainMenu', html: mainMenuHTML },
+    goToMain: { id: 'goToMain', html: goToMainHTML },
+    profileCard: { id: 'profileCard', html: profileCardHTML },
+    leaderboard: { id: 'leaderboard', html: leaderboardHTML },
+    friendList: { id: 'friendList', html: friendListHTML },
+    addFriends: { id: 'addFriends', html: addFriendsHTML },
+    matchmaking: { id: 'matchmaking', html: matchmakingHTML },
+    game: { id: 'game', html: gameHTML },
+    game4: { id: 'game4', html: game4HTML },
+    spectate: { id: 'spectate', html: spectateHTML },
+    spectate4: { id: 'spectate4', html: spectate4HTML },
+    signIn: { id: 'signIn', html: signInHTML },
+    signUp: { id: 'signUp', html: signUpHTML },
+    twoFactor: { id: 'twoFactor', html: twoFactorHTML },
+    gameFinished: { id: 'gameFinished', html: gameFinishedHTML },
+    tournamentSemifinalFinished: { id: 'tournamentSemifinalFinished', html: tournamentSemifinalFinishedHTML },
+    tournamentFinalFinished: { id: 'tournamentFinalFinished', html: tournamentFinalFinishedHTML },
+    spectatorGameFinished: { id: 'spectatorGameFinished', html: spectatorGameFinishedHTML },
+    profile: { id: 'profile', html: profileHTML },
+    profileDashboard: { id: 'profileDashboard', html: profileDashboardHTML },
+    profileWinRateHistory: { id: 'profileWinRateHistory', html: profileWinRateHistoryHTML },
+    gameStats: { id: 'gameStats', html: gameStatsHTML as any },
+    contextMenu: { id: 'contextMenu', html: contextMenuHTML },
+    settings: { id: 'settings', html: settingsHTML },
+    gameConfig: { id: 'gameConfig', html: gameConfigHTML },
+    aiConfig: { id: 'aiConfig', html: aiConfigHTML },
+    tournaments: { id: 'tournaments', html: tournamentsHTML },
+    rules: { id: 'rules', html: rulesHTML },
+    notFound: { id: 'notFound', html: notFoundHTML },
 };
 
+// This function handles special data requirements for dynamic pages
 async function show(pageName: keyof typeof components, data?: any)
 {
-    
-    // 🚨 SECURITY: Don't load ANY content if session is blocked
-    // Exception: allow gameStats, goToMain, profile as they're read-only pages that should work on reload
+    // Read-only pages are exempted to allow basic navigation.
     const blocked = isSessionBlocked();
-    
-    if (blocked && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats' && pageName !== 'goToMain' && pageName !== 'profile' && pageName !== 'profileDashboard' && pageName !== 'profileWinRateHistory') {
-        console.warn(`🚫 Component loading BLOCKED for '${pageName}': Session is active in another tab`);
-        return; // Don't load any content
+
+    if (blocked &&
+        pageName !== 'signIn' &&
+        pageName !== 'signUp' &&
+        pageName !== 'gameStats' &&
+        pageName !== 'goToMain' &&
+        pageName !== 'profile' &&
+        pageName !== 'profileDashboard' &&
+        pageName !== 'profileWinRateHistory')
+    {
+        console.warn(`Component loading BLOCKED for '${pageName}': Session is active in another tab`);
+        return;
     }
-    
-    // Show the requested component
+
     const component = components[pageName];
     const element = document.getElementById(component.id);
-    if (element) {
-        if (typeof component.html === 'function') {
+
+    if (element)
+    {
+        if (typeof component.html === 'function')
+        {
             let htmlResult;
-            
-            // Cas spécial pour le profil - passer l'utilisateur sélectionné
-            if (pageName === 'profile') {
+
+            // Route-specific logic to prepare data before rendering the HTML.
+            if (pageName === 'profile')
+            {
                 const selectedUser = window.selectedProfileUser;
                 htmlResult = component.html(selectedUser);
-                // Ne pas nettoyer tout de suite - on en a besoin pour profileDashboard
             }
-            // Cas spécial pour le profileDashboard - passer l'utilisateur sélectionné
-            else if (pageName === 'profileDashboard') {
+            else if (pageName === 'profileDashboard')
+            {
                 const selectedUser = window.selectedProfileUser;
                 htmlResult = component.html(selectedUser);
-                // Nettoyer après utilisation du dashboard
+                // Clear the selection reference after use to avoid state pollution.
                 window.selectedProfileUser = null;
-            } 
-            // Cas spécial pour gameStats - passer les données du match
-            else if (pageName === 'gameStats') {
+            }
+            else if (pageName === 'gameStats')
+            {
                 const matchData = window.selectedMatchData;
                 const userId = window.currentUser?.id || 0;
                 htmlResult = component.html(matchData, userId);
             }
-            // Cas spécial pour gameFinished - passer les données de fin de jeu
-            else if (pageName === 'gameFinished') {
+            else if (pageName === 'gameFinished' ||
+                pageName === 'spectatorGameFinished' ||
+                pageName === 'tournamentSemifinalFinished' ||
+                pageName === 'tournamentFinalFinished')
+            {
                 htmlResult = component.html(data);
             }
-            // Cas spécial pour spectatorGameFinished - passer les données de fin de jeu
-            else if (pageName === 'spectatorGameFinished') {
-                htmlResult = component.html(data);
-            }
-            // Cas spécial pour tournamentSemifinalFinished - passer les données de fin de demi-finale
-            else if (pageName === 'tournamentSemifinalFinished') {
-                htmlResult = component.html(data);
-            }
-            // Cas spécial pour tournamentFinalFinished - passer les données de fin de finale
-            else if (pageName === 'tournamentFinalFinished') {
-                htmlResult = component.html(data);
-            }
-            // Cas spécial pour contextMenu - passer isInGame
-            else if (pageName === 'contextMenu') {
+            else if (pageName === 'contextMenu')
+            {
                 const isInGame = window.contextMenuIsInGame || false;
                 htmlResult = component.html(isInGame);
             }
-            else {
+            else
+            {
                 htmlResult = component.html();
             }
-            
-            if (htmlResult instanceof Promise) {
+
+            // Handle both synchronous and asynchronous HTML generation.
+            if (htmlResult instanceof Promise)
                 element.innerHTML = await htmlResult;
-            } else {
+            else
                 element.innerHTML = htmlResult;
-            }
-        } else {
+        }
+        else
+        {
             element.innerHTML = component.html;
         }
     }
 
-    // Notifies each element is ready
+    // Defer the event dispatch to ensure the DOM has updated.
     setTimeout(() =>
     {
         const event = new CustomEvent('componentsReady');
@@ -118,312 +123,244 @@ async function show(pageName: keyof typeof components, data?: any)
     }, 0);
 }
 
+// Global state to manage race conditions during rapid navigation.
 let currentLoadId = 0;
 
-// Pages considérées comme "en jeu" - quitter ces pages ne doit pas déclencher de forfait
+// List of pages that constitute an active gameplay session.
 const gamePages = ['game', 'game4', 'spectate', 'spectate4', 'matchmaking', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
 
-// Variable pour tracker la page actuelle
 let currentPage: string | null = null;
 
+// Main navigation router. Handles page transitions, security checks, and resource cleanup.
 async function load(pageName: string, data?: any, updateHistory: boolean = true)
-{   
+{
     const myLoadId = ++currentLoadId;
 
-    // 🚨 CRITICAL SECURITY CHECK: Block navigation if session is blocked by another tab
-    // Exception: allow gameStats and profile as they're read-only pages that should work on reload
-    if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats' && pageName !== 'profile') {
+    // Security check: Abort navigation if the session is controlled by another tab.
+    if (isSessionBlocked() &&
+        pageName !== 'signIn' &&
+        pageName !== 'signUp' &&
+        pageName !== 'gameStats' &&
+        pageName !== 'profile')
+    {
         console.warn('Navigation blocked: Session is active in another tab');
-        return; // Don't allow navigation
-    }
-    
-    // Nettoyer les event listeners de la page landing si on la quitte
-    if (window.cleanupLandingHandlers) {
-        window.cleanupLandingHandlers();
-        window.cleanupLandingHandlers = null;
-    }
-    
-    // 🎮 FORFEIT: Si on quitte une page de jeu pour aller ailleurs, déclencher le forfait
-    const wasInGame = currentPage && gamePages.includes(currentPage);
-    const goingToGame = gamePages.includes(pageName);
-    
-    if (wasInGame && !goingToGame) {
-        // Marquer qu'on quitte le jeu volontairement - ignorer l'écran de fin
-        window.isNavigatingAwayFromGame = true;
-        
-        // Quitter la room = forfait si partie en cours (géré côté backend)
-        if (window.socket && window.leaveCurrentRoomAsync) {
-            try {
-                await window.leaveCurrentRoomAsync();
-            } catch (error) {
-                console.warn('Room cleanup on navigation failed:', error);
-            }
-        }
-    } else if (goingToGame) {
-        // Reset du flag uniquement si on va vers une page de jeu (nouveau jeu)
-        window.isNavigatingAwayFromGame = false;
-    }
-    // Note: On ne reset PAS le flag si on va vers une page non-jeu,
-    // car l'événement gameFinished/spectatorGameFinished pourrait encore arriver
-    
-    // Mettre à jour la page courante
-    currentPage = pageName;
-    
-    hideAllPages();
-    
-    // Check if another load started
-    if (myLoadId !== currentLoadId) {
-        console.warn(`🚫 load('${pageName}') aborted: newer load started`);
         return;
     }
 
-    // Arrêter les mises à jour WebSocket si on quitte le menu principal
-    if (pageName !== 'mainMenu') {
-        stopFriendListRealtimeUpdates();
+    // Cleanup specific listeners attached to the landing page.
+    if (window.cleanupLandingHandlers)
+    {
+        window.cleanupLandingHandlers();
+        window.cleanupLandingHandlers = null;
     }
-    
+
+    // Forfeit logic: Trigger a game leave if the user navigates away from an active match.
+    const wasInGame = currentPage && gamePages.includes(currentPage);
+    const goingToGame = gamePages.includes(pageName);
+
+    if (wasInGame && !goingToGame)
+    {
+        window.isNavigatingAwayFromGame = true;
+
+        if (window.socket && window.leaveCurrentRoomAsync)
+        {
+            try
+            {
+                await window.leaveCurrentRoomAsync();
+            }
+            catch (error)
+            {
+                console.warn('Room cleanup on navigation failed:', error);
+            }
+        }
+    }
+    else if (goingToGame)
+    {
+        window.isNavigatingAwayFromGame = false;
+    }
+
+    currentPage = pageName;
+    hideAllPages();
+
+    // Abort if a newer navigation request was initiated during processing.
+    if (myLoadId !== currentLoadId)
+    {
+        console.warn(`load('${pageName}') aborted: newer load started`);
+        return;
+    }
+
+    // Disable real-time updates when leaving the main menu to save resources.
+    if (pageName !== 'mainMenu')
+        stopFriendListRealtimeUpdates();
+
+    // Route-specific loading logic.
     if (pageName === 'landing')
+    {
         await show('landing');
+    }
     else if (pageName === 'mainMenu')
     {
-         if (window.aiMode) {
-            window.aiMode = false; //Retour au menu - reset du flag IA 🤖 
-         } 
-        // Refresh user stats BEFORE showing components to ensure displayed data is current
-        if (window.currentUser && window.refreshUserStats) {
-            window.refreshUserStats().then(async (_statsChanged: boolean) => {
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
+        if (window.aiMode)
+            window.aiMode = false;
 
-            // Show components after stats are refreshed
-                await show('mainMenu');
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                await show('friendList');
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                // Attendre que l'HTML soit rendu avant d'initialiser
-                setTimeout(async () => {
-                    if (myLoadId !== currentLoadId) return; // Abort if newer load
-                    initializeAddFriendsButton(); // Initialiser le bouton Add Friends
-                    initializeFriendListEventListeners(); // Initialiser les event listeners
-                    startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
-                    initLoadingIcons(); // Initialiser les icônes de chargement
-                    
-                    // Update friend requests badge on display
-                    const { updateFriendRequestsBadge } = await import('../friends/friendList.html.js');
-                    await updateFriendRequestsBadge();
-                }, 100);
-                await show('leaderboard');
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                await show('profileCard');
-            }).catch(async (error: any) => {
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                console.warn('Failed to refresh user stats before main menu:', error);
-                // Still show components even if refresh fails
-                await show('mainMenu');
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                await show('friendList');
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                // Wait for HTML to be rendered before initialization
-                setTimeout(async () => {
-                    if (myLoadId !== currentLoadId) return; // Abort if newer load
-                    initializeAddFriendsButton(); // Initialiser le bouton Add Friends
-                    initializeFriendListEventListeners();
-                    startFriendListRealtimeUpdates(); // 🚀 NOUVEAU : Activer les mises à jour temps réel via WebSocket
-                    
-                    // Update friend requests badge on display
-                    const { updateFriendRequestsBadge } = await import('../friends/friendList.html.js');
-                    await updateFriendRequestsBadge();
-                }, 100);
-                await show('leaderboard');
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                await show('profileCard');
-            });
-        } else {
-            // No user or refresh function available, show components directly
+        // Attempt to refresh user statistics before rendering the dashboard.
+        const refreshStats = window.currentUser && window.refreshUserStats
+            ? window.refreshUserStats()
+            : Promise.resolve();
+
+        refreshStats.finally(async () =>
+        {
+            if (myLoadId !== currentLoadId) return;
+
             await show('mainMenu');
-            if (myLoadId !== currentLoadId) return; // Abort if newer load
+            if (myLoadId !== currentLoadId) return;
             await show('friendList');
-            if (myLoadId !== currentLoadId) return; // Abort if newer load
-            // Wait for HTML to be rendered before initialization
-            setTimeout(async () => {
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                initializeAddFriendsButton(); // Initialize Add Friends button
-                initializeFriendListEventListeners(); // Initialize event listeners
-                startFriendListRealtimeUpdates(); // Enable real-time updates via WebSocket
-                initLoadingIcons(); // Initialize loading icons
-                
-                // Update friend requests badge on display
+            if (myLoadId !== currentLoadId) return;
+
+            // Initialize interactive elements after rendering.
+            setTimeout(async () =>
+            {
+                if (myLoadId !== currentLoadId) return;
+
+                initializeAddFriendsButton();
+                initializeFriendListEventListeners();
+                startFriendListRealtimeUpdates();
+                initLoadingIcons();
+
                 const { updateFriendRequestsBadge } = await import('../friends/friendList.html.js');
                 await updateFriendRequestsBadge();
             }, 100);
-            await show('leaderboard');
-            if (myLoadId !== currentLoadId) return; // Abort if newer load
-            await show('profileCard');
-        }
-    }
 
-    else if (pageName === 'settings') {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+            await show('leaderboard');
+            if (myLoadId !== currentLoadId) return;
+            await show('profileCard');
+        }).catch((error: any) =>
+        {
+            console.warn('Failed to refresh user stats before main menu:', error);
+        });
+    }
+    else if (pageName === 'settings')
+    {
         await show('settings');
     }
     else if (pageName === 'signIn')
     {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('signIn');
-        // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
-        // show('goToMain');
     }
     else if (pageName === 'signUp')
     {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('signUp');
-        // Initialize cross-tab session listener (will auto-block if another tab has a session)
         initSessionBroadcast();
-        // show('goToMain');
     }
     else if (pageName === 'twoFactor')
     {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('twoFactor');
-        // Initialize cross-tab session listener
         initSessionBroadcast();
     }
-    else if (pageName === 'game') {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+    else if (pageName === 'game')
+    {
         await show('game');
     }
-    else if (pageName === 'game4') {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+    else if (pageName === 'game4')
+    {
         await show('game4');
     }
-    else if (pageName === 'spectate') {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+    else if (pageName === 'spectate')
+    {
         await show('spectate');
     }
-    else if (pageName === 'spectate4') {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
+    else if (pageName === 'spectate4')
+    {
         await show('spectate4');
     }
     else if (pageName === 'matchmaking')
     {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
         await show('matchmaking');
-        if (myLoadId === currentLoadId) {
+        if (myLoadId === currentLoadId)
+        {
             animateDots();
             switchTips();
         }
     }
     else if (pageName === 'profile')
     {
-        stopFriendListRealtimeUpdates();
-        
-        // Restore selected profile user from URL if needed (on reload)
-        if (!window.selectedProfileUser) {
+        // Handle profile data restoration from URL or session storage on reload.
+        if (!window.selectedProfileUser)
+        {
             const urlParts = window.location.pathname.split('/').filter(Boolean);
             const urlUsername = (urlParts[0] === 'profile' && urlParts[1]) ? urlParts[1] : undefined;
             const storedUsername = sessionStorage.getItem('profileUsername') || undefined;
             const usernameToRestore = urlUsername || storedUsername;
 
-            if (usernameToRestore) {
-                // Si c'est le profil courant, utiliser window.currentUser pour garder l'avatar à jour
-                if (window.currentUser && window.currentUser.username === usernameToRestore) {
+            if (usernameToRestore)
+            {
+                if (window.currentUser && window.currentUser.username === usernameToRestore)
+                {
                     window.selectedProfileUser = window.currentUser;
-                } else {
-                    // Fetch user by username from backend
-                    try {
+                }
+                else
+                {
+                    try
+                    {
                         const res = await fetch(`/users/by-username/${encodeURIComponent(usernameToRestore)}`, {
                             method: 'GET',
                             credentials: 'include',
                         });
-                        if (res.ok) {
+                        if (res.ok)
+                        {
                             const data = await res.json();
-                            if (data?.user) {
+                            if (data?.user)
                                 window.selectedProfileUser = data.user;
-                            }
                         }
-                    } catch (e) {
-                        // ignore - will show current user profile
+                    }
+                    catch (e)
+                    {
+                        // Ignore error, fallback to current user.
                     }
                 }
             }
         }
-        
-        // Store username in sessionStorage for potential reload
-        if (window.selectedProfileUser?.username) {
+
+        if (window.selectedProfileUser?.username)
             sessionStorage.setItem('profileUsername', window.selectedProfileUser.username);
-        }
-        
-        // Capturer l'utilisateur sélectionné AVANT les show() car profileDashboard le reset à null
+
         const targetUser = window.selectedProfileUser || window.currentUser;
-        
-        // Refresh user stats BEFORE showing profile to ensure displayed data is current
-        if (window.currentUser && window.refreshUserStats) {
-            window.refreshUserStats().then(async (_statsChanged: boolean) => {
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-      
-                // Show components after stats are refreshed
-                await show('profile');
-                await show('profileDashboard');
-                await show('profileWinRateHistory');
-                await show('goToMain');
-                
-                // Initialiser les graphiques après l'affichage du profil
-                setTimeout(async () => {
-                    if (myLoadId !== currentLoadId) return; // Abort if newer load
-                    const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                    const wins = targetUser?.wins || 0;
-                    const losses = targetUser?.losses || 0;
-                    initializeStatsChart(wins, losses);
-                    if (targetUser?.id) {
-                        await initializeWinRateHistoryChart(targetUser.id);
-                    }
-                }, 100);
-            }).catch(async (error: any) => {
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
-                console.warn('Failed to refresh user stats before profile:', error);
-                // Still show components even if refresh fails
-                await show('profile');
-                await show('profileDashboard');
-                await show('profileWinRateHistory');
-                await show('goToMain');
-                
-                // Initialiser les graphiques même si le refresh a échoué
-                setTimeout(async () => {
-                    if (myLoadId !== currentLoadId) return; // Abort if newer load
-                    const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
-                    const wins = targetUser?.wins || 0;
-                    const losses = targetUser?.losses || 0;
-                    initializeStatsChart(wins, losses);
-                    if (targetUser?.id) {
-                        await initializeWinRateHistoryChart(targetUser.id);
-                    }
-                }, 100);
-            });
-        } else {
-            // No user or refresh function available, show components directly
+
+        // Refresh stats and render profile components.
+        const refreshStats = window.currentUser && window.refreshUserStats
+            ? window.refreshUserStats()
+            : Promise.resolve();
+
+        refreshStats.finally(async () =>
+        {
+            if (myLoadId !== currentLoadId) return;
+
             await show('profile');
             await show('profileDashboard');
             await show('profileWinRateHistory');
             await show('goToMain');
-            
-            // Initialiser les graphiques
-            setTimeout(async () => {
-                if (myLoadId !== currentLoadId) return; // Abort if newer load
+
+            // Initialize charts after rendering.
+            setTimeout(async () =>
+            {
+                if (myLoadId !== currentLoadId) return;
+
                 const { initializeStatsChart, initializeWinRateHistoryChart } = await import('../profile/profile.js');
                 const wins = targetUser?.wins || 0;
                 const losses = targetUser?.losses || 0;
+
                 initializeStatsChart(wins, losses);
-                if (targetUser?.id) {
+                if (targetUser?.id)
                     await initializeWinRateHistoryChart(targetUser.id);
-                }
             }, 100);
-        }
+        });
     }
-    else if (pageName === 'gameStats') {
-        stopFriendListRealtimeUpdates();
-        // Restore selected match after reload if needed.
-        // Important: on hard reload, `cachedMatches` is empty, so we also fetch the match by id.
-        if (!(window as any).selectedMatchData) {
+    else if (pageName === 'gameStats')
+    {
+        // Attempt to restore match data from cache or fetch from API if missing.
+        if (!(window as any).selectedMatchData)
+        {
             const urlParts = window.location.pathname.split('/').filter(Boolean);
             const urlHead = (urlParts[0] || '').toLowerCase();
             const urlMatchId = (urlHead === 'gamestats' || urlParts[0] === 'gameStats')
@@ -433,131 +370,147 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             const storedMatchId = storedMatchIdRaw ? Number(storedMatchIdRaw) : undefined;
             const matchIdToRestore = urlMatchId || storedMatchId;
 
-            if (matchIdToRestore) {
-                // 1) try in-memory cache (works when coming from profile without reload)
-                try {
+            if (matchIdToRestore)
+            {
+                try
+                {
                     const { getCachedMatches } = await import('../profile/profile.html.js');
                     const matches = getCachedMatches?.() || [];
                     const found = matches.find((m: any) => m?.id === matchIdToRestore);
-                    if (found) {
+                    if (found)
                         (window as any).selectedMatchData = found;
-                    }
-                } catch (e) {
-                    // ignore
                 }
+                catch (e) { /* Ignore cache errors */ }
 
-                // 2) fetch fallback (works on reload even if cache is empty)
-                if (!(window as any).selectedMatchData) {
-                    try {
+                if (!(window as any).selectedMatchData)
+                {
+                    try
+                    {
                         const res = await fetch(`/matches/${matchIdToRestore}`, {
                             method: 'GET',
                             credentials: 'include',
                         });
-                        if (res.ok) {
+                        if (res.ok)
+                        {
                             const data = await res.json();
-                            // Accept either {match: {...}} or direct match payload
                             const match = (data && (data.match || data)) || null;
-                            if (match) {
+                            if (match)
                                 (window as any).selectedMatchData = match;
-                            }
                         }
-                    } catch (e) {
-                        // keep empty state; gameStatsHTML will show a message
                     }
+                    catch (e) { /* Ignore fetch errors */ }
                 }
             }
         }
+
         await show('gameStats');
         await show('goToMain');
-        
-        // Initialiser les graphiques après l'affichage
-        setTimeout(async () => {
+
+        setTimeout(async () =>
+        {
             if (myLoadId !== currentLoadId) return;
             const { initializeGameStatsCharts } = await import('../profile/gamestats.js');
             const matchData = window.selectedMatchData;
-            if (matchData) {
+            if (matchData)
                 initializeGameStatsCharts(matchData);
-            }
         }, 100);
     }
-    else if (pageName === 'gameConfig') 
+    else if (pageName === 'gameConfig')
     {
         await show('gameConfig');
         await show('goToMain');
-        setTimeout(() => {
-            if (myLoadId !== currentLoadId) return; // Abort if newer load
-            if (window.initGameConfigManagers) window.initGameConfigManagers();
+        setTimeout(() =>
+        {
+            if (myLoadId !== currentLoadId) return;
+            if (window.initGameConfigManagers)
+                window.initGameConfigManagers();
         }, 100);
     }
-    else if (pageName === 'aiConfig') 
+    else if (pageName === 'aiConfig')
     {
         await show('aiConfig');
         await show('goToMain');
-        setTimeout(() => {
-            if (myLoadId !== currentLoadId) return; // Abort if newer load
-            if (window.initAIConfigManagers) window.initAIConfigManagers();
+        setTimeout(() =>
+        {
+            if (myLoadId !== currentLoadId) return;
+            if (window.initAIConfigManagers)
+                window.initAIConfigManagers();
         }, 100);
     }
     else if (pageName === 'rules')
     {
-        stopFriendListRealtimeUpdates();
         await show('rules');
         await show('goToMain');
     }
-    else if (pageName === 'tournaments') {
-        stopFriendListRealtimeUpdates(); // Arrêter les mises à jour WebSocket
-        console.log('📺 Showing tournaments component...');
+    else if (pageName === 'tournaments')
+    {
+        console.log('Showing tournaments component...');
         await show('tournaments');
         await show('goToMain');
-        // Initialize tournaments functionality after component is rendered
-        setTimeout(async () => {
-            if (myLoadId !== currentLoadId) return; // Abort if newer load
-            console.log('🚀 Loading tournaments functionality...');
+
+        setTimeout(async () =>
+        {
+            if (myLoadId !== currentLoadId) return;
+            console.log('Loading tournaments functionality...');
             const tournamentsPage = await import('../tournament/tournaments.js');
             await tournamentsPage.initTournaments();
         }, 100);
     }
     else if (pageName === 'gameFinished')
+    {
         await show('gameFinished', data);
+    }
     else if (pageName === 'spectatorGameFinished')
+    {
         await show('spectatorGameFinished', data);
+    }
     else if (pageName === 'tournamentSemifinalFinished')
+    {
         await show('tournamentSemifinalFinished', data);
+    }
     else if (pageName === 'tournamentFinalFinished')
+    {
         await show('tournamentFinalFinished', data);
-    else if (pageName.startsWith('tournaments/')) {
-        // Handle tournament detail pages: /tournaments/:id
+    }
+    else if (pageName.startsWith('tournaments/'))
+    {
         const tournamentId = pageName.split('/')[1];
-        if (tournamentId) {
+        if (tournamentId)
+        {
             const tournamentDetail = await import('../tournament/tournamentDetail.js');
             await tournamentDetail.default(tournamentId);
-        } else {
+        }
+        else
+        {
             console.warn('Tournament ID missing in URL');
         }
     }
-    else {
+    else
+    {
         console.warn(`Page ${pageName} not found`);
-        // Show a friendly 404 page while keeping the URL intact
         await show('notFound');
-        // NOTE: intentionally do NOT show 'goToMain' here to prevent returning to main menu from the 404 page
     }
 
     if (updateHistory && myLoadId === currentLoadId)
         pushHistoryState(pageName);
 }
 
+// Clear the content of a specific component from the DOM.
 function hide(pageName: keyof typeof components)
 {
     const component = components[pageName];
     const element = document.getElementById(component.id);
-    if (element) element.innerHTML = '';
+    if (element)
+        element.innerHTML = '';
 }
 
+// Clear all component containers to reset the view.
 function hideAllPages(): void
 {
     Object.keys(components).forEach(key => hide(key as keyof typeof components));
 }
 
 export { show, load, hideAllPages, hide };
-// Exposer load globalement pour les autres modules avec protection
-window.load = guardFunction(load, 'load'); 
+
+// Expose the load function globally, wrapped in a security guard to prevent unauthorized execution.
+window.load = guardFunction(load, 'load');
