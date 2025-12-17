@@ -7,7 +7,8 @@ import { getGlobalIo } from '../../socket/socketHandlers.js';
 import { getSocketIdForUser } from '../../socket/socketAuth.js';
 import jwt from 'jsonwebtoken';
 
-if (!process.env.JWT_SECRET) {
+if (!process.env.JWT_SECRET)
+{
   throw new Error('JWT_SECRET environment variable is not set');
 }
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -48,13 +49,13 @@ function notifyFriendRequestReceived(receiverId: number, senderId: number, fasti
  * - POST /users/:id/friend : Envoyer une demande d'ami
  * - DELETE /users/:id/friend : Supprimer un ami
  */
-export default async function friendsRoutes(fastify: FastifyInstance) {
+export default async function friendsRoutes(fastify: FastifyInstance)
+{
   
   // GET /users - Liste des amis
   fastify.get('/users', async (request, reply) => {
-    try {  
-      // Note: Cette route retourne [] si non authentifié (pas d'erreur 401)
-      // C'est le comportement original, on le garde intact
+    try {
+
       const cookies = parseCookies(request.headers['cookie'] as string | undefined);
       const jwtToken = cookies['jwt'];
       
@@ -94,48 +95,40 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
   fastify.post('/users/:id/friend', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
-      if (!currentUserId) return; // Reply déjà envoyée par verifyAuthFromRequest
+      if (!currentUserId)
+        return;
 
-      // SECURITY: Rate limiting for friend requests to prevent spam
       const friendRequestRateLimitKey = `friend_request_${currentUserId}`;
-      if (!checkRateLimit(friendRequestRateLimitKey, RATE_LIMITS.FRIEND_REQUEST.max, RATE_LIMITS.FRIEND_REQUEST.window)) {
+      if (!checkRateLimit(friendRequestRateLimitKey, RATE_LIMITS.FRIEND_REQUEST.max, RATE_LIMITS.FRIEND_REQUEST.window))
         return reply.status(429).send({ error: 'Too many friend requests. Please wait a moment.' });
-      }
 
-      // SECURITY: Validate ID parameter
       const friendId = validateId((request.params as any).id);
-      if (!friendId) {
+      if (!friendId)
         return reply.status(400).send({ error: 'Invalid friend ID' });
-      }
       
-      if (friendId === currentUserId) {
+      if (friendId === currentUserId)
         return reply.status(400).send({ error: 'Cannot add yourself as a friend' });
-      }
 
       // Vérifier que l'utilisateur existe
       const friendExists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(friendId);
-      if (!friendExists) {
+      if (!friendExists)
         return reply.status(404).send({ error: 'User not found' });
-      }
 
-      // Vérifier que la relation d'amitié n'existe pas déjà (dans les deux sens)
+      // est on deja amis? dans les deux sens
       const existingFriendship = db.prepare(
         'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
       ).get(currentUserId, friendId, friendId, currentUserId);
-      if (existingFriendship) {
+      if (existingFriendship)
         return reply.status(400).send({ error: 'Already friends' });
-      }
 
-      // Vérifier qu'il n'y a pas déjà une demande en attente
+      // la demande existe deja?
       const existingRequest = db.prepare('SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?').get(currentUserId, friendId, 'pending');
-      if (existingRequest) {
+      if (existingRequest)
         return reply.status(400).send({ error: 'Friend request already sent' });
-      }
 
       // Envoyer la demande d'ami
       db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
       
-      // Notifier le destinataire de la demande d'ami
       notifyFriendRequestReceived(friendId, currentUserId, fastify);
 
       return { success: true, message: 'Friend request sent' };
@@ -148,44 +141,37 @@ export default async function friendsRoutes(fastify: FastifyInstance) {
   fastify.delete('/users/:id/friend', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
-      if (!currentUserId) return; // Reply déjà envoyée par verifyAuthFromRequest
+      if (!currentUserId)
+        return;
 
-      // SECURITY: Rate limiting for removing friends
       const removeRateLimitKey = `friend_remove_${currentUserId}`;
-      if (!checkRateLimit(removeRateLimitKey, RATE_LIMITS.FRIEND_REMOVE.max, RATE_LIMITS.FRIEND_REMOVE.window)) {
+      if (!checkRateLimit(removeRateLimitKey, RATE_LIMITS.FRIEND_REMOVE.max, RATE_LIMITS.FRIEND_REMOVE.window))
         return reply.status(429).send({ error: 'Too many remove requests. Please wait a moment.' });
-      }
 
-      // SECURITY: Validate ID parameter
       const friendId = validateId((request.params as any).id);
-      if (!friendId) {
+      if (!friendId)
         return reply.status(400).send({ error: 'Invalid friend ID' });
-      }
       
-      if (friendId === currentUserId) {
+      if (friendId === currentUserId)
         return reply.status(400).send({ error: 'Cannot remove yourself' });
-      }
 
-      // Vérifier que la relation d'amitié existe (dans un sens ou l'autre)
       const existingFriendship = db.prepare(
         'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
       ).get(currentUserId, friendId, friendId, currentUserId);
       
-      if (!existingFriendship) {
+      if (!existingFriendship)
         return reply.status(404).send({ error: 'Friendship not found' });
-      }
 
-      // Supprimer la relation d'amitié dans les deux sens
+      // delete friendship in both directions
       db.prepare('DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)').run(
         currentUserId, friendId, friendId, currentUserId
       );
       
-      // Supprimer également toutes les demandes d'amis en attente entre ces deux utilisateurs
+      //delete friendrequest in both directions
       db.prepare('DELETE FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)').run(
         currentUserId, friendId, friendId, currentUserId
       );
 
-      // Notifier les deux utilisateurs en temps réel
       notifyFriendRemoved(getGlobalIo(), currentUserId, friendId, fastify);
 
       return { success: true, message: 'Friend removed successfully' };
