@@ -1,12 +1,11 @@
-// Export functions from friends.ts
-export { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from './friends.js';
+export { initializeAddFriendSearch, initializeBackToFriendsButton, initializeFriendRequestListeners } from './addFriends.js';
 import { getSafeAvatarUrl } from '../services/avatarProxy.js';
 
 export async function addFriendsHTML() {
-    
-    // Récupérer les demandes d'amis reçues
+    // Get pending friend requests from the server
     let friendRequests: any[] = [];
-    try {
+    try
+    {
         const response = await fetch('/users/friend-requests/received', {
             method: 'GET',
             credentials: 'include'
@@ -19,6 +18,7 @@ export async function addFriendsHTML() {
     } catch (error) {
     }
     
+    // HTML for friend requests
     let requestsHTML = '';
     if (friendRequests.length > 0) {
         requestsHTML = friendRequests.map((request: any) => `
@@ -41,6 +41,7 @@ export async function addFriendsHTML() {
         requestsHTML = '<p class="friend-requests-empty">No friend requests</p>';
     }
     
+    // HTML for the Add Friends page
     return /*html*/`
         <div id="addFriends" class="user-list">
             <div class="friend-list-header">

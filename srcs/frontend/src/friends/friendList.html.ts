@@ -1,5 +1,5 @@
-// Export functions from friends.ts
-export { 
+// We re-export these utility functions to ensure they are available to other modules that import from this file
+export {
     initializeFriendListEventListeners,
     initializeAddFriendsButton,
     startFriendListRealtimeUpdates,
@@ -12,55 +12,51 @@ export {
 } from './friends.js';
 import { getSafeAvatarUrl } from '../services/avatarProxy.js';
 
-export async function friendListHTML() {
-    try {
+// This function generates the HTML structure for the friends sidebar, fetching necessary data asynchronously
+export async function friendListHTML()
+{
+    try
+    {
+        // We attempt to retrieve the current user's friend list from the backend
         const usersResponse = await fetch('/users', {
             method: 'GET',
             credentials: 'include'
         });
-        
-        if (!usersResponse.ok) {
+
+        if (!usersResponse.ok)
             throw new Error('Failed to fetch users');
-        }
-        
+
         const usersData = await usersResponse.json();
         const users = usersData.users || [];
 
-        const leaderboardResponse = await fetch('/users/leaderboard?limit=1', {
-            method: 'GET',
-            credentials: 'include'
-        });
 
-        let firstRankUserId = null;
-        if (leaderboardResponse.ok) {
-            const leaderboardData = await leaderboardResponse.json();
-            if (leaderboardData.leaderboard && leaderboardData.leaderboard.length > 0) {
-                firstRankUserId = leaderboardData.leaderboard[0].id;
-            }
-        }
-
+        // We check for incoming friend requests to display a notification badge on the 'Add Friend' button
         let friendRequestsCount = 0;
-        try {
+        try
+        {
             const requestsResponse = await fetch('/users/friend-requests/received', {
                 method: 'GET',
                 credentials: 'include'
             });
 
-            if (requestsResponse.ok) {
+            if (requestsResponse.ok)
+            {
                 const requestsData = await requestsResponse.json();
                 friendRequestsCount = (requestsData.requests || []).length;
             }
-        } catch (error) {
+        }
+        catch (error)
+        {
             console.warn('Could not fetch friend requests count:', error);
         }
 
         let userItems = '';
 
-        users.forEach((user: any) => {
+        // We iterate through the list of friends to construct their individual HTML cards
+        users.forEach((user: any) =>
+        {
             const avatarUrl = getSafeAvatarUrl(user.avatar_url);
-            const isFirstRank = user.id === firstRankUserId;
-            const crownIcon = isFirstRank ? '<img src="./img/gold-crown.png" alt="First place" class="crown-icon">' : '';
-            
+
             const status = 'offline';
             const isInGame = false;
             const statusColor = '#666';
@@ -79,19 +75,18 @@ export async function friendListHTML() {
                     <p class="friend-name friend-username">
                         ${user.username}
                     </p>
-                    <!--${crownIcon}-->
-                </div>
+                    </div>
             `;
         });
 
-        if (userItems === '') {
+        if (userItems === '')
             userItems = '<p class="friend-list-empty">No friends yet...</p>';
-        }
 
-        const requestsBadge = friendRequestsCount > 0 
+        const requestsBadge = friendRequestsCount > 0
             ? `<span class="friend-requests-badge">${friendRequestsCount}</span>`
             : '';
 
+        // We return the fully assembled HTML string for the friends list panel
         return /*html*/`
             <div id="friendList" class="user-list">
                 <div class="friend-list-header">
@@ -108,27 +103,34 @@ export async function friendListHTML() {
                 </div>
             </div>
         `;
-        
-    } catch (error) {
-        // Même en cas d'erreur, essayer de récupérer le nombre de demandes
+
+    }
+    catch (error)
+    {
+        // Even if the main friend list fails to load, we try to fetch the request count to ensure the user sees pending invites
         let friendRequestsCount = 0;
-        try {
+        try
+        {
             const requestsResponse = await fetch('/users/friend-requests/received', {
                 method: 'GET',
                 credentials: 'include'
             });
-            if (requestsResponse.ok) {
+            if (requestsResponse.ok)
+            {
                 const requestsData = await requestsResponse.json();
                 friendRequestsCount = (requestsData.requests || []).length;
             }
-        } catch (err) {
+        }
+        catch (err)
+        {
             console.warn('Could not fetch friend requests count in error handler:', err);
         }
-        
-        const requestsBadge = friendRequestsCount > 0 
+
+        const requestsBadge = friendRequestsCount > 0
             ? `<span class="friend-requests-badge">${friendRequestsCount}</span>`
             : '';
 
+        // If the main fetch failed, we return the structure with an error message but keep the header functional
         return /*html*/`
             <div id="friendList" class="user-list">
                 <div class="friend-list-header">

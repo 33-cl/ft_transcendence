@@ -1,32 +1,40 @@
-@layer components {
-    #leaderboard {
-        @apply left-[2%]; /* Right panel positioning - INVERSÉ */
+@layer components
+{
+    #leaderboard
+    {
+        @apply left-[2%];
     }
 
-    #friendList {
-        @apply right-[2%]; /* Right panel positioning - INVERSÉ */
+    #friendList
+    {
+        @apply right-[2%];
     }
 
-    .user-list {
-        @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
-        @apply overflow-hidden p-[1vh];            /* No scroll on container */
+    /* * The container uses pointer-events-none so users can click through 
+     * empty areas to the game canvas behind it.
+     */
+    .user-list
+    {
+        @apply w-[15%] h-[65%] absolute top-[22%];
+        @apply overflow-hidden p-[1vh];
         @apply pointer-events-none;
-        @apply flex flex-col;                      /* Flex layout for header + scrollable content */
+        @apply flex flex-col;
     }
 
-    /* Scrollable friends list content */
-    #friendsList {
+    #friendsList
+    {
         @apply flex-1 overflow-y-auto;
         @apply flex flex-col items-center;
         @apply w-full;
     }
 
-    .user-list img {
-        @apply w-[75px] h-[75px] rounded-md; /* User avatar styling - same as main menu avatar */
+    .user-list img
+    {
+        @apply w-[75px] h-[75px] rounded-md;
     }
 
-    /* Badge de notification pour les demandes d'amis */
-    .friend-requests-badge {
+    .friend-requests-badge
+    {
         @apply absolute -top-0 -right-0;
         @apply bg-red-600 text-white;
         @apply text-xs font-bold;
@@ -37,147 +45,175 @@
         @apply shadow-lg;
     }
 
-    /* Friend list styling - utilisé uniquement pour le leaderboard maintenant */
-
-    /* Leaderboard specific styles */
-    #leaderboard .friend {
+    #leaderboard .friend
+    {
         @apply flex items-center justify-center relative;
     }
 
-    #leaderboard .position-number {
+    #leaderboard .position-number
+    {
         @apply absolute left-0 w-[25px];
     }
 
-    #leaderboard img {
-        @apply ml-8; /* Décalage vers la droite pour éviter le chevauchement avec le numéro */
+    #leaderboard img
+    {
+        @apply ml-8;
     }
 
-    #leaderboard .friend-info {
+    #leaderboard .friend-info
+    {
         @apply flex flex-col items-center text-center w-full;
     }
 
-    #leaderboard .friend-name {
+    #leaderboard .friend-name
+    {
         @apply text-lg mb-1;
     }
 
-    #leaderboard .friend-stats {
+    #leaderboard .friend-stats
+    {
         @apply text-sm text-gray-400 m-0;
     }
 
-    .friend-name {
+    .friend-name
+    {
         @apply text-base font-bold mb-1;
     }
 
-    .friend-stats {
+    .friend-stats
+    {
         @apply text-sm text-gray-400 m-0;
     }
 
-    /* AddFriends page styles */
-    .add-friends-search-container {
+    .add-friends-search-container
+    {
         @apply my-2.5;
     }
 
-    .add-friends-search-input {
+    /* We must re-enable pointer events for inputs because the parent container disables them */
+    .add-friends-search-input
+    {
         @apply w-full px-2 py-2;
         @apply border border-gray-600 rounded;
         @apply bg-gray-800 text-white text-sm;
         @apply pointer-events-auto;
     }
 
-    .add-friends-search-results {
+    .add-friends-search-results
+    {
         @apply max-h-48 overflow-y-auto mt-1.5;
         @apply bg-gray-900 rounded;
     }
-    
-    .add-friends-search-results.hidden {
+
+    .add-friends-search-results.hidden
+    {
         display: none;
     }
 
-    .add-friends-section-title {
+    .add-friends-section-title
+    {
         @apply text-sm font-bold mt-3 mb-2;
     }
 
-    .add-friends-requests-list {
+    .add-friends-requests-list
+    {
         @apply max-h-64 overflow-y-auto;
     }
 
-    .friend-request-item {
+    /* Re-enable pointer events for interactive request items */
+    .friend-request-item
+    {
         @apply flex items-center p-2;
         @apply border-b border-gray-700 gap-2;
         @apply pointer-events-auto;
     }
 
-    .friend-request-item img {
+    .friend-request-item img
+    {
         @apply w-10 h-10 rounded-full;
     }
 
-    .friend-request-item span {
+    .friend-request-item span
+    {
         @apply flex-1 text-sm;
     }
 
-    .friend-request-accept-btn {
+    .friend-request-accept-btn
+    {
         @apply bg-green-600 text-white;
         @apply px-2 py-1 rounded text-xs;
         @apply hover:bg-green-700;
     }
 
-    .friend-request-reject-btn {
+    .friend-request-reject-btn
+    {
         @apply bg-red-600 text-white;
         @apply px-2 py-1 rounded text-xs;
         @apply hover:bg-red-700;
     }
 
-    .search-result-item {
+    .search-result-item
+    {
         @apply flex flex-wrap items-center p-2 gap-2;
         @apply border-b border-gray-700;
         @apply cursor-pointer hover:bg-gray-700;
     }
 
-    .search-result-item img {
+    .search-result-item img
+    {
         @apply w-8 h-8 rounded-full;
     }
 
-    .search-result-item span {
+    .search-result-item span
+    {
         @apply flex-1 min-w-0 break-words;
         min-width: 0;
         word-break: break-word;
     }
 
-    .add-friend-btn {
+    .add-friend-btn
+    {
         @apply text-white border-none;
         @apply px-2 py-1 rounded text-xs;
     }
 
-    .add-friend-btn.active {
+    .add-friend-btn.active
+    {
         @apply bg-green-600 hover:bg-green-700;
     }
 
-    .add-friend-btn.sent {
+    .add-friend-btn.sent
+    {
         @apply bg-gray-600 cursor-default;
     }
 
-    .search-no-results {
+    .search-no-results
+    {
         @apply p-2.5 text-center text-gray-400;
     }
 
-    .search-error {
+    .search-error
+    {
         @apply p-2.5 text-center text-red-500;
     }
 
-    .friend-requests-empty {
+    .friend-requests-empty
+    {
         @apply text-center text-gray-400 text-sm mt-2;
     }
 
-    /* FriendList page styles */
-    .friend-list-header {
+    .friend-list-header
+    {
         @apply flex items-center justify-between mb-4;
     }
 
-    .friend-list-header h2 {
+    .friend-list-header h2
+    {
         @apply m-0;
     }
 
-    .friend-header-btn {
+    .friend-header-btn
+    {
         @apply w-8 h-8;
         @apply bg-black hover:bg-gray-900;
         @apply border border-gray-600 rounded;
@@ -185,46 +221,56 @@
         @apply transition-colors p-1.5;
     }
 
-    .friend-header-btn img {
+    .friend-header-btn img
+    {
         @apply w-full h-full;
     }
 
-    .friend-header-btn-placeholder {
+    .friend-header-btn-placeholder
+    {
         @apply w-8 h-8 border border-transparent;
     }
 
-    .friend-list-empty {
+    .friend-list-empty
+    {
         @apply text-center text-gray-400 mt-5;
     }
 
-    .friend-list-error {
+    .friend-list-error
+    {
         @apply text-center text-red-500 mt-5;
     }
 
-    .friend-item {
+    .friend-item
+    {
         @apply relative w-full;
     }
 
-    .friend-avatar-container {
+    .friend-avatar-container
+    {
         @apply relative inline-block;
     }
 
-    .friend-avatar {
+    .friend-avatar
+    {
         @apply rounded-md;
         width: 75px;
         height: 75px;
     }
 
-    .friend-status-indicator {
+    .friend-status-indicator
+    {
         @apply absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full;
         @apply border-2 border-gray-900 z-10;
     }
 
-    .friend-username {
+    .friend-username
+    {
         @apply flex items-center justify-start;
     }
 
-    .crown-icon {
+    .crown-icon
+    {
         @apply absolute z-10;
         top: -5px;
         right: -5px;
@@ -232,18 +278,19 @@
         height: 20px;
     }
 
-
-
-    /* Context menu for friend list */
-    #contextMenu {
+    /* High z-index ensures the context menu appears above all other UI elements */
+    #contextMenu
+    {
         @apply fixed z-[1000] bg-gray-600 text-base;
     }
 
-    #contextMenu li {
+    #contextMenu li
+    {
         @apply p-4 cursor-pointer;
     }
 
-    #contextMenu li:hover {
+    #contextMenu li:hover
+    {
         @apply bg-gray-400;
     }
 }
