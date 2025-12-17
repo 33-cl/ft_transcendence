@@ -13,10 +13,27 @@ import { rooms, roomExists } from '../socket/roomManager.js';
 import { createInitialGameState } from '../../game/gameState.js';
 import { canUserJoinTournament, getUserActiveTournament } from '../socket/utils/modeIsolation.js';
 
+
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not set');
 }
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Helper privé pour valider le JWT et extraire userId
+function requireUserIdFromJWT(request: FastifyRequest, reply: FastifyReply): number | undefined {
+    const token = getJwtFromRequest(request);
+    if (!token) {
+        reply.status(401).send({ error: 'Unauthorized' });
+        return undefined;
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        return decoded.userId;
+    } catch (error) {
+        reply.status(401).send({ error: 'Invalid token' });
+        return undefined;
+    }
+}
 
 // Typages minimaux pour les résultats SQL utilisés ici
 interface TournamentRow {
@@ -44,18 +61,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
             // SECURITY: Validation de l'utilisateur
-            const token = getJwtFromRequest(request);
-            if (!token) {
-                return reply.status(401).send({ error: 'Unauthorized' });
-            }
-
-            let userId: number;
-            try {
-                const decoded = jwt.verify(token, JWT_SECRET) as any;
-                userId = decoded.userId;
-            } catch (error) {
-                return reply.status(401).send({ error: 'Invalid token' });
-            }
+            const userId = requireUserIdFromJWT(request, reply);
+            if (userId === undefined) return;
 
             // SECURITY: Rate limiting - 5 créations de tournoi par minute par user
             if (!checkRateLimit(`tournament_create_${userId}`, 5, 60000)) {
@@ -125,27 +132,29 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // ----------------------------------------------------------------------
+
     // GET /tournaments/:id - Récupérer les détails d'un tournoi (participants + bracket)
     fastify.get('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         try {
-            const { id } = request.params as { id: string };
+            const { id: tournamentId } = request.params as { id: string };
 
-            if (!validateUUID(id)) {
+            if (!validateUUID(tournamentId)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
-            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
             }
 
             const participants = db.prepare(
                 `SELECT id, tournament_id, user_id, alias, joined_at FROM tournament_participants WHERE tournament_id = ? ORDER BY joined_at`
-            ).all(id);
+            ).all(tournamentId);
 
             const matches = db.prepare(
                 `SELECT id, tournament_id, round, player1_id, player2_id, winner_id, status, scheduled_at FROM tournament_matches WHERE tournament_id = ? ORDER BY round, id`
-            ).all(id);
+            ).all(tournamentId);
 
             reply.send({ success: true, tournament, participants, matches });
         } catch (error) {
@@ -154,11 +163,13 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
+    // ----------------------------------------------------------------------
+
     // GET /tournaments - Récupérer la liste des tournois
     fastify.get('/tournaments', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const tournaments = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC`).all() as TournamentRow[];
-            
+
             // Get current user if authenticated
             const token = getJwtFromRequest(request);
             let userId: number | null = null;
@@ -170,30 +181,32 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                     // Token invalid, continue without user
                 }
             }
-            
+
             // Add is_participant and is_creator flags to each tournament
-            const tournamentsWithParticipation = tournaments.map(t => {
+            const tournamentsWithParticipation = tournaments.map(tournament => {
                 let is_participant = false;
                 let is_creator = false;
                 if (userId) {
                     const participant = db.prepare(`
                         SELECT id FROM tournament_participants 
                         WHERE tournament_id = ? AND user_id = ?
-                    `).get(t.id, userId);
+                    `).get(tournament.id, userId);
                     is_participant = !!participant;
-                    
+
                     // Check if current user is the creator
-                    is_creator = (t as any).creator_id === userId;
+                    is_creator = (tournament as any).creator_id === userId;
                 }
-                return { ...t, is_participant, is_creator };
+                return { ...tournament, is_participant, is_creator };
             });
-            
+
             reply.send({ success: true, tournaments: tournamentsWithParticipation });
         } catch (error) {
             fastify.log.error(`Error fetching tournaments: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
+
+    // ----------------------------------------------------------------------
 
     // POST /tournaments/:id/join - Inscrire un utilisateur à un tournoi
     // SECURITY: Rate limiting pour éviter le spam de join
@@ -211,19 +224,19 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             let alias: string;
             try {
                 const payload = jwt.verify(jwtToken, JWT_SECRET) as { userId: number };
-                
+
                 // Verify token is in active_tokens table
                 const activeToken = db.prepare('SELECT 1 FROM active_tokens WHERE user_id = ? AND token = ?').get(payload.userId, jwtToken);
                 if (!activeToken) {
                     return reply.status(401).send({ error: 'Session expired or logged out' });
                 }
-                
+
                 // Get user info to use username as alias
                 const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(payload.userId) as { id: number; username: string } | undefined;
                 if (!user) {
                     return reply.status(401).send({ error: 'User not found' });
                 }
-                
+
                 userId = user.id;
                 alias = user.username; // Force alias = username
             } catch (jwtError) {
@@ -235,7 +248,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(429).send({ error: 'Too many join attempts. Please wait.' });
             }
 
-            const { id } = request.params as { id: string };
+            const { id: tournamentId } = request.params as { id: string };
 
             // SECURITY: Validate userId (already validated from JWT/DB)
             const validUserId = validateId(userId);
@@ -263,12 +276,12 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const sanitizedAlias = sanitizeUsername(alias);
             
             // SECURITY: Validate tournament ID format (UUID)
-            if (!validateUUID(id)) {
+            if (!validateUUID(tournamentId)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
             // Vérifier que le tournoi existe et est en phase d'inscription
-            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
+            const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
             }
@@ -284,14 +297,14 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // Vérifications proactives pour renvoyer des erreurs précises
             const existingByUser = db.prepare(
                 `SELECT id FROM tournament_participants WHERE tournament_id = ? AND user_id = ?`
-            ).get(id, validUserId);
+            ).get(tournamentId, validUserId);
             if (existingByUser) {
                 return reply.status(409).send({ error: 'User already joined this tournament' });
             }
 
             const existingByAlias = db.prepare(
                 `SELECT id FROM tournament_participants WHERE tournament_id = ? AND alias = ?`
-            ).get(id, sanitizedAlias);
+            ).get(tournamentId, sanitizedAlias);
             if (existingByAlias) {
                 return reply.status(409).send({ error: 'Alias already taken in this tournament' });
             }
@@ -302,31 +315,31 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 VALUES (?, ?, ?)
             `);
 
-            const result = insert.run(id, validUserId, sanitizedAlias);
+            const insertResult = insert.run(tournamentId, validUserId, sanitizedAlias);
 
             // Incrémenter le compteur de participants
-            db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(id);
+            db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(tournamentId);
 
-            const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(result.lastInsertRowid);
+            const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(insertResult.lastInsertRowid);
 
             // Si le tournoi est désormais plein, générer automatiquement le bracket complet
-            const updatedTournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow;
-            
+            const updatedTournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow;
+
             // Emit WebSocket event to notify player joined
-            emitTournamentPlayerUpdate(id, 'joined', {
+            emitTournamentPlayerUpdate(tournamentId, 'joined', {
                 user_id: validUserId,
                 alias: sanitizedAlias,
                 current_players: updatedTournament.current_players
             });
-            
+
             if (updatedTournament.current_players >= updatedTournament.max_players) {
                 // Générer le bracket complet (2 demi-finales + 1 finale)
-                generateBracket(id);
-                
+                generateBracket(tournamentId);
+
                 // Marquer le tournoi comme actif
-                db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
-                
-                fastify.log.info(`Tournament ${id} auto-started with ${updatedTournament.current_players} players`);
+                db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
+
+                fastify.log.info(`Tournament ${tournamentId} auto-started with ${updatedTournament.current_players} players`);
             }
 
             reply.status(201).send({ success: true, participant });
@@ -335,6 +348,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
+
+    // ----------------------------------------------------------------------
 
     // POST /tournaments/:id/leave - Quitter un tournoi
     fastify.post('/tournaments/:id/leave', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
