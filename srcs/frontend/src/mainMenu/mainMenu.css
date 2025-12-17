@@ -20,17 +20,22 @@
     }
 
     .menu-info-btn {
-        @apply bg-black border-2 border-white rounded-full;
-        @apply w-8 h-8 flex items-center justify-center;
-        @apply text-xs leading-none cursor-pointer;
+        @apply bg-transparent border-0;
+        @apply w-auto h-auto flex items-center justify-center;
+        @apply cursor-pointer p-0 pointer-events-auto;
     }
 
-    .menu-info-btn:hover {
-        @apply bg-gray-500;
+    .menu-info-icon {
+        @apply w-8 h-8;
+        @apply text-white;
     }
 
-    .menu-info-btn:active {
-        @apply bg-gray-700 scale-95;
+    .menu-info-btn:hover .menu-info-icon {
+        @apply opacity-70;
+    }
+
+    .menu-info-btn:active .menu-info-icon {
+        @apply opacity-50 scale-95;
     }
 
     #mainMenu button {

@@ -184,10 +184,17 @@ function initializeComponents(): void
         {
             await load('settings');
         }
-        if (target.id === 'localRulesInfoBtn' || target.id === 'multiplayerRulesInfoBtn' || target.id === 'tournamentsRulesInfoBtn')
+        
+        // Check if clicked element or parent is a rules info button
+        let infoButton: HTMLElement | null = target;
+        while (infoButton && !['localRulesInfoBtn', 'multiplayerRulesInfoBtn', 'tournamentsRulesInfoBtn'].includes(infoButton.id || '')) {
+            infoButton = infoButton.parentElement;
+        }
+        
+        if (infoButton && (infoButton.id === 'localRulesInfoBtn' || infoButton.id === 'multiplayerRulesInfoBtn' || infoButton.id === 'tournamentsRulesInfoBtn'))
         {
-            if (target.id === 'localRulesInfoBtn') (window as any).rulesContext = 'local';
-            else if (target.id === 'multiplayerRulesInfoBtn') (window as any).rulesContext = 'multiplayer';
+            if (infoButton.id === 'localRulesInfoBtn') (window as any).rulesContext = 'local';
+            else if (infoButton.id === 'multiplayerRulesInfoBtn') (window as any).rulesContext = 'multiplayer';
             else (window as any).rulesContext = 'tournament';
 
             await load('rules');
