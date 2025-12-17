@@ -12,7 +12,8 @@ export type AIDifficulty = 'easy' | 'medium' | 'hard';
  * Contrôle le comportement du paddle automatique (paddle gauche en mode 1v1)
  * Simule des inputs clavier comme un joueur humain
  */
-export interface AIConfig {
+export interface AIConfig 
+{
     enabled: boolean;          // Active/désactive l'IA (false = mode 2 joueurs humains)
     difficulty: AIDifficulty;  // Niveau de difficulté (easy/medium/hard)
     reactionTime: number;      // Délai de réaction en millisecondes (300-700ms)
@@ -50,7 +51,8 @@ export interface AIConfig {
  * Interface définissant l'état complet d'une partie de Pong
  * Contient toutes les informations nécessaires pour le rendu et la logique du jeu
  */
-export interface GameState{
+export interface GameState
+{
     // Dimensions du canvas de jeu
     canvasHeight:   number;
     canvasWidth:    number;
@@ -94,69 +96,85 @@ export interface GameState{
  * @param numPlayers Nombre de joueurs (2 pour 1v1, 4 pour battle royale)
  * @returns L'état initial du jeu avec les raquettes positionnées correctement
  */
-export function createInitialGameState(numPlayers: number = 2): GameState {
+export function createInitialGameState(numPlayers: number = 2): GameState 
+{
     // Constantes de configuration du jeu - Canvas adapté selon le mode
     const canvasHeight  = 800;   // Hauteur du terrain de jeu
     const canvasWidth   = numPlayers === 4 ? 800 : 1200;  // Canvas carré pour 4 joueurs (800x800), rectangulaire pour 2 (1200x800)
     const paddleHeight  = 115;   // Hauteur des raquettes verticales (réduit de 135 -> 115)
     const paddleWidth   = 10;    // Largeur des raquettes verticales (réduit de 12 -> 10)
     const paddleMargin  = 12;    // Marge entre raquettes et bords (10 -> 12)
-    const paddleY       = canvasHeight / 2 - paddleHeight / 2; // Position Y par défaut (centré)
+    const defaultPaddleY = canvasHeight / 2 - paddleHeight / 2; // Position Y par défaut (centré)
 
     // Ordre des côtés pour l'attribution des raquettes
-    const paddleSides: PaddleSide[] = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
-    const paddles: { x: number; y: number; width: number; height: number; side: PaddleSide; score: number }[] = [];
-    
-    // Création et positionnement des raquettes selon le nombre de joueurs
-    for (let i = 0; i < numPlayers; i++) {
-        let side = paddleSides[i];
-        let x = 0, y = paddleY, width = paddleWidth, height = paddleHeight;
-        
-        if (numPlayers === 2) 
+    const orderedPaddleSides: PaddleSide[] = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
+
+    type PaddleSpec = { x: number; y: number; width: number; height: number; side: PaddleSide; score: number };
+
+    // Crée et positionne les paddles selon le nombre de joueurs (2 ou 4)
+    function createPaddles(count: number): PaddleSpec[] 
+    {
+        const result: PaddleSpec[] = [];
+        for (let i = 0; i < count; i++) 
         {
-            // Mode 1v1 : on veut LEFT (gauche) et RIGHT (droite), pas DOWN
-            // Cela donne une disposition classique de Pong horizontal
-            if (i === 1) 
-                side = 'RIGHT' as PaddleSide; // Deuxième paddle = RIGHT au lieu de DOWN
-            if (side === 'LEFT')
-                x = paddleMargin;                               // Raquette gauche
-            else if (side === 'RIGHT')
-                x = canvasWidth - paddleMargin - paddleWidth;   // Raquette droite
-        } 
-        else if (numPlayers === 4) 
-        {
-            // Mode 1v1v1v1 : disposition carrée avec 4 paddles (battle royale)
-            // Chaque raquette est sur un côté différent du terrain
-            if (side === 'LEFT') {
-                // Paddle LEFT : gauche (vertical)
-                x = paddleMargin;
-                y = canvasHeight / 2 - paddleHeight / 2;
-                width = paddleWidth;
-                height = paddleHeight;
-            } else if (side === 'DOWN') {
-                // Paddle DOWN : bas (horizontal)
-                x = canvasWidth / 2 - paddleHeight / 2;
-                y = canvasHeight - paddleMargin - paddleWidth;
-                width = paddleHeight; // 115 pixels de largeur (horizontale)
-                height = paddleWidth; // 10 pixels de hauteur (horizontale)
-            } else if (side === 'RIGHT') {
-                // Paddle RIGHT : droite (vertical)
-                x = canvasWidth - paddleMargin - paddleWidth;
-                y = canvasHeight / 2 - paddleHeight / 2;
-                width = paddleWidth;
-                height = paddleHeight;
-            } else if (side === 'TOP') {
-                // Paddle TOP : haut (horizontal) - même taille que DOWN
-                x = canvasWidth / 2 - paddleHeight / 2;
-                y = paddleMargin;
-                width = paddleHeight; // 115 pixels de largeur (même que DOWN)
-                height = paddleWidth; // 10 pixels de hauteur (même que DOWN)
+            let side = orderedPaddleSides[i];
+            let x = 0;
+            let y = defaultPaddleY;
+            let width = paddleWidth;
+            let height = paddleHeight;
+
+            if (count === 2) 
+            {
+                // Mode 1v1 : LEFT (gauche) et RIGHT (droite)
+                if (i === 1) side = 'RIGHT' as PaddleSide; // Deuxième paddle = RIGHT
+                if (side === 'LEFT') x = paddleMargin; // Raquette gauche
+                else if (side === 'RIGHT') x = canvasWidth - paddleMargin - paddleWidth; // Raquette droite
+            } 
+            else if (count === 4) 
+            {
+                // Mode 4 joueurs : paddles sur chaque côté
+                switch (side) 
+                {
+                    case 'LEFT': 
+                    {
+                        x = paddleMargin;
+                        y = canvasHeight / 2 - paddleHeight / 2;
+                        width = paddleWidth;
+                        height = paddleHeight;
+                        break;
+                    }
+                    case 'DOWN': 
+                    {
+                        x = canvasWidth / 2 - paddleHeight / 2;
+                        y = canvasHeight - paddleMargin - paddleWidth;
+                        width = paddleHeight;
+                        height = paddleWidth;
+                        break;
+                    }
+                    case 'RIGHT': 
+                    {
+                        x = canvasWidth - paddleMargin - paddleWidth;
+                        y = canvasHeight / 2 - paddleHeight / 2;
+                        width = paddleWidth;
+                        height = paddleHeight;
+                        break;
+                    }
+                    case 'TOP': 
+                    {
+                        x = canvasWidth / 2 - paddleHeight / 2;
+                        y = paddleMargin;
+                        width = paddleHeight;
+                        height = paddleWidth;
+                        break;
+                    }
+                }
             }
+            result.push({ x, y, width, height, side, score: 0 });
         }
-        
-        // Ajouter la raquette configurée à la liste
-        paddles.push({ x, y, width, height, side, score: 0 });
+        return result;
     }
+
+    const paddles = createPaddles(numPlayers);
     // Retourner l'état initial complet du jeu
     return {
         // Configuration du terrain
