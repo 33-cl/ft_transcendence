@@ -10,9 +10,9 @@ export function rulesHTML() {
     const ctx = getRulesContext();
 
     const title =
-        ctx === 'local' ? 'LOCAL RULES &amp; CONTROLS'
-        : ctx === 'multiplayer' ? 'MULTIPLAYER RULES &amp; CONTROLS'
-        : ctx === 'tournament' ? 'TOURNAMENT RULES &amp; CONTROLS'
+        ctx === 'local' ? 'LOCAL'
+        : ctx === 'multiplayer' ? 'MULTIPLAYER'
+        : ctx === 'tournament' ? 'TOURNAMENT'
         : 'RULES &amp; CONTROLS';
 
     const controlsAll = /*html*/`
@@ -91,9 +91,6 @@ export function rulesHTML() {
                 <h2 class="rules-title">${title}</h2>
 
                 <div class="rules-content">
-                    <h3 class="rules-section-title">Controls</h3>
-                    <p class="rules-muted">Keyboard only.</p>
-
                     <div>
                         ${controlsHtml}
                     </div>
