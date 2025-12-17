@@ -27,7 +27,7 @@
 
     /* Badge de notification pour les demandes d'amis */
     .friend-requests-badge {
-        @apply absolute -top-1 -right-1;
+        @apply absolute -top-0 -right-0;
         @apply bg-red-600 text-white;
         @apply text-xs font-bold;
         @apply rounded-full;
@@ -35,7 +35,6 @@
         @apply flex items-center justify-center;
         @apply z-10;
         @apply shadow-lg;
-        animation: pulse-badge 2s ease-in-out infinite;
     }
 
     /* Friend list styling - utilisé uniquement pour le leaderboard maintenant */
