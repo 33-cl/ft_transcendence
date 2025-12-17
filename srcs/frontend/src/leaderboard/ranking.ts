@@ -40,52 +40,54 @@ export async function fetchLeaderboard(limit: number = 10, offset: number = 0) {
   }
 }
 
-/**
- * Récupère le rang et les informations de classement d'un utilisateur
- * @param userId ID de l'utilisateur
- */
-export async function fetchUserRank(userId: number): Promise<UserRanking | null> {
-  try {
-    const response = await fetch(`/users/${userId}/rank`, {
-      method: 'GET',
-      credentials: 'include'
-    });
+// DEAD CODE: Function exists but never called - backend route is commented out
+// /**
+//  * Récupère le rang et les informations de classement d'un utilisateur
+//  * @param userId ID de l'utilisateur
+//  */
+// export async function fetchUserRank(userId: number): Promise<UserRanking | null> {
+//   try {
+//     const response = await fetch(`/users/${userId}/rank`, {
+//       method: 'GET',
+//       credentials: 'include'
+//     });
     
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null; // Utilisateur pas trouvé ou pas de données de classement
-      }
-      throw new Error('Failed to fetch user rank');
-    }
+//     if (!response.ok) {
+//       if (response.status === 404) {
+//         return null; // Utilisateur pas trouvé ou pas de données de classement
+//       }
+//       throw new Error('Failed to fetch user rank');
+//     }
     
-    const data = await response.json();
-    return data.ranking;
-  } catch (error) {
-    return null;
-  }
-}
+//     const data = await response.json();
+//     return data.ranking;
+//   } catch (error) {
+//     return null;
+//   }
+// }
 
-/**
- * Récupère le classement autour d'un rang donné
- * @param rank Position centrale
- * @param radius Nombre d'utilisateurs avant et après
- */
-export async function fetchLeaderboardAroundRank(rank: number, radius: number = 2) {
-  try {
-    const response = await fetch(`/users/leaderboard/around/${rank}?radius=${radius}`, {
-      method: 'GET',
-      credentials: 'include'
-    });
+// DEAD CODE: Function exists but never called - backend route is commented out
+// /**
+//  * Récupère le classement autour d'un rang donné
+//  * @param rank Position centrale
+//  * @param radius Nombre d'utilisateurs avant et après
+//  */
+// export async function fetchLeaderboardAroundRank(rank: number, radius: number = 2) {
+//   try {
+//     const response = await fetch(`/users/leaderboard/around/${rank}?radius=${radius}`, {
+//       method: 'GET',
+//       credentials: 'include'
+//     });
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch leaderboard around rank');
-    }
+//     if (!response.ok) {
+//       throw new Error('Failed to fetch leaderboard around rank');
+//     }
     
-    return await response.json();
-  } catch (error) {
-    return { leaderboard: [], centerRank: rank, radius };
-  }
-}
+//     return await response.json();
+//   } catch (error) {
+//     return { leaderboard: [], centerRank: rank, radius };
+//   }
+// }
 
 /**
  * Formate le taux de victoire en pourcentage

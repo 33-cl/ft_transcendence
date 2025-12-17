@@ -100,10 +100,12 @@ export class RankingSystem {
    * @param userId ID de l'utilisateur
    * @returns Informations complètes de classement ou null si non trouvé
    */
-  public static getUserRankingInfo(userId: number): UserRanking | null {
+  public static getUserRankingInfo(userId: number): UserRanking | null
+  {
     try {
       const rank = this.getUserRank(userId);
-      if (rank === null) return null;
+      if (rank === null)
+        return null;
       
       const userQuery = `
         SELECT 
