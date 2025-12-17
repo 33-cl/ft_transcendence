@@ -150,19 +150,7 @@ export function resetPongRenderer(): void {
 // DRAWING FUNCTIONS
 // ============================================================================
 
-function drawField(ctx: CanvasRenderingContext2D, state: GameState, width: number, height: number) {
-    ctx.save();
-    ctx.lineWidth = THEME.layout.lineWidth;
-    
-    if (state.paddles && state.paddles.length === 4) {
-        ctx.strokeStyle = THEME.colors.red;
-    } else {
-        ctx.strokeStyle = THEME.colors.blue;
-    }
-    
-    ctx.strokeRect(0, 0, width, height);
-    ctx.restore();
-}
+
 
 function drawPaddles(ctx: CanvasRenderingContext2D, state: GameState) {
     if (state.paddles && state.paddles.length > 0) {
@@ -305,7 +293,6 @@ export function draw(gameState: GameState) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawField(ctx, gameState, gameWidth, gameHeight);
     drawPaddles(ctx, gameState);
     drawBall(ctx, gameState);
     drawCountdown(ctx, gameState);
