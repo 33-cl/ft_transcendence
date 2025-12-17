@@ -1,45 +1,46 @@
 import { show, load , hideAllPages, hide } from '../navigation/utils.js';
 import { spectateFreind } from '../friends/friendList.html.js';
-import { checkSessionOnce } from '../auth/auth.js'; // <- import moved function
+import { checkSessionOnce } from '../auth/auth.js';
 import { cleanupGameState } from '../game/gameCleanup.js';
 import { initSettingsHandlers } from '../settings/settings.js';
 import { setStarsHoverColor } from '../background/background.js';
-import { initSessionBroadcast } from '../navigation/sessionBroadcast.js'; // Import session broadcast
-import { installAllSecurityGuards } from '../navigation/securityGuard.js'; // Import all security guards
+import { initSessionBroadcast } from '../navigation/sessionBroadcast.js';
+import { installAllSecurityGuards } from '../navigation/securityGuard.js';
 import { preventBackNavigationAfterLogout, setupPopStateHandler, initNavigationOnLoad, getPageFromURL, replaceHistoryState } from '../navigation/navigation.js';
-import '../config/config.js'; // Import to load AI Config handlers
-import '../landing/landing.js'; // Import to load Landing handlers
-import '../friends/friends.js'; // Import to load Friends handlers (AddFriends page)
-// import { waitForSocketConnection } from '../game/socketLoading.js';
+import '../config/config.js';
+import '../landing/landing.js';
+import '../friends/friends.js';
 
-// Global interface is defined in global.d.ts
-
-// Fonction pour récupérer les informations d'un utilisateur par son nom
-async function fetchUserByUsername(username: string) {
-    try {
-        const response = await fetch(`/users`, {
+// Searches for a user by username across both users list and leaderboard
+async function fetchUserByUsername(username: string)
+{
+    try
+    {
+        const response = await fetch(`/users`,
+        {
             method: 'GET',
             credentials: 'include'
         });
         
-        if (!response.ok) {
+        if (!response.ok)
             throw new Error('Failed to fetch users');
-        }
         
         const data = await response.json();
         const users = data.users || [];
         
-        // Rechercher l'utilisateur par nom
         const user = users.find((u: any) => u.username === username);
         
-        // Si on ne trouve pas dans users, essayer le leaderboard
-        if (!user) {
-            const leaderboardResponse = await fetch('/users/leaderboard', {
+        // Fallback to leaderboard if user not found in main users list
+        if (!user)
+        {
+            const leaderboardResponse = await fetch('/users/leaderboard',
+            {
                 method: 'GET',
                 credentials: 'include'
             });
             
-            if (leaderboardResponse.ok) {
+            if (leaderboardResponse.ok)
+            {
                 const leaderboardData = await leaderboardResponse.json();
                 const leaderboard = leaderboardData.leaderboard || [];
                 return leaderboard.find((u: any) => u.username === username);
@@ -47,69 +48,71 @@ async function fetchUserByUsername(username: string) {
         }
         
         return user;
-    } catch (error) {
+    }
+    catch (error)
+    {
         return null;
     }
 }
 
-// Fonction pour supprimer un ami
-async function removeFriend(userId: number, _username: string) {
-    try {
-        const response = await fetch(`/users/${userId}/friend`, {
+// Removes a friend connection and refreshes the friend list UI
+async function removeFriend(userId: number, _username: string)
+{
+    try
+    {
+        const response = await fetch(`/users/${userId}/friend`,
+        {
             method: 'DELETE',
             credentials: 'include'
         });
 
-        if (!response.ok) {
+        if (!response.ok)
+        {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to remove friend');
         }
 
-        
-        // Recharger la liste d'amis
         const friendListContainer = document.getElementById('friendList');
-        if (friendListContainer) {
+        if (friendListContainer)
+        {
             const { friendListHTML, initializeAddFriendsButton, initLoadingIcons } = await import('../components/index.html.js');
             friendListContainer.innerHTML = await friendListHTML();
-            initializeAddFriendsButton(); // Initialiser le bouton Add Friends
-            initLoadingIcons(); // Initialiser les icônes de chargement
+            initializeAddFriendsButton();
+            initLoadingIcons();
         }
-
-    } catch (error) {
+    }
+    catch (error)
+    {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         alert('Error removing friend: ' + errorMessage);
     }
 }
 
-
+// Sets up all UI event handlers and click listeners for SPA navigation
 function initializeComponents(): void
 {
-    // Initialize settings handlers
     initSettingsHandlers();
     
-    // Password masking removed - using simple validation on submit instead
-    
-    // Affiche la page d'accueil au chargement
-    // show('signIn');
-
-    // Vérifier si l'event listener click est déjà configuré pour éviter les doublons
-    if (window._navigationListenerSet) {
+    // Prevent duplicate listener registration across hot reloads
+    if (window._navigationListenerSet)
         return;
-    }
+    
     window._navigationListenerSet = true;
     
-    // Global click debounce to prevent double-clicks
+    // Debounce mechanism to prevent accidental double-clicks from triggering duplicate navigations
     let lastClickTime = 0;
-    const CLICK_DEBOUNCE_MS = 300; // 300ms debounce
+    const CLICK_DEBOUNCE_MS = 300;
     
-    // Vérifier si les listeners SPA ne sont pas déjà ajoutés
-    if (!(document as any)._spaClickListenerSet) {
+    // Main click handler for SPA navigation - handles all left-click routing
+    if (!(document as any)._spaClickListenerSet)
+    {
         (document as any)._spaClickListenerSet = true;
         
-        // Ajoute la navigation SPA pour le clic gauche
-        document.addEventListener('click', async (e) => {
+        document.addEventListener('click', async (e) =>
+        {
             const now = Date.now();
-            if (now - lastClickTime < CLICK_DEBOUNCE_MS) {
+            if (now - lastClickTime < CLICK_DEBOUNCE_MS)
+            {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -117,384 +120,422 @@ function initializeComponents(): void
             lastClickTime = now;
             
             const target = e.target as HTMLElement;
-            if (!target) return;
-        
-        // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
-        let currentElement: HTMLElement | null = target;
-        let isProfileBtn = false;
-        let isSettingsBtn = false;
-        
-        while (currentElement && !isProfileBtn && !isSettingsBtn) {
-            if (currentElement.id === 'profileBtn') {
-                isProfileBtn = true;
-            }
-            else if (currentElement.id === 'settingsBtn') {
-                isSettingsBtn = true;
-            } 
-            else {
-                currentElement = currentElement.parentElement;
-            }
-        }
-        
-        // NAVIGATION PRINCIPALE - avec nettoyage spécial pour retour au menu principal
-        if (target.id === 'mainMenuBtn' || target.id === 'bacVk2main' || target.id === 'goToMain') {
-            // Nettoyage complet avant de retourner au menu principal
-            // Cela résout le bug des paddles qui ne s'affichent plus au 2ème jeu local
-            cleanupGameState();
-            setStarsHoverColor(null);
-            
-            // Nettoyage des variables de tournoi
-            window.currentTournamentId = null;
-            window.currentMatchId = null;
-            
-            // Wait for proper room cleanup before proceeding
-            if (window.socket && window.leaveCurrentRoomAsync) {
-                try {
-                    await window.leaveCurrentRoomAsync();
-                } catch (error) {
-                    console.warn('Room cleanup failed, proceeding anyway:', error);
-                }
-            } else if (window.socket) {
-                window.socket.emit('leaveAllRooms');
-                // Add a small delay to allow cleanup to process
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-            await load('mainMenu');
-        }
-        // (no action needed for 404 - it's a simple informational page)
-        // Handler pour retour au tournoi après un match
-        if (target.id === 'backToTournamentBtn') {
-            const tournamentId = window.currentTournamentId;
-            // Nettoyage des variables de tournoi match
-            window.currentMatchId = null;
-            
-            // Cleanup game state
-            cleanupGameState();
-            
-            if (tournamentId) {
-                await load(`tournaments/${tournamentId}`);
-            } else {
-                // Fallback si pas de tournamentId
-                await load('tournaments');
-            }
-        }
-        if (target.id === 'profileCard')
-            await load('profile');
-        if (target.id === 'settingsBtn' || isSettingsBtn)
-        {
-            await load('settings');
-        }
-        
-        // Check if clicked element or parent is a rules info button
-        let infoButton: HTMLElement | null = target;
-        while (infoButton && !['localRulesInfoBtn', 'multiplayerRulesInfoBtn', 'tournamentsRulesInfoBtn'].includes(infoButton.id || '')) {
-            infoButton = infoButton.parentElement;
-        }
-        
-        if (infoButton && (infoButton.id === 'localRulesInfoBtn' || infoButton.id === 'multiplayerRulesInfoBtn' || infoButton.id === 'tournamentsRulesInfoBtn'))
-        {
-            if (infoButton.id === 'localRulesInfoBtn') (window as any).rulesContext = 'local';
-            else if (infoButton.id === 'multiplayerRulesInfoBtn') (window as any).rulesContext = 'multiplayer';
-            else (window as any).rulesContext = 'tournament';
-
-            await load('rules');
-        }
-        if (target.id === 'local2p')
-        {
-            // Pour les jeux locaux, on laisse le handler roomJoined gérer l'affichage
-            // Cela évite un double chargement qui cause le bug des paddles
-            window.lastGameType = 'local2p'; // Sauvegarder le type de jeu pour restart
-            await window.joinOrCreateRoom(2, true);
-            // Ne pas appeler load('game') ici ! Le handler roomJoined s'en occupe
-        }
-        if (target.id === 'local4p')
-        {
-            // Même principe pour le jeu 4 joueurs
-            window.lastGameType = 'local4p'; // Sauvegarder le type de jeu pour restart
-            await window.joinOrCreateRoom(4, true);
-            // Ne pas appeler load('game4') ici !
-        }
-        if (target.id === 'soloAi')
-            await load('gameConfig'); // Rediriger vers la page de configuration du jeu (choix mode)
-        if (target.id === 'localGameBtn')
-        {
-            // Relancer le même type de jeu qui vient de se terminer
-            const lastGameType = window.lastGameType;
-            if (lastGameType === 'soloAI') {
-                // Relancer un jeu vs IA
-                window.aiMode = true;
-                await window.joinOrCreateRoom(2, true);
-            } else if (lastGameType === 'local4p') {
-                // Relancer un jeu local 4 joueurs
-                await window.joinOrCreateRoom(4, true);
-            } else if (lastGameType === 'ranked1v1') {
-                // Pour les jeux multiplayer, aller au matchmaking au lieu de restart direct
-                await load('matchmaking');
-                // Démarrer automatiquement la recherche d'un nouveau jeu
-                try {
-                    await window.joinOrCreateRoom(2);
-                } catch (error) {
-                    if (window.socket) {
-                        window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
-                    }
-                }
-            } else if (lastGameType === 'multiplayer4p') {
-                // Pour les jeux multiplayer 4 joueurs, aller au matchmaking
-                await load('matchmaking');
-                // Démarrer automatiquement la recherche d'un nouveau jeu
-                try {
-                    await window.joinOrCreateRoom(4);
-                } catch (error) {
-                    if (window.socket) {
-                        window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
-                    }
-                }
-            } else {
-                // Par défaut, relancer un jeu local 2 joueurs
-                await window.joinOrCreateRoom(2, true);
-            }
-        }
-        if (target.id === 'signInBtn')
-            await load('signIn');
-        if (target.id === 'signUpBtn')        
-            await load('signUp');
-        if (target.id === 'profileBtn' || isProfileBtn) {
-            // Si le clic vient du context menu, ignorer (sera géré par le listener du context menu)
-            const contextMenu = document.getElementById('contextMenu');
-            if (contextMenu && contextMenu.contains(target)) {
+            if (!target)
                 return;
+        
+            // Walk up the DOM tree to detect if clicked element is a profile or settings button
+            let currentElement: HTMLElement | null = target;
+            let isProfileBtn = false;
+            let isSettingsBtn = false;
+            
+            while (currentElement && !isProfileBtn && !isSettingsBtn)
+            {
+                if (currentElement.id === 'profileBtn')
+                    isProfileBtn = true;
+                else if (currentElement.id === 'settingsBtn')
+                    isSettingsBtn = true;
+                else
+                    currentElement = currentElement.parentElement;
             }
             
-            // Récupérer les informations de l'utilisateur cliqué
-            let selectedUser = null;
-            if (currentElement && currentElement.dataset && currentElement.dataset.username) {
-                // Utilisateur du leaderboard avec data-username
-                const username = currentElement.dataset.username;
-                selectedUser = await fetchUserByUsername(username);
-            } else if (target.closest('.friend')) {
-                // Utilisateur de la friend list - récupérer depuis le nom affiché
-                const friendElement = target.closest('.friend');
-                const nameElement = friendElement?.querySelector('.friend-name');
-                if (nameElement) {
-                    const username = nameElement.textContent?.trim();
-                    if (username) {
-                        selectedUser = await fetchUserByUsername(username);
+            // Main menu navigation with complete game state cleanup to prevent paddle rendering bugs on subsequent games
+            if (target.id === 'mainMenuBtn' || target.id === 'bacVk2main' || target.id === 'goToMain')
+            {
+                cleanupGameState();
+                setStarsHoverColor(null);
+                
+                window.currentTournamentId = null;
+                window.currentMatchId = null;
+                
+                // Ensure proper asynchronous room cleanup before proceeding to prevent state leaks
+                if (window.socket && window.leaveCurrentRoomAsync)
+                {
+                    try
+                    {
+                        await window.leaveCurrentRoomAsync();
+                    }
+                    catch (error)
+                    {
+                        console.warn('Room cleanup failed, proceeding anyway:', error);
+                    }
+                }
+                else if (window.socket)
+                {
+                    window.socket.emit('leaveAllRooms');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                await load('mainMenu');
+            }
+            
+            // Return to tournament lobby after completing a match
+            if (target.id === 'backToTournamentBtn')
+            {
+                const tournamentId = window.currentTournamentId;
+                window.currentMatchId = null;
+                
+                cleanupGameState();
+                
+                if (tournamentId)
+                    await load(`tournaments/${tournamentId}`);
+                else
+                    await load('tournaments');
+            }
+            
+            if (target.id === 'profileCard')
+                await load('profile');
+            
+            if (target.id === 'settingsBtn' || isSettingsBtn)
+                await load('settings');
+            
+            // Detect clicks on any rules info button across different game modes
+            let infoButton: HTMLElement | null = target;
+            while (infoButton && !['localRulesInfoBtn', 'multiplayerRulesInfoBtn', 'tournamentsRulesInfoBtn'].includes(infoButton.id || ''))
+                infoButton = infoButton.parentElement;
+            
+            if (infoButton && (infoButton.id === 'localRulesInfoBtn' || infoButton.id === 'multiplayerRulesInfoBtn' || infoButton.id === 'tournamentsRulesInfoBtn'))
+            {
+                if (infoButton.id === 'localRulesInfoBtn')
+                    (window as any).rulesContext = 'local';
+                else if (infoButton.id === 'multiplayerRulesInfoBtn')
+                    (window as any).rulesContext = 'multiplayer';
+                else
+                    (window as any).rulesContext = 'tournament';
+
+                await load('rules');
+            }
+            
+            // Local 2-player game - let roomJoined handler manage page display to avoid double loading
+            if (target.id === 'local2p')
+            {
+                window.lastGameType = 'local2p';
+                await window.joinOrCreateRoom(2, true);
+            }
+            
+            // Local 4-player game - same pattern as 2-player to prevent paddle bugs
+            if (target.id === 'local4p')
+            {
+                window.lastGameType = 'local4p';
+                await window.joinOrCreateRoom(4, true);
+            }
+            
+            // AI game configuration entry point
+            if (target.id === 'soloAi')
+                await load('gameConfig');
+            
+            // Restart button logic - replays the same game type that just finished
+            if (target.id === 'localGameBtn')
+            {
+                const lastGameType = window.lastGameType;
+                if (lastGameType === 'soloAI')
+                {
+                    window.aiMode = true;
+                    await window.joinOrCreateRoom(2, true);
+                }
+                else if (lastGameType === 'local4p')
+                    await window.joinOrCreateRoom(4, true);
+                else if (lastGameType === 'ranked1v1')
+                {
+                    await load('matchmaking');
+                    try
+                    {
+                        await window.joinOrCreateRoom(2);
+                    }
+                    catch (error)
+                    {
+                        if (window.socket)
+                            window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                    }
+                }
+                else if (lastGameType === 'multiplayer4p')
+                {
+                    await load('matchmaking');
+                    try
+                    {
+                        await window.joinOrCreateRoom(4);
+                    }
+                    catch (error)
+                    {
+                        if (window.socket)
+                            window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                    }
+                }
+                else
+                    await window.joinOrCreateRoom(2, true);
+            }
+            
+            if (target.id === 'signInBtn')
+                await load('signIn');
+            
+            if (target.id === 'signUpBtn')        
+                await load('signUp');
+            
+            // Profile navigation with user data extraction from either leaderboard or friend list
+            if (target.id === 'profileBtn' || isProfileBtn)
+            {
+                // Ignore clicks from context menu as they have their own handler
+                const contextMenu = document.getElementById('contextMenu');
+                if (contextMenu && contextMenu.contains(target))
+                    return;
+                
+                // Extract user information from either leaderboard data attributes or friend list elements
+                let selectedUser = null;
+                if (currentElement && currentElement.dataset && currentElement.dataset.username)
+                {
+                    const username = currentElement.dataset.username;
+                    selectedUser = await fetchUserByUsername(username);
+                }
+                else if (target.closest('.friend'))
+                {
+                    const friendElement = target.closest('.friend');
+                    const nameElement = friendElement?.querySelector('.friend-name');
+                    if (nameElement)
+                    {
+                        const username = nameElement.textContent?.trim();
+                        if (username)
+                            selectedUser = await fetchUserByUsername(username);
+                    }
+                }
+                
+                window.selectedProfileUser = selectedUser;
+                await load('profile');
+            }
+            
+            // Match history navigation - loads detailed stats for a specific match
+            if (target.classList.contains('match-item') && !target.classList.contains('no-click'))
+            {
+                const matchIndex = target.getAttribute('data-match-index');
+                if (matchIndex !== null)
+                {
+                    const { getCachedMatches } = await import('../profile/profile.html.js');
+                    const matches = getCachedMatches();
+                    const match = matches[parseInt(matchIndex)];
+                    if (match)
+                    {
+                        window.selectedMatchData = match;
+                        try
+                        {
+                            sessionStorage.setItem('gameStatsMatchId', String(match.id));
+                        }
+                        catch (e)
+                        {
+                        }
+                        await load('gameStats');
                     }
                 }
             }
             
-            // Stocker l'utilisateur sélectionné globalement
-            window.selectedProfileUser = selectedUser;
-            await load('profile');
-        }
-        
-        // Gestionnaire de clic sur les matchs dans le profil
-        if (target.classList.contains('match-item') && !target.classList.contains('no-click')) {
-            const matchIndex = target.getAttribute('data-match-index');
-            if (matchIndex !== null) {
-                const { getCachedMatches } = await import('../profile/profile.html.js');
-                const matches = getCachedMatches();
-                const match = matches[parseInt(matchIndex)];
-                if (match) {
-                    // Stocker les données du match pour la page de stats
-                    window.selectedMatchData = match;
-                    // Persister la sélection pour survivre à un reload
-                    try {
-                        sessionStorage.setItem('gameStatsMatchId', String(match.id));
-                    } catch (e) {
-                        // ignore
+            // Logout with complete cleanup of session data and cache
+            if (target.id === 'logOutBtn')
+            {
+                if (typeof window.logout === 'function')
+                    await window.logout();
+                else
+                {
+                    try
+                    {
+                        await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
                     }
-                    await load('gameStats');
+                    catch (e)
+                    {
+                    }
+                    window.currentUser = null;
                 }
-            }
-        }
-        
-        if (target.id === 'logOutBtn') {
-            // Use the global logout function which handles broadcast
-            if (typeof window.logout === 'function') {
-                await window.logout();
-            } else {
-                // Fallback if logout function not available
-                try {
-                    await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-                } catch (e) {
+                
+                // Clear browser cache for this application to ensure clean logout
+                if ('caches' in window)
+                {
+                    try
+                    {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(
+                            cacheNames.map(cacheName => caches.delete(cacheName))
+                        );
+                    }
+                    catch (e)
+                    {
+                        console.warn('Failed to clear cache:', e);
+                    }
                 }
-                window.currentUser = null;
-            }
-            
-            // Vider le cache du navigateur pour cette application
-            if ('caches' in window) {
-                try {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(
-                        cacheNames.map(cacheName => caches.delete(cacheName))
-                    );
-                } catch (e) {
-                    console.warn('Failed to clear cache:', e);
-                }
+
+                sessionStorage.clear();
+                
+                preventBackNavigationAfterLogout();
+                await load('signIn');
             }
 
-            sessionStorage.clear();
+            // Ranked 1v1 multiplayer matchmaking
+            if (target.id === 'ranked1v1Btn')
+            {
+                window.lastGameType = 'ranked1v1';
+                window.isTournamentMode = false;
+                
+                // Clean up any lingering room state before joining new game
+                if (window.socket && window.leaveCurrentRoomAsync)
+                {
+                    try
+                    {
+                        await window.leaveCurrentRoomAsync();
+                    }
+                    catch (error)
+                    {
+                        console.warn('Pre-cleanup failed, proceeding anyway:', error);
+                    }
+                }
+                
+                try
+                {
+                    await window.joinOrCreateRoom(2);
+                }
+                catch (error)
+                {
+                    if (window.socket)
+                        window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                }
+            }
             
-            // When logout, prevent back navigation to protected pages
-            preventBackNavigationAfterLogout();
-            await load('signIn');
-        }
+            // 4-player multiplayer matchmaking
+            if (target.id === 'multiplayer4pBtn')
+            {
+                window.lastGameType = 'multiplayer4p';
+                window.isTournamentMode = false;
+                
+                if (window.socket && window.leaveCurrentRoomAsync)
+                {
+                    try
+                    {
+                        await window.leaveCurrentRoomAsync();
+                    }
+                    catch (error)
+                    {
+                        console.warn('Pre-cleanup failed, proceeding anyway:', error);
+                    }
+                }
+                
+                try
+                {
+                    await window.joinOrCreateRoom(4);
+                }
+                catch (error)
+                {
+                    if (window.socket)
+                        window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
+                }
+            }
+            
+            // Cancel matchmaking search and return to main menu
+            if (target.id === 'cancelSearchBtn')
+            {
+                if (window.socket && window.leaveCurrentRoomAsync)
+                {
+                    try
+                    {
+                        await window.leaveCurrentRoomAsync();
+                    }
+                    catch (error)
+                    {
+                        console.warn('Room cleanup failed, proceeding anyway:', error);
+                    }
+                }
+                else if (window.socket)
+                {
+                    window.socket.emit('leaveAllRooms');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                await load('mainMenu');
+            }
 
-        // MULTIPLAYER
-        if (target.id === 'ranked1v1Btn') {
-            // Sauvegarder le type de jeu pour restart
-            window.lastGameType = 'ranked1v1';
-            // Réinitialiser le mode tournoi
-            window.isTournamentMode = false;
-            
-            // Ensure any previous room is cleaned up first
-            if (window.socket && window.leaveCurrentRoomAsync) {
-                try {
-                    await window.leaveCurrentRoomAsync();
-                } catch (error) {
-                    console.warn('Pre-cleanup failed, proceeding anyway:', error);
+            // Tournament mode initialization
+            if (target.id === 'tournamentCreateBtn')
+            {
+                window.isTournamentMode = true;
+                window.lastGameType = 'tournament';
+                try
+                {
+                    await window.joinOrCreateRoom(4, false);
+                }
+                catch (error)
+                {
                 }
             }
-            
-            try {
-                await window.joinOrCreateRoom(2);
-            } catch (error) {
-                // Show error to user
-                if (window.socket) {
-                    window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
-                }
-            }
-        }
-        if (target.id === 'multiplayer4pBtn') {
-            // Sauvegarder le type de jeu pour restart
-            window.lastGameType = 'multiplayer4p';
-            // Réinitialiser le mode tournoi
-            window.isTournamentMode = false;
-            
-            // Ensure any previous room is cleaned up first
-            if (window.socket && window.leaveCurrentRoomAsync) {
-                try {
-                    await window.leaveCurrentRoomAsync();
-                } catch (error) {
-                    console.warn('Pre-cleanup failed, proceeding anyway:', error);
-                }
-            }
-            
-            try {
-                await window.joinOrCreateRoom(4);
-            } catch (error) {
-                // Show error to user
-                if (window.socket) {
-                    window.socket.emit('error', { error: 'Failed to join game. Please try again.' });
-                }
-            }
-        }
-        if (target.id === 'cancelSearchBtn')
-        {
-            if (window.socket && window.leaveCurrentRoomAsync) {
-                try {
-                    await window.leaveCurrentRoomAsync();
-                } catch (error) {
-                    console.warn('Room cleanup failed, proceeding anyway:', error);
-                }
-            } else if (window.socket) {
-                window.socket.emit('leaveAllRooms');
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            await load('mainMenu');
-        }
-
-        // Bouton "4 Player Tournaments" - rejoindre/créer une room de tournoi
-        if (target.id === 'tournamentCreateBtn')
-        {
-            window.isTournamentMode = true;
-            window.lastGameType = 'tournament';
-            try {
-                await window.joinOrCreateRoom(4, false); // 4 joueurs, mode online (pas local)
-            } catch (error) {
-            }
-        }
         });
     }
     
-    // Ajoute un gestionnaire pour le clic droit (contextmenu)
-    if (!(document as any)._spaContextMenuListenerSet) {
+    // Right-click context menu handler for friend list actions
+    if (!(document as any)._spaContextMenuListenerSet)
+    {
         (document as any)._spaContextMenuListenerSet = true;
         
-        document.addEventListener('contextmenu', (e) => {
-            // Empêcher le menu contextuel par défaut du navigateur
+        document.addEventListener('contextmenu', (e) =>
+        {
             e.preventDefault();
             
             const target = e.target as HTMLElement;
-            if (!target) return;
+            if (!target)
+                return;
             
-            // Vérifier si l'élément cliqué ou l'un de ses parents a l'ID profileBtn
+            // Walk up DOM to find if we right-clicked a profile button
             let currentElement: HTMLElement | null = target;
             let isProfileBtn = false;
             
-            while (currentElement && !isProfileBtn) {
-                if (currentElement.id === 'profileBtn') {
+            while (currentElement && !isProfileBtn)
+            {
+                if (currentElement.id === 'profileBtn')
                     isProfileBtn = true;
-                } else {
+                else
                     currentElement = currentElement.parentElement;
-                }
             }
             
-            // Exemple: action spécifique pour le clic droit sur un profil
-            if (isProfileBtn) {
-                // Vérifier si l'élément profileBtn est dans le leaderboard
+            if (isProfileBtn)
+            {
+                // Disable context menu for leaderboard profiles as they have limited actions
                 const leaderboardContainer = document.getElementById('leaderboard');
-                if (leaderboardContainer && leaderboardContainer.contains(currentElement)) {
-                    // Ne pas afficher le menu contextuel pour les éléments du leaderboard
+                if (leaderboardContainer && leaderboardContainer.contains(currentElement))
                     return;
-                }
                 
-                // Stocker les informations de l'utilisateur sélectionné
+                // Extract user data from element attributes for context menu actions
                 const username = currentElement?.getAttribute('data-username');
                 const userId = currentElement?.getAttribute('data-user-id');
                 const isInGame = currentElement?.getAttribute('data-is-in-game') === 'true';
-                // Spectate seulement possible si pas en tournoi
                 const canSpectate = currentElement?.getAttribute('data-can-spectate') === 'true';
                 
-                if (username && userId) {
+                if (username && userId)
                     window.selectedContextUser = { username, userId: parseInt(userId), isInGame };
-                }
 
-                // Régénérer le menu contextuel avec ou sans le bouton Spectate
                 window.contextMenuIsInGame = canSpectate;
                 show('contextMenu');
                 
-                // Positionner le menu contextuel
+                // Position context menu at cursor location
                 const menu = document.getElementById('contextMenu');
-                if (menu) {
+                if (menu)
+                {
                     menu.style.left = `${e.clientX}px`;
                     menu.style.top = `${e.clientY}px`;
                 }
-
             }
         });
     }
     
-    if (!(document as any)._spaMenuClickListenerSet) {
+    // Context menu action handler - processes profile, remove friend, and spectate actions
+    if (!(document as any)._spaMenuClickListenerSet)
+    {
         (document as any)._spaMenuClickListenerSet = true;
         
-        document.addEventListener('click', async (e) => {
+        document.addEventListener('click', async (e) =>
+        {
             const menu = document.getElementById('contextMenu');
-            if (!menu) return;
+            if (!menu)
+                return;
         
-            // Si le menu n'est pas affiché, rien à faire
-            if (!menu.innerHTML.trim()) return;
+            if (!menu.innerHTML.trim())
+                return;
         
             const target = e.target as HTMLElement;
             
-            // Gérer les clics sur les boutons du menu contextuel
             if (menu.contains(target))
             {
                 if (target.id === 'profileBtn')
                 {
-                    // Gérer l'affichage du profil depuis le context menu
                     const selectedUser = window.selectedContextUser;
                     if (selectedUser && selectedUser.username)
                     {
@@ -505,107 +546,102 @@ function initializeComponents(): void
                     hide('contextMenu');
                     return;
                 }
+                
                 if (target.id === 'removeFriendBtn')
                 {
-                    // Gérer la suppression d'ami
                     const selectedUser = window.selectedContextUser;
-                    if (selectedUser && selectedUser.userId) {
+                    if (selectedUser && selectedUser.userId)
                         removeFriend(selectedUser.userId, selectedUser.username);
-                    }
+                    
                     hide('contextMenu');
                     return;
                 }
+                
                 if (target.id === 'spectateBtn')
                 {
-                    // Gérer le spectate
                     const selectedUser = window.selectedContextUser;
-                    if (selectedUser && selectedUser.username) {
+                    if (selectedUser && selectedUser.username)
                         spectateFreind(selectedUser.username);
-                    }
+                    
                     hide('contextMenu');
                     return;
                 }
-                // Les autres boutons peuvent être gérés ici
                 return;
             }
         
-            // Sinon, masquer le menu contextuel
             hide('contextMenu');
         });
     }
 }
 
-// Handler global pour l'event roomJoined (affichage matchmaking/game)
-// REMOVED: Navigation is now handled directly in websocket.ts to avoid duplicate handlers
+// Socket event handler for room joining - displays appropriate waiting or game screen
 function setupRoomJoinedHandler()
 {
     if (!window.socket)
         return;
+    
     if (window._roomJoinedHandlerSet)
         return;
+    
     window._roomJoinedHandlerSet = true;
     window.socket.on('roomJoined', async (data: any) =>
     {
-        // Si mode local, on affiche directement la page de jeu
-        if (window.isLocalGame) {
-            if (data.maxPlayers === 4) {
+        // Local games bypass matchmaking and go straight to game screen
+        if (window.isLocalGame)
+        {
+            if (data.maxPlayers === 4)
                 await load('game4');
-            } else {
+            else
                 await load('game');
-            }
             return;
         }
-        // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
+        
+        // Display matchmaking screen until room is full
         if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number')
         {
             if (data.players < data.maxPlayers)
                 await load('matchmaking');
             else
             {
-                // Pour les tournois, la logique est gérée dans websocket.ts
-                // Ici on gère juste le fallback pour les jeux normaux
-                if (data.isTournament) {
-                    // Tournoi: matchs 1v1 utilisent game, phase initiale reste en matchmaking
-                    if (data.maxPlayers === 2) {
+                // Tournament logic is handled in websocket.ts, this is fallback for regular games
+                if (data.isTournament)
+                {
+                    if (data.maxPlayers === 2)
                         await load('game');
-                    }
-                    // Si maxPlayers === 4, on reste en matchmaking (géré par websocket.ts)
-                } else if (data.maxPlayers === 4) {
-                    await load('game4');
-                } else {
-                    await load('game');
                 }
+                else if (data.maxPlayers === 4)
+                    await load('game4');
+                else
+                    await load('game');
             }
         }
     });
 }
 
-
-// Setup popstate handler for browser back/forward buttons
 setupPopStateHandler();
 
-// // top level statemetn ( s'execute des que le fichier est importe)
-// // --> manipuler le dom quúne fois qu'il est pret
-initNavigationOnLoad(async () => {
-    // SECURITY: Install ALL security guards FIRST to intercept all requests
+// Main initialization sequence - sets up security, session management, and determines initial page
+initNavigationOnLoad(async () =>
+{
+    // Security guards must be installed first to intercept all network requests
     installAllSecurityGuards();
     
-    // CRITICAL: Initialize session broadcast BEFORE anything else and WAIT
+    // Initialize session broadcast to coordinate authentication across browser tabs
     await initSessionBroadcast();
     
     await checkSessionOnce();
     
-    // Déterminer la page à charger : soit depuis l'URL, soit page par défaut selon authentification
+    // Determine target page from URL or use default based on authentication state
     let targetPage = getPageFromURL();
     
+    // First-time visitors see landing page if not authenticated and no specific page requested
     const isFirstVisit = !sessionStorage.getItem('hasVisited') && 
                          (targetPage === 'signIn' || targetPage === '') && 
                          !window.currentUser;
     
-    if (isFirstVisit) {
-        // Marquer que l'utilisateur a visité
+    if (isFirstVisit)
+    {
         sessionStorage.setItem('hasVisited', 'true');
-        // Afficher la landing page
         replaceHistoryState('landing');
         await load('landing', undefined, false);
         initializeComponents();
@@ -613,31 +649,30 @@ initNavigationOnLoad(async () => {
         return;
     }
     
-    if (!window.currentUser || !window.currentUser.username) {
-        // Non connecté : forcer signIn ou signUp
-        // Exception: allow 'notFound' page to be shown even when not authenticated
-        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing' && targetPage !== 'notFound') {
+    // Unauthenticated users are redirected to sign in except for allowed public pages
+    if (!window.currentUser || !window.currentUser.username)
+    {
+        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing' && targetPage !== 'notFound')
             targetPage = 'signIn';
-        }
-        // Empêcher l'accès à landing après la première visite
-        if (targetPage === 'landing') {
-            targetPage = 'signIn';
-        }
-    } else {
-        // Connecté : empêcher l'accès aux pages d'authentification et landing
-        if (targetPage === 'signIn' || targetPage === 'signUp' || targetPage === 'landing') {
-            targetPage = 'mainMenu';
-        }
         
-        const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished'];
-        if (gamePages.includes(targetPage)) {
+        if (targetPage === 'landing')
+            targetPage = 'signIn';
+    }
+    else
+    {
+        // Authenticated users cannot access auth pages or landing page
+        if (targetPage === 'signIn' || targetPage === 'signUp' || targetPage === 'landing')
             targetPage = 'mainMenu';
-        }
+        
+        // Game pages are not accessible via direct URL to prevent state inconsistencies
+        const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished'];
+        if (gamePages.includes(targetPage))
+            targetPage = 'mainMenu';
     }
     
-    // Remplacer l'état initial dans l'historique au lieu de le pusher
+    // Replace history state instead of pushing to avoid back button issues
     replaceHistoryState(targetPage);
-    load(targetPage, undefined, false); // Ne pas pusher l'historique car on vient de le remplacer
+    load(targetPage, undefined, false);
     initializeComponents();
     setupRoomJoinedHandler();
 });
