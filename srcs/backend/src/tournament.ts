@@ -38,9 +38,10 @@ export function generateBracket(tournamentId: string): void
     }
 
     // 2. Mélanger aléatoirement les participants (Fisher-Yates shuffle)
-    for (let i = participants.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [participants[i], participants[j]] = [participants[j], participants[i]];
+    // Fisher-Yates shuffle (randomize participant order)
+    for (let currentIndex = participants.length - 1; currentIndex > 0; currentIndex--) {
+        const randomIndex = Math.floor(Math.random() * (currentIndex + 1));
+        [participants[currentIndex], participants[randomIndex]] = [participants[randomIndex], participants[currentIndex]];
     }
 
     // 3. Créer les 2 matchs de demi-finale (round 1)
@@ -57,22 +58,22 @@ export function generateBracket(tournamentId: string): void
 
     // 4. Créer le match de finale (round 2) avec player1_id et player2_id NULL
     // Ils seront remplis automatiquement après les demi-finales
-    const finalMatchInfo = insertMatch.run(tournamentId, 2, null, null);
+    // Create the final match entry (player slots will be filled after semifinals)
+    insertMatch.run(tournamentId, 2, null, null);
 
 
     // 5. Émettre un événement WebSocket pour notifier les participants
-    const matches = db.prepare(`
+    const tournamentMatches = db.prepare(`
         SELECT id, round, player1_id, player2_id 
         FROM tournament_matches 
         WHERE tournament_id = ? 
         ORDER BY round, id
     `).all(tournamentId) as Array<{ id: number; round: number; player1_id: number | null; player2_id: number | null }>;
-    
-    emitTournamentStarted(tournamentId, matches);
-    
+    emitTournamentStarted(tournamentId, tournamentMatches);
+
     // Émettre les notifications pour les 2 demi-finales (toutes deux jouables)
-    const semiFinals = matches.filter(m => m.round === 1);
-    for (const match of semiFinals) {
+    const semiFinalMatches = tournamentMatches.filter(m => m.round === 1);
+    for (const match of semiFinalMatches) {
         if (match.player1_id && match.player2_id) {
             emitMatchReady(tournamentId, {
                 id: match.id,
