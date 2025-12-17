@@ -262,8 +262,19 @@ function updateScoreBoard(state: GameState) {
                 return `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${displayName}: ${p.score || 0}</span>`;
             }).join(' | ');
         } else if (state.paddles.length === 2) {
-            const leftName = state.paddles[0]?.playerName || 'P1';
-            const rightName = state.paddles[1]?.playerName || 'P2';
+            // Détecter si c'est un jeu IA en vérifiant si window.aiMode est actif
+            const isAIMode = (window as any).aiMode === true;
+            const currentUsername = (window as any).currentUser?.username;
+            
+            let leftName = state.paddles[0]?.playerName || 'P1';
+            let rightName = state.paddles[1]?.playerName || 'P2';
+            
+            // En mode IA : l'IA est à gauche (paddle 0), le joueur à droite (paddle 1)
+            if (isAIMode) {
+                leftName = 'IA';
+                rightName = currentUsername || 'Player';
+            }
+            
             const leftScore = state.paddles[0]?.score || 0;
             const rightScore = state.paddles[1]?.score || 0;
             newScoreHTML = `<span id='leftScore'>${leftName}: ${leftScore}</span> - <span id='rightScore'>${rightName}: ${rightScore}</span>`;

@@ -3,7 +3,6 @@ export function spectatorGameFinishedHTML(data?: any) {
     const winner = data?.winner;
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
-    const forfeitMessage = data?.forfeitMessage || '';
     const numPlayers = data?.numPlayers || 2;
     const is4PlayerGame = numPlayers === 4;
     
@@ -41,12 +40,6 @@ export function spectatorGameFinishedHTML(data?: any) {
                 <h2 class="game-finished-title">
                     ${isForfeit ? 'VICTORY BY FORFEIT' : 'GAME OVER'}
                 </h2>
-                
-                ${isForfeit ? `
-                    <p class="game-finished-forfeit-msg">
-                        ${forfeitMessage}
-                    </p>
-                ` : ''}
                 
                 <div class="game-finished-scores">
                     <div class="game-finished-player winner">
