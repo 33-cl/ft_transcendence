@@ -4,7 +4,7 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { rooms, getNextRoomName, roomExists } from '../socket/roomManager.js';
-import { PongGame } from '../../game/PongGame.js';
+import { PongGame } from '../../game/pongGame.js';
 import { validateId } from '../security.js';
 import { PaddleSide } from '../../game/gameState.js';
 import { verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';

@@ -4,7 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType, TournamentState } from '../../types.js';
 import { rooms } from '../roomManager.js';
-import { PongGame } from '../../../game/PongGame.js';
+import { PongGame } from '../../../game/pongGame.js';
 import { updateUserStats } from '../../user.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { getSocketIdForUser } from '../socketAuth.js';

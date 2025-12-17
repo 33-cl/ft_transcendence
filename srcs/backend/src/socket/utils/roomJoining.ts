@@ -6,7 +6,7 @@ import { RoomType } from '../../types.js';
 import { getPlayerRoom, removePlayerFromRoom, rooms, createRoom } from '../roomManager.js';
 import { authenticateSocket, getSocketUser } from '../socketAuth.js';
 import { getUserByUsername } from '../../user.js';
-import { PongGame } from '../../../game/PongGame.js';
+import { PongGame } from '../../../game/pongGame.js';
 
 /**
  * Parse et extrait les paramètres de la requête joinRoom

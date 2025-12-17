@@ -19,7 +19,7 @@ export class PongGame {
         pointScored: false,
         lastContact: -1
     };
-    
+
     constructor(numPlayers: number = 2, onGameEnd?: (winner: { side: string; score: number }, loser: { side: string; score: number }) => void) {
         this.state = createInitialGameState(numPlayers);
         this.onGameEnd = onGameEnd;
