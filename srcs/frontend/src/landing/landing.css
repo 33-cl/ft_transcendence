@@ -1,5 +1,3 @@
-/* Landing page styles */
-
 .landing-container {
     @apply flex items-center justify-center h-full w-full cursor-pointer select-none;
 }

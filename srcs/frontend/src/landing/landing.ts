@@ -1,50 +1,56 @@
-// landing.ts - Gestion de la page landing
-
 import { load } from '../navigation/utils.js';
 
-// Initialiser les handlers de la page landing
-export function initLandingHandlers(): void {
+// Entry point to bind user interactions to the landing page.
+export function initLandingHandlers(): void
+{
     const landingElement = document.getElementById('landing');
-    
-    if (!landingElement) return;
-    
-    // Vérifier si déjà initialisé pour éviter les listeners multiples
-    if ((landingElement as any)._landingListenersSet) return;
+
+    if (!landingElement)
+        return;
+
+    // Prevent duplicate event bindings by checking a custom flag on the DOM element.
+    if ((landingElement as any)._landingListenersSet)
+        return;
+
     (landingElement as any)._landingListenersSet = true;
-    
-    // Ajouter un gestionnaire de clic sur toute la page landing
-    const handleLandingClick = async (event: MouseEvent) => {
+
+    // Define the callback to navigate to the sign-in view upon clicking.
+    const handleLandingClick = async (event: MouseEvent) =>
+    {
         event.preventDefault();
-        // Rediriger vers la page de connexion
         await load('signIn');
     };
-    
-    // Ajouter un gestionnaire pour la touche Entrée ou Espace
-    const handleLandingKeypress = async (event: KeyboardEvent) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+
+    // Define the callback to navigate when specific keys like Enter or Space are pressed.
+    const handleLandingKeypress = async (event: KeyboardEvent) =>
+    {
+        if (event.key === 'Enter' || event.key === ' ')
+        {
             event.preventDefault();
             await load('signIn');
         }
     };
-    
+
     landingElement.addEventListener('click', handleLandingClick);
     document.addEventListener('keypress', handleLandingKeypress);
-    
-    // Nettoyer les event listeners si on quitte la page
-    const cleanup = () => {
+
+    // Create a cleanup routine to remove listeners and reset the state when leaving the page.
+    const cleanup = () =>
+    {
         landingElement.removeEventListener('click', handleLandingClick);
         document.removeEventListener('keypress', handleLandingKeypress);
         (landingElement as any)._landingListenersSet = false;
     };
-    
-    // Stocker la fonction de nettoyage
+
+    // Expose the cleanup function globally to allow external lifecycle management.
     window.cleanupLandingHandlers = cleanup;
 }
 
-// Initialiser automatiquement quand les composants sont prêts
-document.addEventListener('componentsReady', () => {
+// Trigger initialization automatically when the application signals that components are ready.
+document.addEventListener('componentsReady', () =>
+{
     const landingElement = document.getElementById('landing');
-    if (landingElement && landingElement.innerHTML !== '') {
+
+    if (landingElement && landingElement.innerHTML !== '')
         initLandingHandlers();
-    }
 });

@@ -1,4 +1,3 @@
-// We re-export these utility functions to ensure they are available to other modules that import from this file
 export {
     initializeFriendListEventListeners,
     initializeAddFriendsButton,
