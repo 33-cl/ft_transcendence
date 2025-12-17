@@ -307,6 +307,9 @@ async function saveChangedFields(): Promise<void> {
 
     if (!hasUsernameChanged && !hasEmailChanged && !hasPendingAvatar) {
         showMessage('No changes to save', true);
+        // Retourner au main menu même s'il n'y a pas de changements
+        const { load } = await import('../navigation/utils.js');
+        await load('mainMenu');
         return;
     }
 
@@ -398,6 +401,10 @@ async function saveChangedFields(): Promise<void> {
                     leaderboardContainer.innerHTML = await leaderboardHTML();
                 }
             }
+            
+            // Retourner au main menu après la sauvegarde
+            const { load } = await import('../navigation/utils.js');
+            await load('mainMenu');
         }
             
     } catch (error) {

@@ -40,9 +40,10 @@ async function show(pageName: keyof typeof components, data?: any)
 {
     
     // 🚨 SECURITY: Don't load ANY content if session is blocked
+    // Exception: allow gameStats and goToMain as they're read-only pages that should work on reload
     const blocked = isSessionBlocked();
     
-    if (blocked && pageName !== 'signIn' && pageName !== 'signUp') {
+    if (blocked && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats' && pageName !== 'goToMain') {
         console.warn(`🚫 Component loading BLOCKED for '${pageName}': Session is active in another tab`);
         return; // Don't load any content
     }
@@ -129,7 +130,8 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     const myLoadId = ++currentLoadId;
 
     // 🚨 CRITICAL SECURITY CHECK: Block navigation if session is blocked by another tab
-    if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp') {
+    // Exception: allow gameStats as it's a read-only page that should work on reload
+    if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats') {
         console.warn('Navigation blocked: Session is active in another tab');
         return; // Don't allow navigation
     }
@@ -380,6 +382,52 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'gameStats') {
         stopFriendListRealtimeUpdates();
+        // Restore selected match after reload if needed.
+        // Important: on hard reload, `cachedMatches` is empty, so we also fetch the match by id.
+        if (!(window as any).selectedMatchData) {
+            const urlParts = window.location.pathname.split('/').filter(Boolean);
+            const urlHead = (urlParts[0] || '').toLowerCase();
+            const urlMatchId = (urlHead === 'gamestats' || urlParts[0] === 'gameStats')
+                ? (urlParts[1] ? Number(urlParts[1]) : undefined)
+                : undefined;
+            const storedMatchIdRaw = sessionStorage.getItem('gameStatsMatchId');
+            const storedMatchId = storedMatchIdRaw ? Number(storedMatchIdRaw) : undefined;
+            const matchIdToRestore = urlMatchId || storedMatchId;
+
+            if (matchIdToRestore) {
+                // 1) try in-memory cache (works when coming from profile without reload)
+                try {
+                    const { getCachedMatches } = await import('../profile/profile.html.js');
+                    const matches = getCachedMatches?.() || [];
+                    const found = matches.find((m: any) => m?.id === matchIdToRestore);
+                    if (found) {
+                        (window as any).selectedMatchData = found;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                // 2) fetch fallback (works on reload even if cache is empty)
+                if (!(window as any).selectedMatchData) {
+                    try {
+                        const res = await fetch(`/matches/${matchIdToRestore}`, {
+                            method: 'GET',
+                            credentials: 'include',
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            // Accept either {match: {...}} or direct match payload
+                            const match = (data && (data.match || data)) || null;
+                            if (match) {
+                                (window as any).selectedMatchData = match;
+                            }
+                        }
+                    } catch (e) {
+                        // keep empty state; gameStatsHTML will show a message
+                    }
+                }
+            }
+        }
         await show('gameStats');
         await show('goToMain');
         

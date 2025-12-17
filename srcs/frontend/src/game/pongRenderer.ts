@@ -271,7 +271,7 @@ function updateScoreBoard(state: GameState) {
             
             // En mode IA : l'IA est à gauche (paddle 0), le joueur à droite (paddle 1)
             if (isAIMode) {
-                leftName = 'IA';
+                leftName = 'AI';
                 rightName = currentUsername || 'Player';
             }
             

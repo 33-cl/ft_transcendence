@@ -9,6 +9,12 @@ import { load } from './utils.js';
 export function pushHistoryState(pageName: string): void {
     // Les pages de fin de jeu restent sur /game dans l'URL
     const gameFinishedPages = ['gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+    if (pageName === 'gameStats') {
+        const matchId = (window as any).selectedMatchData?.id;
+        const urlPath = matchId ? `gameStats/${matchId}` : 'gameStats';
+        window.history.pushState({ page: pageName, matchId }, '', `/${urlPath}`);
+        return;
+    }
     const urlPath = gameFinishedPages.includes(pageName) ? 'game' : pageName;
     window.history.pushState({ page: pageName }, '', `/${urlPath}`);
 }
@@ -20,6 +26,12 @@ export function pushHistoryState(pageName: string): void {
 export function replaceHistoryState(pageName: string): void {
     // Les pages de fin de jeu restent sur /game dans l'URL
     const gameFinishedPages = ['gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+    if (pageName === 'gameStats') {
+        const matchId = (window as any).selectedMatchData?.id;
+        const urlPath = matchId ? `gameStats/${matchId}` : 'gameStats';
+        window.history.replaceState({ page: pageName, matchId }, '', `/${urlPath}`);
+        return;
+    }
     const urlPath = gameFinishedPages.includes(pageName) ? 'game' : pageName;
     window.history.replaceState({ page: pageName }, '', `/${urlPath}`);
 }
@@ -119,6 +131,20 @@ export function getPageFromURL(): string {
     // Handle tournament detail URLs: /tournaments/:id
     if (cleanPath.startsWith('tournaments/') && cleanPath.split('/').length === 2) {
         return cleanPath; // Return full path for tournament details
+    }
+
+    // Handle gameStats detail URLs: /gameStats/:matchId (and legacy lowercase /gamestats/:matchId)
+    // Some users type URLs manually; normalize to the canonical casing.
+    const lowered = cleanPath.toLowerCase();
+    if ((lowered.startsWith('gamestats/') || lowered.startsWith('gamestats/')) && cleanPath.split('/').length === 2) {
+        const parts = cleanPath.split('/');
+        const matchId = parts[1];
+        // Normalize URL to /gameStats/:id (without triggering a navigation)
+        window.history.replaceState(window.history.state, '', `/gameStats/${matchId}`);
+        return 'gameStats';
+    }
+    if (cleanPath.startsWith('gameStats/') && cleanPath.split('/').length === 2) {
+        return 'gameStats';
     }
     
     // For other pages, return just the page name

@@ -298,6 +298,12 @@ function initializeComponents(): void
                 if (match) {
                     // Stocker les données du match pour la page de stats
                     window.selectedMatchData = match;
+                    // Persister la sélection pour survivre à un reload
+                    try {
+                        sessionStorage.setItem('gameStatsMatchId', String(match.id));
+                    } catch (e) {
+                        // ignore
+                    }
                     await load('gameStats');
                 }
             }

@@ -83,3 +83,23 @@ export function getMatchHistory(userId: string, limit: number = 10) {
     return [];
   }
 }
+
+// Fonction pour récupérer un match par son ID
+export function getMatchById(matchId: number) {
+  try {
+    const match = db.prepare(`
+      SELECT 
+        m.*,
+        winner.username as winner_username,
+        loser.username as loser_username
+      FROM matches m
+      LEFT JOIN users winner ON winner.id = m.winner_id
+      LEFT JOIN users loser ON loser.id = m.loser_id
+      WHERE m.id = ?
+    `).get(matchId);
+
+    return match || null;
+  } catch (error) {
+    return null;
+  }
+}
