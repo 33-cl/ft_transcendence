@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML ,friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML, notFoundHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -34,6 +34,7 @@ const components = {
     aiConfig: {id: 'aiConfig', html: aiConfigHTML},
     tournaments: {id: 'tournaments', html: tournamentsHTML},
     rules: {id: 'rules', html: rulesHTML},
+    notFound: {id: 'notFound', html: notFoundHTML},
 };
 
 async function show(pageName: keyof typeof components, data?: any)
@@ -534,8 +535,12 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             console.warn('Tournament ID missing in URL');
         }
     }
-    else
+    else {
         console.warn(`Page ${pageName} not found`);
+        // Show a friendly 404 page while keeping the URL intact
+        await show('notFound');
+        // NOTE: intentionally do NOT show 'goToMain' here to prevent returning to main menu from the 404 page
+    }
 
     if (updateHistory && myLoadId === currentLoadId)
         pushHistoryState(pageName);

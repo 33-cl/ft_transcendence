@@ -51,7 +51,7 @@ export async function profileHTML(targetUser?: any) {
         
         <div class="profile-stats">
             <div class="avatar-container">
-                <img src="${avatarUrl}" alt="User Avatar" class="profile-pic" onerror="this.onerror=null;this.src='./img/planet.gif';">
+                <img src="${avatarUrl}" alt="User Avatar" class="profile-pic" onerror="this.onerror=null;this.src='/img/planet.gif';">
             </div>
             
             <div class="stats-container">

@@ -33,13 +33,29 @@ export function replaceHistoryState(pageName: string): void {
     // Les pages de fin de jeu restent sur /game dans l'URL
     const gameFinishedPages = ['gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
     if (pageName === 'gameStats') {
-        const matchId = (window as any).selectedMatchData?.id;
+        // Prefer explicit matchId from selectedMatchData; if not available (e.g. on reload),
+        // try to extract it from the current URL to avoid removing it when replacing history
+        let matchId = (window as any).selectedMatchData?.id;
+        if (!matchId) {
+            const parts = window.location.pathname.split('/').filter(Boolean);
+            if (parts[0] && parts[0].toLowerCase() === 'gamestats' && parts[1]) {
+                const parsed = Number(parts[1]);
+                if (!Number.isNaN(parsed)) matchId = parsed;
+            }
+        }
         const urlPath = matchId ? `gameStats/${matchId}` : 'gameStats';
         window.history.replaceState({ page: pageName, matchId }, '', `/${urlPath}`);
         return;
     }
     if (pageName === 'profile') {
-        const username = (window as any).selectedProfileUser?.username || (window as any).currentUser?.username;
+        // If we have an explicitly selected profile use it. Otherwise, prefer keeping any
+        // username already present in the URL (to avoid overwriting /profile/otheruser on reload).
+        let username = (window as any).selectedProfileUser?.username;
+        if (!username) {
+            const parts = window.location.pathname.split('/').filter(Boolean);
+            if (parts[0] === 'profile' && parts[1]) username = parts[1];
+        }
+        if (!username) username = (window as any).currentUser?.username;
         const urlPath = username ? `profile/${username}` : 'profile';
         window.history.replaceState({ page: pageName, username }, '', `/${urlPath}`);
         return;
@@ -69,13 +85,8 @@ export function setupPopStateHandler(): void {
     
     window.addEventListener('popstate', async function(event) {
         
-        let targetPage = event.state?.page;
-        
-        // Si pas de state, récupérer depuis l'URL actuelle
-        if (!targetPage) {
-            const path = window.location.pathname.substring(1) || 'signIn'; // Remove leading /
-            targetPage = path;
-        }
+        // Normalize target page from state or URL; use getPageFromURL to handle unknown paths
+        let targetPage = event.state?.page || getPageFromURL();
         
         // Protection: empêcher l'accès à landing via l'historique
         if (targetPage === 'landing') {
@@ -95,7 +106,8 @@ export function setupPopStateHandler(): void {
         }
         
         // Protection critique: si pas connecté, forcer la connexion
-        if (!window.currentUser && targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing') {
+        // Exception: allow viewing the 404 page without being authenticated
+        if (!window.currentUser && targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing' && targetPage !== 'notFound') {
             // Forcer le retour à signIn comme dans l'ancienne logique
             pushHistoryState('signIn');
             await load('signIn', undefined, false);
@@ -164,6 +176,12 @@ export function getPageFromURL(): string {
         return 'profile';
     }
     
-    // For other pages, return just the page name
-    return cleanPath.split('/')[0] || 'signIn';
+    // For other pages, check against known pages; otherwise return 'notFound'
+    const candidate = cleanPath.split('/')[0] || 'signIn';
+    const knownPages = new Set([
+        'signIn','signUp','landing','mainMenu','leaderboard','friendList','addFriends','matchmaking','game','game4','spectate','spectate4','twoFactor','gameFinished','tournamentSemifinalFinished','tournamentFinalFinished','spectatorGameFinished','profileDashboard','profileWinRateHistory','contextMenu','settings','gameConfig','aiConfig','tournaments','rules','goToMain'
+    ]);
+    if (knownPages.has(candidate)) return candidate;
+    // Unknown path -> show 404
+    return 'notFound';
 }

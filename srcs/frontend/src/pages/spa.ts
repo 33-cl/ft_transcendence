@@ -162,6 +162,7 @@ function initializeComponents(): void
             
             await load('mainMenu');
         }
+        // (no action needed for 404 - it's a simple informational page)
         // Handler pour retour au tournoi après un match
         if (target.id === 'backToTournamentBtn') {
             const tournamentId = window.currentTournamentId;
@@ -614,7 +615,8 @@ initNavigationOnLoad(async () => {
     
     if (!window.currentUser || !window.currentUser.username) {
         // Non connecté : forcer signIn ou signUp
-        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing') {
+        // Exception: allow 'notFound' page to be shown even when not authenticated
+        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing' && targetPage !== 'notFound') {
             targetPage = 'signIn';
         }
         // Empêcher l'accès à landing après la première visite

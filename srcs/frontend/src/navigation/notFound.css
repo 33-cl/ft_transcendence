@@ -1,0 +1,13 @@
+@layer components {
+    .notfound-container {
+        @apply flex items-center justify-center w-full min-h-screen flex-col gap-4;
+    }
+
+    .notfound-title {
+        @apply text-6xl font-extrabold text-white;
+    }
+
+    .notfound-subtitle {
+        @apply text-xl text-gray-400;
+    }
+}

@@ -25,7 +25,7 @@ export async function addFriendsHTML() {
             <div class="friend-request-item">
                 <img src="${getSafeAvatarUrl(request.avatar_url)}" 
                      alt="${request.username}"
-                     onerror="this.onerror=null;this.src='./img/planet.gif';">
+                     onerror="this.onerror=null;this.src='/img/planet.gif';">
                 <span>${request.username}</span>
                 <button class="friend-request-accept-btn" 
                         data-request-id="${request.request_id}">

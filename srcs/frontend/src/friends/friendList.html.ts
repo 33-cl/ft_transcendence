@@ -70,7 +70,7 @@ export async function friendListHTML() {
                 <div id="profileBtn" class="friend friend-item" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}">
                     <div class="friend-avatar-container">
                         <img src="${avatarUrl}" alt="${user.username} Avatar" class="friend-avatar" 
-                             onerror="this.onerror=null;this.src='./img/planet.gif';">
+                            onerror="this.onerror=null;this.src='/img/planet.gif';">
                         <div class="friend-status-indicator" 
                              style="background-color: ${statusColor};" 
                              title="${statusText}">

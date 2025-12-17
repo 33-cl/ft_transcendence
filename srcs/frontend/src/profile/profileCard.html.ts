@@ -29,7 +29,7 @@ export async function profileCardHTML() {
         <div id="profileCard-component">
             <div class="profile-pic" style="display: inline-block;">
                 <!-- ${crown} -->
-                <img id="profileCard" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='./img/planet.gif';" style="cursor: pointer;" />
+                <img id="profileCard" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='/img/planet.gif';" style="cursor: pointer;" />
             </div>
             <div class="profileCard-info">
                 <div class="profileCard-username">${username}</div>

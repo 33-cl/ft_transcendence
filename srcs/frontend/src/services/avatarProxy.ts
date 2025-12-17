@@ -9,7 +9,7 @@
  * @returns L'URL à utiliser (proxy pour Google, originale sinon)
  */
 export function getProxiedAvatarUrl(avatarUrl: string | null | undefined): string {
-    const defaultAvatar = './img/planet.gif';
+    const defaultAvatar = '/img/planet.gif';
     
     if (!avatarUrl) {
         return defaultAvatar;
@@ -44,8 +44,8 @@ export function getSafeAvatarUrl(avatarUrl: string | null | undefined): string {
         }
     } catch {
         // URL invalide, retourner l'avatar par défaut
-        return './img/planet.gif';
+    return '/img/planet.gif';
     }
     
-    return './img/planet.gif';
+    return '/img/planet.gif';
 }
