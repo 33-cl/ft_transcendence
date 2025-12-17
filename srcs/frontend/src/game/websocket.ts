@@ -733,12 +733,15 @@ function setupGameEventListeners()
                 return;
             }
 
-            // Affiche la page de fin de partie avec les données reçues
-            if (data && data.winner) {
-                load('gameFinished', data);
-            } else {
-                load('gameFinished');
-            }
+            // Affiche la page de fin de partie AVEC UN PETIT DELAY pour laisser
+            // le renderer afficher les dernières frames (UX : balle qui sort)
+            setTimeout(() => {
+                if (data && data.winner) {
+                    load('gameFinished', data);
+                } else {
+                    load('gameFinished');
+                }
+            }, 300);
         });
 	}
     
