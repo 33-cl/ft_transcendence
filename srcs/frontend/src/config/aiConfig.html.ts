@@ -1,8 +1,6 @@
 export { initAIConfigManagers } from './config.js';
 
-/**
- * Page de sélection de la difficulté IA
- */
+// Ai difficulty selection page
 export const aiConfigHTML = /*html*/`
 <div id="ai-config-page" class="ai-config-container">
     <h1>AI Difficulty</h1>

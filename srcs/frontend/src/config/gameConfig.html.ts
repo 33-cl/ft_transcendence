@@ -1,8 +1,6 @@
 export { initGameConfigManagers } from './config.js';
 
-/**
- * Page de sélection du mode de jeu (VS AI / 2 Players)
- */
+// Game mode selection page
 export const gameConfigHTML = /*html*/`
 <div id="game-config-page" class="ai-config-container">
     <h1>Game Configuration</h1>
