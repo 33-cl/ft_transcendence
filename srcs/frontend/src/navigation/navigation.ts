@@ -15,6 +15,12 @@ export function pushHistoryState(pageName: string): void {
         window.history.pushState({ page: pageName, matchId }, '', `/${urlPath}`);
         return;
     }
+    if (pageName === 'profile') {
+        const username = (window as any).selectedProfileUser?.username || (window as any).currentUser?.username;
+        const urlPath = username ? `profile/${username}` : 'profile';
+        window.history.pushState({ page: pageName, username }, '', `/${urlPath}`);
+        return;
+    }
     const urlPath = gameFinishedPages.includes(pageName) ? 'game' : pageName;
     window.history.pushState({ page: pageName }, '', `/${urlPath}`);
 }
@@ -30,6 +36,12 @@ export function replaceHistoryState(pageName: string): void {
         const matchId = (window as any).selectedMatchData?.id;
         const urlPath = matchId ? `gameStats/${matchId}` : 'gameStats';
         window.history.replaceState({ page: pageName, matchId }, '', `/${urlPath}`);
+        return;
+    }
+    if (pageName === 'profile') {
+        const username = (window as any).selectedProfileUser?.username || (window as any).currentUser?.username;
+        const urlPath = username ? `profile/${username}` : 'profile';
+        window.history.replaceState({ page: pageName, username }, '', `/${urlPath}`);
         return;
     }
     const urlPath = gameFinishedPages.includes(pageName) ? 'game' : pageName;
@@ -145,6 +157,11 @@ export function getPageFromURL(): string {
     }
     if (cleanPath.startsWith('gameStats/') && cleanPath.split('/').length === 2) {
         return 'gameStats';
+    }
+
+    // Handle profile detail URLs: /profile/:username
+    if (cleanPath.startsWith('profile/') && cleanPath.split('/').length === 2) {
+        return 'profile';
     }
     
     // For other pages, return just the page name

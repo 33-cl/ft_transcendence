@@ -7,8 +7,47 @@ import { removeAngleBrackets } from '../../utils/sanitize.js';
 /**
  * Route de recherche d'utilisateurs
  * - GET /users/search : Rechercher des utilisateurs par nom
+ * - GET /users/by-username/:username : Récupérer un utilisateur par son username
  */
 export default async function searchRoutes(fastify: FastifyInstance) {
+
+  // GET /users/by-username/:username - Récupérer un utilisateur par son username
+  fastify.get('/users/by-username/:username', async (request, reply) => {
+    try {
+      const currentUserId = verifyAuthFromRequest(request, reply);
+      if (!currentUserId) return;
+
+      const params = request.params as any;
+      const username = params.username;
+
+      // SECURITY: Validate username format (alphanumeric, 3-20 chars)
+      if (!username || typeof username !== 'string' || !validateLength(username, 3, 20)) {
+        return reply.status(400).send({ error: 'Invalid username' });
+      }
+
+      // Fetch user by username
+      interface UserRow {
+        id: number;
+        username: string;
+        avatar_url: string | null;
+        wins: number;
+        losses: number;
+      }
+      const user = db.prepare(`
+        SELECT id, username, avatar_url, wins, losses
+        FROM users
+        WHERE username = ?
+      `).get(username) as UserRow | undefined;
+
+      if (!user) {
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      return { user };
+    } catch (error) {
+      return reply.status(500).send({ error: 'Failed to fetch user' });
+    }
+  });
 
   // GET /users/search - Rechercher des utilisateurs
   fastify.get('/users/search', async (request, reply) => {

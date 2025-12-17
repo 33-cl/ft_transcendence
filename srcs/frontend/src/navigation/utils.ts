@@ -40,10 +40,10 @@ async function show(pageName: keyof typeof components, data?: any)
 {
     
     // 🚨 SECURITY: Don't load ANY content if session is blocked
-    // Exception: allow gameStats and goToMain as they're read-only pages that should work on reload
+    // Exception: allow gameStats, goToMain, profile as they're read-only pages that should work on reload
     const blocked = isSessionBlocked();
     
-    if (blocked && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats' && pageName !== 'goToMain') {
+    if (blocked && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats' && pageName !== 'goToMain' && pageName !== 'profile' && pageName !== 'profileDashboard' && pageName !== 'profileWinRateHistory') {
         console.warn(`🚫 Component loading BLOCKED for '${pageName}': Session is active in another tab`);
         return; // Don't load any content
     }
@@ -130,8 +130,8 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     const myLoadId = ++currentLoadId;
 
     // 🚨 CRITICAL SECURITY CHECK: Block navigation if session is blocked by another tab
-    // Exception: allow gameStats as it's a read-only page that should work on reload
-    if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats') {
+    // Exception: allow gameStats and profile as they're read-only pages that should work on reload
+    if (isSessionBlocked() && pageName !== 'signIn' && pageName !== 'signUp' && pageName !== 'gameStats' && pageName !== 'profile') {
         console.warn('Navigation blocked: Session is active in another tab');
         return; // Don't allow navigation
     }
@@ -314,6 +314,44 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'profile')
     {
+        stopFriendListRealtimeUpdates();
+        
+        // Restore selected profile user from URL if needed (on reload)
+        if (!window.selectedProfileUser) {
+            const urlParts = window.location.pathname.split('/').filter(Boolean);
+            const urlUsername = (urlParts[0] === 'profile' && urlParts[1]) ? urlParts[1] : undefined;
+            const storedUsername = sessionStorage.getItem('profileUsername') || undefined;
+            const usernameToRestore = urlUsername || storedUsername;
+
+            if (usernameToRestore) {
+                // Si c'est le profil courant, utiliser window.currentUser pour garder l'avatar à jour
+                if (window.currentUser && window.currentUser.username === usernameToRestore) {
+                    window.selectedProfileUser = window.currentUser;
+                } else {
+                    // Fetch user by username from backend
+                    try {
+                        const res = await fetch(`/users/by-username/${encodeURIComponent(usernameToRestore)}`, {
+                            method: 'GET',
+                            credentials: 'include',
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data?.user) {
+                                window.selectedProfileUser = data.user;
+                            }
+                        }
+                    } catch (e) {
+                        // ignore - will show current user profile
+                    }
+                }
+            }
+        }
+        
+        // Store username in sessionStorage for potential reload
+        if (window.selectedProfileUser?.username) {
+            sessionStorage.setItem('profileUsername', window.selectedProfileUser.username);
+        }
+        
         // Capturer l'utilisateur sélectionné AVANT les show() car profileDashboard le reset à null
         const targetUser = window.selectedProfileUser || window.currentUser;
         
