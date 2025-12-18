@@ -225,7 +225,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
         });
 
 
-        // Close Window
+        // Close Window and notify parent
         return reply.type('text/html').send(`
             <!DOCTYPE html>
             <html>
@@ -234,6 +234,9 @@ export default async function oauthRoutes(app: FastifyInstance) {
             </head>
             <body>
                 <script>
+                    if (window.opener) {
+                        window.opener.postMessage({ type: 'oauth-success' }, 'https://localhost:3000');
+                    }
                     window.close();
                 </script>
             </body>
@@ -243,15 +246,18 @@ export default async function oauthRoutes(app: FastifyInstance) {
         } catch (err) {
         app.log.error(err, 'Erreur pendant le callback Google OAuth');
         
-        // Close Window
+        // Close Window and notify parent of error
         return reply.type('text/html').send(`
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Authentication Successful</title>
+                <title>Authentication Error</title>
             </head>
             <body>
                 <script>
+                    if (window.opener) {
+                        window.opener.postMessage({ type: 'oauth-error', error: 'Authentication failed' }, 'https://localhost:3000');
+                    }
                     window.close();
                 </script>
             </body>
