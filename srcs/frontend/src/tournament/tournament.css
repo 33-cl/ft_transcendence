@@ -1,0 +1,573 @@
+/*/*
+
+.tournament-item {
+
+.tournament-container {    @apply p-4 border-b border-gray-600 flex justify-between items-center;
+
+    @apply w-full max-w-4xl text-center;}
+
+}
+
+.tournament-item-info {
+
+.tournament-header {    @apply text-left flex-1 mr-4;
+
+    @apply mb-6;}
+
+}
+
+.tournament-item-name {
+
+.tournament-title {    @apply font-medium text-white text-lg;
+
+    @apply text-3xl font-bold text-white mb-4;}
+
+}
+
+.tournament-item-status {
+
+.tournament-create-btn {    @apply text-sm text-gray-400;
+
+    @apply px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors;}
+
+}
+
+.tournament-badge-4player {
+
+.tournament-create-form {    @apply text-xs bg-green-600 text-green-100 px-2 py-1 rounded-full mt-2 inline-block;
+
+    @apply mb-6 bg-gray-800 border-2 border-green-500 rounded-lg p-4 flex items-center gap-3;}
+
+}
+
+.tournament-actions {
+
+.tournament-name-input {    @apply flex gap-2;
+
+    @apply flex-1 px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all;}
+
+}
+
+.tournament-join-btn {
+
+.tournament-create-actions {    @apply px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium;
+
+    @apply flex gap-2;}
+
+}
+
+.tournament-leave-btn {
+
+/* tournament.css removed — file kept as an empty placeholder to avoid build issues */    @apply px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium;
+
+}
+
+.tournament-item {
+
+    @apply p-4 border-b border-gray-600 flex justify-between items-center;.tournament-view-btn {
+
+}    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors;
+
+}
+
+.tournament-item-info {
+
+    @apply text-left flex-1 mr-4;.tournament-view-btn-active {
+
+}    @apply px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium cursor-pointer;
+
+}
+
+.tournament-item-name {
+
+    @apply font-medium text-white text-lg;.tournament-disabled {
+
+}    @apply opacity-50 cursor-not-allowed hover:bg-blue-600;
+
+}
+
+.tournament-item-status {
+
+    @apply text-sm text-gray-400;.tournament-delete-btn {
+
+}    @apply px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors;
+
+}
+
+.tournament-badge-4player {
+
+    @apply text-xs bg-green-600 text-green-100 px-2 py-1 rounded-full mt-2 inline-block;.tournament-detail-container {
+
+}    @apply p-4 max-w-6xl mx-auto;
+
+}
+
+.tournament-actions {
+
+    @apply flex gap-2;.tournament-detail-back-btn {
+
+}    @apply mb-4 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600;
+
+}
+
+.tournament-join-btn {
+
+    @apply px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium;.tournament-detail-content {
+
+}    @apply space-y-6;
+
+}
+
+.tournament-leave-btn {
+
+    @apply px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium;.tournament-detail-header {
+
+}    @apply bg-white shadow rounded-lg p-6;
+
+}
+
+.tournament-view-btn {
+
+    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors;.tournament-detail-title {
+
+}    @apply text-3xl font-bold text-gray-900 mb-2;
+
+}
+
+.tournament-view-btn-active {
+
+    @apply px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium cursor-pointer;.tournament-detail-meta {
+
+}    @apply flex flex-wrap gap-4 text-sm text-gray-600;
+
+}
+
+.tournament-disabled {
+
+    @apply opacity-50 cursor-not-allowed hover:bg-blue-600;.tournament-detail-meta-item {
+
+}    @apply px-3 py-1 rounded-full bg-gray-100;
+
+}
+
+.tournament-delete-btn {
+
+    @apply px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors;.tournament-detail-actions {
+
+}    @apply mt-4 flex gap-3;
+
+}
+
+.tournament-detail-container {
+
+    @apply p-4 max-w-6xl mx-auto;.tournament-start-btn {
+
+}    @apply px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors;
+
+}
+
+.tournament-detail-back-btn {
+
+    @apply mb-4 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600;.tournament-join-btn {
+
+}    @apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors;
+
+}
+
+.tournament-detail-content {
+
+    @apply space-y-6;.tournament-section {
+
+}    @apply bg-white shadow rounded-lg p-6;
+
+}
+
+.tournament-detail-header {
+
+    @apply bg-white shadow rounded-lg p-6;.tournament-section-title {
+
+}    @apply text-2xl font-semibold mb-4 text-gray-800;
+
+}
+
+.tournament-detail-title {
+
+    @apply text-3xl font-bold text-gray-900 mb-2;.tournament-participants {
+
+}    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3;
+
+}
+
+.tournament-detail-meta {
+
+    @apply flex flex-wrap gap-4 text-sm text-gray-600;.tournament-participant-item {
+
+}    @apply bg-gray-50 px-3 py-2 rounded border;
+
+}
+
+.tournament-detail-meta-item {
+
+    @apply px-3 py-1 rounded-full bg-gray-100;.tournament-participant-name {
+
+}    @apply font-medium;
+
+}
+
+.tournament-detail-actions {
+
+    @apply mt-4 flex gap-3;.tournament-participant-id {
+
+}    @apply text-sm text-gray-500 ml-2;
+
+}
+
+.tournament-start-btn {
+
+    @apply px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium transition-colors;.tournament-bracket {
+
+}    @apply space-y-4;
+
+}
+
+.tournament-join-btn {
+
+    @apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors;.tournament-round {
+
+}    @apply mb-6;
+
+}
+
+.tournament-section {
+
+    @apply bg-white shadow rounded-lg p-6;.tournament-round-title {
+
+}    @apply text-lg font-semibold mb-3 text-blue-800;
+
+}
+
+.tournament-section-title {
+
+    @apply text-2xl font-semibold mb-4 text-gray-800;.tournament-match {
+
+}    @apply bg-white border rounded p-3 mb-2;
+
+}
+
+.tournament-participants {
+
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3;.tournament-match-content {
+
+}    @apply flex justify-between items-center;
+
+}
+
+.tournament-participant-item {
+
+    @apply bg-gray-50 px-3 py-2 rounded border;.tournament-match-players {
+
+}    @apply font-medium;
+
+}
+
+.tournament-participant-name {
+
+    @apply font-medium;.tournament-match-separator {
+
+}    @apply text-gray-400;
+
+}
+
+.tournament-participant-id {
+
+    @apply text-sm text-gray-500 ml-2;.tournament-match-status {
+
+}    @apply text-sm;
+
+}
+
+.tournament-bracket {
+
+    @apply space-y-4;.tournament-match-status-finished {
+
+}    @apply text-green-600 font-medium;
+
+}
+
+.tournament-round {
+
+    @apply mb-6;.tournament-match-status-scheduled {
+
+}    @apply text-blue-600;
+
+}
+
+.tournament-round-title {
+
+    @apply text-lg font-semibold mb-3 text-blue-800;.tournament-match-status-cancelled {
+
+}    @apply text-red-600;
+
+}
+
+.tournament-match {
+
+    @apply bg-white border rounded p-3 mb-2;.tournament-error {
+
+}    @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded;
+
+}
+
+.tournament-match-content {
+
+    @apply flex justify-between items-center;.tournament-error-title {
+
+}    @apply text-xl font-bold mb-2;
+
+}
+
+.tournament-match-players {
+
+    @apply font-medium;.tournament-no-participants {
+
+}    @apply text-gray-500;
+
+}
+
+.tournament-match-separator {
+
+    @apply text-gray-400;.tournament-no-matches {
+
+}    @apply text-gray-500;
+
+}
+
+.tournament-match-status {
+
+    @apply text-sm;.tournament-modal {
+
+}    @apply hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center;
+
+}
+
+.tournament-match-status-finished {
+
+    @apply text-green-600 font-medium;.tournament-modal.active {
+
+}    @apply flex;
+
+}
+
+.tournament-match-status-scheduled {
+
+    @apply text-blue-600;.tournament-modal-content {
+
+}    @apply bg-gray-900 border-2 border-purple-500 rounded-lg w-full max-w-md mx-4 shadow-2xl;
+
+}
+
+.tournament-match-status-cancelled {
+
+    @apply text-red-600;.tournament-modal-small {
+
+}    @apply max-w-sm;
+
+}
+
+.tournament-error {
+
+    @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded;.tournament-modal-header {
+
+}    @apply flex justify-between items-center p-6 border-b border-gray-700;
+
+}
+
+.tournament-error-title {
+
+    @apply text-xl font-bold mb-2;.tournament-modal-title {
+
+}    @apply text-xl font-bold text-white;
+
+}
+
+.tournament-no-participants {
+
+    @apply text-gray-500;.tournament-modal-close {
+
+}    @apply text-gray-400 hover:text-white text-3xl font-bold leading-none transition-colors;
+
+}
+
+.tournament-no-matches {
+
+    @apply text-gray-500;.tournament-modal-body {
+
+}    @apply p-6;
+
+}
+
+/* Modal Styles */
+
+.tournament-modal {.tournament-input-label {
+
+    @apply hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center;    @apply block text-white font-medium mb-2;
+
+}}
+
+
+
+.tournament-modal.active {.tournament-input {
+
+    @apply flex;    @apply w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all;
+
+}}
+
+
+
+.tournament-modal-content {.tournament-input-hint {
+
+    @apply bg-gray-900 border-2 border-purple-500 rounded-lg w-full max-w-md mx-4 shadow-2xl;    @apply text-sm text-gray-500 mt-2;
+
+}}
+
+
+
+.tournament-modal-small {.tournament-delete-message {
+
+    @apply max-w-sm;    @apply text-white text-center mb-2;
+
+}}
+
+
+
+.tournament-modal-header {.tournament-delete-warning {
+
+    @apply flex justify-between items-center p-6 border-b border-gray-700;    @apply text-red-400 text-center text-sm font-medium;
+
+}}
+
+
+
+.tournament-modal-title {.tournament-modal-footer {
+
+    @apply text-xl font-bold text-white;    @apply flex justify-end gap-3 p-6 border-t border-gray-700;
+
+}}
+
+
+
+.tournament-modal-close {.tournament-btn-cancel {
+
+    @apply text-gray-400 hover:text-white text-3xl font-bold leading-none transition-colors;    @apply px-5 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 font-medium transition-colors;
+
+}}
+
+
+
+.tournament-modal-body {.tournament-btn-confirm {
+
+    @apply p-6;    @apply px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors;
+
+}}
+
+
+
+.tournament-input-label {.tournament-btn-delete {
+
+    @apply block text-white font-medium mb-2;    @apply px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors;
+
+}}
+
+
+
+.tournament-input {#tournamentDetailPage {
+
+    @apply w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all;    overflow-y: auto;
+
+}    scrollbar-width: thin;
+
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+
+.tournament-input-hint {}
+
+    @apply text-sm text-gray-500 mt-2;
+
+}#tournamentDetailPage::-webkit-scrollbar {
+
+    width: 8px;
+
+.tournament-delete-message {}
+
+    @apply text-white text-center mb-2;
+
+}#tournamentDetailPage::-webkit-scrollbar-track {
+
+    background: transparent;
+
+.tournament-delete-warning {}
+
+    @apply text-red-400 text-center text-sm font-medium;
+
+}#tournamentDetailPage::-webkit-scrollbar-thumb {
+
+    background-color: rgba(156, 163, 175, 0.5);
+
+.tournament-modal-footer {    border-radius: 4px;
+
+    @apply flex justify-end gap-3 p-6 border-t border-gray-700;}
+
+}
+
+#tournamentDetailPage::-webkit-scrollbar-thumb:hover {
+
+.tournament-btn-cancel {    background-color: rgba(156, 163, 175, 0.7);
+
+    @apply px-5 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 font-medium transition-colors;}
+
+}
+
+
+
+.tournament-btn-confirm {.bracket-container {
+
+    @apply px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors;    overflow-x: auto;
+
+}    overflow-y: visible;
+
+    padding-bottom: 1rem;
+
+.tournament-btn-delete {}
+
+    @apply px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors;*/
+}
+
+#tournamentDetailPage {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+#tournamentDetailPage::-webkit-scrollbar {
+    width: 8px;
+}
+
+#tournamentDetailPage::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#tournamentDetailPage::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 4px;
+}
+
+#tournamentDetailPage::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7);
+}
+
+
+.bracket-container {
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 1rem;
+}
+*/
