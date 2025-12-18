@@ -1,18 +1,17 @@
 @layer components {
-    /* Settings Page */
     #settings h1 {
-        @apply text-4xl mb-6; /* Title size and margin */
+        @apply text-4xl mb-6;
     }
 
     .settings-row {
-        @apply flex items-center justify-between mb-6; /* Alignement et espacement */
-        @apply w-full max-w-xl; /* Largeur maximale */
+        @apply flex items-center justify-between mb-6; 
+        @apply w-full max-w-xl;
     }
 
     .settings-label {
-        @apply text-xl mr-4; /* Taille du texte et marge */
-        @apply flex-shrink-0; /* Empêche le rétrécissement */
-        @apply w-40 text-left; /* Largeur fixe et alignement */
+        @apply text-xl mr-4;
+        @apply flex-shrink-0;
+        @apply w-40 text-left;
     }
 
     #settings-form input {
@@ -35,15 +34,15 @@
     }
 
     #avatar-buttons {
-        @apply text-right w-64; /* Alignement à droite avec largeur */
+        @apply text-right w-64;
     }
 
     #settings-buttons {
-        @apply text-xl flex justify-center gap-16; /* Augmentation de l'espace entre les boutons */
+        @apply text-xl flex justify-center gap-16;
     }
 
     #settings-buttons button {
-        @apply hover:text-amber-500; /* Hover effect */
+        @apply hover:text-amber-500;
     }
 
     .settings-2fa-btn {

@@ -3,7 +3,7 @@ export function settingsHTML() {
     const email = window.currentUser?.email || '';
     const is2FAEnabled = window.currentUser?.twoFactorEnabled || false;
     
-    // Vérifier si l'utilisateur a un email temporaire (créé quand leur email Google était déjà pris)
+    // Check if the email ends with '@oauth.local' (indicating a temporary email)
     const hasTemporaryEmail = email.endsWith('@oauth.local');
 
     return /*html*/ `
