@@ -373,7 +373,7 @@ document.addEventListener('componentsReady', () =>
             return;
         }
 
-        const authWindow = window.open('https://localhost:8080/auth/google', '_blank', 'width=500,height=600');
+        window.open('https://localhost:8080/auth/google', '_blank', 'width=500,height=600');
         let messageReceived = false;
         let twoFARedirected = false;
 
@@ -387,19 +387,23 @@ document.addEventListener('componentsReady', () =>
                 return;
 
             messageReceived = true;
+            window.removeEventListener('message', messageHandler);
 
             if (event.data.type === 'oauth-2fa-required')
             {
                 const tempToken = event.data.tempToken;
                 setPendingOAuth2FAToken(tempToken);
 
-                window.removeEventListener('message', messageHandler);
-
                 if (!twoFARedirected)
                 {
                     twoFARedirected = true;
                     load('twoFactor');
                 }
+            }
+            else if (event.data.type === 'oauth-success')
+            {
+                // Authentication successful - reload to update state
+                setTimeout(() => window.location.reload(), 500);
             }
             else if (event.data.type === 'oauth-error')
             {
@@ -409,32 +413,10 @@ document.addEventListener('componentsReady', () =>
                     msg.textContent = event.data.error || 'Authentication error. Please try again.';
                     msg.style.color = 'red';
                 }
-                window.removeEventListener('message', messageHandler);
             }
         };
 
         window.addEventListener('message', messageHandler);
-
-        // Monitor the popup status to detect when it closes.
-        const checkInterval = setInterval(() =>
-        {
-            try
-            {
-                if (authWindow?.closed)
-                {
-                    clearInterval(checkInterval);
-                    window.removeEventListener('message', messageHandler);
-
-                    // If no specific message was received (like 2FA), assume success and reload to update state.
-                    if (!messageReceived)
-                        setTimeout(() => window.location.reload(), 500);
-                }
-            }
-            catch
-            {
-                // Ignore Cross-Origin Opener Policy blocks.
-            }
-        }, 500);
     });
 });
 
