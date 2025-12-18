@@ -1,34 +1,40 @@
-// change_avatar.ts
-
-// Extend window interface to include temporary avatar URL
-declare global {
-    interface Window {
+// Extends the global Window object to track temporary avatar state during the upload workflow
+// These properties store the pending avatar file, its temporary server URL, and whether a save action is required
+declare global
+{
+    interface Window
+    {
         tempAvatarUrl?: string;
         temporaryAvatarFile?: File;
         hasPendingAvatar?: boolean;
     }
 }
 
-// Fonction pour uploader temporairement l'avatar
-async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: string; message?: string; temp_avatar_url?: string }> {
-    // Check file size on client side (10MB limit)
+// Handles the temporary upload of an avatar image to the server
+// Validates file size and type before sending, then stores the temporary URL for later confirmation
+async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: string; message?: string; temp_avatar_url?: string }>
+{
     const maxSizeInMB = 10;
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-    if (file.size > maxSizeInBytes) {
+    
+    // Reject files exceeding the 10MB size limit before attempting upload
+    if (file.size > maxSizeInBytes)
         return { ok: false, error: `File size too large. Maximum allowed: ${maxSizeInMB}MB` };
-    }
 
-    // Check file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
+    
+    // Only accept standard web-compatible image formats
+    if (!allowedTypes.includes(file.type))
         return { ok: false, error: 'Invalid file type. Only JPEG, PNG and GIF are allowed.' };
-    }
 
     const formData = new FormData();
     formData.append('avatar', file);
 
-    try {
-        const response = await fetch('/auth/avatar/upload', {
+    try
+    {
+        // Send the file to the server endpoint responsible for temporary avatar storage
+        const response = await fetch('/auth/avatar/upload',
+        {
             method: 'POST',
             credentials: 'include',
             body: formData
@@ -36,33 +42,43 @@ async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: stri
 
         const data = await response.json();
 
-        if (!response.ok) {
-            // Better error handling based on status code
-            if (response.status === 413) {
+        if (!response.ok)
+        {
+            // Handle specific HTTP 413 payload too large error with clearer messaging
+            if (response.status === 413)
                 return { ok: false, error: 'File too large (maximum 10MB allowed)' };
-            }
+            
             return { ok: false, error: data.error || 'Avatar upload failed' };
         }
 
         return { ok: true, message: data.message || 'Avatar uploaded', temp_avatar_url: data.temp_avatar_url };
-    } catch (error) {
+    }
+    catch (error)
+    {
+        // Catches connection failures or other network-related issues
         return { ok: false, error: 'Network error. Please check your connection and try again.' };
     }
 }
 
-// Fonction pour confirmer et sauvegarder l'avatar
-export async function saveAvatar(): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }> {
+// Confirms and permanently saves the temporarily uploaded avatar to the user profile
+// This is called when the user clicks the Save button after selecting a new avatar
+export async function saveAvatar(): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }>
+{
     const tempAvatarUrl = window.tempAvatarUrl;
     
-    if (!tempAvatarUrl) {
+    // Ensure there is actually a pending avatar before attempting to save
+    if (!tempAvatarUrl)
         return { ok: false, error: 'No temporary avatar to save' };
-    }
 
-    try {
-        const response = await fetch('/auth/avatar/save', {
+    try
+    {
+        // Request the server to move the temporary avatar to permanent storage
+        const response = await fetch('/auth/avatar/save',
+        {
             method: 'POST',
             credentials: 'include',
-            headers: {
+            headers:
+            {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ temp_avatar_url: tempAvatarUrl })
@@ -70,134 +86,183 @@ export async function saveAvatar(): Promise<{ ok: boolean; error?: string; messa
 
         const data = await response.json();
 
-        if (!response.ok) {
+        if (!response.ok)
             return { ok: false, error: data.error || 'Avatar save failed' };
-        }
 
-        // Clear temporary avatar data on successful save
+        // Clean up the temporary state now that the avatar is permanently saved
         delete window.tempAvatarUrl;
         window.hasPendingAvatar = false;
 
         return { ok: true, message: data.message || 'Avatar saved successfully', avatar_url: data.avatar_url };
-    } catch (error) {
+    }
+    catch (error)
+    {
         return { ok: false, error: 'Network error' };
     }
 }
 
-// Fonction pour supprimer l'avatar et remettre l'avatar par défaut
-async function resetAvatar(): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }> {
-    try {
-        const response = await fetch('/auth/avatar/reset', {
+// Removes the current avatar and restores the default profile picture
+// This provides users with a way to revert to the system default avatar
+async function resetAvatar(): Promise<{ ok: boolean; error?: string; message?: string; avatar_url?: string }>
+{
+    try
+    {
+        // Request the server to delete the custom avatar and return to default
+        const response = await fetch('/auth/avatar/reset',
+        {
             method: 'POST',
             credentials: 'include'
         });
 
         const data = await response.json();
 
-        if (!response.ok) {
+        if (!response.ok)
             return { ok: false, error: data.error || 'Avatar reset failed' };
-        }
 
         return { ok: true, message: data.message || 'Avatar reset successfully', avatar_url: data.avatar_url };
-    } catch (error) {
+    }
+    catch (error)
+    {
         return { ok: false, error: 'Network error' };
     }
 }
 
-// Fonction pour initialiser les handlers du changement d’avatar
-export function initAvatarHandlers(): void {
+// Initializes all event handlers for avatar management interface
+// Sets up listeners for changing, deleting, and uploading avatar images
+export function initAvatarHandlers(): void
+{
     const changeBtn = document.getElementById('change-pp');
     const deleteBtn = document.getElementById('delete-pp');
     const fileInput = document.getElementById('avatarUpload') as HTMLInputElement;
 
-    if (!changeBtn || !fileInput) return;
+    // Abort initialization if required DOM elements are missing
+    if (!changeBtn || !fileInput)
+        return;
 
-    // Quand on clique sur [Change], on ouvre le file picker
-    if (!(changeBtn as any)._listenerSet) {
+    // Prevent duplicate event listeners by checking if already initialized
+    if (!(changeBtn as any)._listenerSet)
+    {
         (changeBtn as any)._listenerSet = true;
-        changeBtn.addEventListener('click', () => {
+        
+        // Clicking the Change button triggers the hidden file input dialog
+        changeBtn.addEventListener('click', () =>
+        {
             fileInput.click();
         });
     }
 
-    // Quand un fichier est choisi
-    if (!(fileInput as any)._listenerSet) {
+    // Prevent duplicate event listeners by checking if already initialized
+    if (!(fileInput as any)._listenerSet)
+    {
         (fileInput as any)._listenerSet = true;
-        fileInput.addEventListener('change', async () => {
+        
+        // Handles the file selection and upload process when user chooses an avatar
+        fileInput.addEventListener('change', async () =>
+        {
             const file = fileInput.files?.[0];
-            if (!file) return; // sécurité
+            
+            // Exit if no file was actually selected
+            if (!file)
+                return;
 
+            // Store the selected file temporarily in window state
             window.temporaryAvatarFile = file;
 
-            // Afficher le message de chargement
             const messageEl = document.getElementById('settings-message');
             const saveButton = document.querySelector('#settings-buttons button:first-child') as HTMLButtonElement;
             
-            if (messageEl) {
+            // Display upload progress feedback to the user
+            if (messageEl)
+            {
                 messageEl.style.display = 'block';
-                messageEl.style.color = '#fbbf24'; // couleur ambre pour le chargement
+                messageEl.style.color = '#fbbf24';
                 messageEl.textContent = 'Uploading avatar... Please wait';
             }
             
-            // Désactiver le bouton Save pendant l'upload
-            if (saveButton) {
+            // Disable the Save button during upload to prevent premature save attempts
+            if (saveButton)
+            {
                 saveButton.disabled = true;
                 saveButton.style.opacity = '0.5';
                 saveButton.style.cursor = 'not-allowed';
             }
 
-            // Upload temporairement au serveur
+            // Perform the actual upload operation to the server
             const result = await uploadTempAvatar(file);
 
-            // Réactiver le bouton Save
-            if (saveButton) {
+            // Re-enable the Save button once upload completes
+            if (saveButton)
+            {
                 saveButton.disabled = false;
                 saveButton.style.opacity = '1';
                 saveButton.style.cursor = 'pointer';
             }
 
-            if (messageEl) {
+            // Update the user interface with success or error status
+            if (messageEl)
+            {
                 messageEl.style.display = 'block';
-                if (result.ok) {
+                
+                if (result.ok)
+                {
                     messageEl.style.color = '#22c55e';
                     messageEl.textContent = 'Avatar change pending - click [SAVE] to apply';
-                    // Store temporary avatar URL for later confirmation
-                    if (result.temp_avatar_url) {
+                    
+                    // Store the temporary server URL for later confirmation via saveAvatar
+                    if (result.temp_avatar_url)
+                    {
                         window.tempAvatarUrl = result.temp_avatar_url;
                         window.hasPendingAvatar = true;
                     }
-                } else {
+                }
+                else
+                {
                     messageEl.style.color = '#ef4444';
                     messageEl.textContent = result.error!;
                     window.hasPendingAvatar = false;
                 }
             }
 
-            // Reset input pour pouvoir reuploader la même image plus tard si besoin
+            // Clear the input to allow re-uploading the same file if needed
             fileInput.value = '';
         });
     }
 
-    if (deleteBtn) {
-        if (!(deleteBtn as any)._listenerSet) {
+    // Set up the delete button to trigger avatar reset to default
+    if (deleteBtn)
+    {
+        // Prevent duplicate event listeners by checking if already initialized
+        if (!(deleteBtn as any)._listenerSet)
+        {
             (deleteBtn as any)._listenerSet = true;
-            deleteBtn.addEventListener('click', async () => {
+            
+            // Clicking delete removes the custom avatar and restores default
+            deleteBtn.addEventListener('click', async () =>
+            {
                 const result = await resetAvatar();
                 
                 const messageEl = document.getElementById('settings-message');
-                if (messageEl) {
+                
+                // Provide visual feedback on whether the reset succeeded or failed
+                if (messageEl)
+                {
                     messageEl.style.display = 'block';
-                    if (result.ok) {
+                    
+                    if (result.ok)
+                    {
                         messageEl.style.color = '#22c55e';
                         messageEl.textContent = 'Avatar reset to default';
-                        if (result.avatar_url && window.currentUser) {
+                        
+                        // Update the current user object with the new default avatar URL
+                        if (result.avatar_url && window.currentUser)
                             window.currentUser.avatar_url = result.avatar_url;
-                        }
-                        // Force refresh des composants qui utilisent l'avatar
-                        if (window.refreshUserStats) {
+                        
+                        // Trigger a refresh of UI components that display the avatar
+                        if (window.refreshUserStats)
                             window.refreshUserStats();
-                        }
-                    } else {
+                    }
+                    else
+                    {
                         messageEl.style.color = '#ef4444';
                         messageEl.textContent = result.error!;
                     }

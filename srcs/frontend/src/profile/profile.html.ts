@@ -1,39 +1,53 @@
 import { getSafeAvatarUrl } from '../services/avatarProxy.js';
 
-export async function fetchUserMatches(userId: string) {
-    try {
+// Retrieves the match history for a specific user from the server
+// Returns an array of match objects or an empty array if the request fails
+export async function fetchUserMatches(userId: string)
+{
+    try
+    {
         const response = await fetch(`/matches/history/${userId}?limit=50`);
-        if (response.ok) {
+        
+        if (response.ok)
+        {
             const data = await response.json();
             return data.matches || [];
         }
-    } catch (error) {
     }
+    catch (error)
+    {
+    }
+    
     return [];
 }
 
-// Stocker les matchs globalement pour pouvoir y accéder lors du clic
+// Stores match data globally to enable access when a match item is clicked
+// This avoids redundant API calls when displaying match details
 let cachedMatches: any[] = [];
 
-export function getCachedMatches() {
+export function getCachedMatches()
+{
     return cachedMatches;
 }
 
-export async function profileHTML(targetUser?: any) {
-    // Si un utilisateur cible est spécifié, l'afficher, sinon afficher l'utilisateur actuel
+// Generates the main profile page HTML showing user stats and match history
+// If targetUser is provided, displays that user's profile instead of the current user
+export async function profileHTML(targetUser?: any)
+{
     const user = targetUser || window.currentUser;
     const username = user?.username || 'user';
     const wins = user?.wins || 0;
     const losses = user?.losses || 0;
     const avatarUrl = getSafeAvatarUrl(user?.avatar_url);
     
-    // Récupérer les vrais matchs de l'utilisateur
+    // Fetch the actual match data from the server for this user
     const matches = user?.id ? await fetchUserMatches(user.id) : [];
-    cachedMatches = matches; // Sauvegarder pour l'accès lors du clic
+    cachedMatches = matches;
     
-    // Générer le HTML des matchs avec data-attributes pour le clic
+    // Build the match history list with clickable items containing match data
     const matchesHTML = matches.length > 0 
-        ? matches.map((match: any, index: number) => {
+        ? matches.map((match: any, index: number) =>
+        {
             const isWinner = match.winner_id === user?.id;
             const opponent = isWinner ? match.loser_username : match.winner_username;
             const userScore = isWinner ? match.winner_score : match.loser_score;
@@ -76,11 +90,16 @@ export async function profileHTML(targetUser?: any) {
     `;
 }
 
-export function profileDashboardHTML(targetUser?: any) {
+// Generates the dashboard section HTML with a canvas element for statistics chart
+// Displays the calculated win rate percentage based on total games played
+export function profileDashboardHTML(targetUser?: any)
+{
     const user = targetUser || window.currentUser;
     const wins = user?.wins || 0;
     const losses = user?.losses || 0;
     const totalGames = wins + losses;
+    
+    // Calculate win rate as a percentage, avoiding division by zero
     const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
     
     return /*html*/ `
@@ -96,7 +115,10 @@ export function profileDashboardHTML(targetUser?: any) {
     `;
 }
 
-export function profileWinRateHistoryHTML() {
+// Generates HTML for the win rate evolution chart section
+// Provides a canvas element where the win rate history graph will be rendered
+export function profileWinRateHistoryHTML()
+{
     return /*html*/ `
     <div class="winrate-history-container">
         <h2 class="winrate-history-title">Win Rate Evolution</h2>

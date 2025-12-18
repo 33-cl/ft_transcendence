@@ -1,9 +1,4 @@
 @layer components {
-    /*
-        /rules uses an overlay-style layout.
-        The base `.page` rule applies a transform which would otherwise constrain
-        `position: fixed` descendants. Override specifically for #rules.
-    */
     #rules.page {
         @apply fixed inset-0 p-4 flex flex-col items-center justify-center min-h-screen gap-4;
         transform: none !important;

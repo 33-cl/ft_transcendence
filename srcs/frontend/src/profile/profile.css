@@ -48,7 +48,6 @@
         @apply w-64 h-64 rounded-md relative;
     }
     
-    /* GIFs rectangulaires : utiliser object-cover pour éviter la déformation */
     .avatar-container img[src*=".gif"] {
         @apply object-cover;
     }

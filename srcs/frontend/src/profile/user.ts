@@ -1,36 +1,44 @@
-export function initAvatarChange(): void {
+// Initializes the avatar change functionality by setting up event listeners
+// Handles opening the file picker and storing the selected file temporarily
+export function initAvatarChange(): void
+{
     const changeButton = document.getElementById('change-pp');
     const fileInput = document.getElementById('avatarUpload') as HTMLInputElement | null;
     
-    if (!changeButton || !fileInput) {
+    if (!changeButton || !fileInput)
         return;
-    }
     
-    // Ouvrir le sélecteur de fichiers au clic sur [Change]
-    if (!(changeButton as any)._listenerSet) {
+    // Prevent duplicate event listeners by checking if already initialized
+    if (!(changeButton as any)._listenerSet)
+    {
         (changeButton as any)._listenerSet = true;
-        changeButton.addEventListener('click', (): void => {
+        
+        // Trigger the hidden file input when the Change button is clicked
+        changeButton.addEventListener('click', (): void =>
+        {
             fileInput.click();
         });
     }
     
-    // Écouter le changement de fichier avec vérification de nullité
-    if (!(fileInput as any)._listenerSet) {
+    // Prevent duplicate event listeners by checking if already initialized
+    if (!(fileInput as any)._listenerSet)
+    {
         (fileInput as any)._listenerSet = true;
-        fileInput.addEventListener('change', (event: Event): void => {
+        
+        // Handle the file selection event and store the chosen file
+        fileInput.addEventListener('change', (event: Event): void =>
+        {
             const target = event.target as HTMLInputElement;
             
-            // Vérifications de sécurité
-            if (!target || !target.files || target.files.length === 0) {
+            // Ensure the event target exists and contains valid file data
+            if (!target || !target.files || target.files.length === 0)
                 return;
-            }
             
             const file = target.files[0];
-            if (file) {
-                
-                // Stocker temporairement le fichier pour traitement ultérieur
+            
+            // Store the selected file in window state for later processing
+            if (file)
                 window.temporaryAvatarFile = file;
-            }
         });
     }
 }

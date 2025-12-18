@@ -8,11 +8,11 @@ export interface MatchData {
     loser_score: number;
     match_type: string;
     created_at: string;
-    duration?: number; // en secondes si disponible
+    duration?: number;
 }
 
 export function gameStatsHTML(match: MatchData, _currentUserId: number): string {
-    // Protection contre les données manquantes
+    // Protection against missing match data
     if (!match) {
         return /*html*/ `
         <div class="gamestats-container">
@@ -24,7 +24,7 @@ export function gameStatsHTML(match: MatchData, _currentUserId: number): string 
         `;
     }
     
-    // Formater la date
+    // Format the date
     const matchDate = new Date(match.created_at);
     const formattedDate = matchDate.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -34,7 +34,7 @@ export function gameStatsHTML(match: MatchData, _currentUserId: number): string 
         minute: '2-digit'
     });
     
-    // Calculer les statistiques
+    // Calculate statistics
     const totalPoints = match.winner_score + match.loser_score;
     const winnerPointsPercentage = totalPoints > 0 ? ((match.winner_score / totalPoints) * 100).toFixed(1) : '0';
     const loserPointsPercentage = totalPoints > 0 ? ((match.loser_score / totalPoints) * 100).toFixed(1) : '0';

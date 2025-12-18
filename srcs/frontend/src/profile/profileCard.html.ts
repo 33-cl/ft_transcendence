@@ -4,31 +4,9 @@ export async function profileCardHTML() {
     const username = window.currentUser?.username || 'a';
     const avatarUrl = getSafeAvatarUrl(window.currentUser?.avatar_url);
     
-    // Check if user is first in leaderboard
-    let crown = '';
-    try {
-        const response = await fetch('/users/leaderboard', {
-            method: 'GET',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            const leaderboard = data.leaderboard || [];
-            
-            // If current user is first in leaderboard
-            if (leaderboard.length > 0 && leaderboard[0].username === username) {
-                crown = '<img src="./img/gold-crown.png" alt="Gold Crown" class="crown" />';
-            }
-        }
-    } catch (error) {
-        console.warn('Failed to fetch leaderboard for crown check:', error);
-    }
-    
     return /*html*/ `
         <div id="profileCard-component">
             <div class="profile-pic" style="display: inline-block;">
-                <!-- ${crown} -->
                 <img id="profileCard" src="${avatarUrl}" alt="Profile Icon" onerror="this.onerror=null;this.src='/img/planet.gif';" style="cursor: pointer;" />
             </div>
             <div class="profileCard-info">

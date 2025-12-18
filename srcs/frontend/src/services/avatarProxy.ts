@@ -1,50 +1,41 @@
-/**
- * Helper pour obtenir l'URL d'avatar correcte
- * Utilise le proxy backend pour les avatars Google afin d'éviter le rate-limiting
- */
-
-/**
- * Convertit une URL d'avatar Google en URL proxy locale
- * @param avatarUrl L'URL de l'avatar (peut être Google ou locale)
- * @returns L'URL à utiliser (proxy pour Google, originale sinon)
- */
-export function getProxiedAvatarUrl(avatarUrl: string | null | undefined): string {
+// Converts Google avatar URLs to use the local proxy endpoint to avoid rate limiting
+// Returns the original URL for non-Google avatars or the default if no URL is provided
+export function getProxiedAvatarUrl(avatarUrl: string | null | undefined): string
+{
     const defaultAvatar = '/img/planet.gif';
     
-    if (!avatarUrl) {
+    if (!avatarUrl)
         return defaultAvatar;
-    }
     
-    // Si c'est une URL Google, utiliser le proxy
-    if (avatarUrl.includes('googleusercontent.com')) {
+    // Route Google-hosted avatars through the backend proxy to prevent rate limiting issues
+    if (avatarUrl.includes('googleusercontent.com'))
         return `/avatar-proxy?url=${encodeURIComponent(avatarUrl)}`;
-    }
     
-    // Sinon, retourner l'URL originale
     return avatarUrl;
 }
 
-/**
- * Sanitize et proxy une URL d'avatar
- * Combine sanitization et proxy en une seule fonction
- */
-export function getSafeAvatarUrl(avatarUrl: string | null | undefined): string {
+// Sanitizes and proxies an avatar URL to ensure it is safe and properly routed
+// Validates the URL format and protocol before returning it for use
+export function getSafeAvatarUrl(avatarUrl: string | null | undefined): string
+{
     const url = getProxiedAvatarUrl(avatarUrl);
     
-    // Validation basique de l'URL
-    if (url.startsWith('./') || url.startsWith('/') || url.startsWith('data:')) {
+    // Allow relative paths, absolute paths, and data URIs without further validation
+    if (url.startsWith('./') || url.startsWith('/') || url.startsWith('data:'))
         return url;
-    }
     
-    // Pour les URLs externes non-Google, vérifier le protocole
-    try {
+    // Verify that external URLs use a safe protocol
+    try
+    {
         const parsed = new URL(url);
-        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:')
             return url;
-        }
-    } catch {
-        // URL invalide, retourner l'avatar par défaut
-    return '/img/planet.gif';
+    }
+    catch
+    {
+        // Return the default avatar if URL parsing fails
+        return '/img/planet.gif';
     }
     
     return '/img/planet.gif';

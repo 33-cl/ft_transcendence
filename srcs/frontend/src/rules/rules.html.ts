@@ -65,8 +65,8 @@ export function rulesHTML() {
     `;
 
     const rulesCommon = /*html*/`
-        <p class="rules-line">First to <span class="rules-key">3</span> points wins.</p>
-        <p class="rules-line">A point is scored when <span class="rules-key">half of the ball</span> crosses the border.</p>
+        <p class="rules-line">First to 3 points wins.</p>
+        <p class="rules-line">A point is scored when half of the ball crosses the border.</p>
         <p class="rules-line">If the ball exits your side, your opponent scores.</p>
     `;
 

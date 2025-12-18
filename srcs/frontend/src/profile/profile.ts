@@ -1,38 +1,43 @@
-// Chart.js est chargé via CDN dans index.html
 declare const Chart: any;
 
-export function initializeStatsChart(wins: number, losses: number) {
+// Creates and renders a pie chart displaying the wins versus losses statistics
+// Destroys any existing chart instance before creating a new one to prevent memory leaks
+export function initializeStatsChart(wins: number, losses: number)
+{
     const canvas = document.getElementById('stats-chart') as HTMLCanvasElement;
-    if (!canvas) {
+    
+    if (!canvas)
         return;
-    }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
+    
+    if (!ctx)
         return;
-    }
 
-    // Détruire l'ancien graphique s'il existe
-    if (Chart && Chart.getChart) {
+    // Remove the previous chart instance if it exists to avoid conflicts
+    if (Chart && Chart.getChart)
+    {
         const existingChart = Chart.getChart(canvas);
-        if (existingChart) {
+        
+        if (existingChart)
             existingChart.destroy();
-        }
     }
 
-    if (!Chart) {
+    if (!Chart)
         return;
-    }
 
-    new Chart(ctx, {
+    // Configure and render the pie chart with wins and losses data
+    new Chart(ctx,
+    {
         type: 'pie',
-        data: {
+        data:
+        {
             labels: ['Wins', 'Losses'],
             datasets: [{
                 data: [wins, losses],
                 backgroundColor: [
-                    'rgba(255, 255, 255, 0.8)',  // green-500
-                    'rgba(0, 0, 0, 0.8)',  // red-500
+                    'rgba(255, 255, 255, 0.8)',
+                    'rgba(0, 0, 0, 0.8)',
                 ],
                 borderColor: [
                     'rgba(255, 255, 255, 1)',
@@ -41,14 +46,18 @@ export function initializeStatsChart(wins: number, losses: number) {
                 borderWidth: 2
             }]
         },
-        options: {
+        options:
+        {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-                legend: {
+            plugins:
+            {
+                legend:
+                {
                     display: false
                 },
-                tooltip: {
+                tooltip:
+                {
                     enabled: true,
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
                     titleColor: '#fff',
@@ -59,102 +68,121 @@ export function initializeStatsChart(wins: number, losses: number) {
             }
         }
     });
-    
 }
 
-export async function initializeWinRateHistoryChart(userId: string) {
+// Fetches match history and generates a line chart showing win rate progression over time
+// Uses dynamic grouping to keep the chart readable when there are many matches
+export async function initializeWinRateHistoryChart(userId: string)
+{
     const canvas = document.getElementById('winrate-history-chart') as HTMLCanvasElement;
-    if (!canvas) {
+    
+    if (!canvas)
         return;
-    }
 
-    // Récupérer tous les matchs de l'utilisateur
-    try {
+    try
+    {
+        // Retrieve all match records for this user from the server
         const response = await fetch(`/matches/history/${userId}`);
-        if (!response.ok) {
+        
+        if (!response.ok)
             return;
-        }
         
         const data = await response.json();
         const matches = data.matches || [];
         
-        
-        // Trier les matchs par date (du plus ancien au plus récent)
+        // Order matches chronologically from oldest to newest for accurate progression
         matches.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         
-        // Calculer le win rate progressif avec regroupement dynamique
+        // Process matches to calculate win rate at each point in time
         const winRateData = calculateProgressiveWinRate(matches, userId);
         
         const ctx = canvas.getContext('2d');
-        if (!ctx) {
+        
+        if (!ctx)
             return;
-        }
 
-        // Détruire l'ancien graphique s'il existe
-        if (Chart && Chart.getChart) {
+        // Remove the previous chart instance if it exists
+        if (Chart && Chart.getChart)
+        {
             const existingChart = Chart.getChart(canvas);
-            if (existingChart) {
+            
+            if (existingChart)
                 existingChart.destroy();
-            }
         }
 
-        if (!Chart) {
+        if (!Chart)
             return;
-        }
 
-        new Chart(ctx, {
+        // Configure and render the line chart showing win rate evolution
+        new Chart(ctx,
+        {
             type: 'line',
-            data: {
+            data:
+            {
                 labels: winRateData.labels,
                 datasets: [{
                     label: 'Win Rate %',
                     data: winRateData.data,
-                    borderColor: 'rgba(251, 191, 36, 1)',  // amber-500
+                    borderColor: 'rgba(251, 191, 36, 1)',
                     backgroundColor: 'rgba(251, 191, 36, 0.1)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4
                 }]
             },
-            options: {
+            options:
+            {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    y: {
+                scales:
+                {
+                    y:
+                    {
                         beginAtZero: true,
                         max: 100,
-                        ticks: {
+                        ticks:
+                        {
                             color: '#fff',
-                            callback: function(value: any) {
+                            callback: function(value: any)
+                            {
                                 return value + '%';
                             }
                         },
-                        grid: {
+                        grid:
+                        {
                             color: 'rgba(255, 255, 255, 0.1)'
                         }
                     },
-                    x: {
-                        ticks: {
+                    x:
+                    {
+                        ticks:
+                        {
                             color: '#fff'
                         },
-                        grid: {
+                        grid:
+                        {
                             color: 'rgba(255, 255, 255, 0.1)'
                         }
                     }
                 },
-                plugins: {
-                    legend: {
+                plugins:
+                {
+                    legend:
+                    {
                         display: false
                     },
-                    tooltip: {
+                    tooltip:
+                    {
                         enabled: true,
                         backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleColor: '#fff',
                         bodyColor: '#fff',
                         borderColor: '#fbbf24',
                         borderWidth: 1,
-                        callbacks: {
-                            label: function(context: any) {
+                        callbacks:
+                        {
+                            label: function(context: any)
+                            {
                                 return 'Win Rate: ' + context.parsed.y.toFixed(1) + '%';
                             }
                         }
@@ -162,33 +190,43 @@ export async function initializeWinRateHistoryChart(userId: string) {
                 }
             }
         });
-        
-    } catch (error) {
+    }
+    catch (error)
+    {
     }
 }
 
-function calculateProgressiveWinRate(matches: any[], userId: string) {
+// Processes match history to calculate win rate progression with adaptive grouping
+// Groups matches together when the total count is high to keep the chart readable
+function calculateProgressiveWinRate(matches: any[], userId: string)
+{
     const labels: string[] = [];
     const data: number[] = [];
     
     let wins = 0;
     let totalGames = 0;
-    let groupSize = 1;  // Commence avec 1 game par point
+    let groupSize = 1;
     let gamesInCurrentGroup = 0;
     let winsInCurrentGroup = 0;
-    const maxPointsOnChart = 50;  // Nombre maximum de points sur le graphique
+    const maxPointsOnChart = 50;
     
-    matches.forEach((match: any) => {
+    // Iterate through each match to build the progressive win rate data
+    matches.forEach((match: any) =>
+    {
         const isWin = match.winner_id === userId;
         totalGames++;
-        if (isWin) {
+        
+        if (isWin)
+        {
             wins++;
             winsInCurrentGroup++;
         }
+        
         gamesInCurrentGroup++;
         
-        // Quand on atteint la taille du groupe, on ajoute un point
-        if (gamesInCurrentGroup >= groupSize) {
+        // Add a data point when the current group reaches the target size
+        if (gamesInCurrentGroup >= groupSize)
+        {
             const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
             labels.push(`${totalGames}`);
             data.push(winRate);
@@ -196,15 +234,15 @@ function calculateProgressiveWinRate(matches: any[], userId: string) {
             gamesInCurrentGroup = 0;
             winsInCurrentGroup = 0;
             
-            // Doubler la taille du groupe quand on a trop de points
-            if (data.length >= maxPointsOnChart && groupSize < 64) {
+            // Double the group size when approaching the maximum point limit to maintain readability
+            if (data.length >= maxPointsOnChart && groupSize < 64)
                 groupSize *= 2;
-            }
         }
     });
     
-    // Ajouter le dernier point s'il reste des games
-    if (gamesInCurrentGroup > 0) {
+    // Add the final data point if there are remaining ungrouped matches
+    if (gamesInCurrentGroup > 0)
+    {
         const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
         labels.push(`${totalGames}`);
         data.push(winRate);

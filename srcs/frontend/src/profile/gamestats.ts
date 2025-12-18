@@ -1,12 +1,9 @@
-// gamestats.ts - Logique pour afficher les statistiques d'un match
 import { MatchData } from './gamestats.html.js';
 
-// Chart.js est chargé via CDN dans index.html
+// Chart.js is loaded via CDN in index.html
 declare const Chart: any;
 
-/**
- * Initialise le graphique de distribution des points (pie chart)
- */
+// Init the points distribution chart
 export function initializePointsDistributionChart(match: MatchData): void {
     const canvas = document.getElementById('points-distribution-chart') as HTMLCanvasElement;
     if (!canvas) {
@@ -18,7 +15,7 @@ export function initializePointsDistributionChart(match: MatchData): void {
         return;
     }
 
-    // Détruire l'ancien graphique s'il existe
+    // Destroy the old chart if it exists
     if (Chart && Chart.getChart) {
         const existingChart = Chart.getChart(canvas);
         if (existingChart) {
@@ -37,8 +34,8 @@ export function initializePointsDistributionChart(match: MatchData): void {
             datasets: [{
                 data: [match.winner_score, match.loser_score],
                 backgroundColor: [
-                    'rgba(34, 197, 94, 0.8)',  // green pour le gagnant
-                    'rgba(239, 68, 68, 0.8)',  // red pour le perdant
+                    'rgba(34, 197, 94, 0.8)', 
+                    'rgba(239, 68, 68, 0.8)',
                 ],
                 borderColor: [
                     'rgba(34, 197, 94, 1)',
@@ -81,9 +78,7 @@ export function initializePointsDistributionChart(match: MatchData): void {
     });
 }
 
-/**
- * Initialise le graphique de progression du score (bar chart)
- */
+// Init the score progression chart
 export function initializeScoreProgressionChart(match: MatchData): void {
     const canvas = document.getElementById('score-progression-chart') as HTMLCanvasElement;
     if (!canvas) {
@@ -95,7 +90,7 @@ export function initializeScoreProgressionChart(match: MatchData): void {
         return;
     }
 
-    // Détruire l'ancien graphique s'il existe
+    // Destroy the old chart if it exists
     if (Chart && Chart.getChart) {
         const existingChart = Chart.getChart(canvas);
         if (existingChart) {
@@ -167,9 +162,7 @@ export function initializeScoreProgressionChart(match: MatchData): void {
     });
 }
 
-/**
- * Initialise tous les graphiques de la page de statistiques
- */
+// Itialize both charts
 export function initializeGameStatsCharts(match: MatchData): void {
     if (!match) {
         console.warn('No match data provided for charts');
