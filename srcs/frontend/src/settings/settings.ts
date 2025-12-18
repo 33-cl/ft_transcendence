@@ -708,6 +708,17 @@ async function saveChangedFields(): Promise<void>
             
             if ((window as any).refreshUserStats)
                 await (window as any).refreshUserStats();
+
+            // After a successful save, navigate back to the main menu
+            try
+            {
+                const module = await import('../navigation/utils.js');
+                await module.load('mainMenu');
+            }
+            catch (error)
+            {
+                console.warn('Failed to navigate to main menu after saving settings', error);
+            }
         }
     }
     catch (error)
