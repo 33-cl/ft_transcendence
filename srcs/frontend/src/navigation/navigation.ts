@@ -157,9 +157,7 @@ export function getPageFromURL(): string
     const path = window.location.pathname;
     const cleanPath = (path.startsWith('/') ? path.substring(1) : path) || 'signIn';
 
-    // Return the full path for tournament details to allow the router to handle the specific ID.
-    if (cleanPath.startsWith('tournaments/') && cleanPath.split('/').length === 2)
-        return cleanPath;
+    // Tournament detail routes removed — do not special-case them here.
 
     // Handle game statistics URLs, normalizing case and format (e.g., /gamestats/123 -> /gameStats/123).
     const lowered = cleanPath.toLowerCase();
@@ -181,9 +179,9 @@ export function getPageFromURL(): string
     const candidate = cleanPath.split('/')[0] || 'signIn';
     const knownPages = new Set([
         'signIn', 'signUp', 'landing', 'mainMenu', 'leaderboard', 'friendList', 'addFriends', 'matchmaking',
-        'game', 'game4', 'spectate', 'spectate4', 'twoFactor', 'gameFinished', 'tournamentSemifinalFinished',
-        'tournamentFinalFinished', 'spectatorGameFinished', 'profileDashboard', 'profileWinRateHistory',
-        'contextMenu', 'settings', 'gameConfig', 'aiConfig', 'tournaments', 'rules', 'goToMain'
+    'game', 'game4', 'spectate', 'spectate4', 'twoFactor', 'gameFinished', 'tournamentSemifinalFinished',
+    'tournamentFinalFinished', 'spectatorGameFinished', 'profileDashboard', 'profileWinRateHistory',
+        'contextMenu', 'settings', 'gameConfig', 'aiConfig', 'rules', 'goToMain'
     ]);
 
     if (knownPages.has(candidate))

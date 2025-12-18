@@ -24,5 +24,4 @@ export { aiConfigHTML } from '../config/aiConfig.html.js';
 export { spectatorGameFinishedHTML } from '../game/spectatorGameFinished.html.js';
 export { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.js';
 export { notFoundHTML } from '../navigation/notFound.html.js';
-export { tournamentsHTML } from '../tournament/tournaments.html.js';
 export { rulesHTML } from '../rules/rules.html.js';

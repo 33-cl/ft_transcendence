@@ -100,7 +100,7 @@ export const toast = {
     error: (message: string, action?: ToastOptions['action']) => showToast({ message, type: 'error', action }),
     
     // Toast spécial pour les matchs de tournoi
-    matchReady: (tournamentId: string, _matchId: number, roundName: string) => {
+    matchReady: (_tournamentId: string, _matchId: number, roundName: string) => {
         showToast({
             message: `🎮 Your ${roundName} match is ready!`,
             type: 'success',
@@ -108,9 +108,9 @@ export const toast = {
             action: {
                 label: 'Go to Match',
                 onClick: () => {
-                    // Naviguer vers la page du tournoi
+                    // Tournament pages removed — go to main menu instead
                     import('../navigation/utils.js').then(module => {
-                        module.load(`tournaments/${tournamentId}`);
+                        module.load('mainMenu');
                     });
                 }
             }

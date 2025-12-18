@@ -168,19 +168,13 @@ function initializeComponents(): void
                 await load('mainMenu');
             }
             
-            // Return to tournament lobby after completing a match
-            if (target.id === 'backToTournamentBtn')
-            {
-                const tournamentId = window.currentTournamentId;
-                window.currentMatchId = null;
-                
-                cleanupGameState();
-                
-                if (tournamentId)
-                    await load(`tournaments/${tournamentId}`);
-                else
-                    await load('tournaments');
-            }
+                   // Back to tournament (feature removed) — go back to main menu
+                   if (target.id === 'backToTournamentBtn')
+                   {
+                       window.currentMatchId = null;
+                       cleanupGameState();
+                       await load('mainMenu');
+                   }
             
             if (target.id === 'profileCard')
                 await load('profile');

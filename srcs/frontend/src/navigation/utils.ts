@@ -1,4 +1,4 @@
-import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML, friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, tournamentsHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML, notFoundHTML } from '../components/index.html.js';
+import { landingHTML, signInHTML, signUpHTML, twoFactorHTML, leaderboardHTML, friendListHTML, addFriendsHTML, initLoadingIcons, mainMenuHTML, goToMainHTML, profileCardHTML, gameHTML, game4HTML, spectateHTML, spectate4HTML, matchmakingHTML, gameFinishedHTML, tournamentSemifinalFinishedHTML, tournamentFinalFinishedHTML, profileHTML, profileDashboardHTML, profileWinRateHistoryHTML, contextMenuHTML, settingsHTML, gameConfigHTML, aiConfigHTML, spectatorGameFinishedHTML, rulesHTML, initializeFriendListEventListeners, initializeAddFriendsButton, startFriendListRealtimeUpdates, stopFriendListRealtimeUpdates, gameStatsHTML, notFoundHTML } from '../components/index.html.js';
 import { animateDots, switchTips } from '../game/matchmaking.html.js';
 import { initSessionBroadcast, isSessionBlocked } from './sessionBroadcast.js';
 import { guardFunction } from './securityGuard.js';
@@ -34,7 +34,7 @@ const components =
     settings: { id: 'settings', html: settingsHTML },
     gameConfig: { id: 'gameConfig', html: gameConfigHTML },
     aiConfig: { id: 'aiConfig', html: aiConfigHTML },
-    tournaments: { id: 'tournaments', html: tournamentsHTML },
+    // Tournaments page removed — no mapping here
     rules: { id: 'rules', html: rulesHTML },
     notFound: { id: 'notFound', html: notFoundHTML },
 };
@@ -444,17 +444,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName === 'tournaments')
     {
-        console.log('Showing tournaments component...');
-        await show('tournaments');
-        await show('goToMain');
-
-        setTimeout(async () =>
-        {
-            if (myLoadId !== currentLoadId) return;
-            console.log('Loading tournaments functionality...');
-            const tournamentsPage = await import('../tournament/tournaments.js');
-            await tournamentsPage.initTournaments();
-        }, 100);
+        // Tournaments listing page has been removed; redirect to main menu
+        console.warn('Tournaments page removed; redirecting to main menu.');
+        await load('mainMenu');
     }
     else if (pageName === 'gameFinished')
     {
@@ -474,16 +466,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     }
     else if (pageName.startsWith('tournaments/'))
     {
-        const tournamentId = pageName.split('/')[1];
-        if (tournamentId)
-        {
-            const tournamentDetail = await import('../tournament/tournamentDetail.js');
-            await tournamentDetail.default(tournamentId);
-        }
-        else
-        {
-            console.warn('Tournament ID missing in URL');
-        }
+        // Tournament detail pages removed — redirect to main menu
+        console.warn('Tournament detail page removed; redirecting to main menu.');
+        await load('mainMenu');
     }
     else
     {
