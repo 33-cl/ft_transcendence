@@ -126,6 +126,23 @@ export default async function friendsRoutes(fastify: FastifyInstance)
       if (existingRequest)
         return reply.status(400).send({ error: 'Friend request already sent' });
 
+      // RACE CONDITION FIX: Vérifier si l'autre personne nous a déjà envoyé une demande
+      // Si oui, on accepte automatiquement l'amitié (les deux veulent être amis)
+      const reverseRequest = db.prepare('SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?').get(friendId, currentUserId, 'pending') as { id: number } | undefined;
+      if (reverseRequest) {
+        // Supprimer la demande inverse
+        db.prepare('DELETE FROM friend_requests WHERE id = ?').run(reverseRequest.id);
+        
+        // Créer l'amitié bidirectionnelle
+        db.prepare('INSERT OR IGNORE INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendId);
+        db.prepare('INSERT OR IGNORE INTO friendships (user_id, friend_id) VALUES (?, ?)').run(friendId, currentUserId);
+        
+        // Notifier les deux utilisateurs que l'amitié est créée
+        notifyFriendAdded(getGlobalIo(), currentUserId, friendId, fastify);
+        
+        return { success: true, message: 'Friend request auto-accepted (mutual request)' };
+      }
+
       // Envoyer la demande d'ami
       db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
       

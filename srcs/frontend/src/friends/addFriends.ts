@@ -83,7 +83,7 @@ async function rejectFriendRequest(requestId: number): Promise<void>
 }
 
 // Fetches the latest list of incoming requests from the server and re-renders the request list DOM
-async function refreshFriendRequests(): Promise<void>
+export async function refreshFriendRequests(): Promise<void>
 {
     try
     {

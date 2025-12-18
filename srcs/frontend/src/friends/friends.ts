@@ -66,9 +66,14 @@ export function startFriendListRealtimeUpdates(): void
     });
 
     // Triggers a full list reload when the user adds a new friend
-    window.socket.on('friendAdded', (_data: { friend: { id: number; username: string }; timestamp: number }) =>
+    window.socket.on('friendAdded', async (_data: { friend: { id: number; username: string }; timestamp: number }) =>
     {
         reloadFriendList();
+        // Also refresh friend requests badge (in case of auto-accept from race condition fix)
+        updateFriendRequestsBadge();
+        // Refresh the friend requests list if the panel is open
+        const { refreshFriendRequests } = await import('./addFriends.js');
+        refreshFriendRequests();
     });
 
     // Triggers a full list reload when a friend is removed
