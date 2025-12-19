@@ -646,7 +646,8 @@ initNavigationOnLoad(async () =>
     // Unauthenticated users are redirected to sign in except for allowed public pages
     if (!window.currentUser || !window.currentUser.username)
     {
-        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'landing' && targetPage !== 'notFound')
+        // Allow unauthenticated users to access sign-in, sign-up, landing, and two-factor pages directly
+        if (targetPage !== 'signIn' && targetPage !== 'signUp' && targetPage !== 'twoFactor' && targetPage !== 'landing' && targetPage !== 'notFound')
             targetPage = 'signIn';
         
         if (targetPage === 'landing')
