@@ -659,7 +659,7 @@ initNavigationOnLoad(async () =>
             targetPage = 'mainMenu';
         
         // Game pages are not accessible via direct URL to prevent state inconsistencies
-        const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished'];
+        const gamePages = ['game', 'game4', 'matchmaking', 'gameFinished', 'spectatorGameFinished', 'spectate', 'spectate4'];
         if (gamePages.includes(targetPage))
             targetPage = 'mainMenu';
     }
