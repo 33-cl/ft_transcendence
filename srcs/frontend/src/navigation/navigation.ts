@@ -1,4 +1,5 @@
 import { load } from './utils.js';
+import { cleanupGameState } from '../game/gameCleanup.js';
 
 // Update the browser's history stack with a new entry, handling dynamic URL parameters for specific views.
 export function pushHistoryState(pageName: string): void
@@ -112,6 +113,38 @@ export function setupPopStateHandler(): void
         {
             targetPage = 'mainMenu';
             replaceHistoryState(targetPage);
+        }
+
+        // If the user is navigating away from an active game via browser Back/Forward,
+        // perform the same cleanup as clicking the MAIN MENU button: cleanup local state and signal the server to leave rooms.
+        const fromPage = event.state?.page || getPageFromURL();
+        const gamePages = ['matchmaking', 'game', 'game4', 'spectate', 'spectate4', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+        if (gamePages.includes(fromPage) && targetPage === 'mainMenu') {
+            try {
+                // Local cleanup (remove canvas, listeners, renderer state)
+                if (typeof cleanupGameState === 'function') cleanupGameState();
+
+                // Reset tournament tracking flags
+                (window as any).currentTournamentId = null;
+                (window as any).currentMatchId = null;
+
+                // Attempt graceful leave: prefer leaveCurrentRoomAsync if available
+                if ((window as any).socket && (window as any).leaveCurrentRoomAsync) {
+                    try {
+                        await (window as any).leaveCurrentRoomAsync();
+                    } catch (err) {
+                        // fallback to emit
+                        (window as any).socket.emit('leaveAllRooms');
+                        await new Promise(res => setTimeout(res, 500));
+                    }
+                }
+                else if ((window as any).socket) {
+                    (window as any).socket.emit('leaveAllRooms');
+                    await new Promise(res => setTimeout(res, 500));
+                }
+            } catch (err) {
+                console.warn('Error during popstate game cleanup:', err);
+            }
         }
 
         // Enforce authentication: redirect unauthenticated users to sign-in, unless accessing public pages or the 404 page.

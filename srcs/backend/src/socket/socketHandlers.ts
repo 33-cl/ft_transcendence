@@ -28,6 +28,7 @@ import { removePlayerFromRoom } from './roomManager.js';
 import { parseClientMessage, isKeyboardEvent } from './utils/messageHandling.js';
 import { handleLocalGamePaddleControl, handleOnlineGamePaddleControl } from './utils/paddleControl.js';
 import { handleForfeit } from './utils/forfeitHandling.js';
+import { processTournamentStateForfeit } from './handlers/tournamentHandlers.js';
 
 // Global io instance for use in other modules
 let globalIo: Server | null = null;
@@ -248,6 +249,12 @@ function handleSocketDisconnect(socket: Socket, io: Server, fastify: FastifyInst
     {
         const room = rooms[playerRoom];
         
+        // If this is a tournament running semifinal/final inside the room, process it separately
+        if ((room as any).isTournament && (room as any).tournamentState) {
+            processTournamentStateForfeit(room as any, playerRoom, socket.id, io, globalIo, true, fastify);
+        }
+
+        // Regular online game forfeit handling
         if (isActiveOnlineGame(room) && room.pongGame)
         {
             handleForfeit(
@@ -322,7 +329,12 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
             userId = room.playerUserIds[socket.id];
         }
         
-        // Gerer le forfait si partie active
+        // If this is a tournament running semifinal/final inside the room, process it separately
+        if ((room as any).isTournament && (room as any).tournamentState) {
+            processTournamentStateForfeit(room as any, previousRoom, socket.id, io, globalIo, false, fastify);
+        }
+
+        // Gerer le forfait si partie active (regular games)
         if (isActiveOnlineGame(room) && room.pongGame)
         {
             handleForfeit(

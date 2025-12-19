@@ -10,6 +10,7 @@ import { getGlobalIo } from '../socketHandlers.js';
 import { getSocketIdForUser } from '../socketAuth.js';
 import { notifyFriendsGameEnded } from './gameEndHandlers.js';
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
+import { recordForfeitMatch, notifyFriendsForfeit } from '../utils/forfeitHandling.js';
 
 /**
  * Émet un événement quand un joueur rejoint ou quitte un tournoi
@@ -385,6 +386,108 @@ function handleSemifinalEnd(
         setTimeout(() => {
             startFinal(room, roomName, io, fastify);
         }, 3000);
+    }
+}
+
+/**
+ * Traite un forfait sur un match de tournoi interne (semi-finales ou finale)
+ * Identifie le match affecté (semifinal1 / semifinal2 / final), détermine le gagnant
+ * et appelle les handlers de fin de match appropriés (handleSemifinalEnd / handleFinalEnd).
+ */
+export function processTournamentStateForfeit(
+    room: RoomType,
+    roomName: string,
+    disconnectedSocketId: string,
+    io: Server,
+    globalIo: Server | null,
+    loserIsOffline: boolean,
+    fastify: FastifyInstance
+): void {
+    if (!room.tournamentState) return;
+    const state = room.tournamentState;
+
+    // SEMIFINALS
+    if (state.phase === 'semifinals') {
+        // check semifinal 1
+        const sf1 = state.semifinal1;
+        if (sf1 && sf1.pongGame && sf1.pongGame.state && sf1.pongGame.state.running && (disconnectedSocketId === sf1.player1 || disconnectedSocketId === sf1.player2)) {
+            const winnerSocket = disconnectedSocketId === sf1.player1 ? sf1.player2 : sf1.player1;
+            const winnerSide = sf1.paddleBySocket[winnerSocket];
+            const loserSide = sf1.paddleBySocket[disconnectedSocketId];
+            const winnerPaddle = sf1.pongGame.state.paddles.find((p: any) => p.side === (winnerSide as any));
+            const loserPaddle = sf1.pongGame.state.paddles.find((p: any) => p.side === (loserSide as any));
+            const winnerScore = (winnerPaddle && typeof winnerPaddle.score === 'number') ? winnerPaddle.score : 0;
+            const loserScore = (loserPaddle && typeof loserPaddle.score === 'number') ? loserPaddle.score : 0;
+
+            // Stop the semifinal game and process end
+            if (sf1.pongGame) {
+                sf1.pongGame.stop();
+                sf1.pongGame = null;
+            }
+
+            handleSemifinalEnd(1, { side: winnerSide as any, score: winnerScore }, room, roomName, io, fastify);
+
+            // Update global stats and notify friends
+            const winnerName = state.playerUsernames[winnerSocket] || 'Player';
+            const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
+            recordForfeitMatch(winnerName, loserName, winnerScore, loserScore);
+            notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
+            return;
+        }
+
+        // check semifinal 2
+        const sf2 = state.semifinal2;
+        if (sf2 && sf2.pongGame && sf2.pongGame.state && sf2.pongGame.state.running && (disconnectedSocketId === sf2.player1 || disconnectedSocketId === sf2.player2)) {
+            const winnerSocket = disconnectedSocketId === sf2.player1 ? sf2.player2 : sf2.player1;
+            const winnerSide = sf2.paddleBySocket[winnerSocket];
+            const loserSide = sf2.paddleBySocket[disconnectedSocketId];
+            const winnerPaddle = sf2.pongGame.state.paddles.find((p: any) => p.side === (winnerSide as any));
+            const loserPaddle = sf2.pongGame.state.paddles.find((p: any) => p.side === (loserSide as any));
+            const winnerScore = (winnerPaddle && typeof winnerPaddle.score === 'number') ? winnerPaddle.score : 0;
+            const loserScore = (loserPaddle && typeof loserPaddle.score === 'number') ? loserPaddle.score : 0;
+
+            if (sf2.pongGame) {
+                sf2.pongGame.stop();
+                sf2.pongGame = null;
+            }
+
+            handleSemifinalEnd(2, { side: winnerSide as any, score: winnerScore }, room, roomName, io, fastify);
+
+            const winnerName = state.playerUsernames[winnerSocket] || 'Player';
+            const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
+            recordForfeitMatch(winnerName, loserName, winnerScore, loserScore);
+            notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
+            return;
+        }
+    }
+
+    // FINAL
+    if ((state.phase === 'final' || state.phase === 'waiting_final') && state.currentMatch) {
+        const current = state.currentMatch;
+        if (disconnectedSocketId === current.player1 || disconnectedSocketId === current.player2) {
+            const winnerSocket = disconnectedSocketId === current.player1 ? current.player2 : current.player1;
+            // Extract scores from room.pongGame (final uses room.pongGame)
+            const winnerSide = room.paddleBySocket ? room.paddleBySocket[winnerSocket] : 'LEFT';
+            const loserSide = room.paddleBySocket ? room.paddleBySocket[disconnectedSocketId] : 'RIGHT';
+            const winnerPaddle = room.pongGame?.state?.paddles?.find((p: any) => p.side === winnerSide);
+            const loserPaddle = room.pongGame?.state?.paddles?.find((p: any) => p.side === loserSide);
+            const winnerScore = (winnerPaddle && typeof winnerPaddle.score === 'number') ? winnerPaddle.score : 0;
+            const loserScore = (loserPaddle && typeof loserPaddle.score === 'number') ? loserPaddle.score : 0;
+
+            // Stop final game
+            if (room.pongGame) {
+                room.pongGame.stop();
+                room.pongGame = null;
+            }
+
+            handleFinalEnd(winnerSocket, disconnectedSocketId, winnerScore, loserScore, room, roomName, io, fastify);
+
+            const winnerName = state.playerUsernames[winnerSocket] || 'Player';
+            const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
+            recordForfeitMatch(winnerName, loserName, winnerScore, loserScore);
+            notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
+            return;
+        }
     }
 }
 
