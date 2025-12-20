@@ -100,7 +100,7 @@ export function createSafeUser(user: DbUser): SafeUser
 
 export function validateAndGetUser(login: string, password: string, clientIp: string, reply: FastifyReply): DbUser | null
 {
-  if (!checkRateLimit(`login:${clientIp}`, 5, 60 * 1000))
+  if (!checkRateLimit(`login:${clientIp}`, 10, 60 * 1000))
   {
     reply.code(429).send({ error: 'Too many login attempts. Please try again later.' });
     return null;

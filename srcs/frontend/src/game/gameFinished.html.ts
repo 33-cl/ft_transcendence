@@ -63,7 +63,10 @@ export const gameFinishedHTML = (data?: any) => {
         `;
     }
     
-    // Layout unifié pour parties 2 joueurs (local, IA et multijoueur)
+    // Layout unifié pour parties 2 joueurs (local, IA et multijoueur) - même format que spectateur
+    const winnerScore = winner?.score ?? 0;
+    const loserScore = loser?.score ?? 0;
+    
     return /*html*/`
         <div class="game-finished-overlay">
             <div class="game-finished-box">
@@ -71,9 +74,19 @@ export const gameFinishedHTML = (data?: any) => {
                     ${isTournamentMatch ? 'MATCH FINISHED' : (isForfeit ? 'VICTORY BY FORFEIT' : 'GAME OVER')}
                 </h2>
                 
-                <div class="game-finished-4player-result">
-                    <div class="game-finished-winner-announcement">
-                        WINNER: ${winnerName}
+                <div class="game-finished-scores">
+                    <div class="game-finished-player winner">
+                        <span class="player-label">WINNER</span>
+                        <span class="player-name">${winnerName}</span>
+                        <span class="player-score">${winnerScore}</span>
+                    </div>
+                    
+                    <div class="game-finished-vs">VS</div>
+                    
+                    <div class="game-finished-player loser">
+                        <span class="player-label">${isForfeit ? 'FORFEIT' : 'LOSER'}</span>
+                        <span class="player-name">${loserName}</span>
+                        <span class="player-score">${loserScore}</span>
                     </div>
                 </div>
                 

@@ -183,9 +183,14 @@ document.addEventListener('componentsReady', () =>
     addEnterKeyListeners(['username', 'email', 'password', 'confirmPassword'], () => btnUp.click());
 });
 
+let isSignInButtonDisabled = false;
+
 // Process the user login form submission.
 async function handleSignIn(): Promise<void>
 {
+    if (isSignInButtonDisabled)
+        return;
+
     const msg = ensureMessageElement('signInMsg', 'signInButton');
 
     // Prevent login if the tab is blocked by another active session.
@@ -204,8 +209,30 @@ async function handleSignIn(): Promise<void>
         return;
     }
 
+    // Disable button to prevent spam
+    isSignInButtonDisabled = true;
+    const btnIn = document.getElementById('signInButton');
+    if (btnIn)
+    {
+        btnIn.setAttribute('disabled', 'true');
+        (btnIn as HTMLButtonElement).style.opacity = '0.5';
+        (btnIn as HTMLButtonElement).style.cursor = 'not-allowed';
+    }
+
     // Execute the login request against the API.
     const result = await loginUser(login, password);
+
+    // Re-enable after delay
+    const enableButton = () =>
+    {
+        isSignInButtonDisabled = false;
+        if (btnIn)
+        {
+            btnIn.removeAttribute('disabled');
+            (btnIn as HTMLButtonElement).style.opacity = '1';
+            (btnIn as HTMLButtonElement).style.cursor = 'pointer';
+        }
+    };
 
     if (result.success)
     {
@@ -225,6 +252,9 @@ async function handleSignIn(): Promise<void>
             showCriticalError(msg, 'This account is already connected elsewhere.');
         else
             showErrorMessage(msg, result.error!);
+        
+        // Re-enable button after 30 seconds on error
+        setTimeout(enableButton, 30000);
     }
 }
 
