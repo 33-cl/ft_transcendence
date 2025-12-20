@@ -5,7 +5,7 @@
 
     .user-list {
         @apply w-[15%] h-[65%] absolute top-[22%]; /* Size and positioning */
-        @apply overflow-y-auto p-[1vh];            /* Scroll and padding */
+        @apply overflow-hidden p-[1vh];            /* No scroll, padding */
     }
 
     .user-list img {

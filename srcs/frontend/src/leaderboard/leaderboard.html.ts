@@ -1,6 +1,6 @@
 export async function leaderboardHTML() {
     try {
-        const response = await fetch('/users/leaderboard', {
+        const response = await fetch('/users/leaderboard?limit=8', {
             method: 'GET',
             credentials: 'include'
         });
