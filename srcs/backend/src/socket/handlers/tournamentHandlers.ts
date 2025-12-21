@@ -224,11 +224,11 @@ export function startSemifinals(
     
     // Créer les callbacks de fin pour chaque demi-finale
     const onSemifinal1End = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
-        handleSemifinalEnd(1, winner, room, roomName, io, fastify);
+        handleSemifinalEnd(1, winner, loser, room, roomName, io, fastify);
     };
     
     const onSemifinal2End = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
-        handleSemifinalEnd(2, winner, room, roomName, io, fastify);
+        handleSemifinalEnd(2, winner, loser, room, roomName, io, fastify);
     };
     
     // Créer les jeux Pong pour chaque demi-finale
@@ -296,6 +296,7 @@ export function startSemifinals(
 function handleSemifinalEnd(
     semifinalNumber: 1 | 2,
     winner: { side: string; score: number },
+    loser: { side: string; score: number },
     room: RoomType,
     roomName: string,
     io: Server,
@@ -326,9 +327,19 @@ function handleSemifinalEnd(
     const winnerName = state.playerUsernames[winnerId] || 'Player';
     const loserName = state.playerUsernames[loserId] || 'Player';
     const winnerScore = winner.score;
-    const loserScore = winner.side === 'LEFT' 
-        ? (semifinal.pongGame?.state?.score?.C || 0)
-        : (semifinal.pongGame?.state?.score?.A || 0);
+    const loserScore = loser.score;
+    
+    // Enregistrer le match de demi-finale dans la DB avec les vrais scores
+    const winnerUserId = state.playerUserIds[winnerId];
+    const loserUserId = state.playerUserIds[loserId];
+    if (winnerUserId && loserUserId) {
+        try {
+            updateUserStats(winnerUserId, loserUserId, winnerScore, loserScore, 'tournament');
+            console.log(`📊 Semi-final ${semifinalNumber} recorded: ${winnerName} ${winnerScore}-${loserScore} ${loserName}`);
+        } catch (error) {
+            console.error(`Error recording semifinal ${semifinalNumber} stats:`, error);
+        }
+    }
     
     console.log(`🏆 Tournament: Semi-final ${semifinalNumber} complete - Winner: ${winnerName}`);
     
@@ -425,7 +436,7 @@ export function processTournamentStateForfeit(
                 sf1.pongGame = null;
             }
 
-            handleSemifinalEnd(1, { side: winnerSide as any, score: winnerScore }, room, roomName, io, fastify);
+            handleSemifinalEnd(1, { side: winnerSide as any, score: winnerScore }, { side: loserSide as any, score: loserScore }, room, roomName, io, fastify);
 
             // Update global stats and notify friends
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
@@ -451,7 +462,7 @@ export function processTournamentStateForfeit(
                 sf2.pongGame = null;
             }
 
-            handleSemifinalEnd(2, { side: winnerSide as any, score: winnerScore }, room, roomName, io, fastify);
+            handleSemifinalEnd(2, { side: winnerSide as any, score: winnerScore }, { side: loserSide as any, score: loserScore }, room, roomName, io, fastify);
 
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
             const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
@@ -735,15 +746,16 @@ function handleFinalEnd(
         message: `🏆 Tournament Champion: ${winnerName}!`
     });
     
-    // Enregistrer le résultat de la finale
+    // Enregistrer le résultat de la finale avec les vrais scores
     const winnerUserId = room.tournamentState.playerUserIds[winnerId];
     const loserUserId = room.tournamentState.playerUserIds[loserId];
     
     if (winnerUserId && loserUserId) {
         try {
-            // Score par défaut pour le tournoi (on pourrait le récupérer du dernier match)
-            updateUserStats(winnerUserId, loserUserId, 7, 0, 'tournament');
+            updateUserStats(winnerUserId, loserUserId, winnerScore, loserScore, 'tournament');
+            console.log(`📊 Final recorded: ${winnerName} ${winnerScore}-${loserScore} ${loserName}`);
         } catch (error) {
+            console.error('Error recording final stats:', error);
         }
     }
     

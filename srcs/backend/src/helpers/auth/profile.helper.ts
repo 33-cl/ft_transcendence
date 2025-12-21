@@ -137,9 +137,7 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
   const updates: string[] = [];
   const values: any[] = [];
   
-  // 🔐 SÉCURITÉ CRITIQUE : Désactiver 2FA si l'email change
-  // Si l'utilisateur change son email et qu'il a la 2FA activée, il pourrait se bloquer
-  // car les codes 2FA seront envoyés au nouvel email (potentiellement invalide)
+  // unlock 2fa if mail change
   let emailChanged = false;
   if (data.email)
   {
@@ -171,12 +169,11 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
   values.push(userId);
   db.prepare(query).run(...values);
   
-  // Si l'email a changé, désactiver la 2FA pour éviter que l'utilisateur se bloque
-  if (emailChanged) {
+  if (emailChanged)
+  {
     try {
       disableTwoFactor(userId);
     } catch (error) {
-      // On continue quand même, l'update du profil a réussi
     }
   }
   
