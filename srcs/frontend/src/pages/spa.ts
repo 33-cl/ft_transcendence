@@ -420,6 +420,11 @@ function initializeComponents(): void
             // Cancel matchmaking search and return to main menu
             if (target.id === 'cancelSearchBtn')
             {
+                // Cleanup matchmaking intervals to prevent memory leaks
+                if (window.cleanupMatchmakingIntervals) {
+                    window.cleanupMatchmakingIntervals();
+                }
+                
                 if (window.socket && window.leaveCurrentRoomAsync)
                 {
                     try
@@ -583,6 +588,10 @@ function setupRoomJoinedHandler()
         // Local games bypass matchmaking and go straight to game screen
         if (window.isLocalGame)
         {
+            // Cleanup matchmaking intervals if any
+            if (window.cleanupMatchmakingIntervals) {
+                window.cleanupMatchmakingIntervals();
+            }
             if (data.maxPlayers === 4)
                 await load('game4');
             else
@@ -597,6 +606,11 @@ function setupRoomJoinedHandler()
                 await load('matchmaking');
             else
             {
+                // Cleanup matchmaking intervals when game starts
+                if (window.cleanupMatchmakingIntervals) {
+                    window.cleanupMatchmakingIntervals();
+                }
+                
                 // Tournament logic is handled in websocket.ts, this is fallback for regular games
                 if (data.isTournament)
                 {

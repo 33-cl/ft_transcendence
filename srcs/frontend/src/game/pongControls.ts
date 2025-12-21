@@ -161,20 +161,30 @@ export function cleanupPongControls(): void {
 window.cleanupPongControls = cleanupPongControls;
 
 
-function handleKeyEvent(event: KeyboardEvent, type: 'keydown' | 'keyup') {
+function handleKeyDown(event: KeyboardEvent) {
     const mapping = keyToMove[event.key as string];
     if (!mapping) return;
-    if (type === 'keydown' && !pressedKeys[event.key]) {
+    if (!pressedKeys[event.key]) {
         sendKeyEvent('keydown', mapping.player, mapping.direction);
         pressedKeys[event.key] = true;
-    } else if (type === 'keyup' && pressedKeys[event.key]) {
+    }
+}
+
+function handleKeyUp(event: KeyboardEvent) {
+    const mapping = keyToMove[event.key as string];
+    if (!mapping) return;
+    if (pressedKeys[event.key]) {
         sendKeyEvent('keyup', mapping.player, mapping.direction);
         pressedKeys[event.key] = false;
     }
 }
 
-document.addEventListener("keydown", (e) => handleKeyEvent(e, 'keydown'));
-document.addEventListener("keyup", (e) => handleKeyEvent(e, 'keyup'));
+// Add event listeners only once (guard against multiple imports)
+if (!(document as any)._pongKeyListenersSet) {
+    (document as any)._pongKeyListenersSet = true;
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
+}
 
 window.sendKeyEvent = sendKeyEvent;
 

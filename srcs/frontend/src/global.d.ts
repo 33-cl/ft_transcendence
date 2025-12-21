@@ -128,6 +128,8 @@ declare global
 
         temporaryAvatarFile?: File;
 
+        cleanupMatchmakingIntervals?: () => void;
+
         __sessionDebug?: any;
     }
 }
