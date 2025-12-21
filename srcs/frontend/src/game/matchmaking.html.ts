@@ -11,6 +11,10 @@ export const matchmakingHTML = /*html*/`
     </div>
 `;
 
+// Store interval IDs for cleanup
+let dotsIntervalId: number | null = null;
+let tipsIntervalId: number | null = null;
+
 export function updateMatchmakingForTournament(players: number, maxPlayers: number) {
     const title = document.getElementById('matchmakingTitle');
     const searchText = document.getElementById('searchingText');
@@ -33,6 +37,12 @@ export function updateTournamentWaiting(message: string) {
 }
 
 export function animateDots() {
+    // Clear any existing interval first
+    if (dotsIntervalId !== null) {
+        clearInterval(dotsIntervalId);
+        dotsIntervalId = null;
+    }
+    
     const p = document.getElementById('searchingText');
     if (!p) return;
   
@@ -45,13 +55,27 @@ export function animateDots() {
     ];
   
     let i = 0;
-    setInterval(() => {
+    dotsIntervalId = window.setInterval(() => {
+      // Stop if element no longer exists
+      if (!document.getElementById('searchingText')) {
+          if (dotsIntervalId !== null) {
+              clearInterval(dotsIntervalId);
+              dotsIntervalId = null;
+          }
+          return;
+      }
       p.textContent = baseText + dotStates[i];
       i = (i + 1) % dotStates.length;
     }, 600);
   }
 
 export function switchTips() {
+    // Clear any existing interval first
+    if (tipsIntervalId !== null) {
+        clearInterval(tipsIntervalId);
+        tipsIntervalId = null;
+    }
+    
     const p = document.getElementById('tipText');
     if (!p) return;
 
@@ -69,7 +93,15 @@ export function switchTips() {
     p.textContent = tips[idx] ?? "";
     lastIndex = idx;
 
-    setInterval(() => {
+    tipsIntervalId = window.setInterval(() => {
+        // Stop if element no longer exists
+        if (!document.getElementById('tipText')) {
+            if (tipsIntervalId !== null) {
+                clearInterval(tipsIntervalId);
+                tipsIntervalId = null;
+            }
+            return;
+        }
         do {
             idx = Math.floor(Math.random() * tips.length);
         } while (tips.length > 1 && idx === lastIndex);
@@ -77,3 +109,18 @@ export function switchTips() {
         lastIndex = idx;
     }, 5000);
 }
+
+// Cleanup function to stop all matchmaking intervals
+export function cleanupMatchmakingIntervals(): void {
+    if (dotsIntervalId !== null) {
+        clearInterval(dotsIntervalId);
+        dotsIntervalId = null;
+    }
+    if (tipsIntervalId !== null) {
+        clearInterval(tipsIntervalId);
+        tipsIntervalId = null;
+    }
+}
+
+// Expose cleanup globally
+window.cleanupMatchmakingIntervals = cleanupMatchmakingIntervals;
