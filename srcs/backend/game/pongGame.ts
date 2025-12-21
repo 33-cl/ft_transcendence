@@ -1,5 +1,5 @@
-// PongGame.ts - Classe principale du jeu Pong backend
-// Ce module gère l'état du jeu et les mises à jour, sans aucune dépendance au DOM ou au navigateur.
+// PongGame.ts - Main backend class for Pong game
+// Manages game state and updates.
 
 import { GameState, createInitialGameState } from './gameState.js';
 import { movePaddle } from './paddle.js';
@@ -11,8 +11,8 @@ export class PongGame {
     public state: GameState;
     private interval: ReturnType<typeof setInterval> | null = null;
     private ballStartTime: number = 0;
-    private readonly ballDelayMs: number = 3000; // Délai avant le mouvement initial de la balle (ms)
-    private isFirstLaunch: boolean = true; // Indique si c'est le premier lancement
+    private readonly ballDelayMs: number = 3000;
+    private isFirstLaunch: boolean = true;
     private onGameEnd?: (winner: { side: string; score: number }, loser: { side: string; score: number }) => void;
     private ballState: BallState = {
         accelerationCount: 0,
@@ -20,39 +20,39 @@ export class PongGame {
         lastContact: -1
     };
 
+    // Constructor initializes game state
     constructor(numPlayers: number = 2, onGameEnd?: (winner: { side: string; score: number }, loser: { side: string; score: number }) => void) {
         this.state = createInitialGameState(numPlayers);
-        this.onGameEnd = onGameEnd;
-        // L'état initial de gameState.ts est déjà correct
+        this.onGameEnd = onGameEnd; 
         this.ballState.accelerationCount = 0;
     }
 
+    // Starts the game loop
     start() {
         if (this.state.running) return;
         this.state.running = true;
-        this.ballStartTime = Date.now(); // Démarre le timer pour le délai initial de la balle
+        this.ballStartTime = Date.now();
     }
 
+    // Stops the game loop
     stop() {
         this.interval = null;
         this.state.running = false;
     }
 
-    /**
-     * Méthode publique appelée par handleGameTick pour avancer d'un tick
-     * La boucle externe (setInterval) gère le timing à 120Hz.
-     * Cette méthode fait exactement 1 update par appel.
-     */
+    // Public method called by handleGameTick to advance one tick.
     tick(): void {
         if (!this.state.running) return;
         this.state.timestamp = Date.now();
         this.update(1 / 120);
     }
 
+    // Moves the specified paddle in the given direction
     movePaddle(player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down') {
         movePaddle(this.state, player, direction);
     }
 
+    // Main update method called each tick
     update(dt: number = 1/60) {
         const currentTime = Date.now();
         const timeElapsed = currentTime - this.ballStartTime;
@@ -74,7 +74,7 @@ export class PongGame {
         }
     }
 
-    // Gère le compte à rebours et le positionnement initial de la balle
+    // Handles countdown and initial ball position
     private handleBallCountdownAndPosition(ballShouldMove: boolean, timeElapsed: number) {
         if (this.isFirstLaunch && !ballShouldMove && timeElapsed >= 0) {
             const remainingTime = Math.max(0, this.ballDelayMs - timeElapsed);
@@ -96,7 +96,7 @@ export class PongGame {
         }
     }
 
-    // Déplace la balle si le délai est écoulé
+    // Moves the ball if delay has passed
     private moveBall(dt: number, ballShouldMove: boolean) {
         if (!this.isFirstLaunch || ballShouldMove) {
             const moveFactor = dt * 60;
@@ -105,7 +105,7 @@ export class PongGame {
         }
     }
 
-    // Gère la logique du mode 4 joueurs
+    // Four players mode logic
     private handleFourPlayersMode() {
         checkBallCollisions4Players(this.state, this.ballState);
         checkScoring4Players(this.state, this.ballState);
@@ -121,7 +121,7 @@ export class PongGame {
         }
     }
 
-    // Gère la logique du mode 2 joueurs (et IA)
+    // Two players mode logic (and AI)
     private handleTwoPlayersMode() {
         if (this.state.aiConfig && this.state.aiConfig.enabled) {
             updateAITarget(this.state);
@@ -141,6 +141,7 @@ export class PongGame {
         }
     }
 
+    // Resets the ball to the center with initial speed
     resetBall() {
         resetBall(this.state, this.ballState, this.isFirstLaunch);
         if (this.isFirstLaunch) {
@@ -148,36 +149,31 @@ export class PongGame {
         }
     }
 
-    /**
-     * Active l'IA pour le paddle gauche (côté A) en mode 1v1
-     * @param difficulty Niveau de difficulté (easy/medium/hard)
-     */
+    // Enables AI with specified difficulty
     enableAI(difficulty: 'easy' | 'medium' | 'hard') {
-        if (this.state.paddles.length !== 2) {
-            // IA disponible uniquement en mode 1v1 (2 paddles)
+        if (this.state.paddles.length !== 2)
             return;
-        }
         this.state.aiConfig = createAIConfig(difficulty, this.state.paddleSpeed);
     }
 
-    // Désactive l'IA (mode 2 joueurs humains)
+    // Disables AI (2 human players mode)
     disableAI() {
         this.state.aiConfig = undefined;
     }
 
-    // Active le mode debug de l'IA pour visualiser ses décisions
+    // Enables AI debug mode to visualize decisions
     enableAIDebug() {
         if (this.state.aiConfig)
             this.state.aiConfig.debugMode = true;
     }
 
-    // Désactive le mode debug de l'IA
+    // Disables AI debug mode
     disableAIDebug() {
         if (this.state.aiConfig)
             this.state.aiConfig.debugMode = false;
     }
 
-    // Récupère les statistiques de l'IA pour l'évaluation
+    // Returns AI stats for evaluation
     getAIStats() {
         if (!this.state.aiConfig) {
             return null;
