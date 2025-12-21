@@ -62,7 +62,7 @@ export async function friendListHTML()
             const statusText = 'Offline';
 
             userItems += `
-                <div id="profileBtn" class="friend friend-item" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}">
+                <div id="profileBtn" class="friend friend-item" style="pointer-events: auto;" data-username="${user.username}" data-user-id="${user.id}" data-status="${status}" data-is-in-game="${isInGame}">
                     <div class="friend-avatar-container">
                         <img src="${avatarUrl}" alt="${user.username} Avatar" class="friend-avatar" 
                             onerror="this.onerror=null;this.src='/img/planet.gif';">
@@ -97,7 +97,7 @@ export async function friendListHTML()
                     </button>
                 </div>
                 <hr>
-                <div id="friendsList">
+                <div id="friendsList" style="${users.length < 6 ? 'pointer-events: none;' : ''}">
                     ${userItems}
                 </div>
             </div>
