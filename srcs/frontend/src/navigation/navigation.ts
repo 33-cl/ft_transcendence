@@ -109,7 +109,9 @@ export function setupPopStateHandler(): void
             targetPage = 'mainMenu';
 
         // Block navigation back to transient game states (like matchmaking or active gameplay) and redirect to the menu.
-        if (['matchmaking', 'game', 'game4', 'spectate', 'spectate4', 'gameFinished', 'spectatorGameFinished'].includes(targetPage))
+        const blockedPages = ['matchmaking', 'game', 'game4', 'spectate', 'spectate4', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
+        
+        if (blockedPages.includes(targetPage) || targetPage.startsWith('tournament'))
         {
             targetPage = 'mainMenu';
             replaceHistoryState(targetPage);
@@ -117,22 +119,22 @@ export function setupPopStateHandler(): void
 
         // If the user is navigating away from an active game via browser Back/Forward,
         // perform the same cleanup as clicking the MAIN MENU button: cleanup local state and signal the server to leave rooms.
-        const fromPage = event.state?.page || getPageFromURL();
-        const gamePages = ['matchmaking', 'game', 'game4', 'spectate', 'spectate4', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
-        if (gamePages.includes(fromPage) && targetPage === 'mainMenu') {
-            // Pour les matchs de tournoi, ne pas ignorer les événements de fin de partie
-            // car le forfait doit être affiché au joueur
-            const isTournamentMatch = !!(window as any).currentTournamentId || !!(window as any).currentMatchId;
+        
+        // Check if we are leaving a game page to go to main menu
+        // Note: getPageFromURL() returns the current URL (which is already the target page after popstate)
+        // So we rely on checking if we were in a game state before
+        
+        // Force cleanup if we are going to main menu
+        if (targetPage === 'mainMenu') {
+            // Always ignore game finished events when navigating back to main menu
+            // This ensures "refresh-like" behavior where we just leave without seeing the result
+            (window as any).isNavigatingAwayFromGame = true;
             
-            // Mark that the user is intentionally navigating away so the client ignores the subsequent 'gameFinished' event emitted by the server for this leave.
-            // Exception: pour les matchs de tournoi, on veut voir l'écran de défaite par forfait
-            if (!isTournamentMatch) {
-                (window as any).isNavigatingAwayFromGame = true;
-                // Safety: clear the flag after a short timeout to avoid leaving it stuck.
-                setTimeout(() => {
-                    if ((window as any).isNavigatingAwayFromGame) (window as any).isNavigatingAwayFromGame = false;
-                }, 3000);
-            }
+            // Safety: clear the flag after a short timeout to avoid leaving it stuck.
+            setTimeout(() => {
+                if ((window as any).isNavigatingAwayFromGame) (window as any).isNavigatingAwayFromGame = false;
+            }, 3000);
+
             try {
                 // Local cleanup (remove canvas, listeners, renderer state)
                 if (typeof cleanupGameState === 'function') cleanupGameState();
@@ -140,6 +142,7 @@ export function setupPopStateHandler(): void
                 // Reset tournament tracking flags
                 (window as any).currentTournamentId = null;
                 (window as any).currentMatchId = null;
+                (window as any).isTournamentMode = false; // Ensure tournament mode is disabled
 
                 // Attempt graceful leave: prefer leaveCurrentRoomAsync if available
                 if ((window as any).socket && (window as any).leaveCurrentRoomAsync) {
