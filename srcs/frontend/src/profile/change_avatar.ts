@@ -68,7 +68,7 @@ export async function saveAvatar(): Promise<{ ok: boolean; error?: string; messa
     
     // Ensure there is actually a pending avatar before attempting to save
     if (!tempAvatarUrl)
-        return { ok: false, error: 'No temporary avatar to save' };
+        return { ok: false, error: 'No avatar to save' };
 
     try
     {

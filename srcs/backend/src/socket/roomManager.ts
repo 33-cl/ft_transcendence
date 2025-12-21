@@ -1,5 +1,6 @@
 import { GameState, createInitialGameState, PaddleSide } from '../../game/gameState.js';
 import { PongGame } from '../../game/pongGame.js';
+import { TournamentState } from '../types.js';
 
 // src/socket/roomManager.ts
 
@@ -21,6 +22,8 @@ export interface Room
   // Tournament metadata (pour les rooms de tournoi)
   tournamentId?: string;
   matchId?: number;
+  isTournament?: boolean; // Indique si c'est une room de tournoi
+  tournamentState?: TournamentState; // État du tournoi
 }
 
 // record c'est un type typescript qui permet de creer un objet avec des cles dynamiques

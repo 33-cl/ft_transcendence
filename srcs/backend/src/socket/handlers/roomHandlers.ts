@@ -7,6 +7,7 @@ import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
 import { getPlayerRoom, removePlayerFromRoom, roomExists, addPlayerToRoom, rooms } from '../roomManager.js';
+import { getSocketUser } from '../socketAuth.js';
 import {
     removePlayerFromRoomPlayers,
     deleteLocalGameRoom,
@@ -89,6 +90,23 @@ export function validateRoomAccess(
     if (handleRoomFull(socket, room, fastify))
         return false;
     
+    // Vérifier que si c'est une room de tournoi, elle doit être en phase 'waiting' ou ne pas avoir de tournamentState
+    if (room.isTournament && room.tournamentState && room.tournamentState.phase !== 'waiting')
+    {
+        // Allow reconnection if user is a participant
+        const user = getSocketUser(socket.id);
+        let isParticipant = false;
+        
+        if (user && room.tournamentState.playerUserIds) {
+             isParticipant = Object.values(room.tournamentState.playerUserIds).includes(user.id);
+        }
+
+        if (!isParticipant) {
+            socket.emit('error', { error: 'Tournament has already started', code: 'TOURNAMENT_STARTED' });
+            return false;
+        }
+    }
+    
     return true;
 }
 
@@ -156,6 +174,65 @@ export function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomTyp
     {
         addPlayerToRoom(roomName, socket.id);
         socket.join(roomName);
+    }
+    
+    // Handle tournament reconnection
+    if (room.isTournament && room.tournamentState && room.tournamentState.phase !== 'waiting') {
+        const user = getSocketUser(socket.id);
+        if (user && room.tournamentState.playerUserIds) {
+            // Find old socket ID
+            let oldSocketId: string | undefined;
+            for (const [sid, uid] of Object.entries(room.tournamentState.playerUserIds)) {
+                if (uid === user.id) {
+                    oldSocketId = sid;
+                    break;
+                }
+            }
+            
+            if (oldSocketId && oldSocketId !== socket.id) {
+                console.log(`🔄 Tournament Reconnection: Updating socket ID from ${oldSocketId} to ${socket.id} for user ${user.username}`);
+                
+                // Update playerUserIds
+                delete room.tournamentState.playerUserIds[oldSocketId];
+                room.tournamentState.playerUserIds[socket.id] = user.id;
+                
+                // Update playerUsernames
+                if (room.tournamentState.playerUsernames) {
+                    const username = room.tournamentState.playerUsernames[oldSocketId];
+                    if (username) {
+                        delete room.tournamentState.playerUsernames[oldSocketId];
+                        room.tournamentState.playerUsernames[socket.id] = username;
+                    }
+                }
+                
+                // Update players array
+                const playerIndex = room.tournamentState.players.indexOf(oldSocketId);
+                if (playerIndex !== -1) {
+                    room.tournamentState.players[playerIndex] = socket.id;
+                }
+                
+                // Update matches
+                const updateMatch = (match: any) => {
+                    if (!match) return;
+                    if (match.player1 === oldSocketId) match.player1 = socket.id;
+                    if (match.player2 === oldSocketId) match.player2 = socket.id;
+                    if (match.winner === oldSocketId) match.winner = socket.id;
+                    
+                    // Update paddleBySocket
+                    if (match.paddleBySocket && match.paddleBySocket[oldSocketId]) {
+                        match.paddleBySocket[socket.id] = match.paddleBySocket[oldSocketId];
+                        delete match.paddleBySocket[oldSocketId];
+                    }
+                };
+                
+                updateMatch(room.tournamentState.semifinal1);
+                updateMatch(room.tournamentState.semifinal2);
+                
+                if (room.tournamentState.semifinal1Winner === oldSocketId) room.tournamentState.semifinal1Winner = socket.id;
+                if (room.tournamentState.semifinal2Winner === oldSocketId) room.tournamentState.semifinal2Winner = socket.id;
+                if (room.tournamentState.finalWinner === oldSocketId) room.tournamentState.finalWinner = socket.id;
+            }
+        }
     }
     
     if (room.isLocalGame)

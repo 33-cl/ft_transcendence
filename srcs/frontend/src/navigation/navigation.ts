@@ -120,12 +120,19 @@ export function setupPopStateHandler(): void
         const fromPage = event.state?.page || getPageFromURL();
         const gamePages = ['matchmaking', 'game', 'game4', 'spectate', 'spectate4', 'gameFinished', 'spectatorGameFinished', 'tournamentSemifinalFinished', 'tournamentFinalFinished'];
         if (gamePages.includes(fromPage) && targetPage === 'mainMenu') {
+            // Pour les matchs de tournoi, ne pas ignorer les événements de fin de partie
+            // car le forfait doit être affiché au joueur
+            const isTournamentMatch = !!(window as any).currentTournamentId || !!(window as any).currentMatchId;
+            
             // Mark that the user is intentionally navigating away so the client ignores the subsequent 'gameFinished' event emitted by the server for this leave.
-            (window as any).isNavigatingAwayFromGame = true;
-            // Safety: clear the flag after a short timeout to avoid leaving it stuck.
-            setTimeout(() => {
-                if ((window as any).isNavigatingAwayFromGame) (window as any).isNavigatingAwayFromGame = false;
-            }, 3000);
+            // Exception: pour les matchs de tournoi, on veut voir l'écran de défaite par forfait
+            if (!isTournamentMatch) {
+                (window as any).isNavigatingAwayFromGame = true;
+                // Safety: clear the flag after a short timeout to avoid leaving it stuck.
+                setTimeout(() => {
+                    if ((window as any).isNavigatingAwayFromGame) (window as any).isNavigatingAwayFromGame = false;
+                }, 3000);
+            }
             try {
                 // Local cleanup (remove canvas, listeners, renderer state)
                 if (typeof cleanupGameState === 'function') cleanupGameState();

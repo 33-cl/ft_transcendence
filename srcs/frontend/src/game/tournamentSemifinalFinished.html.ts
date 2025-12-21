@@ -2,6 +2,7 @@ export const tournamentSemifinalFinishedHTML = (data?: any) => {
     const winner = data?.winner;
     const loser = data?.loser;
     const semifinalNumber = data?.semifinalNumber || 1;
+    const otherSemifinal = data?.otherSemifinal;
     
     const winnerName = winner?.username || 'Winner';
     const loserName = loser?.username || 'Loser';
@@ -11,6 +12,16 @@ export const tournamentSemifinalFinishedHTML = (data?: any) => {
     // Déterminer si le joueur actuel a gagné
     const currentUsername = window.currentUser?.username;
     const isWinner = currentUsername === winnerName;
+    
+    // Construire le message de l'autre demi-finale
+    let otherSemifinalMessage = 'Waiting for the other semi-final...';
+    if (otherSemifinal) {
+        if (otherSemifinal.finished) {
+            otherSemifinalMessage = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2} (${otherSemifinal.winner} won)`;
+        } else {
+            otherSemifinalMessage = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2}`;
+        }
+    }
     
     // Le listener roomJoined principal de websocket.ts gérera le démarrage de la finale
     // On ne configure pas de listener ici pour éviter les conflits
@@ -50,7 +61,7 @@ export const tournamentSemifinalFinishedHTML = (data?: any) => {
                 
                 <div class="tournament-waiting-message">
                     ${isWinner 
-                        ? '<p class="waiting-text">Waiting for the other semi-final...</p>'
+                        ? `<p id="other-semifinal-waiting-text" class="waiting-text" style="color: #9ca3af; font-size: 0.875rem;">${otherSemifinalMessage}</p>`
                         : '<p class="eliminated-text">You have been eliminated.</p>'}
                 </div>
                 

@@ -88,6 +88,32 @@ export function buildRoomJoinedData(room: RoomType, roomName: string, socketId: 
  */
 export function broadcastRoomState(room: RoomType, roomName: string, io: Server): void
 {
+    // Pour les tournois, ne pas envoyer roomJoined quand la room est pleine
+    // On laisse startTournament gérer l'envoi après tournamentBracketInfo
+    if (room.isTournament && room.maxPlayers === 4) {
+        // Si la room est pleine, ne rien envoyer - startTournament va gérer
+        if (room.players.length >= room.maxPlayers) {
+            console.log(`🏆 Tournament room full - skipping broadcastRoomState, waiting for startTournament`);
+            return;
+        }
+        
+        // Sinon, envoyer une mise à jour du nombre de joueurs pour le matchmaking
+        for (const id of room.players) {
+            const targetSocket = io.sockets.sockets.get(id);
+            if (!targetSocket) continue;
+            
+            targetSocket.emit('roomJoined', {
+                room: roomName,
+                players: room.players.length,
+                maxPlayers: room.maxPlayers,
+                paddle: null,
+                spectator: false,
+                isTournament: true
+            });
+        }
+        return;
+    }
+    
     for (const id of room.players)
     {
         const targetSocket = io.sockets.sockets.get(id);

@@ -45,4 +45,23 @@
     #tipText {
         @apply text-xl my-8 italic;
     }
+    
+    /* Affichage de l'autre demi-finale en temps réel */
+    .other-semifinal-display {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #9ca3af;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+    
+    .other-semifinal-header {
+        display: none;
+    }
+    
+    .other-semifinal-score {
+        color: #9ca3af;
+    }
 }

@@ -276,6 +276,47 @@ function updateScoreBoard(state: GameState) {
     if (scoreElem.innerHTML !== newScoreHTML) {
         scoreElem.innerHTML = newScoreHTML;
     }
+    
+    // Mise à jour de l'affichage de l'autre demi-finale (si disponible)
+    updateOtherSemifinalDisplay(state);
+}
+
+/**
+ * Met à jour l'affichage du score de l'autre demi-finale en temps réel
+ */
+function updateOtherSemifinalDisplay(state: GameState) {
+    const otherSemifinalContainer = document.getElementById('other-semifinal');
+    const otherSemifinalScore = document.getElementById('other-semifinal-score');
+    
+    const otherSemifinal = (state as any).otherSemifinal;
+    
+    if (!otherSemifinal || !otherSemifinalContainer || !otherSemifinalScore) {
+        // Pas de données d'autre demi-finale, cacher le panneau
+        if (otherSemifinalContainer) {
+            otherSemifinalContainer.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Afficher le panneau
+    otherSemifinalContainer.style.display = 'block';
+    
+    // Construire l'affichage du score (simple ligne de texte)
+    let scoreHTML = '';
+    if (otherSemifinal.finished) {
+        // Match terminé
+        const winner = otherSemifinal.score1 > otherSemifinal.score2 
+            ? otherSemifinal.player1 
+            : otherSemifinal.player2;
+        scoreHTML = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2} (${winner} won)`;
+    } else {
+        // Match en cours
+        scoreHTML = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2}`;
+    }
+    
+    if (otherSemifinalScore.innerHTML !== scoreHTML) {
+        otherSemifinalScore.innerHTML = scoreHTML;
+    }
 }
 
 export function draw(gameState: GameState) {   

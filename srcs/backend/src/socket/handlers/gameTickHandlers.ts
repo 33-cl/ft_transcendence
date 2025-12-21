@@ -232,12 +232,14 @@ export function cleanupFinishedRoom(room: RoomType, roomName: string, io: Server
 /**
  * Met à jour et broadcast un match de demi-finale de tournoi
  * IMPORTANT: Appelle tick() pour avancer la physique PUIS broadcast
+ * @param otherSemifinal - L'autre demi-finale pour afficher le score en temps réel
  */
 function updateSemifinalMatch(
     semifinal: any,
     semifinalNumber: number,
     playerUsernames: Record<string, string> | undefined,
-    io: any
+    io: any,
+    otherSemifinal?: any
 ): void {
     // Vérification robuste : le match peut être null ou le jeu peut être arrêté pendant la transition
     if (!semifinal || !semifinal.pongGame) return;
@@ -263,11 +265,56 @@ function updateSemifinalMatch(
         const leftName = playerUsernames?.[semifinal.player1] || 'P1';
         const rightName = playerUsernames?.[semifinal.player2] || 'P2';
         const enrichedState = enrichStateWithSideNames(semifinal.pongGame.state, { LEFT: leftName, RIGHT: rightName });
+        
+        // Ajouter les informations de l'autre demi-finale pour l'affichage en temps réel
+        if (otherSemifinal && otherSemifinal.pongGame && otherSemifinal.pongGame.state) {
+            const otherLeftName = playerUsernames?.[otherSemifinal.player1] || 'P1';
+            const otherRightName = playerUsernames?.[otherSemifinal.player2] || 'P2';
+            const otherScore = otherSemifinal.pongGame.state.score || { A: 0, C: 0 };
+            
+            (enrichedState as any).otherSemifinal = {
+                semifinalNumber: semifinalNumber === 1 ? 2 : 1,
+                player1: otherLeftName,
+                player2: otherRightName,
+                score1: otherScore.A || 0,
+                score2: otherScore.C || 0,
+                finished: otherSemifinal.finished || false
+            };
+        }
 
         // Envoyer l'état du jeu aux joueurs de ce match
         io.to(semifinal.player1).emit('gameState', enrichedState);
         io.to(semifinal.player2).emit('gameState', enrichedState);
     }
+}
+
+/**
+ * Envoie le score de l'autre demi-finale aux joueurs qui ont terminé leur match
+ */
+function sendOtherSemifinalUpdate(
+    finishedSemifinal: any,
+    ongoingSemifinal: any,
+    playerUsernames: Record<string, string> | undefined,
+    io: any
+): void {
+    if (!ongoingSemifinal || !ongoingSemifinal.pongGame || !ongoingSemifinal.pongGame.state) return;
+    
+    const player1Name = playerUsernames?.[ongoingSemifinal.player1] || 'Player';
+    const player2Name = playerUsernames?.[ongoingSemifinal.player2] || 'Player';
+    const score = ongoingSemifinal.pongGame.state.score || { A: 0, C: 0 };
+    
+    const updateData = {
+        player1: player1Name,
+        player2: player2Name,
+        score1: score.A || 0,
+        score2: score.C || 0,
+        finished: ongoingSemifinal.finished || false
+    };
+    
+    // Envoyer aux joueurs de la demi-finale terminée
+    // console.log(`📡 Sending otherSemifinalUpdate to ${finishedSemifinal.player1} and ${finishedSemifinal.player2}`);
+    io.to(finishedSemifinal.player1).emit('otherSemifinalUpdate', updateData);
+    io.to(finishedSemifinal.player2).emit('otherSemifinalUpdate', updateData);
 }
 
 /**
@@ -288,9 +335,21 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
         
         // Gestion des tournois avec demi-finales simultanées
         if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'semifinals') {
+            const state = typedRoom.tournamentState;
             // Mettre à jour les 2 demi-finales (tick + broadcast dans la fonction)
-            updateSemifinalMatch(typedRoom.tournamentState.semifinal1, 1, typedRoom.tournamentState.playerUsernames, io);
-            updateSemifinalMatch(typedRoom.tournamentState.semifinal2, 2, typedRoom.tournamentState.playerUsernames, io);
+            // On passe aussi l'autre demi-finale pour afficher le score en temps réel
+            updateSemifinalMatch(state.semifinal1, 1, state.playerUsernames, io, state.semifinal2);
+            updateSemifinalMatch(state.semifinal2, 2, state.playerUsernames, io, state.semifinal1);
+            
+            // Envoyer des mises à jour aux joueurs qui ont terminé leur match
+            // pour qu'ils voient le score de l'autre demi-finale en temps réel
+            if (state.semifinal1?.finished && state.semifinal2 && !state.semifinal2.finished) {
+                sendOtherSemifinalUpdate(state.semifinal1, state.semifinal2, state.playerUsernames, io);
+            }
+            if (state.semifinal2?.finished && state.semifinal1 && !state.semifinal1.finished) {
+                sendOtherSemifinalUpdate(state.semifinal2, state.semifinal1, state.playerUsernames, io);
+            }
+            
             continue;
         }
         

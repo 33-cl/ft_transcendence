@@ -77,19 +77,21 @@ export function findOrCreateRoom(params: JoinRoomParams): string
         {
             for (const [name, room] of Object.entries(rooms))
             {
-                // Pour les tournois, chercher uniquement des rooms de tournoi
+                // Pour les tournois, chercher uniquement des rooms de tournoi en phase 'waiting'
                 if (params.isTournament) {
                     if (name.startsWith('tournament-') && 
                         room.maxPlayers === params.maxPlayers && 
                         room.players.length < params.maxPlayers &&
-                        room.isLocalGame === false)
+                        room.isLocalGame === false &&
+                        (!room.tournamentState || room.tournamentState.phase === 'waiting'))
                     {
                         roomName = name;
                         break;
                     }
                 } else {
-                    // Pour les jeux normaux, exclure les rooms de tournoi
+                    // Pour les jeux normaux, exclure les rooms de tournoi ET les rooms de tournoi en cours
                     if (!name.startsWith('tournament-') &&
+                        !room.isTournament &&
                         room.maxPlayers === params.maxPlayers && 
                         room.players.length < params.maxPlayers &&
                         room.isLocalGame === false)

@@ -56,6 +56,7 @@ let tournamentSemifinalFinishedListenerActive = false;
 let tournamentFinalFinishedListenerActive = false;
 let leaderboardUpdatedListenerSet = false;
 let tournamentListenersSet = false;
+let otherSemifinalUpdateListenerSet = false;
 // NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
 // pour avoir un meilleur contrôle sur les mises à jour de la liste d'amis:
 // - friendStatusChanged → updateFriendStatus() (préserve le statut actuel)
@@ -328,6 +329,26 @@ function setupGlobalSocketListeners() {
             }, 100);
         });
         
+        // Mise à jour du score de l'autre demi-finale en temps réel
+        if (!otherSemifinalUpdateListenerSet) {
+            socket.on('otherSemifinalUpdate', (data: any) => {
+                console.log('📊 otherSemifinalUpdate received:', data);
+                // Try to find the element by ID first (more specific), then by class
+                const waitingText = document.getElementById('other-semifinal-waiting-text') || document.querySelector('.waiting-text');
+                console.log('📊 waiting-text element:', waitingText);
+                if (waitingText) {
+                    if (data.finished) {
+                        const winner = data.score1 > data.score2 ? data.player1 : data.player2;
+                        waitingText.textContent = `Other semi-final: ${data.player1} vs ${data.player2} (${winner} won)`;
+                    } else {
+                        waitingText.textContent = `Other semi-final: ${data.player1} vs ${data.player2}`;
+                    }
+                    console.log('📊 Updated text to:', waitingText.textContent);
+                }
+            });
+            otherSemifinalUpdateListenerSet = true;
+        }
+        
         // Démarrage de la finale - événement dédié pour charger le jeu
         socket.on('tournamentFinalStart', (data: any) => {
             // Définir le paddle contrôlé
@@ -451,6 +472,7 @@ function reconnectWebSocket() {
         pongListenerSet = false;
         errorListenerSet = false;
         leaderboardUpdatedListenerSet = false;
+        otherSemifinalUpdateListenerSet = false;
         // NOTE: friendAdded, friendRemoved, profileUpdated, friendRequestReceived
         // sont maintenant gérés par friendList.html.ts
         
@@ -733,11 +755,8 @@ function setupGameEventListeners()
             // Affiche la page de fin de partie AVEC UN PETIT DELAY pour laisser
             // le renderer afficher les dernières frames (UX : balle qui sort)
             setTimeout(() => {
-                if (data && data.winner) {
-                    load('gameFinished', data);
-                } else {
-                    load('gameFinished');
-                }
+                // Toujours passer les données reçues pour garantir la cohérence entre navigateurs
+                load('gameFinished', data || {});
             }, 300);
         });
 	}
@@ -747,6 +766,10 @@ function setupGameEventListeners()
     {
         socket.on('tournamentSemifinalFinished', (data: any) => {
             tournamentSemifinalFinishedListenerActive = true;
+            
+            // Toujours afficher l'écran de fin de demi-finale, même si navigation en cours
+            // (forfait par navigation doit montrer le résultat)
+            window.isNavigatingAwayFromGame = false;
             
             // Arrêter le rendu du jeu
             cleanupGameState();
@@ -760,12 +783,19 @@ function setupGameEventListeners()
     if (!tournamentFinalFinishedListenerActive)
     {
         socket.on('tournamentFinalFinished', (data: any) => {
+            console.log('📥 Received tournamentFinalFinished event:', data);
             tournamentFinalFinishedListenerActive = true;
             
+            // Toujours afficher l'écran de fin de finale, même si navigation en cours
+            // (forfait par navigation doit montrer le résultat)
+            window.isNavigatingAwayFromGame = false;
+            
             // Arrêter le rendu du jeu
+            console.log('🧹 Calling cleanupGameState before showing final screen');
             cleanupGameState();
             
             // Afficher l'écran de fin de finale
+            console.log('🏆 Loading tournamentFinalFinished screen');
             load('tournamentFinalFinished', data);
         });
     }

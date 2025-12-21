@@ -58,13 +58,34 @@ export function getPlayerScore(room: RoomType, paddleSide: string): number
  * 
  * @param room - La room contenant le jeu
  * @param disconnectedSocketId - L'ID du socket deconnecte a ignorer
- * @returns Les infos du gagnant ou null si non trouve
+ * @returns Les infos du gagnant ou null si non trouve ou match nul
  */
 export function findWinnerAfterForfeit(
     room: RoomType,
     disconnectedSocketId: string
 ): { side: string; score: number; username: string } | null
 {
+    const numPlayers = room.maxPlayers || 2;
+    
+    // Pour les parties 4 joueurs, vérifier si les scores sont égaux
+    if (numPlayers === 4) {
+        const scores: number[] = [];
+        
+        for (const [socketId, paddle] of Object.entries(room.paddleBySocket || {}))
+        {
+            if (room.playerUsernames?.[socketId])
+            {
+                const score = getPlayerScore(room, paddle as string);
+                scores.push(score);
+            }
+        }
+        
+        // Si tous les scores sont égaux, c'est un match nul
+        const allEqual = scores.every(score => score === scores[0]);
+        if (allEqual)
+            return null;
+    }
+    
     let winningSide: string | null = null;// string ou nul et init a null
     let winningScore = -1;
     let winnerUsername: string | null = null;
@@ -284,8 +305,51 @@ export function handleForfeit(
     const disconnectedScore = getPlayerScore(room, disconnectedPlayer.paddleSide);
     
     const winner = findWinnerAfterForfeit(room, socketId);
+    
+    const numPlayers = room.maxPlayers || 2;
+    
+    // Si pas de gagnant (match nul en partie 4 joueurs avec scores égaux)
     if (!winner)
+    {
+        fastify.log.info(`Draw detected (${numPlayers} players) - No winner`);
+        
+        // Notifier tous les joueurs du match nul - NE PAS UTILISER null (bug cross-browser)
+        io.to(roomName).emit('gameFinished', {
+            winner: { isDraw: true, username: 'DRAW', side: 'DRAW', score: 0 },
+            loser: { isDraw: true, username: 'DRAW', side: 'DRAW', score: 0 },
+            forfeit: true,
+            draw: true,
+            forfeitMessage: `${disconnectedPlayer.username} left the game - Draw (equal scores)`,
+            numPlayers
+        });
+        
+        // Notifier tous les joueurs restants qu'ils passent à "online"
+        if (room.playerUsernames)
+        {
+            for (const [sid, username] of Object.entries(room.playerUsernames))
+            {
+                if (sid !== socketId)
+                {
+                    const user = getUserByUsername(username) as { id: number } | undefined;
+                    if (user)
+                        broadcastUserStatusChange(globalIo, user.id, 'online', fastify);
+                }
+            }
+        }
+        
+        // Notifier le joueur déconnecté
+        const loserUser = getUserByUsername(disconnectedPlayer.username) as { id: number } | undefined;
+        if (loserUser)
+        {
+            const loserStatus = loserIsOffline ? 'offline' : 'online';
+            broadcastUserStatusChange(globalIo, loserUser.id, loserStatus, fastify);
+        }
+        
+        if (room.pongGame)
+            room.pongGame.stop();
+        
         return;
+    }
     
     // TOURNAMENT FORFEIT: Enregistrer le résultat dans le bracket
     if (room.tournamentId && room.matchId) {

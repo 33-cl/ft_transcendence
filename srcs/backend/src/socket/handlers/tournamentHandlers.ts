@@ -332,16 +332,35 @@ function handleSemifinalEnd(
     
     console.log(`🏆 Tournament: Semi-final ${semifinalNumber} complete - Winner: ${winnerName}`);
     
+    // Récupérer les infos de l'autre demi-finale
+    const otherSemifinal = semifinalNumber === 1 ? state.semifinal2 : state.semifinal1;
+    let otherSemifinalInfo = null;
+    if (otherSemifinal && otherSemifinal.pongGame) {
+        const otherPlayer1Name = state.playerUsernames[otherSemifinal.player1] || 'Player';
+        const otherPlayer2Name = state.playerUsernames[otherSemifinal.player2] || 'Player';
+        const otherScore = otherSemifinal.pongGame.state?.score || { A: 0, C: 0 };
+        otherSemifinalInfo = {
+            player1: otherPlayer1Name,
+            player2: otherPlayer2Name,
+            score1: otherScore.A || 0,
+            score2: otherScore.C || 0,
+            finished: otherSemifinal.finished || false,
+            winner: otherSemifinal.finished ? state.playerUsernames[otherSemifinal.winner!] : null
+        };
+    }
+    
     // Envoyer tournamentSemifinalFinished aux joueurs de cette demi-finale pour afficher l'écran de fin
     io.to(semifinal.player1).emit('tournamentSemifinalFinished', {
         winner: { side: winner.side, score: winnerScore, username: winnerName },
         loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
-        semifinalNumber
+        semifinalNumber,
+        otherSemifinal: otherSemifinalInfo
     });
     io.to(semifinal.player2).emit('tournamentSemifinalFinished', {
         winner: { side: winner.side, score: winnerScore, username: winnerName },
         loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
-        semifinalNumber
+        semifinalNumber,
+        otherSemifinal: otherSemifinalInfo
     });
     
     // Notifier les joueurs de cette demi-finale via tournamentUpdate aussi
@@ -710,10 +729,12 @@ function handleFinalEnd(
     console.log(`🏆🏆🏆 Tournament COMPLETE - Champion: ${winnerName}`);
     
     // Envoyer tournamentFinalFinished aux finalistes pour afficher l'écran de fin
+    console.log(`📤 Sending tournamentFinalFinished to winner ${winnerId} (${winnerName})`);
     io.to(winnerId).emit('tournamentFinalFinished', {
         winner: { side: 'LEFT', score: winnerScore, username: winnerName },
         loser: { side: 'RIGHT', score: loserScore, username: loserName }
     });
+    console.log(`📤 Sending tournamentFinalFinished to loser ${loserId} (${loserName})`);
     io.to(loserId).emit('tournamentFinalFinished', {
         winner: { side: 'LEFT', score: winnerScore, username: winnerName },
         loser: { side: 'RIGHT', score: loserScore, username: loserName }

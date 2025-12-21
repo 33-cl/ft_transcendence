@@ -3,6 +3,8 @@ export const gameFinishedHTML = (data?: any) => {
     const winner = data?.winner;
     const loser = data?.loser;
     const isForfeit = data?.forfeit === true;
+    // Vérification cross-browser robuste pour draw - vérifie le flag draw ou winner.isDraw
+    const isDraw = (data?.draw === true) || (winner?.isDraw === true);
     const mode = data?.mode; // 'ai', 'local', ou undefined pour online
     const numPlayers = data?.numPlayers || 2;
     const is4PlayerGame = numPlayers === 4;
@@ -41,7 +43,15 @@ export const gameFinishedHTML = (data?: any) => {
     
     // Layout pour parties 4 joueurs (local ou online) - afficher seulement le gagnant
     if (is4PlayerGame) {
-        const displayWinnerName = isLocalOrAIGame ? (sideNames[winner?.side] || winnerName) : winnerName;
+        // Si match nul (isDraw), afficher "Draw", sinon afficher le nom du gagnant
+        let displayText = '';
+        
+        if (isDraw) {
+            displayText = 'Draw';
+        } else {
+            const displayWinnerName = isLocalOrAIGame ? (sideNames[winner?.side] || winnerName) : winnerName;
+            displayText = `${displayWinnerName} WINS!`;
+        }
         
         return /*html*/`
             <div class="game-finished-overlay">
@@ -50,7 +60,7 @@ export const gameFinishedHTML = (data?: any) => {
                     
                     <div class="game-finished-4player-result">
                         <div class="game-finished-winner-announcement">
-                            WINNER: ${displayWinnerName}
+                            ${displayText}
                         </div>
                     </div>
                     
