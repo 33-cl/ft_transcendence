@@ -3,11 +3,8 @@
 import { GameState } from './gameState.js';
 
 // Moves the paddle for a player in the specified direction
-export function movePaddle(
-    state: GameState, 
-    player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', 
-    direction: 'up' | 'down'
-): void {
+export function movePaddle(state: GameState, player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down'): void 
+{
     const speed = Math.max(1, Math.floor(state.paddleSpeed));
 
     if (state.paddles && state.paddles.length === 2) 
