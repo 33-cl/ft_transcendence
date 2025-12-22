@@ -6,6 +6,7 @@ export type AIDifficulty = 'easy' | 'medium' | 'hard';
 // Describes AI configuration for single-player mode
 export interface AIConfig 
 {
+    // Basic settings
     enabled: boolean;
     difficulty: AIDifficulty;
     reactionTime: number;
@@ -99,11 +100,13 @@ export function createInitialGameState(numPlayers: number = 2): GameState
             let y = defaultPaddleY;
             let width = paddleWidth;
             let height = paddleHeight;
+
             if (count === 2) 
             {
-                if (i === 1) side = 'RIGHT' as PaddleSide;
-                if (side === 'LEFT') x = paddleMargin;
-                else if (side === 'RIGHT') x = canvasWidth - paddleMargin - paddleWidth;
+                if (i === 1)
+                    side = 'RIGHT' as PaddleSide;
+                if (side === 'LEFT')        x = paddleMargin;
+                else if (side === 'RIGHT')  x = canvasWidth - paddleMargin - paddleWidth;
             } 
             else if (count === 4) 
             {

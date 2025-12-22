@@ -3,7 +3,8 @@
 import { GameState } from './gameState.js';
 
 // Calculates bounce angle based on impact zone on paddle
-export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, paddleHeight: number): number {
+export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, paddleHeight: number): number 
+{
     const zoneCount = 16;
     const minAngle = -40;
     const maxAngle = 40;
@@ -18,15 +19,14 @@ export function calculateBounceAngleFromZone(ballY: number, paddleTop: number, p
     return angleInRadians;
 }
 
-export interface BallState {
+export interface BallState 
+{
     accelerationCount: number;
     pointScored: boolean;
     lastContact: number;
 }
 
-// Resets the ball to the center with initial speed and direction
-// Clear countdown on subsequent resets
-// Reset direction: 4-player random 360°, 2-player balanced diagonal
+// Resets ball to center with initial speed and direction
 export function resetBall(state: GameState, ballState: BallState, isFirstLaunch: boolean): void {
     state.ballX = state.canvasWidth / 2;
     state.ballY = state.canvasHeight / 2;
@@ -41,20 +41,22 @@ export function resetBall(state: GameState, ballState: BallState, isFirstLaunch:
     
     const numPlayers = state.paddles?.length || 2;
     
-    if (numPlayers === 4) {
+    if (numPlayers === 4) 
+    {
         const randomAngle = Math.random() * 2 * Math.PI;
         state.ballSpeedX = baseSpeed * Math.cos(randomAngle);
         state.ballSpeedY = baseSpeed * Math.sin(randomAngle);
-    } else {
+    } 
+    else 
+    {
         const angle = Math.random() * Math.PI / 2 - Math.PI / 4;
         const direction = Math.random() < 0.5 ? 1 : -1;
         state.ballSpeedX = Math.cos(angle) * baseSpeed * direction;
         state.ballSpeedY = Math.sin(angle) * baseSpeed;
     }
     
-    if (!isFirstLaunch) {
+    if (!isFirstLaunch)
         state.ballCountdown = 0;
-    }
 } 
 
 // Accelerate ball by 15% per hit; capped to keep gameplay stable
@@ -64,7 +66,8 @@ export function accelerateBall(state: GameState, ballState: BallState): void {
     
     const currentSpeedBefore = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
     
-    if (currentSpeedBefore < maxSpeed) {
+    if (currentSpeedBefore < maxSpeed) 
+    {
         state.ballSpeedX *= accelerationFactor;
         state.ballSpeedY *= accelerationFactor;
         
@@ -79,9 +82,11 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
     const { canvasWidth, canvasHeight, ballRadius } = state;
     const paddles = state.paddles;
     
-    if (!paddles || paddles.length !== 4) return;
+    if (!paddles || paddles.length !== 4) 
+        return;
 
-    const checkCircleRectangleCollision = (paddle: any, paddleIndex: number) => {
+    const checkCircleRectangleCollision = (paddle: any, paddleIndex: number) =>
+    {
         const ballCenterX = state.ballX;
         const ballCenterY = state.ballY;
 
@@ -97,97 +102,128 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
         const deltaY = ballCenterY - closestY;
         const distanceSq = deltaX * deltaX + deltaY * deltaY;
         
-        if (distanceSq > ballRadius * ballRadius) {
+        if (distanceSq > ballRadius * ballRadius)
             return false;
-        }
         
-        if (ballState.lastContact === paddleIndex) {
+        if (ballState.lastContact === paddleIndex) 
             return false;
-        }
         
         const isInsideHorizontally = ballCenterX >= paddleLeft && ballCenterX <= paddleRight;
         const isInsideVertically = ballCenterY >= paddleTop && ballCenterY <= paddleBottom;
         
         const currentSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
         
-        if (isInsideVertically && !isInsideHorizontally) {
-            if (paddleIndex === 0) {
+        if (isInsideVertically && !isInsideHorizontally) 
+        {
+            if (paddleIndex === 0) 
+            {
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
+
                 state.ballSpeedX = Math.abs(currentSpeed * Math.cos(bounceAngle));
                 state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                 state.ballX = paddleRight + ballRadius;
                 accelerateBall(state, ballState);
                 ballState.lastContact = 0;
+    
                 return true;
-            } else if (paddleIndex === 2) {
+            } 
+            else if (paddleIndex === 2) 
+            {
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
+
                 state.ballSpeedX = -Math.abs(currentSpeed * Math.cos(bounceAngle));
                 state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                 state.ballX = paddleLeft - ballRadius;
                 accelerateBall(state, ballState);
                 ballState.lastContact = 2;
+
                 return true;
             }
         }
         
-        if (isInsideHorizontally && !isInsideVertically) {
-            if (paddleIndex === 1) {
+        if (isInsideHorizontally && !isInsideVertically) 
+        {
+            if (paddleIndex === 1) 
+            {
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
+
                 state.ballSpeedX = currentSpeed * Math.sin(bounceAngle);
                 state.ballSpeedY = -Math.abs(currentSpeed * Math.cos(bounceAngle));
                 state.ballY = paddleTop - ballRadius;
                 accelerateBall(state, ballState);
                 ballState.lastContact = 1;
+
                 return true;
-            } else if (paddleIndex === 3) {
+            } 
+            else if (paddleIndex === 3) 
+            {
                 const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
+
                 state.ballSpeedX = currentSpeed * Math.sin(bounceAngle);
                 state.ballSpeedY = Math.abs(currentSpeed * Math.cos(bounceAngle));
                 state.ballY = paddleBottom + ballRadius;
                 accelerateBall(state, ballState);
                 ballState.lastContact = 3;
+
                 return true;
             }
         }
-        
-        if (!isInsideHorizontally && !isInsideVertically) {
+        if (!isInsideHorizontally && !isInsideVertically)
+        {
             const deltaXEdge = Math.min(Math.abs(ballCenterX - paddleLeft), Math.abs(ballCenterX - paddleRight));
             const deltaYEdge = Math.min(Math.abs(ballCenterY - paddleTop), Math.abs(ballCenterY - paddleBottom));
             
-            if (deltaXEdge < deltaYEdge) {
-                if (paddleIndex === 0) {
+            if (deltaXEdge < deltaYEdge) 
+            {
+                if (paddleIndex === 0) 
+                {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
+
                     state.ballSpeedX = Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                     state.ballX = paddleRight + ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 0;
+
                     return true;
-                } else if (paddleIndex === 2) {
+                } 
+                else if (paddleIndex === 2) 
+                {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
+
                     state.ballSpeedX = -Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
                     state.ballX = paddleLeft - ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 2;
+
                     return true;
                 }
-            } else {
-                if (paddleIndex === 1) {
+            } 
+            else 
+            {
+                if (paddleIndex === 1) 
+                {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
+
                     state.ballSpeedX = currentSpeed * Math.sin(bounceAngle);
                     state.ballSpeedY = -Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballY = paddleTop - ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 1;
+
                     return true;
-                } else if (paddleIndex === 3) {
+                }
+                else if (paddleIndex === 3) 
+                {
                     const bounceAngle = calculateBounceAngleFromZone(ballCenterX, paddleLeft, paddle.width);
+
                     state.ballSpeedX = currentSpeed * Math.sin(bounceAngle);
                     state.ballSpeedY = Math.abs(currentSpeed * Math.cos(bounceAngle));
                     state.ballY = paddleBottom + ballRadius;
                     accelerateBall(state, ballState);
                     ballState.lastContact = 3;
+
                     return true;
                 }
             }
@@ -196,31 +232,36 @@ export function checkBallCollisions4Players(state: GameState, ballState: BallSta
         return false;
     };
     
-    for (let i = 0; i < paddles.length; i++) {
-        if (checkCircleRectangleCollision(paddles[i], i)) {
+    for (let i = 0; i < paddles.length; i++) 
+    {
+        if (checkCircleRectangleCollision(paddles[i], i)) 
             break;
-        }
     }
 }
 
 // 1v1 collision: precise circle-rectangle checks.
 // Avoid bounce if ball is moving away from paddle.
-export function checkBallCollisions2Players(state: GameState, ballState: BallState): void {
+export function checkBallCollisions2Players(state: GameState, ballState: BallState): void 
+{
     const { canvasWidth, canvasHeight, ballRadius } = state;
     const paddles = state.paddles;
     
-    if (!paddles || paddles.length !== 2) return;
+    if (!paddles || paddles.length !== 2) 
+        return;
     
-    if (state.ballY - ballRadius <= 0) {
+    if (state.ballY - ballRadius <= 0) 
+    {
         state.ballSpeedY = -state.ballSpeedY;
         state.ballY = ballRadius;
     }
-    if (state.ballY + ballRadius >= canvasHeight) {
+    if (state.ballY + ballRadius >= canvasHeight) 
+    {
         state.ballSpeedY = -state.ballSpeedY;
         state.ballY = canvasHeight - ballRadius;
     }
     
-    const checkCircleCollision1v1 = (paddle: any, isLeftPaddle: boolean) => {
+    const checkCircleCollision1v1 = (paddle: any, isLeftPaddle: boolean) => 
+    {
         const ballCenterX = state.ballX;
         const ballCenterY = state.ballY;
         
@@ -236,13 +277,14 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
         const deltaY = ballCenterY - closestY;
         const distanceSq = deltaX * deltaX + deltaY * deltaY;
         
-        if (distanceSq > ballRadius * ballRadius) {
+        if (distanceSq > ballRadius * ballRadius) 
             return false;
-        }
         
-        if (isLeftPaddle && state.ballSpeedX > 0) return false;
-        if (!isLeftPaddle && state.ballSpeedX < 0) return false;
-        
+        if (isLeftPaddle && state.ballSpeedX > 0) 
+            return false;
+        if (!isLeftPaddle && state.ballSpeedX < 0) 
+            return false;
+
         const currentSpeed = Math.sqrt(state.ballSpeedX * state.ballSpeedX + state.ballSpeedY * state.ballSpeedY);
         
         const bounceAngle = calculateBounceAngleFromZone(ballCenterY, paddleTop, paddle.height);
@@ -252,11 +294,10 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
         state.ballSpeedX = currentSpeed * Math.cos(bounceAngle) * direction;
         state.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
         
-        if (isLeftPaddle) {
+        if (isLeftPaddle) 
             state.ballX = paddleRight + ballRadius;
-        } else {
+        else 
             state.ballX = paddleLeft - ballRadius;
-        }
         
         accelerateBall(state, ballState);
         
@@ -268,7 +309,8 @@ export function checkBallCollisions2Players(state: GameState, ballState: BallSta
 }
 
 // Reset when ball is fully outside play area (visual effect)
-export function shouldResetBall(state: GameState): boolean {
+export function shouldResetBall(state: GameState): boolean 
+{
     const { canvasWidth, canvasHeight, ballRadius } = state;
     
     return (state.ballX + ballRadius < 0 || 
