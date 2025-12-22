@@ -1,4 +1,4 @@
-// routes/tournaments.ts - Endpoints HTTP - Routes API pour les tournois (C'est la couche HTTP qui reçoit les requêtes des clients (frontend).)
+// routes/tournaments.ts - HTTP Endpoints - API Routes for tournaments (This is the HTTP layer that receives requests from clients (frontend).)
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
@@ -19,7 +19,7 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Helper privé pour valider le JWT et extraire userId
+// Private helper to validate JWT and extract userId
 function requireUserIdFromJWT(request: FastifyRequest, reply: FastifyReply): number | undefined {
     const token = getJwtFromRequest(request);
     if (!token) {
@@ -35,7 +35,7 @@ function requireUserIdFromJWT(request: FastifyRequest, reply: FastifyReply): num
     }
 }
 
-// Typages minimaux pour les résultats SQL utilisés ici
+// Minimal typings for SQL results used here
 interface TournamentRow {
     id: string;
     name?: string;
@@ -48,7 +48,7 @@ interface TournamentRow {
     completed_at?: string | null;
 }
 
-// Interface pour la création d'un tournoi
+// Interface for tournament creation
 interface CreateTournamentBody {
     name: string;
     maxPlayers?: number;
@@ -56,15 +56,15 @@ interface CreateTournamentBody {
 
 export default async function tournamentsRoutes(fastify: FastifyInstance) {
     
-    // POST /tournaments - Créer un nouveau tournoi
-    // SECURITY: Rate limiting pour éviter le spam de création
+    // POST /tournaments - Create a new tournament
+    // SECURITY: Rate limiting to prevent creation spam
     fastify.post('/tournaments', async (request: FastifyRequest<{ Body: CreateTournamentBody }>, reply: FastifyReply) => {
         try {
-            // SECURITY: Validation de l'utilisateur
+            // SECURITY: User validation
             const userId = requireUserIdFromJWT(request, reply);
             if (userId === undefined) return;
 
-            // SECURITY: Rate limiting - 5 créations de tournoi par minute par user
+            // SECURITY: Rate limiting - 5 tournament creations per minute per user
             if (!checkRateLimit(`tournament_create_${userId}`, 5, 60000)) {
                 return reply.status(429).send({ error: 'Too many tournament creations. Please wait.' });
             }
@@ -72,7 +72,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // ========================================
             // ISOLATION CHECK: Online vs Tournament
             // ========================================
-            // Vérifier que l'utilisateur n'est pas dans un jeu online ou un autre tournoi
+            // Check that the user is not in an online game or another tournament
             const isolationCheck = canUserJoinTournament(userId);
             if (!isolationCheck.allowed) {
                 return reply.status(409).send({ 
@@ -84,7 +84,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const body = request.body as CreateTournamentBody;
             const { name, maxPlayers = 4 } = body;
 
-            // SECURITY: Validation du nom du tournoi
+            // SECURITY: Tournament name validation
             if (!name || name.trim().length === 0) {
                 return reply.status(400).send({ error: 'Tournament name is required' });
             }
@@ -93,18 +93,18 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Tournament name must be between 1 and 50 characters' });
             }
             
-            // Sanitize le nom pour éviter les injections (supprime les balises HTML)
+            // Sanitize the name to prevent injections (removes HTML tags)
             const sanitizedName = removeHtmlTags(name).trim();
 
-            // SECURITY: Validation stricte - 4 joueurs uniquement pour les specs
+            // SECURITY: Strict validation - 4 players only for specs
             if (maxPlayers !== 4) {
                 return reply.status(400).send({ error: 'Max players must be 4 for tournament specs' });
             }
 
-            // Générer un ID unique
+            // Generate a unique ID
             const tournamentId = uuidv4();
 
-            // Insérer en base de données avec le creator_id
+            // Insert into database with creator_id
             const stmt = db.prepare(`
                 INSERT INTO tournaments (id, name, creator_id, status, max_players, current_players)
                 VALUES (?, ?, ?, 'registration', ?, 0)
@@ -112,10 +112,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             stmt.run(tournamentId, sanitizedName, userId, maxPlayers);
 
-            // Indique l'URL de la ressource nouvellement créée
+            // Indicate the URL of the newly created resource
             reply.header('Location', `/tournaments/${tournamentId}`);
 
-            // Retourner le tournoi créé (cast pour TypeScript)
+            // Return the created tournament (cast for TypeScript)
             const createdTournament = db.prepare(`
                 SELECT * FROM tournaments WHERE id = ?
             `).get(tournamentId) as TournamentRow | undefined;
@@ -134,7 +134,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
     // ----------------------------------------------------------------------
 
-    // GET /tournaments/:id - Récupérer les détails d'un tournoi (participants + bracket)
+    // GET /tournaments/:id - Retrieve tournament details (participants + bracket)
     fastify.get('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         try {
             const { id: tournamentId } = request.params as { id: string };
@@ -165,7 +165,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
     // ----------------------------------------------------------------------
 
-    // GET /tournaments - Récupérer la liste des tournois
+    // GET /tournaments - Retrieve the list of tournaments
     fastify.get('/tournaments', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const tournaments = db.prepare(`SELECT * FROM tournaments ORDER BY created_at DESC`).all() as TournamentRow[];
@@ -208,8 +208,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
     // ----------------------------------------------------------------------
 
-    // POST /tournaments/:id/join - Inscrire un utilisateur à un tournoi
-    // SECURITY: Rate limiting pour éviter le spam de join
+    // POST /tournaments/:id/join - Register a user to a tournament
+    // SECURITY: Rate limiting to prevent join spam
     interface JoinTournamentBody {} // Empty body, we use authenticated user
 
     fastify.post('/tournaments/:id/join', async (request: FastifyRequest<{ Params: { id: string }, Body: JoinTournamentBody }>, reply: FastifyReply) => {
@@ -243,7 +243,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(401).send({ error: 'Invalid or expired JWT' });
             }
 
-            // SECURITY: Rate limiting - 20 joins par minute par user (permet plusieurs tournois)
+            // SECURITY: Rate limiting - 20 joins per minute per user (allows multiple tournaments)
             if (!checkRateLimit(`tournament_join_${userId}`, 20, 60000)) {
                 return reply.status(429).send({ error: 'Too many join attempts. Please wait.' });
             }
@@ -259,7 +259,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             // ========================================
             // ISOLATION CHECK: Online vs Tournament
             // ========================================
-            // Vérifier que l'utilisateur n'est pas dans un jeu online ou un autre tournoi
+            // Check that the user is not in an online game or another tournament
             const isolationCheck = canUserJoinTournament(validUserId);
             if (!isolationCheck.allowed) {
                 return reply.status(409).send({ 
@@ -280,7 +280,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
-            // Vérifier que le tournoi existe et est en phase d'inscription
+            // Check that the tournament exists and is in registration phase
             const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
@@ -294,7 +294,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Tournament is full' });
             }
 
-            // Vérifications proactives pour renvoyer des erreurs précises
+            // Proactive checks to return precise errors
             const existingByUser = db.prepare(
                 `SELECT id FROM tournament_participants WHERE tournament_id = ? AND user_id = ?`
             ).get(tournamentId, validUserId);
@@ -309,7 +309,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(409).send({ error: 'Alias already taken in this tournament' });
             }
 
-            // Insérer le participant
+            // Insert the participant
             const insert = db.prepare(`
                 INSERT INTO tournament_participants (tournament_id, user_id, alias)
                 VALUES (?, ?, ?)
@@ -317,12 +317,12 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             const insertResult = insert.run(tournamentId, validUserId, sanitizedAlias);
 
-            // Incrémenter le compteur de participants
+            // Increment the participant counter
             db.prepare(`UPDATE tournaments SET current_players = current_players + 1 WHERE id = ?`).run(tournamentId);
 
             const participant = db.prepare(`SELECT * FROM tournament_participants WHERE id = ?`).get(insertResult.lastInsertRowid);
 
-            // Si le tournoi est désormais plein, générer automatiquement le bracket complet
+            // If the tournament is now full, automatically generate the complete bracket
             const updatedTournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow;
 
             // Emit WebSocket event to notify player joined
@@ -333,10 +333,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             });
 
             if (updatedTournament.current_players >= updatedTournament.max_players) {
-                // Générer le bracket complet (2 demi-finales + 1 finale)
+                // Generate the complete bracket (2 semifinals + 1 final)
                 generateBracket(tournamentId);
 
-                // Marquer le tournoi comme actif
+                // Mark the tournament as active
                 db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
 
                 fastify.log.info(`Tournament ${tournamentId} auto-started with ${updatedTournament.current_players} players`);
@@ -351,10 +351,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
     // ----------------------------------------------------------------------
 
-    // POST /tournaments/:id/leave - Quitter un tournoi
+    // POST /tournaments/:id/leave - Leave a tournament
     fastify.post('/tournaments/:id/leave', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         try {
-            // SECURITY: Validation de l'utilisateur
+            // SECURITY: User validation
             const token = getJwtFromRequest(request);
             if (!token) {
                 return reply.status(401).send({ error: 'Unauthorized' });
@@ -375,7 +375,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
-            // Vérifier que le tournoi existe et est en phase d'inscription
+            // Check that the tournament exists and is in registration phase
             const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
@@ -385,7 +385,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Cannot leave tournament: registration is closed' });
             }
 
-            // Vérifier que l'utilisateur est bien participant
+            // Check that the user is a participant
             const participant = db.prepare(`
                 SELECT id, alias FROM tournament_participants 
                 WHERE tournament_id = ? AND user_id = ?
@@ -395,10 +395,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'You are not a participant of this tournament' });
             }
 
-            // Supprimer le participant
+            // Delete the participant
             db.prepare(`DELETE FROM tournament_participants WHERE tournament_id = ? AND user_id = ?`).run(id, userId);
             
-            // Décrémenter le compteur de participants
+            // Decrement the participant counter
             db.prepare(`UPDATE tournaments SET current_players = current_players - 1 WHERE id = ?`).run(id);
 
             // Get updated player count
@@ -418,7 +418,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
-    // POST /tournaments/:id/start - Démarrer manuellement un tournoi (si 4 joueurs)
+    // POST /tournaments/:id/start - Manually start a tournament (if 4 players)
     fastify.post('/tournaments/:id/start', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         try {
             const { id } = request.params as { id: string };
@@ -428,7 +428,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
-            // Vérifier que le tournoi existe et est en registration
+            // Check that the tournament exists and is in registration phase
             const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(id) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
@@ -442,16 +442,16 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: `Tournament needs ${tournament.max_players} players to start (current: ${tournament.current_players})` });
             }
 
-            // Générer le bracket du tournoi (2 demi-finales + 1 finale) via la fonction dédiée
-            // Cette fonction crée automatiquement les 3 matchs nécessaires pour un tournoi à 4 joueurs
+            // Generate the tournament bracket (2 semifinals + 1 final) using the dedicated function
+            // This function automatically creates the 3 matches needed for a 4 player tournament
             generateBracket(id);
             
-            // Mettre à jour le statut du tournoi (maintenant géré par generateBracket pour la cohérence)
+            // Update the tournament status (now handled by generateBracket for consistency)
             db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
             
             fastify.log.info(`Tournament ${id} started manually with ${tournament.current_players} players`);
             
-            // Récupérer les matchs générés pour l'événement WebSocket
+            // Retrieve the generated matches for the WebSocket event
             const matches = db.prepare(
                 `SELECT id, round, player1_id, player2_id FROM tournament_matches WHERE tournament_id = ? ORDER BY round, id`
             ).all(id) as Array<{ id: number; round: number; player1_id: number | null; player2_id: number | null }>;
@@ -466,8 +466,8 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
         }
     });
 
-    // POST /tournaments/:id/matches/:matchId/result - Enregistrer le résultat d'un match de tournoi
-    // SECURITY: Route protégée par JWT - seul un participant du match peut enregistrer le résultat
+    // POST /tournaments/:id/matches/:matchId/result - Record the result of a tournament match
+    // SECURITY: Route protected by JWT - only a participant of the match can record the result
     interface MatchResultBody {
         winnerId: number;
         loserId: number;
@@ -477,7 +477,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
     fastify.post('/tournaments/:id/matches/:matchId/result', async (request: FastifyRequest<{ Params: { id: string, matchId: string }, Body: MatchResultBody }>, reply: FastifyReply) => {
         try {
-            // SECURITY: Vérifier l'authentification
+            // SECURITY: Authenticate user
             const token = getJwtFromRequest(request);
             if (!token) {
                 return reply.status(401).send({ error: 'Authentication required' });
@@ -511,7 +511,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Invalid winnerId or loserId' });
             }
 
-            // Vérifier que le tournoi et le match existent
+            // Check that the tournament and match exist
             const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tid) as TournamentRow | undefined;
             if (!tournament) return reply.status(404).send({ error: 'Tournament not found' });
 
@@ -525,7 +525,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Winner is not a participant of this match' });
             }
 
-            // SECURITY: Vérifier que l'utilisateur courant est bien un des participants du match
+            // SECURITY: Check that the current user is one of the match participants
             const participant1 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(tm.player1_id) as any;
             const participant2 = db.prepare(`SELECT user_id FROM tournament_participants WHERE id = ?`).get(tm.player2_id) as any;
             
@@ -554,10 +554,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
 
     
-    // POST /tournaments/:id/matches/:matchId/play - Créer une room Pong pour jouer un match de tournoi
+    // POST /tournaments/:id/matches/:matchId/play - Create a Pong room to play a tournament match
     fastify.post('/tournaments/:id/matches/:matchId/play', async (request: FastifyRequest<{ Params: { id: string, matchId: string } }>, reply: FastifyReply) => {
         try {
-            // SECURITY: Authentification
+            // SECURITY: User authentication
             const token = getJwtFromRequest(request);
             if (!token) {
                 return reply.status(401).send({ error: 'Unauthorized' });
@@ -573,7 +573,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             const { id, matchId } = request.params as { id: string, matchId: string };
 
-            // Validation des paramètres
+            // Validate parameters
             if (!validateUUID(id)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
@@ -584,7 +584,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Invalid matchId' });
             }
 
-            // Vérifier que le tournoi existe et est actif
+            // Check that the tournament exists and is active
             const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tid) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
@@ -594,7 +594,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Tournament is not active. Cannot start match.' });
             }
 
-            // Vérifier que le match existe et appartient au tournoi
+            // Check that the match exists and belongs to the tournament
             const match = db.prepare(`
                 SELECT tm.*, 
                        u1.username as player1_username, 
@@ -613,7 +613,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(400).send({ error: 'Match is not scheduled. Cannot start match.' });
             }
 
-            // Vérifier que les 2 joueurs sont définis
+            // Check that both players are set
             if (!match.player1_id || !match.player2_id) {
                 return reply.status(400).send({ error: 'Match does not have 2 players assigned' });
             }
@@ -622,17 +622,17 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             const player1UserId = match.player1_id;
             const player2UserId = match.player2_id;
 
-            // SECURITY: Vérifier que l'utilisateur est l'un des 2 joueurs du match
+            // SECURITY: Check that the current user is one of the 2 players in the match
             if (userId !== player1UserId && userId !== player2UserId) {
                 return reply.status(403).send({ error: 'You are not a participant of this match' });
             }
 
-            // Générer le nom de la room (unique par match)
+            // Generate the room name (unique per match)
             const roomName = `tournament_${tid}_match_${mid}`;
 
-            // Vérifier si la room existe déjà
+            // Check if the room already exists
             if (roomExists(roomName)) {
-                // Room existe déjà, retourner ses infos
+                // Room already exists, return its info
                 return reply.send({
                     success: true,
                     roomName: roomName,
@@ -648,21 +648,21 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 });
             }
 
-            // Créer la room manuellement avec métadonnées
+            // Create the room manually with metadata
             const newRoom = {
                 players: [],
                 maxPlayers: 2,
                 gameState: createInitialGameState(2),
-                isLocalGame: false, // Tournoi = online game
-                tournamentId: tid,  // Métadonnée pour retrouver le tournoi
-                matchId: mid        // Métadonnée pour retrouver le match
+                isLocalGame: false, // Tournament = online game
+                tournamentId: tid,  // Metadata to find the tournament
+                matchId: mid        // Metadata to find the match
             };
 
             rooms[roomName] = newRoom;
 
             fastify.log.info(`✅ Tournament match room created: ${roomName} for tournament ${tid}, match ${mid}`);
 
-            // Retourner les infos de la room créée
+            // Return the info of the created room
             return reply.send({
                 success: true,
                 roomName: roomName,
@@ -686,12 +686,12 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
 
     
-    // DELETE /tournaments/:id - Supprimer un tournoi
+    // DELETE /tournaments/:id - Delete a tournament
     fastify.delete('/tournaments/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         try {
             const tournamentId = request.params.id;
 
-            // SECURITY: Authentification de l'utilisateur
+            // SECURITY: User authentication
             const token = getJwtFromRequest(request);
             if (!token)
                 return reply.status(401).send({ error: 'Unauthorized' });
@@ -703,23 +703,23 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(401).send({ error: 'Invalid token' });
             }
 
-            // Validation de l'ID du tournoi (UUID)
+            // Validate the tournament ID (UUID)
             if (!validateUUID(tournamentId)) {
                 return reply.status(400).send({ error: 'Invalid tournament ID' });
             }
 
-            // Vérifier que le tournoi existe
+            // Check if the tournament exists
             const tournament = db.prepare(`SELECT * FROM tournaments WHERE id = ?`).get(tournamentId) as TournamentRow | undefined;
             if (!tournament) {
                 return reply.status(404).send({ error: 'Tournament not found' });
             }
 
-            // SECURITY: Seuls les tournois en statut 'registration' peuvent être supprimés
+            // SECURITY: Only tournaments in 'registration' status can be deleted
             if (tournament.status !== 'registration') {
                 return reply.status(403).send({ error: 'Cannot delete tournament that has already started' });
             }
 
-            // Vérifier si l'utilisateur est le créateur du tournoi (ou admin)
+            // Check if the user is the creator of the tournament (or admin)
             const creatorCheck = db.prepare(`
                 SELECT creator_id FROM tournaments WHERE id = ?
             `).get(tournamentId) as { creator_id: number } | undefined;
@@ -728,13 +728,13 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 return reply.status(403).send({ error: 'Only the tournament creator can delete it' });
             }
 
-            // Supprimer le tournoi et ses données associées (cascade)
+            // Delete the tournament and its associated data (cascade)
             const deleteResult = db.transaction(() => {
-                // Supprimer les participations
+                // Delete participants
                 db.prepare(`DELETE FROM tournament_participants WHERE tournament_id = ?`).run(tournamentId);
-                // Supprimer les matches (si il y en a)
+                // Delete matches (if any)
                 db.prepare(`DELETE FROM tournament_matches WHERE tournament_id = ?`).run(tournamentId);
-                // Supprimer le tournoi
+                // Delete the tournament
                 const result = db.prepare(`DELETE FROM tournaments WHERE id = ?`).run(tournamentId);
                 return result;
             })();
