@@ -757,7 +757,7 @@ function setupGameEventListeners()
             setTimeout(() => {
                 // Toujours passer les données reçues pour garantir la cohérence entre navigateurs
                 load('gameFinished', data || {});
-            }, 300);
+            }, 100);
         });
 	}
     
