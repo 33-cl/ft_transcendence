@@ -299,7 +299,7 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
                 passwordInput.value = '';
                 passwordInput.placeholder = '••••••••';
                 passwordInput.blur();
-                showMessage('Password change pending - click [SAVE] to apply');
+                // showMessage('Password change pending - click [SAVE] to apply');
             }
         }
     });
@@ -387,7 +387,7 @@ function setupInputBehavior(): void
                 
                 if (newUsername === originalUsername || newUsername === '')
                 {
-                    showMessage('No changes to username', true);
+                    // showMessage('No changes to username', true);
                     return;
                 }
                 
@@ -400,7 +400,7 @@ function setupInputBehavior(): void
                 pendingUsernameChange = newUsername;
                 usernameInput.style.borderColor = '#22c55e';
                 usernameInput.blur();
-                showMessage('Username change pending - click [SAVE] to apply');
+                // showMessage('Username change pending - click [SAVE] to apply');
             }
         });
     }
@@ -449,7 +449,7 @@ function setupInputBehavior(): void
                 
                 if (newEmail === originalEmail || newEmail === '')
                 {
-                    showMessage('No changes to email', true);
+                    // showMessage('No changes to email', true);
                     return;
                 }
                 
@@ -462,7 +462,7 @@ function setupInputBehavior(): void
                 pendingEmailChange = newEmail;
                 emailInput.style.borderColor = '#22c55e';
                 emailInput.blur();
-                showMessage('Email change pending - click [SAVE] to apply');
+                // showMessage('Email change pending - click [SAVE] to apply');
             }
         });
     }
@@ -493,6 +493,33 @@ async function saveChangedFields(): Promise<void>
     {
         showMessage('Form elements not found', true);
         return;
+    }
+
+    // Check for unsaved changes in inputs (user didn't press Enter)
+    const currentUsername = usernameInput.value.trim();
+    const originalUsername = window.currentUser?.username || '';
+    
+    if (currentUsername !== originalUsername && currentUsername !== '' && pendingUsernameChange === null)
+    {
+        if (!isValidUsername(currentUsername))
+        {
+            showMessage('Username must be 3-10 characters (letters, numbers, underscore only)', true);
+            return;
+        }
+        pendingUsernameChange = currentUsername;
+    }
+
+    const currentEmail = emailInput.value.trim();
+    const originalEmail = window.currentUser?.email || '';
+
+    if (currentEmail !== originalEmail && currentEmail !== '' && pendingEmailChange === null)
+    {
+        if (!isValidEmail(currentEmail))
+        {
+            showMessage('Invalid email format', true);
+            return;
+        }
+        pendingEmailChange = currentEmail;
     }
 
     const hasPendingUsername = pendingUsernameChange !== null;
@@ -735,15 +762,31 @@ async function saveChangedFields(): Promise<void>
     }
 }
 
+// Resets all pending changes and state variables
+function resetSettingsState(): void
+{
+    pendingPasswordChange = null;
+    pending2FAChange = null;
+    pendingUsernameChange = null;
+    pendingEmailChange = null;
+    is2FAButtonDisabled = false;
+}
+
 // Initializes all event handlers for the settings page when components are ready
 export function initSettingsHandlers(): void
 {
     document.addEventListener('componentsReady', () =>
     {
+        // Reset state if we are on the settings page (detected by presence of save button)
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn)
+        {
+            resetSettingsState();
+        }
+
         setupInputBehavior();
         initAvatarHandlers();
 
-        const saveBtn = document.getElementById('saveBtn');
         const toggle2FABtn = document.getElementById('toggle-2fa');
 
         if (saveBtn)
