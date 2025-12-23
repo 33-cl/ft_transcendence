@@ -177,7 +177,10 @@ function initializeComponents(): void
                    }
             
             if (target.id === 'profileCard')
+            {
+                window.selectedProfileUser = window.currentUser;
                 await load('profile');
+            }
             
             if (target.id === 'settingsBtn' || isSettingsBtn)
                 await load('settings');
