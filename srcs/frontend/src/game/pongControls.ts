@@ -1,186 +1,176 @@
 // pongControls.ts
-// Gère les contrôles clavier et l'envoi des mouvements de raquette au backend
+// This file manages keyboard controls and paddle movement events for the Pong game.
+// It handles key bindings for both local and online modes, updates controls when the paddle assignment changes,
+// and exposes utility functions for cleanup and configuration. It also manages AI mode and event listeners.
 
-// Le backend envoie le paddle attribué lors du joinRoom : { room: ..., paddle: 'LEFT'|'DOWN'|'RIGHT'|'TOP' }
 window.controlledPaddle = null;
 
-function sendKeyEvent(type: 'keydown' | 'keyup', player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down') {
-    
-    if (window.isLocalGame) {
+// Sends a key event (keydown or keyup) for a specific paddle and direction to the backend or local handler.
+function sendKeyEvent(type: 'keydown' | 'keyup', player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down')
+{
+    if (window.isLocalGame)
         window.sendMessage(type, { player, direction });
-    } else {
-        if (window.controlledPaddle === player) {
+    else
+        if (window.controlledPaddle === player)
             window.sendMessage(type, { player, direction });
-        }
-    }
 }
 
-// Mapping dynamique selon le mode de jeu
 let keyToMove: Record<string, { player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP', direction: 'up' | 'down' }> = {};
 
-function updatePaddleKeyBindings() {
+// Updates the key bindings for paddle movement based on the current game mode and paddle assignment.
+function updatePaddleKeyBindings()
+{
     const paddle = window.controlledPaddle;
     const isLocal = window.isLocalGame;
     
-    if (isLocal) {
+    if (isLocal)
+    {
         const paddles = paddle;
-        if (Array.isArray(paddles)) {
+        if (Array.isArray(paddles))
+        {
             keyToMove = {};
-            // 1v1 local : LEFT/RIGHT
-            if (!window.aiMode){
-                if (paddles.includes('LEFT')) {
+            if (!window.aiMode)
+            {
+                if (paddles.includes('LEFT'))
+                {
                     keyToMove['w'] = { player: 'LEFT', direction: 'up' };
                     keyToMove['s'] = { player: 'LEFT', direction: 'down' };
                 }
             }
-            if (paddles.includes('RIGHT')) {
+            if (paddles.includes('RIGHT'))
+            {
                 keyToMove['ArrowUp'] = { player: 'RIGHT', direction: 'up' };
                 keyToMove['ArrowDown'] = { player: 'RIGHT', direction: 'down' };
             }
-            // 1v1v1v1 local : LEFT/DOWN/RIGHT/TOP 
-            if (paddles.includes('DOWN')) {
-                // Paddle DOWN est horizontal : v = gauche, b = droite
-                keyToMove['v'] = { player: 'DOWN', direction: 'up' }; // up = gauche pour paddle horizontal
-                keyToMove['b'] = { player: 'DOWN', direction: 'down' }; // down = droite pour paddle horizontal
+            if (paddles.includes('DOWN'))
+            {
+                keyToMove['v'] = { player: 'DOWN', direction: 'up' };
+                keyToMove['b'] = { player: 'DOWN', direction: 'down' };
             }
-            if (paddles.includes('TOP')) {
-                // Paddle TOP est horizontal : o = gauche, p = droite
-                keyToMove['o'] = { player: 'TOP', direction: 'up' }; // up = gauche pour paddle horizontal
-                keyToMove['p'] = { player: 'TOP', direction: 'down' }; // down = droite pour paddle horizontal
+            if (paddles.includes('TOP'))
+            {
+                keyToMove['o'] = { player: 'TOP', direction: 'up' };
+                keyToMove['p'] = { player: 'TOP', direction: 'down' };
             }
-        } 
-        else if (paddle && ['LEFT', 'DOWN', 'RIGHT', 'TOP'].includes(paddle)) {
-            // Cas fallback (jamais utilisé normalement)
-            keyToMove = {
-                w: { player: 'LEFT', direction: 'up' },
-                s: { player: 'LEFT', direction: 'down' },
-                v: { player: 'DOWN', direction: 'up' }, // up = gauche pour paddle DOWN horizontal
-                b: { player: 'DOWN', direction: 'down' }, // down = droite pour paddle DOWN horizontal
-                ArrowUp: { player: 'RIGHT', direction: 'up' },
-                ArrowDown: { player: 'RIGHT', direction: 'down' },
-                o: { player: 'TOP', direction: 'up' }, // up = gauche pour paddle TOP horizontal
-                p: { player: 'TOP', direction: 'down' } // down = droite pour paddle TOP horizontal
-            };
         }
     }
-    else {
-        // Mode online : chaque joueur utilise les flèches directionnelles
-        if (paddle === 'LEFT' || paddle === 'DOWN' || paddle === 'RIGHT' || paddle === 'TOP') {
-            // En mode 4 joueurs online avec rotation du canvas,
-            // on utilise gauche/droite car le paddle est visuellement en bas
-            if (window.maxPlayers === 4) {
-                // La rotation CSS fait que chaque joueur voit son paddle en bas.
-                // Il faut adapter le mapping des touches selon la rotation appliquée
-                // pour que gauche visuel = gauche sur l'écran.
-                //
-                // Rotations appliquées (voir pongRenderer.ts applyCanvasRotation):
-                // - DOWN: 0° → pas d'inversion
-                // - LEFT: -90° → le paddle LEFT devient horizontal en bas, mais les axes sont pivotés
-                // - RIGHT: +90° → le paddle RIGHT devient horizontal en bas, mais les axes sont pivotés
-                // - TOP: 180° → tout est inversé
-                //
-                // Pour LEFT et RIGHT, après rotation de ±90°, la gauche visuelle correspond 
-                // à l'inverse de ce qu'on enverrait normalement.
-                // Pour TOP, après rotation de 180°, gauche et droite sont aussi inversés.
-                
-                if (paddle === 'DOWN') {
-                    // Rotation 0° : pas d'inversion
-                    keyToMove = {
-                        ArrowLeft: { player: paddle, direction: 'up' },   // Gauche visuel = 'up' 
-                        ArrowRight: { player: paddle, direction: 'down' } // Droite visuel = 'down'
-                    };
-                } else if (paddle === 'LEFT') {
-                    // Rotation -90° (antihoraire) : 
-                    // - Gauche visuelle → va vers le haut du canvas original → 'up'
-                    // - Droite visuelle → va vers le bas du canvas original → 'down'
-                    keyToMove = {
-                        ArrowLeft: { player: paddle, direction: 'up' },
-                        ArrowRight: { player: paddle, direction: 'down' }
-                    };
-                } else if (paddle === 'RIGHT') {
-                    // Rotation +90° (horaire) :
-                    // - Gauche visuelle → va vers le bas du canvas original → 'down'
-                    // - Droite visuelle → va vers le haut du canvas original → 'up'
-                    keyToMove = {
-                        ArrowLeft: { player: paddle, direction: 'down' },
-                        ArrowRight: { player: paddle, direction: 'up' }
-                    };
-                } else if (paddle === 'TOP') {
-                    // Rotation 180° : tout est inversé
-                    keyToMove = {
-                        ArrowLeft: { player: paddle, direction: 'down' },
-                        ArrowRight: { player: paddle, direction: 'up' }
-                    };
+    else
+    {
+        if (paddle === 'LEFT' || paddle === 'DOWN' || paddle === 'RIGHT' || paddle === 'TOP')
+        {
+            if (window.maxPlayers === 4)
+            {
+                switch (paddle)
+                {
+                    case 'DOWN':
+                        keyToMove = {
+                            ArrowLeft: { player: paddle, direction: 'up' },
+                            ArrowRight: { player: paddle, direction: 'down' }
+                        };
+                        break;
+                    case 'LEFT':
+                        keyToMove = {
+                            ArrowLeft: { player: paddle, direction: 'up' },
+                            ArrowRight: { player: paddle, direction: 'down' }
+                        };
+                        break;
+                    case 'RIGHT':
+                        keyToMove = {
+                            ArrowLeft: { player: paddle, direction: 'down' },
+                            ArrowRight: { player: paddle, direction: 'up' }
+                        };
+                        break;
+                    case 'TOP':
+                        keyToMove = {
+                            ArrowLeft: { player: paddle, direction: 'down' },
+                            ArrowRight: { player: paddle, direction: 'up' }
+                        };
+                        break;
                 }
-            } else {
-                // Mode 1v1 online : utiliser haut/bas classique
+            }
+            else
+            {
                 keyToMove = {
                     ArrowUp: { player: paddle, direction: 'up' },
                     ArrowDown: { player: paddle, direction: 'down' }
                 };
             }
-        } else {
+        }
+        else
+        {
             keyToMove = {};
         }
     }
 }
 
-// Met à jour le mapping lors de l'attribution du paddle (événement roomJoined)
-if (!window._pongControlsRoomJoinedListener) {
+// Sets up the event listener to update key bindings when the room is joined.
+if (!window._pongControlsRoomJoinedListener)
+{
     window._pongControlsRoomJoinedListener = true;
-    document.addEventListener('roomJoined', () => {
+    document.addEventListener('roomJoined', () =>
+    {
         updatePaddleKeyBindings();
     });
 }
 
-window.setIsLocalGame = (isLocal: boolean) => {
+// Sets the local game mode and updates key bindings accordingly.
+window.setIsLocalGame = (isLocal: boolean) =>
+{
     window.isLocalGame = isLocal;
     updatePaddleKeyBindings();
 };
 
-updatePaddleKeyBindings(); // Initial
+updatePaddleKeyBindings();
 
-// Expose the function globally so websocket.ts can call it
 window.updatePaddleKeyBindings = updatePaddleKeyBindings;
 
 const pressedKeys: Record<string, boolean> = {};
 
-// Fonction de nettoyage des contrôles
-export function cleanupPongControls(): void {
+// Resets all paddle controls and listeners to their initial state.
+export function cleanupPongControls(): void
+{
     keyToMove = {};
     window.controlledPaddle = null;
     window.isLocalGame = false;
     window._pongControlsRoomJoinedListener = false;
     
-    Object.keys(pressedKeys).forEach(key => {
+    Object.keys(pressedKeys).forEach(key =>
+    {
         pressedKeys[key] = false;
     });
 }
 
-// Expose la fonction de cleanup globalement
 window.cleanupPongControls = cleanupPongControls;
 
-
-function handleKeyDown(event: KeyboardEvent) {
+// Handles keydown events and sends movement commands if appropriate.
+function handleKeyDown(event: KeyboardEvent)
+{
     const mapping = keyToMove[event.key as string];
-    if (!mapping) return;
-    if (!pressedKeys[event.key]) {
+    if (!mapping) 
+        return;
+    if (!pressedKeys[event.key])
+    {
         sendKeyEvent('keydown', mapping.player, mapping.direction);
         pressedKeys[event.key] = true;
     }
 }
 
-function handleKeyUp(event: KeyboardEvent) {
+// Handles keyup events and sends stop movement commands if appropriate.
+function handleKeyUp(event: KeyboardEvent)
+{
     const mapping = keyToMove[event.key as string];
-    if (!mapping) return;
-    if (pressedKeys[event.key]) {
+    if (!mapping) 
+        return;
+    if (pressedKeys[event.key])
+    {
         sendKeyEvent('keyup', mapping.player, mapping.direction);
         pressedKeys[event.key] = false;
     }
 }
 
-// Add event listeners only once (guard against multiple imports)
-if (!(document as any)._pongKeyListenersSet) {
+// Sets up key event listeners for paddle controls if not already set.
+if (!(document as any)._pongKeyListenersSet)
+{
     (document as any)._pongKeyListenersSet = true;
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
@@ -188,23 +178,16 @@ if (!(document as any)._pongKeyListenersSet) {
 
 window.sendKeyEvent = sendKeyEvent;
 
-// Patch global pour gérer le mode IA sans notifications
+// Defines the AI mode property on the window object.
 Object.defineProperty(window, 'aiMode', {
-    set: function (val) {
+    set: function (val)
+    {
         (this as any)._aiMode = val;
-        // La difficulté est maintenant gérée dans aiConfig.ts
     },
-    get: function () {
+    get: function ()
+    {
         return (this as any)._aiMode;
     },
     configurable: true
 });
-// Valeur initiale
 window._aiMode = false;
-
-// =============================================================================
-// SYSTÈME DE DIFFICULTÉ IA (SIMPLIFIÉ)
-// =============================================================================
-
-// La difficulté est maintenant gérée directement dans aiConfig.ts
-// On garde juste les fonctions minimales nécessaires
