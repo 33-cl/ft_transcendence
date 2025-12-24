@@ -1,13 +1,13 @@
 #!/bin/sh
 set -e
 
-# Vérifie que les certificats sont bien présents (générés à la build)
+# check certificates
 if [ ! -f key.pem ] || [ ! -f cert.pem ]; then
-  echo "[entrypoint] ERREUR: Certificats SSL manquants, ils devraient être générés à la build !"
+  echo "[entrypoint] ERROR: Missing SSL certificates, they should be generated at build time!"
   exit 1
 else
-  echo "[entrypoint] Certificats SSL détectés, démarrage du serveur..."
+  echo "[entrypoint] SSL certificates detected, starting server..."
 fi
 
-# Ne recompile pas en runtime, utilise le build produit à l'image
+# use the build already compiled
 exec node dist/server.js
