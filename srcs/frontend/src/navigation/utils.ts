@@ -267,10 +267,14 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     else if (pageName === 'game')
     {
         await show('game');
+        if (window.isLocalGame)
+            await show('goToMain');
     }
     else if (pageName === 'game4')
     {
         await show('game4');
+        if (window.isLocalGame)
+            await show('goToMain');
     }
     else if (pageName === 'spectate')
     {

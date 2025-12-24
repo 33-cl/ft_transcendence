@@ -18,4 +18,4 @@ export const gameHTML = /*html*/`
             <option value="hard">🔴 Difficile</option>
         </select>
     </div>
-`; 
+`;
