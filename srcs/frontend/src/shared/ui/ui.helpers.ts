@@ -54,7 +54,8 @@ export function showSuccessMessage(element: HTMLElement, message: string): void 
  */
 export function showErrorMessage(element: HTMLElement, message: string): void {
     element.textContent = message;
-    element.style.color = 'orange';
+    element.style.color = '#ef4444'; // Red for better visibility
+    element.style.display = 'block';
 }
 
 /**
@@ -62,7 +63,8 @@ export function showErrorMessage(element: HTMLElement, message: string): void {
  */
 export function showCriticalError(element: HTMLElement, message: string): void {
     element.textContent = message;
-    element.style.color = 'red';
+    element.style.color = '#ef4444';
+    element.style.display = 'block';
 }
 
 /**

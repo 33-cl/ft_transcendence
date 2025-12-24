@@ -253,8 +253,8 @@ async function handleSignIn(): Promise<void>
         else
             showErrorMessage(msg, result.error!);
         
-        // Re-enable button after 30 seconds on error
-        setTimeout(enableButton, 30000);
+        // Re-enable button immediately on error
+        enableButton();
     }
 }
 
