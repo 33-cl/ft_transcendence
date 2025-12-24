@@ -10,7 +10,7 @@ import { getGlobalIo } from '../socketHandlers.js';
 import { getSocketIdForUser } from '../socketAuth.js';
 import { notifyFriendsGameEnded } from './gameEndHandlers.js';
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
-import { recordForfeitMatch, notifyFriendsForfeit } from '../utils/forfeitHandling.js';
+import { notifyFriendsForfeit } from '../utils/forfeitHandling.js';
 
 /**
  * Emits an event when a player joins or leaves a tournament
@@ -469,10 +469,9 @@ export function processTournamentStateForfeit(
 
             handleSemifinalEnd(1, { side: winnerSide as any, score: winnerScore }, { side: loserSide as any, score: loserScore }, room, roomName, io, fastify);
 
-            // Update global stats and notify friends
+            // Notify friends (stats already recorded in handleSemifinalEnd)
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
             const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
-            recordForfeitMatch(winnerName, loserName, winnerScore, loserScore);
             notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
             return;
         }
@@ -495,9 +494,9 @@ export function processTournamentStateForfeit(
 
             handleSemifinalEnd(2, { side: winnerSide as any, score: winnerScore }, { side: loserSide as any, score: loserScore }, room, roomName, io, fastify);
 
+            // Notify friends (stats already recorded in handleSemifinalEnd)
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
             const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
-            recordForfeitMatch(winnerName, loserName, winnerScore, loserScore);
             notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
             return;
         }
@@ -524,9 +523,9 @@ export function processTournamentStateForfeit(
 
             handleFinalEnd(winnerSocket, disconnectedSocketId, winnerScore, loserScore, room, roomName, io, fastify);
 
+            // Notify friends (stats already recorded in handleFinalEnd)
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
             const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
-            recordForfeitMatch(winnerName, loserName, winnerScore, loserScore);
             notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
             return;
         }
