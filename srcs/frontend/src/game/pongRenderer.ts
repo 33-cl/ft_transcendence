@@ -1,6 +1,5 @@
-
 // pongRenderer.ts
-// Gère l'affichage du jeu Pong à partir de l'état reçu du backend
+// Manages the display of the Pong game based on the state received from the backend
 
 import './pongInterpolation.js';
 
@@ -64,7 +63,7 @@ interface GameState {
     ballY: number;
     ballRadius: number;
     ballCountdown?: number;
-    [key: string]: any; // Allow flexibility for other props
+    [key: string]: any;
 }
 
 // ============================================================================
@@ -79,13 +78,15 @@ let lastGameState: GameState | null = null;
 // HELPERS
 // ============================================================================
 
-function getColorForSide(side: string): string {
+function getColorForSide(side: string): string 
+{
     return (THEME.colors.paddles as any)[side] || THEME.colors.paddles.default;
 }
 
 export function applyCanvasRotation(paddle: string | null, canvasId: string = 'map'): void {
     const canvasElement = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvasElement) return;
+    if (!canvasElement) 
+        return;
     
     if (!paddle || (paddle !== 'LEFT' && paddle !== 'DOWN' && paddle !== 'RIGHT' && paddle !== 'TOP')) {
         canvasElement.style.transform = '';
@@ -106,7 +107,8 @@ export function applyCanvasRotation(paddle: string | null, canvasId: string = 'm
 
 export function resetCanvasRotation(canvasId: string = 'map'): void {
     const canvasElement = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (canvasElement) {
+    if (canvasElement) 
+    {
         canvasElement.style.transform = '';
         canvasElement.style.transition = '';
     }
@@ -118,29 +120,32 @@ export function resetCanvasRotation(canvasId: string = 'map'): void {
 
 export function initPongRenderer(canvasId: string = 'map') {
     canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvas) return;
+    if (!canvas) 
+        return;
     
     ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) 
+        return;
 
     window.addEventListener('resize', handlePongResize);
 }
 
 function handlePongResize() {
-    if (!canvas || !ctx) return;
-    if (lastGameState) {
+    if (!canvas || !ctx) 
+        return;
+
+    if (lastGameState) 
         draw(lastGameState);
-    } else {
+    else
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
 }
 
 export function resetPongRenderer(): void {
     window.removeEventListener('resize', handlePongResize);
     
-    if (canvas && ctx) {
+    if (canvas && ctx) 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
+
     canvas = null;
     ctx = null;
     lastGameState = null;
@@ -153,13 +158,16 @@ export function resetPongRenderer(): void {
 
 
 function drawPaddles(ctx: CanvasRenderingContext2D, state: GameState) {
-    if (state.paddles && state.paddles.length > 0) {
-        for (const paddle of state.paddles) {
+    if (state.paddles && state.paddles.length > 0) 
+    {
+        for (const paddle of state.paddles) 
+        {
             const width = paddle.width ?? state.paddleWidth ?? THEME.layout.defaultPaddleWidth;
             const height = paddle.height ?? state.paddleHeight ?? THEME.layout.defaultPaddleHeight;
             
             let x = paddle.x;
-            if (x === undefined) {
+            if (x === undefined) 
+            {
                 const margin = state.paddleMargin ?? THEME.layout.defaultMargin;
                 if (paddle.side === 'LEFT') x = margin;
                 else if (paddle.side === 'RIGHT') x = (state.canvasWidth ?? ctx.canvas.width) - margin - width;
@@ -173,7 +181,9 @@ function drawPaddles(ctx: CanvasRenderingContext2D, state: GameState) {
             ctx.fillRect(x, y, width, height);
             ctx.restore();
         }
-    } else {
+    } 
+    else 
+    {
         // Fallback 1v1 legacy
         const margin = state.paddleMargin ?? THEME.layout.defaultMargin;
         const width = state.paddleWidth ?? THEME.layout.defaultPaddleWidth;
@@ -185,7 +195,8 @@ function drawPaddles(ctx: CanvasRenderingContext2D, state: GameState) {
     }
 }
 
-function drawBall(ctx: CanvasRenderingContext2D, state: GameState) {
+function drawBall(ctx: CanvasRenderingContext2D, state: GameState) 
+{
     ctx.beginPath();
     ctx.arc(state.ballX, state.ballY, state.ballRadius, 0, Math.PI * 2);
     ctx.fillStyle = THEME.colors.white;
@@ -193,7 +204,8 @@ function drawBall(ctx: CanvasRenderingContext2D, state: GameState) {
 }
 
 function drawCountdown(ctx: CanvasRenderingContext2D, state: GameState) {
-    if (!state.ballCountdown || state.ballCountdown <= 0) return;
+    if (!state.ballCountdown || state.ballCountdown <= 0) 
+        return;
 
     ctx.save();
     const centerX = state.canvasWidth / 2;
@@ -201,9 +213,11 @@ function drawCountdown(ctx: CanvasRenderingContext2D, state: GameState) {
     
     // Counter-rotation logic
     const paddle = (window as any).controlledPaddle;
-    if (paddle && state.paddles && state.paddles.length === 4) {
+    if (paddle && state.paddles && state.paddles.length === 4) 
+    {
         ctx.translate(centerX, centerY);
-        switch (paddle) {
+        switch (paddle) 
+        {
             case 'LEFT': ctx.rotate(Math.PI / 2); break;
             case 'RIGHT': ctx.rotate(-Math.PI / 2); break;
             case 'TOP': ctx.rotate(Math.PI); break;
@@ -238,96 +252,105 @@ function drawCountdown(ctx: CanvasRenderingContext2D, state: GameState) {
     ctx.restore();
 }
 
-function updateScoreBoard(state: GameState) {
+function updateScoreBoard(state: GameState)
+{
     const scoreElem = document.getElementById('score');
-    if (!scoreElem) return;
+    if (!scoreElem)
+        return;
 
     let newScoreHTML = '';
-    if (state.paddles && Array.isArray(state.paddles)) {
-        if (state.paddles.length === 4) {
-            newScoreHTML = state.paddles.map((p, i) => {
+    if (state.paddles && Array.isArray(state.paddles))
+    {
+        if (state.paddles.length === 4)
+        {
+            newScoreHTML = state.paddles.map((p, i) =>
+            {
                 const displayName = p.playerName || p.side;
                 return `<span id='score${i}' style='color: ${getColorForSide(p.side)}'>${displayName}: ${p.score || 0}</span>`;
             }).join(' | ');
-        } else if (state.paddles.length === 2) {
-            // Détecter si c'est un jeu IA en vérifiant si window.aiMode est actif
+        }
+        else if (state.paddles.length === 2)
+        {
+            // Detect if it's an AI game by checking if window.aiMode is active
             const isAIMode = (window as any).aiMode === true;
             const currentUsername = (window as any).currentUser?.username;
-            
             let leftName = state.paddles[0]?.playerName || 'P1';
             let rightName = state.paddles[1]?.playerName || 'P2';
-            
-            // En mode IA : l'IA est à gauche (paddle 0), le joueur à droite (paddle 1)
-            if (isAIMode) {
+            // In AI mode: AI is on the left (paddle 0), player is on the right (paddle 1)
+            if (isAIMode)
+            {
                 leftName = 'AI';
                 rightName = currentUsername || 'Player';
             }
-            
             const leftScore = state.paddles[0]?.score || 0;
             const rightScore = state.paddles[1]?.score || 0;
             newScoreHTML = `<span id='leftScore'>${leftName}: ${leftScore}</span> - <span id='rightScore'>${rightName}: ${rightScore}</span>`;
         }
-    } else {
+    }
+    else
+    {
+        // Fallback 1v1 legacy
         const left = state.leftScore ?? 0;
         const right = state.rightScore ?? 0;
         newScoreHTML = `<span id='leftScore'>${left}</span> - <span id='rightScore'>${right}</span>`;
     }
 
-    if (scoreElem.innerHTML !== newScoreHTML) {
+    if (scoreElem.innerHTML !== newScoreHTML)
         scoreElem.innerHTML = newScoreHTML;
-    }
-    
-    // Mise à jour de l'affichage de l'autre demi-finale (si disponible)
+
+    // Update the display of the other semi-final (if available)
     updateOtherSemifinalDisplay(state);
 }
 
 /**
- * Met à jour l'affichage du score de l'autre demi-finale en temps réel
+ * Updates the display of the other semi-final score in real time
  */
-function updateOtherSemifinalDisplay(state: GameState) {
+function updateOtherSemifinalDisplay(state: GameState)
+{
     const otherSemifinalContainer = document.getElementById('other-semifinal');
     const otherSemifinalScore = document.getElementById('other-semifinal-score');
-    
     const otherSemifinal = (state as any).otherSemifinal;
-    
-    if (!otherSemifinal || !otherSemifinalContainer || !otherSemifinalScore) {
-        // Pas de données d'autre demi-finale, cacher le panneau
-        if (otherSemifinalContainer) {
+    if (!otherSemifinal || !otherSemifinalContainer || !otherSemifinalScore)
+    {
+        // No data for the other semi-final, hide the panel
+        if (otherSemifinalContainer)
             otherSemifinalContainer.style.display = 'none';
-        }
+
         return;
     }
-    
-    // Afficher le panneau
+    // Show the panel
     otherSemifinalContainer.style.display = 'block';
-    
-    // Construire l'affichage du score (simple ligne de texte)
+
+    // Build the score display (simple text line)
     let scoreHTML = '';
-    if (otherSemifinal.finished) {
-        // Match terminé
+
+    if (otherSemifinal.finished)
+    {
+        // Match finished
         const winner = otherSemifinal.score1 > otherSemifinal.score2 
             ? otherSemifinal.player1 
             : otherSemifinal.player2;
         scoreHTML = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2} (${winner} won)`;
-    } else {
-        // Match en cours
-        scoreHTML = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2}`;
     }
-    
-    if (otherSemifinalScore.innerHTML !== scoreHTML) {
+    else
+        scoreHTML = `Other semi-final: ${otherSemifinal.player1} vs ${otherSemifinal.player2}`;// Match in progress
+
+    if (otherSemifinalScore.innerHTML !== scoreHTML)
         otherSemifinalScore.innerHTML = scoreHTML;
-    }
 }
 
-export function draw(gameState: GameState) {   
-    if (!ctx || !canvas) return;
+export function draw(gameState: GameState) 
+{   
+    if (!ctx || !canvas) 
+        return;
 
     lastGameState = gameState;
 
     const gameWidth = gameState.canvasWidth || canvas.width;
     const gameHeight = gameState.canvasHeight || canvas.height;
 
-    if (canvas.width !== gameWidth || canvas.height !== gameHeight) {
+    if (canvas.width !== gameWidth || canvas.height !== gameHeight) 
+    {
         canvas.width = gameWidth;
         canvas.height = gameHeight;
     }

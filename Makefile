@@ -30,9 +30,9 @@ logs:
 clean: down
 	rm -rf srcs/frontend/dist/*
 	rm -rf srcs/backend/dist/*
-	docker system prune -af
 
 fclean: clean
+		docker system prune -af
 
 rm-data: down
 	docker volume rm ft_transcendence_db_storage 2>/dev/null || true
