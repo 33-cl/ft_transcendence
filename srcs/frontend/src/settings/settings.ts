@@ -110,17 +110,27 @@ function setSettingsFieldsState(disabled: boolean): void
     const passwordInput = document.getElementById('settings-password') as HTMLInputElement;
     const changePpBtn = document.getElementById('change-pp');
     const deletePpBtn = document.getElementById('delete-pp');
+    const toggle2FABtn = document.getElementById('toggle-2fa') as HTMLButtonElement;
+    const twofaInput = document.getElementById('twofa-code-input') as HTMLInputElement;
     const labels = document.querySelectorAll('.settings-label');
 
     if (usernameInput) usernameInput.disabled = disabled;
     if (emailInput) emailInput.disabled = disabled;
     if (passwordInput) passwordInput.disabled = disabled;
+    if (toggle2FABtn) toggle2FABtn.disabled = disabled;
+    if (twofaInput) twofaInput.disabled = disabled;
     
     if (disabled)
     {
         if (usernameInput) usernameInput.style.opacity = '0.5';
         if (emailInput) emailInput.style.opacity = '0.5';
         if (passwordInput) passwordInput.style.opacity = '0.5';
+        if (toggle2FABtn) 
+        {
+            toggle2FABtn.style.pointerEvents = 'none';
+            toggle2FABtn.style.opacity = '0.5';
+        }
+        if (twofaInput) twofaInput.style.opacity = '0.5';
         if (changePpBtn) 
         {
             changePpBtn.style.pointerEvents = 'none';
@@ -131,16 +141,19 @@ function setSettingsFieldsState(disabled: boolean): void
             deletePpBtn.style.pointerEvents = 'none';
             deletePpBtn.style.opacity = '0.5';
         }
-        labels.forEach(label => {
-            if (label.textContent !== '2 Factor Auth')
-                (label as HTMLElement).style.opacity = '0.5';
-        });
+        labels.forEach(label => (label as HTMLElement).style.opacity = '0.5');
     }
     else
     {
         if (usernameInput) usernameInput.style.opacity = '1';
         if (emailInput) emailInput.style.opacity = '1';
         if (passwordInput) passwordInput.style.opacity = '1';
+        if (toggle2FABtn) 
+        {
+            toggle2FABtn.style.pointerEvents = 'auto';
+            toggle2FABtn.style.opacity = '1';
+        }
+        if (twofaInput) twofaInput.style.opacity = '1';
         if (changePpBtn) 
         {
             changePpBtn.style.pointerEvents = 'auto';
@@ -246,11 +259,28 @@ async function toggle2FA(): Promise<void>
                 pending2FAChange = 'enable';
                 show2FACodeField(true);
                 setSettingsFieldsState(true);
+                
+                // Re-enable 2FA controls as we are in 2FA flow
                 if (toggle2FABtn)
                 {
+                    toggle2FABtn.removeAttribute('disabled');
+                    toggle2FABtn.style.pointerEvents = 'auto';
+                    toggle2FABtn.style.opacity = '1';
                     toggle2FABtn.textContent = '[ENABLE] (pending)';
                     toggle2FABtn.style.color = '#f59e0b';
                 }
+                const twofaInput = document.getElementById('twofa-code-input') as HTMLInputElement;
+                if (twofaInput)
+                {
+                    twofaInput.disabled = false;
+                    twofaInput.style.opacity = '1';
+                }
+                const labels = document.querySelectorAll('.settings-label');
+                labels.forEach(label => {
+                    if (label.textContent === '2 Factor Auth')
+                        (label as HTMLElement).style.opacity = '1';
+                });
+
                 show2FAMessage(data.message || 'Verification code sent - enter code then click [SAVE]');
                 
                 setTimeout(() =>
@@ -287,80 +317,116 @@ async function toggle2FA(): Promise<void>
 function resetPasswordField(passwordInput: HTMLInputElement): void
 {
     passwordInput.value = '';
-    passwordInput.placeholder = 'New password';
+    passwordInput.placeholder = 'Current password';
     passwordInput.style.borderColor = '';
     (passwordInput as any).getCurrentPassword = () => '';
     (passwordInput as any).getNewPassword = () => '';
-    (passwordInput as any).getPasswordState = () => 'new';
+    (passwordInput as any).getPasswordState = () => 'current';
+    
+    // Unlock other fields
+    setSettingsFieldsState(false);
 }
 
 // Configures the password field to handle multi-step password change flow with validation
 function setupPasswordField(passwordInput: HTMLInputElement): void
 {
-    let passwordState = 'new';
+    let passwordState = 'current';
     let currentPassword = '';
     let newPassword = '';
+
+    const handleNextStep = async () => {
+        if (passwordState === 'current')
+        {
+            const currentPasswordValue = passwordInput.value; // Don't trim passwords
+            
+            if (!currentPasswordValue)
+            {
+                showMessage('Current password cannot be empty', true);
+                return;
+            }
+
+            // Verify current password with backend before proceeding
+            try {
+                const response = await fetch('/auth/verify-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ password: currentPasswordValue })
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    showMessage(data.error || 'Incorrect password', true);
+                    return;
+                }
+            } catch (e) {
+                showMessage('Network error verifying password', true);
+                return;
+            }
+            
+            currentPassword = currentPasswordValue;
+            passwordInput.value = '';
+            passwordInput.placeholder = 'New password';
+            passwordState = 'new';
+            passwordInput.blur();
+            
+            // Lock other fields as requested
+            setSettingsFieldsState(true);
+            // Ensure password input itself remains enabled
+            passwordInput.disabled = false;
+            passwordInput.style.opacity = '1';
+            // Ensure label remains visible
+            const labels = document.querySelectorAll('.settings-label');
+            labels.forEach(label => {
+                if (label.textContent === 'PASSWORD')
+                    (label as HTMLElement).style.opacity = '1';
+            });
+        }
+        else if (passwordState === 'new')
+        {
+            const newPasswordValue = passwordInput.value;
+            
+            if (!isValidPassword(newPasswordValue))
+            {
+                showMessage('Password must be at least 8 characters', true);
+                return;
+            }
+            
+            newPassword = newPasswordValue;
+            passwordInput.value = '';
+            passwordInput.placeholder = 'Confirm password';
+            passwordState = 'confirm';
+            passwordInput.blur();
+        }
+        else if (passwordState === 'confirm')
+        {
+            const confirmPassword = passwordInput.value;
+            
+            if (confirmPassword !== newPassword)
+            {
+                showMessage('Passwords do not match', true);
+                return;
+            }
+            
+            pendingPasswordChange = { currentPassword, newPassword };
+            passwordInput.style.borderColor = '#22c55e';
+            passwordInput.value = '';
+            passwordInput.placeholder = '••••••••';
+            passwordInput.blur();
+        }
+    };
 
     passwordInput.addEventListener('keydown', async (e) =>
     {
         if (e.key === 'Enter')
         {
             e.preventDefault();
-            
-            if (passwordState === 'current')
-            {
-                const currentPasswordValue = passwordInput.value.trim();
-                
-                if (!currentPasswordValue)
-                {
-                    showMessage('Current password cannot be empty', true);
-                    return;
-                }
-                
-                currentPassword = currentPasswordValue;
-                passwordInput.value = '';
-                passwordInput.placeholder = 'New password';
-                passwordState = 'new';
-                passwordInput.blur();
-            }
-            else if (passwordState === 'new')
-            {
-                const newPasswordValue = passwordInput.value.trim();
-                
-                if (!isValidPassword(newPasswordValue))
-                {
-                    showMessage('Password must be at least 8 characters', true);
-                    return;
-                }
-                
-                newPassword = newPasswordValue;
-                passwordInput.value = '';
-                passwordInput.placeholder = 'Confirm password';
-                passwordState = 'confirm';
-                passwordInput.blur();
-            }
-            else if (passwordState === 'confirm')
-            {
-                const confirmPassword = passwordInput.value.trim();
-                
-                if (confirmPassword !== newPassword)
-                {
-                    showMessage('Passwords do not match', true);
-                    return;
-                }
-                
-                pendingPasswordChange = { currentPassword, newPassword };
-                passwordInput.style.borderColor = '#22c55e';
-                passwordInput.value = '';
-                passwordInput.placeholder = '••••••••';
-                passwordInput.blur();
-                // showMessage('Password change pending - click [SAVE] to apply');
-            }
+            handleNextStep();
         }
     });
 
     (passwordInput as any).getCurrentPassword = () => currentPassword;
-    (passwordInput as any).getNewPassword = () => passwordState === 'confirm' ? newPassword : '';
+    (passwordInput as any).getNewPassword = () => passwordState === 'confirm' ? newPassword : ''; 
     (passwordInput as any).getPasswordState = () => passwordState;
     (passwordInput as any).resetPasswordField = () =>
     {

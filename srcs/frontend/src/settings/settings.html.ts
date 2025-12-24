@@ -27,7 +27,7 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>
-            <input type="password" id="settings-password" placeholder="New password">
+            <input type="password" id="settings-password" placeholder="Current password">
         </div>
         <div class="settings-row">
             <span class="settings-label">2 Factor Auth</span>

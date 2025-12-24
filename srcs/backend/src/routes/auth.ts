@@ -6,6 +6,7 @@ import { registerRoute } from './auth/register.js';
 import { loginRoute } from './auth/login.js';
 import { meRoute } from './auth/me.js';
 import { logoutRoute } from './auth/logout.js';
+import { verifyPasswordRoute } from './auth/verify-password.js';
 
 // Import des routes 2FA
 import { enable2FARoute } from './auth/2fa/enable.js';
@@ -66,6 +67,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/login', (request, reply) => loginRoute(request, reply, fastify));
   fastify.get('/auth/me', (request, reply) => meRoute(request, reply, JWT_SECRET));
   fastify.post('/auth/logout', (request, reply) => logoutRoute(request, reply, fastify));
+  fastify.post('/auth/verify-password', (request, reply) => verifyPasswordRoute(request, reply, JWT_SECRET));
 
   // ==================== Routes 2FA ====================
   fastify.post('/auth/2fa/enable', enable2FARoute);
