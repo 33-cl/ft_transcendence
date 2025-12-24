@@ -102,6 +102,59 @@ function show2FAMessage(message: string, isError: boolean = false): void
     }, 5000);
 }
 
+// Disables or enables all other setting fields when 2FA setup is in progress
+function setSettingsFieldsState(disabled: boolean): void
+{
+    const usernameInput = document.getElementById('settings-username') as HTMLInputElement;
+    const emailInput = document.getElementById('settings-email') as HTMLInputElement;
+    const passwordInput = document.getElementById('settings-password') as HTMLInputElement;
+    const changePpBtn = document.getElementById('change-pp');
+    const deletePpBtn = document.getElementById('delete-pp');
+    const labels = document.querySelectorAll('.settings-label');
+
+    if (usernameInput) usernameInput.disabled = disabled;
+    if (emailInput) emailInput.disabled = disabled;
+    if (passwordInput) passwordInput.disabled = disabled;
+    
+    if (disabled)
+    {
+        if (usernameInput) usernameInput.style.opacity = '0.5';
+        if (emailInput) emailInput.style.opacity = '0.5';
+        if (passwordInput) passwordInput.style.opacity = '0.5';
+        if (changePpBtn) 
+        {
+            changePpBtn.style.pointerEvents = 'none';
+            changePpBtn.style.opacity = '0.5';
+        }
+        if (deletePpBtn)
+        {
+            deletePpBtn.style.pointerEvents = 'none';
+            deletePpBtn.style.opacity = '0.5';
+        }
+        labels.forEach(label => {
+            if (label.textContent !== '2 Factor Auth')
+                (label as HTMLElement).style.opacity = '0.5';
+        });
+    }
+    else
+    {
+        if (usernameInput) usernameInput.style.opacity = '1';
+        if (emailInput) emailInput.style.opacity = '1';
+        if (passwordInput) passwordInput.style.opacity = '1';
+        if (changePpBtn) 
+        {
+            changePpBtn.style.pointerEvents = 'auto';
+            changePpBtn.style.opacity = '1';
+        }
+        if (deletePpBtn)
+        {
+            deletePpBtn.style.pointerEvents = 'auto';
+            deletePpBtn.style.opacity = '1';
+        }
+        labels.forEach(label => (label as HTMLElement).style.opacity = '1');
+    }
+}
+
 let is2FAButtonDisabled = false;
 
 // Handles the intent to enable or disable 2FA and sends verification codes when enabling
@@ -139,6 +192,7 @@ async function toggle2FA(): Promise<void>
         {
             pending2FAChange = null;
             show2FACodeField(false);
+            setSettingsFieldsState(false);
             if (toggle2FABtn)
             {
                 toggle2FABtn.textContent = '[ENABLE]';
@@ -191,6 +245,7 @@ async function toggle2FA(): Promise<void>
 
                 pending2FAChange = 'enable';
                 show2FACodeField(true);
+                setSettingsFieldsState(true);
                 if (toggle2FABtn)
                 {
                     toggle2FABtn.textContent = '[ENABLE] (pending)';
@@ -668,6 +723,7 @@ async function saveChangedFields(): Promise<void>
                         toggle2FABtn.style.color = '';
                     }
                     show2FACodeField(false);
+                    setSettingsFieldsState(false);
                     pending2FAChange = null;
                 }
             }
@@ -770,6 +826,7 @@ function resetSettingsState(): void
     pendingUsernameChange = null;
     pendingEmailChange = null;
     is2FAButtonDisabled = false;
+    setSettingsFieldsState(false);
 }
 
 // Initializes all event handlers for the settings page when components are ready
