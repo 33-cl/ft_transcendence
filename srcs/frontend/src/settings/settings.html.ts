@@ -27,7 +27,14 @@ export function settingsHTML() {
         </div>
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>
-            <input type="password" id="settings-password" placeholder="Current password">
+            <div style="display: flex; align-items: center;">
+                <input type="password" id="settings-password" placeholder="Current password">
+                <button id="password-action-btn" style="display: none; margin-left: 10px; background: none; border: none; cursor: pointer;">
+                    <svg width="24" height="24" viewBox="0 0 16 16" version="1.1" style="fill: currentColor;">
+                        <path d="M4 0v6h-3v10h14v-16h-11zM12 11h-5v2l-3-2.5 3-2.5v2h4v-3h1v4z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="settings-row">
             <span class="settings-label">2 Factor Auth</span>

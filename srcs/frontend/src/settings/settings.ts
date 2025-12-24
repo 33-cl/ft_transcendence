@@ -323,6 +323,7 @@ function resetPasswordField(passwordInput: HTMLInputElement): void
     (passwordInput as any).getNewPassword = () => '';
     (passwordInput as any).getPasswordState = () => 'current';
     
+    passwordInput.blur();
     // Unlock other fields
     setSettingsFieldsState(false);
 }
@@ -333,6 +334,22 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
     let passwordState = 'current';
     let currentPassword = '';
     let newPassword = '';
+    const actionBtn = document.getElementById('password-action-btn');
+
+    const updateButtonState = () => {
+        if (!actionBtn) return;
+        
+        if (passwordState !== 'current' || passwordInput.value.length > 7) {
+            actionBtn.style.display = 'block';
+            if (passwordState === 'confirm') {
+                actionBtn.style.color = '#22c55e';
+            } else {
+                actionBtn.style.color = 'white';
+            }
+        } else {
+            actionBtn.style.display = 'none';
+        }
+    };
 
     const handleNextStep = async () => {
         if (passwordState === 'current')
@@ -342,6 +359,9 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
             if (!currentPasswordValue)
             {
                 showMessage('Current password cannot be empty', true);
+                passwordInput.value = '';
+                passwordInput.blur();
+                updateButtonState();
                 return;
             }
 
@@ -357,10 +377,16 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
                 if (!response.ok) {
                     const data = await response.json();
                     showMessage(data.error || 'Incorrect password', true);
+                    passwordInput.value = '';
+                    passwordInput.blur();
+                    updateButtonState();
                     return;
                 }
             } catch (e) {
                 showMessage('Network error verifying password', true);
+                passwordInput.value = '';
+                passwordInput.blur();
+                updateButtonState();
                 return;
             }
             
@@ -369,6 +395,7 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
             passwordInput.placeholder = 'New password';
             passwordState = 'new';
             passwordInput.blur();
+            updateButtonState();
             
             // Lock other fields as requested
             setSettingsFieldsState(true);
@@ -389,6 +416,8 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
             if (!isValidPassword(newPasswordValue))
             {
                 showMessage('Password must be at least 8 characters', true);
+                passwordInput.value = '';
+                passwordInput.blur();
                 return;
             }
             
@@ -397,6 +426,7 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
             passwordInput.placeholder = 'Confirm password';
             passwordState = 'confirm';
             passwordInput.blur();
+            updateButtonState();
         }
         else if (passwordState === 'confirm')
         {
@@ -405,16 +435,54 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
             if (confirmPassword !== newPassword)
             {
                 showMessage('Passwords do not match', true);
+                passwordInput.value = '';
+                passwordInput.blur();
                 return;
             }
             
-            pendingPasswordChange = { currentPassword, newPassword };
-            passwordInput.style.borderColor = '#22c55e';
-            passwordInput.value = '';
-            passwordInput.placeholder = '••••••••';
-            passwordInput.blur();
+            // Save password immediately
+            try {
+                const response = await fetch('/auth/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    showMessage(data.error || 'Failed to update password', true);
+                    passwordInput.value = '';
+                    passwordInput.blur();
+                    return;
+                }
+
+                showMessage('Password updated successfully');
+                resetPasswordField(passwordInput);
+                passwordState = 'current';
+                currentPassword = '';
+                newPassword = '';
+                pendingPasswordChange = null;
+                updateButtonState();
+
+            } catch (e) {
+                showMessage('Network error updating password', true);
+                passwordInput.value = '';
+                passwordInput.blur();
+            }
         }
     };
+
+    passwordInput.addEventListener('input', () => {
+        updateButtonState();
+    });
+
+    if (actionBtn) {
+        actionBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleNextStep();
+        });
+    }
 
     passwordInput.addEventListener('keydown', async (e) =>
     {
@@ -435,6 +503,7 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
         currentPassword = '';
         newPassword = '';
         pendingPasswordChange = null;
+        updateButtonState();
     };
 }
 
