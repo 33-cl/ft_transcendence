@@ -88,16 +88,11 @@ export function buildRoomJoinedData(room: RoomType, roomName: string, socketId: 
  */
 export function broadcastRoomState(room: RoomType, roomName: string, io: Server): void
 {
-    // Pour les tournois, ne pas envoyer roomJoined quand la room est pleine
-    // On laisse startTournament gérer l'envoi après tournamentBracketInfo
+    // Pour les tournois 4 joueurs, toujours envoyer roomJoined pour que tous les joueurs
+    // voient l'écran de matchmaking avec le compte de joueurs actuel
     if (room.isTournament && room.maxPlayers === 4) {
-        // Si la room est pleine, ne rien envoyer - startTournament va gérer
-        if (room.players.length >= room.maxPlayers) {
-            console.log(`🏆 Tournament room full - skipping broadcastRoomState, waiting for startTournament`);
-            return;
-        }
-        
-        // Sinon, envoyer une mise à jour du nombre de joueurs pour le matchmaking
+        // Envoyer une mise à jour du nombre de joueurs pour le matchmaking
+        // Même si la room est pleine, les joueurs doivent savoir qu'ils ont rejoint
         for (const id of room.players) {
             const targetSocket = io.sockets.sockets.get(id);
             if (!targetSocket) continue;
@@ -110,6 +105,10 @@ export function broadcastRoomState(room: RoomType, roomName: string, io: Server)
                 spectator: false,
                 isTournament: true
             });
+        }
+        
+        if (room.players.length >= room.maxPlayers) {
+            console.log(`🏆 Tournament room full - all ${room.players.length} players notified`);
         }
         return;
     }
