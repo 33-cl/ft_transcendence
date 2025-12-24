@@ -1,19 +1,12 @@
 import { FastifyReply } from 'fastify';
-import { validateLength } from '../../security.js';
-import { 
-  sanitizeUsername as sanitizeUsernameUtil, 
-  sanitizeEmail as sanitizeEmailUtil
-} from '../../security.js';
-import { 
-  isValidUsername as isValidUsernameService,
-  isValidEmail as isValidEmailService,
-  isValidPassword as isValidPasswordService
-} from '../../services/validation.service.js';
-import { hashPassword as hashPasswordService, verifyPassword as verifyPasswordService } from '../../services/auth.service.js';
+import { validateLength, sanitizeUsername, sanitizeEmail } from '../../security.js';
+import { isValidUsername, isValidEmail, isValidPassword } from '../../services/validation.service.js';
+import { hashPassword, verifyPassword } from '../../services/auth.service.js';
 import { disableTwoFactor } from '../../services/twoFactor.service.js';
 import db from '../../db.js';
 
-interface ProfileUpdateData {
+interface ProfileUpdateData
+{
   username?: string;
   email?: string;
   currentPassword?: string;
@@ -46,22 +39,22 @@ export function validateProfileInputLengths(data: ProfileUpdateData, reply: Fast
 
 export function sanitizeAndValidateProfileData(data: ProfileUpdateData, reply: FastifyReply): { sanitizedUsername?: string; sanitizedEmail?: string } | undefined
 {
-  const sanitizedUsername = data.username ? sanitizeUsernameUtil(data.username) : undefined;
-  const sanitizedEmail = data.email ? sanitizeEmailUtil(data.email) : undefined;
+  const sanitizedUsername = data.username ? sanitizeUsername(data.username) : undefined;
+  const sanitizedEmail = data.email ? sanitizeEmail(data.email) : undefined;
 
-  if (sanitizedUsername !== undefined && !isValidUsernameService(sanitizedUsername))
+  if (sanitizedUsername !== undefined && !isValidUsername(sanitizedUsername))
   {
     reply.code(400).send({ error: 'Invalid username (3-10 characters, alphanumeric and underscore)' });
     return undefined;
   }
 
-  if (sanitizedEmail !== undefined && !isValidEmailService(sanitizedEmail))
+  if (sanitizedEmail !== undefined && !isValidEmail(sanitizedEmail))
   {
     reply.code(400).send({ error: 'Invalid email format' });
     return undefined;
   }
 
-  if (data.newPassword !== undefined && !isValidPasswordService(data.newPassword))
+  if (data.newPassword !== undefined && !isValidPassword(data.newPassword))
   {
     reply.code(400).send({ error: 'New password too short (min 8 characters)' });
     return undefined;
@@ -87,7 +80,7 @@ export function verifyCurrentPassword(
     return false;
   }
 
-  if (!verifyPasswordService(currentPassword, user.password_hash))
+  if (!verifyPassword(currentPassword, user.password_hash))
   {
     reply.code(400).send({ error: 'Current password is incorrect' });
     return false;
@@ -154,7 +147,7 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
   
   if (data.newPassword)
   {
-    const passwordHash = hashPasswordService(data.newPassword);
+    const passwordHash = hashPassword(data.newPassword);
     updates.push('password_hash = ?');
     values.push(passwordHash);
   }
@@ -170,12 +163,7 @@ export function updateUserProfile(data: ProfileUpdateData, userId: number, reply
   db.prepare(query).run(...values);
   
   if (emailChanged)
-  {
-    try {
-      disableTwoFactor(userId);
-    } catch (error) {
-    }
-  }
+    disableTwoFactor(userId);
   
   return true;
 }

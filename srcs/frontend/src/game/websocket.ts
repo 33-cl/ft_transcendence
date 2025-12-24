@@ -1,5 +1,5 @@
 // websocket.ts
-//'io' est déjà disponible dans la page via le CDN socket.io-clients
+//'io' is already available in the page via the socket.io-clients CDN
 
 declare var io: any;
 
@@ -9,43 +9,39 @@ import { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.
 import { updateMatchmakingForTournament, updateTournamentWaiting } from './matchmaking.html.js';
 import { installSocketGuard } from '../navigation/securityGuard.js';
 
-// NOTE: La fonction updateFriendStatus et updateFriendStatusIndicator ont été déplacées dans friendList.html.ts
-// pour centraliser la gestion des mises à jour de la friendlist et éviter les conflits
-
-// Fonction pour afficher l'overlay de session déconnectée
+// Function to display the session disconnected overlay
 function showSessionDisconnectedOverlay(message: string)
 {
-    
-    // Éviter les doublons
+    // Prevent duplicates
     const existingOverlay = document.getElementById('sessionDisconnectedOverlay');
     if (existingOverlay)
         existingOverlay.remove();
     
-    // Créer un élément div pour contenir l'overlay
+    // Create a div element to contain the overlay
     const overlayDiv = document.createElement('div');
     overlayDiv.id = 'sessionDisconnectedOverlay';
     overlayDiv.innerHTML = sessionDisconnectedHTML(message);
     
-    // Ajouter l'overlay au body
+    // Add the overlay to the body
     document.body.appendChild(overlayDiv);
 }
 
-// Connexion socket.io sur le même domaine
+// Socket.io connection on the same domain
 let socket = io('', { 
   transports: ["websocket"], 
   secure: true,
-  withCredentials: true,  // IMPORTANT: Permet la transmission des cookies de session
+  withCredentials: true,  // IMPORTANT: Allows session cookies to be sent
   reconnection: true,
-  reconnectionAttempts: 5,      // Limite à 5 tentatives de reconnexion
-  reconnectionDelay: 1000,      // Délai initial de 1 seconde
-  reconnectionDelayMax: 5000    // Délai max de 5 secondes
+  reconnectionAttempts: 5,      // Limit to 5 reconnection attempts
+  reconnectionDelay: 1000,      // Initial delay of 1 second
+  reconnectionDelayMax: 5000    // Max delay of 5 seconds
 });
 window.socket = socket;
 
-// Installer le guard de sécurité sur le socket
+// Install the security guard on the socket
 installSocketGuard();
 
-// Variables pour éviter la duplication d'event listeners globaux
+// Variables to avoid duplication of global event listeners
 let connectListenerSet = false;
 let roomJoinedListenerSet = false;
 let disconnectBasicListenerSet = false;
@@ -57,21 +53,13 @@ let tournamentFinalFinishedListenerActive = false;
 let leaderboardUpdatedListenerSet = false;
 let tournamentListenersSet = false;
 let otherSemifinalUpdateListenerSet = false;
-// NOTE IMPORTANTE: Les listeners suivants sont maintenant gérés par friendList.html.ts
-// pour avoir un meilleur contrôle sur les mises à jour de la liste d'amis:
-// - friendStatusChanged → updateFriendStatus() (préserve le statut actuel)
-// - friendAdded → reloadFriendList() (avec fetch des statuts)
-// - friendRemoved → reloadFriendList() (avec fetch des statuts)
-// - profileUpdated → updateFriendProfile() (préserve le statut actuel)
-// - friendRequestReceived → updateFriendRequestsBadge()
-// Les listeners ici sont maintenus pour compatibilité mais ne font plus les mises à jour du DOM
 
-// Fonction pour configurer les event listeners globaux (une seule fois)
+// Function to set up global socket event listeners (only once)
 function setupGlobalSocketListeners() {
     // Event listener connect
     if (!connectListenerSet) {
         socket.on("connect", () => {
-            // Connexion établie
+            // Connection established
         });
         connectListenerSet = true;
     }
@@ -88,21 +76,18 @@ function setupGlobalSocketListeners() {
             if (data && data.maxPlayers) {
                 window.maxPlayers = data.maxPlayers;
             }
-            
             // Store spectator status
             if (data && typeof data.spectator === 'boolean') {
                 window.isSpectator = data.spectator;
             } else {
                 window.isSpectator = false;
             }
-            
             // Update paddle key bindings immediately after setting controlledPaddle
             if (window.updatePaddleKeyBindings) {
                 window.updatePaddleKeyBindings();
             }
-            
             // Use pre-imported load function instead of dynamic import
-            // Si mode local, on affiche directement la page de jeu
+            // If local mode, directly display the game page
             if (window.isLocalGame) {
                 if (data.maxPlayers === 3) {
                     load('game3');
@@ -111,8 +96,7 @@ function setupGlobalSocketListeners() {
                 }
                 return;
             }
-            
-            // Si c'est un spectateur, aller directement à la page spectate
+            // If spectator, go directly to the spectate page
             if (window.isSpectator) {
                 if (data.maxPlayers === 4) {
                     load('spectate4');
@@ -135,47 +119,46 @@ function setupGlobalSocketListeners() {
                 }, 200);
                 return;
             }
-            
-            // Toujours afficher l'écran d'attente tant que la room n'est pas pleine
+            // Always show the waiting screen as long as the room is not full
             if (data && typeof data.players === 'number' && typeof data.maxPlayers === 'number') {
                 if (data.players < data.maxPlayers) {
                     load('matchmaking');
-                    // Si mode tournoi, mettre à jour l'affichage après le chargement
+                    // If tournament mode, update the display after loading
                     if (window.isTournamentMode) {
                         setTimeout(() => {
                             updateMatchmakingForTournament(data.players, data.maxPlayers);
                         }, 100);
                     }
                 } else {
-                    // Room pleine - lancer le jeu
+                    // Room is full - start the game
                     if (data.isTournament) {
-                        // TOURNOI : 
-                        // - Si maxPlayers=4, on est dans la phase initiale -> rester en matchmaking
-                        // - Si maxPlayers=2, c'est un match 1v1 de demi-finale/finale -> charger game
+                        // TOURNAMENT:
+                        // - If maxPlayers=4, we are in the initial phase -> stay in matchmaking
+                        // - If maxPlayers=2, it's a 1v1 semifinal/final match -> load game
                         if (data.maxPlayers === 4) {
-                            // Phase initiale du tournoi - attendre le démarrage des matchs
+                            // Initial phase of the tournament - wait for matches to start
                             load('matchmaking');
                             setTimeout(() => {
                                 updateTournamentWaiting('All players ready! Tournament starting...');
                             }, 100);
                         } else {
-                            // Match de tournoi 1v1 - utiliser game standard (contrôle haut/bas)
+                            // Tournament 1v1 match - use standard game (up/down control)
                             load('game');
-                            // Reconfigurer les listeners de jeu après chargement de la page
-                            // Attendre que le canvas soit dans le DOM
+                            // Reconfigure game listeners after page load
+                            // Wait for the canvas to be in the DOM
                             const waitForCanvas = () => {
                                 const mapCanvas = document.getElementById('map');
                                 if (mapCanvas) {
                                     if (typeof window.setupGameEventListeners === 'function') {
                                         window.setupGameEventListeners();
                                     } else {
-                                        // Fallback: appeler directement la fonction locale
+                                        // Fallback: call the local function directly
                                         setupGameEventListeners();
                                     }
                                     if (typeof window.initPongRenderer === 'function') {
                                         window.initPongRenderer('map');
                                     } else {
-                                        // Fallback: appeler directement
+                                        // Fallback: call directly
                                         initPongRenderer('map');
                                     }
                                 } else {
@@ -186,16 +169,15 @@ function setupGlobalSocketListeners() {
                         }
                     } else if (data.maxPlayers === 4) {
                         load('game4');
-                        // Appliquer la rotation du canvas pour que le paddle contrôlé soit en bas
-                        // Le canvas est caché par défaut (visibility: hidden dans game4.html.ts)
+                        // Apply canvas rotation so the controlled paddle is at the bottom
+                        // The canvas is hidden by default (visibility: hidden in game4.html.ts)
                         const waitForCanvasRotation = () => {
                             const mapCanvas = document.getElementById('map') as HTMLCanvasElement;
                             if (mapCanvas && typeof window.applyCanvasRotation === 'function') {
-                                // Appliquer la rotation pendant que le canvas est caché
+                                // Apply rotation while the canvas is hidden
                                 window.applyCanvasRotation(window.controlledPaddle, 'map');
-                                
-                                // Forcer le navigateur à appliquer le CSS avant de rendre visible
-                                // Le double requestAnimationFrame garantit que le style est appliqué
+                                // Force the browser to apply CSS before making visible
+                                // Double requestAnimationFrame ensures the style is applied
                                 requestAnimationFrame(() => {
                                     requestAnimationFrame(() => {
                                         mapCanvas.style.visibility = 'visible';
@@ -205,7 +187,7 @@ function setupGlobalSocketListeners() {
                                 setTimeout(waitForCanvasRotation, 20);
                             }
                         };
-                        // Démarrer immédiatement
+                        // Start immediately
                         waitForCanvasRotation();
                     } else if (data.maxPlayers === 3) {
                         load('game3');
@@ -218,7 +200,7 @@ function setupGlobalSocketListeners() {
         roomJoinedListenerSet = true;
     }
     
-    // Event listener disconnect basique
+    // Basic disconnect event listener
     if (!disconnectBasicListenerSet) {
         socket.on('disconnect', () => {
             window.controlledPaddle = null;
@@ -226,10 +208,10 @@ function setupGlobalSocketListeners() {
         disconnectBasicListenerSet = true;
     }
     
-    // Event listener pong
+    // Pong event listener
     if (!pongListenerSet) {
         socket.on("pong", () => {
-            // Message reçu du serveur
+            // Message received from server
         });
         pongListenerSet = true;
     }
@@ -281,13 +263,6 @@ function setupGlobalSocketListeners() {
                 });
                 return;
             }
-            
-            // Note: BROWSER_ALREADY_CONNECTED errors are handled by auth forms, not here
-            
-            // Handle other errors by showing them to the user
-            if (data && data.error) {
-                // show error here
-            }
         });
         errorListenerSet = true;
     }
@@ -296,22 +271,22 @@ function setupGlobalSocketListeners() {
     // TOURNAMENT EVENT LISTENERS
     // ========================================
     if (!tournamentListenersSet) {
-        // Tournoi démarre
+        // Tournament starts
         socket.on('tournamentStart', (_data: any) => {
-            // Afficher l'écran de matchmaking avec info tournoi
+            // Show the matchmaking screen with tournament info
             load('matchmaking');
             setTimeout(() => {
                 updateTournamentWaiting('Tournament starting...');
             }, 100);
         });
         
-        // Mise à jour du tournoi (phases, matchs)
+        // Tournament update (phases, matches)
         socket.on('tournamentUpdate', (data: any) => {
             if (data.phase === 'semifinal1' || data.phase === 'semifinal2' || data.phase === 'final') {
-                // Un match commence - le jeu va être chargé via roomJoined
+                // A match starts - the game will be loaded via roomJoined
                 updateTournamentWaiting(data.message || 'Match starting...');
             } else if (data.phase?.includes('complete')) {
-                // Un match est terminé
+                // A match is finished
                 load('matchmaking');
                 setTimeout(() => {
                     updateTournamentWaiting(data.message || 'Preparing next match...');
@@ -319,7 +294,7 @@ function setupGlobalSocketListeners() {
             }
         });
         
-        // Spectateur pendant un match
+        // Spectator during a match
         socket.on('tournamentSpectator', (data: any) => {
             load('matchmaking');
             setTimeout(() => {
@@ -329,7 +304,7 @@ function setupGlobalSocketListeners() {
             }, 100);
         });
         
-        // Mise à jour du score de l'autre demi-finale en temps réel
+        // Real-time update of the other semifinal score
         if (!otherSemifinalUpdateListenerSet) {
             socket.on('otherSemifinalUpdate', (data: any) => {
                 console.log('📊 otherSemifinalUpdate received:', data);
@@ -349,22 +324,22 @@ function setupGlobalSocketListeners() {
             otherSemifinalUpdateListenerSet = true;
         }
         
-        // Démarrage de la finale - événement dédié pour charger le jeu
+        // Final start - dedicated event to load the game
         socket.on('tournamentFinalStart', (data: any) => {
-            // Définir le paddle contrôlé
+            // Set the controlled paddle
             window.controlledPaddle = data.paddle;
             window.maxPlayers = 2;
             window.isSpectator = false;
             
-            // Mettre à jour les key bindings
+            // Update key bindings
             if (window.updatePaddleKeyBindings) {
                 window.updatePaddleKeyBindings();
             }
             
-            // Charger la page de jeu
+            // Load the game page
             load('game');
             
-            // Attendre que le canvas soit dans le DOM puis initialiser
+            // Wait for the canvas to be in the DOM then initialize
             const initGame = () => {
                 const mapCanvas = document.getElementById('map');
                 if (mapCanvas) {
@@ -381,40 +356,23 @@ function setupGlobalSocketListeners() {
             setTimeout(initGame, 100);
         });
         
-        // Tournoi terminé
+        // Tournament complete
         socket.on('tournamentComplete', (data: any) => {
-            // Réinitialiser le mode tournoi
+            // Reset tournament mode
             window.isTournamentMode = false;
             
-            // Afficher un écran de fin de tournoi
+            // Show a tournament end screen
             alert(`🏆 Tournament Champion: ${data.winner}!`);
             load('mainMenu');
         });
         
         tournamentListenersSet = true;
     }
-    
-    // Event listener for friend status changes (real-time friend list updates)
-    // NOTE: Ce listener est désormais géré par friendList.html.ts via startFriendListRealtimeUpdates()
-    // pour éviter les conflits de double gestion des mises à jour de statut
-    // if (!friendStatusListenerSet) {
-    //     socket.on('friendStatusChanged', (data: any) => {
-    //         updateFriendStatus(data.username, data.status);
-    //     });
-    //     friendStatusListenerSet = true;
-    // }
-    
-    // 🚨 NOTE: Les listeners suivants sont maintenant entièrement gérés par friendList.html.ts
-    // - friendAdded → reloadFriendList()
-    // - friendRemoved → reloadFriendList()
-    // - profileUpdated → updateFriendProfile()
-    // - friendRequestReceived → updateFriendRequestsBadge()
-    // Ils ont été supprimés d'ici pour éviter les doublons
 
     // Event listener for leaderboard updates (broadcast to ALL clients when any user changes profile)
     if (!leaderboardUpdatedListenerSet) {
         socket.on('leaderboardUpdated', async (_data: { userId: number; username: string; avatar_url: string; timestamp: number }) => {
-            // Vérifier qu'on est bien sur le main menu (le seul endroit où le leaderboard est affiché)
+            // Check that we are on the main menu (the only place where the leaderboard is displayed)
             const mainMenuElement = document.getElementById('mainMenu');
             const isOnMainMenu = mainMenuElement !== null && mainMenuElement.innerHTML.trim() !== '';
             
@@ -435,7 +393,7 @@ function setupGlobalSocketListeners() {
     // Tournament feature removed: no tournament socket listeners to set up
 }
 
-// Configurer les listeners globaux au chargement
+// Set up global listeners on load
 setupGlobalSocketListeners();
 
 // Function to reconnect websocket after authentication
@@ -462,7 +420,14 @@ function reconnectWebSocket() {
         
         window.socket = socket;
         
-        // Réinstaller le guard de sécurité sur le nouveau socket
+        // Reinstall the security guard on the new socket
+        installSocketGuard();
+        
+        // Reset listener flags to re-setup listeners
+        connectListenerSet = false;
+        roomJoinedListenerSet = false;
+        disconnectBasicListenerSet = false;
+        pongListenerSet = false;
         installSocketGuard();
         
         // Reset listener flags to re-setup listeners
@@ -474,54 +439,47 @@ function reconnectWebSocket() {
         leaderboardUpdatedListenerSet = false;
         otherSemifinalUpdateListenerSet = false;
         // NOTE: friendAdded, friendRemoved, profileUpdated, friendRequestReceived
-        // sont maintenant gérés par friendList.html.ts
+        // are now managed by friendList.html.ts
         
         // Re-setup global listeners
         setupGlobalSocketListeners();
     }, 100); // Small delay to ensure clean reconnection
 }
 
-// Fonction pour envoyer un message "ping" au serveur
+// Function to send a "ping" message to the server
 function sendPing()
 {
-	// Envoie un message nommé "ping" avec un objet au serveur
-    socket.emit("ping", { message: "Hello serveur!" });
+    // Send a message named "ping" with an object to the server
+    socket.emit("ping", { message: "Hello server!" });
 }
 
-// Rend la fonction sendPing accessible depuis la console du navigateur
-// Tu peux taper sendPing() dans la console pour tester l'envoi d'un message
+// You can type sendPing() in the console to test sending a message
 window.sendPing = sendPing;
 
-
-
-// Fonction pour envoyer un message structuré
-// a terme, ne plus avoir string, afin d'avoid les merdes si on reçoit un message innatendu
+// Define types for structured messages
 type MessageType = 'move' | 'score' | string;
 
-// Cette interface permet de créer un objet avec autant de propriétés que l'on souhaite.
-// Chaque propriété (clé) doit être une chaîne de caractères, et sa valeur peut être de n'importe quel type.
-// Exemple d'utilisation : { y: 120, player: "left" }
-//remplacer le any plus tard par un type plus précis si possible
+// This interface allows you to create an object with as many properties as you want.
 interface MessageData
 {
     [key: string]: any;
 }
 
-// Fonction pour envoyer un message structuré (exposée pour usage externe)
+// Function to send a structured message (exposed for external use)
 function sendMessage(type: MessageType, data: MessageData)
 {
-    const msg = JSON.stringify({ type, data });// Convertit l'objet en chaîne JSON
-    socket.emit('message', msg); // Utilise emit au lieu de send pour Socket.IO
+    const msg = JSON.stringify({ type, data }); // Converts the object to a JSON string
+    socket.emit('message', msg); // Use emit instead of send for Socket.IO
 }
 
-// Expose la fonction pour test dans la console navigateur
+// Expose the function for testing in the browser console
 window.sendMessage = sendMessage;
 
 let joinInProgress = false;
 let lastJoinAttempt = 0;
 const JOIN_DEBOUNCE_MS = 1000; // 1 second debounce
 
-// Fonction pour rejoindre ou créer une room de n joueurs (workflow 100% backend)
+// Function to join or create a room with n players (100% backend workflow)
 async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false)
 {
     const now = Date.now();
@@ -548,27 +506,26 @@ async function joinOrCreateRoom(maxPlayers: number, isLocalGame: boolean = false
             cleanup();
             reject(new Error("Error during joinRoom"));
         };
-        // On n'utilise plus 'once' sur roomJoined pour ne pas consommer l'event
+        // We no longer use 'once' on roomJoined to avoid consuming the event
         socket.once('error', failure);
         
-        // Préparer les données à envoyer au serveur
+        // Prepare the data to send to the server
         const roomData: any = { maxPlayers, isLocalGame };
         
-        // Ajouter les informations IA si le mode IA est activé
+        // Add AI information if AI mode is enabled
         if (window.aiMode) {
             roomData.enableAI = true;
             roomData.aiDifficulty = window.aiDifficulty || 'medium';
-            // Reset du flag après utilisation
-            //window.aiMode = false; retirer car cela empeche le blocage de W/S en mode IA
+            // Do not reset the flag here to avoid blocking W/S in AI mode
         }
         
-        // Ajouter le flag tournoi si le mode tournoi est activé
+        // Add the tournament flag if tournament mode is enabled
         if (window.isTournamentMode) {
             roomData.isTournament = true;
         }
         
         socket.emit('joinRoom', roomData);
-        // On considère la promesse résolue dès qu'on a émis la demande (le handler UX gère la suite)
+        // We consider the promise resolved as soon as we emit the request (the UX handler manages the rest)
         cleanup();
         resolve();
     });
@@ -604,7 +561,7 @@ async function leaveCurrentRoomAsync(): Promise<void> {
 // Expose the async cleanup function globally
 window.leaveCurrentRoomAsync = leaveCurrentRoomAsync;
 
-// Expose the function for test in the console navigateur
+// Expose the function for testing in the browser console
 window.joinOrCreateRoom = joinOrCreateRoom;
 
 // Expose reconnectWebSocket globally for auth-triggered reconnections
@@ -618,20 +575,20 @@ window.reconnectWebSocket = reconnectWebSocket;
 import { initPongRenderer, draw } from './pongRenderer.js';
 import { cleanupGameState } from './gameCleanup.js';
 
-// Initialisation du renderer Pong au chargement de la page jeu
+// Initialize the Pong renderer when the game page loads
 function setupPongCanvas() {
     initPongRenderer('map');
 }
 
 document.addEventListener('componentsReady', () => {
-    // Attendre un peu que le DOM soit vraiment prêt, puis vérifier le canvas
+    // Wait a bit for the DOM to be really ready, then check the canvas
     setTimeout(() => {
         const mapCanvas = document.getElementById('map');
         if (mapCanvas) {
             setupPongCanvas();
             setupGameEventListeners();
             
-            // Initialiser le sélecteur de difficulté IA
+            // Initialize the AI difficulty selector
             if (typeof window.initAIDifficultySelector === 'function') {
                 window.initAIDifficultySelector();
             }
@@ -639,13 +596,13 @@ document.addEventListener('componentsReady', () => {
     }, 100);
 });
 
-// Variables pour éviter la duplication d'event listeners
+// Variables to avoid duplication of event listeners
 let gameStateListenerActive = false;
 let disconnectListenerActive = false;
 let leftRoomListenerActive = false;
 let spectatorGameFinishedListenerActive = false;
 
-// Fonction pour nettoyer les event listeners du jeu
+// Function to clean up game event listeners
 function cleanupGameEventListeners()
 {
     if (gameStateListenerActive)
@@ -663,11 +620,11 @@ function cleanupGameEventListeners()
         socket.removeAllListeners('leftRoom');
         leftRoomListenerActive = false;
     }
-	if (gameFinishedListenerActive)
+    if (gameFinishedListenerActive)
     {
         socket.removeAllListeners('gameFinished');
         gameFinishedListenerActive = false;
-	}
+    }
     if (tournamentSemifinalFinishedListenerActive)
     {
         socket.removeAllListeners('tournamentSemifinalFinished');
@@ -682,47 +639,43 @@ function cleanupGameEventListeners()
     {
         socket.removeAllListeners('spectatorGameFinished');
         spectatorGameFinishedListenerActive = false;
-	}
+    }
     
-    // Reprend le background quand le jeu se termine
+    // Resume the background when the game ends
     if (typeof window.resumeBackground === 'function')
         window.resumeBackground();
 }
 
-// Fonction pour configurer les event listeners du jeu (une seule fois)
+// Function to set up game event listeners (only once)
 function setupGameEventListeners()
 {
-    // Nettoyer d'abord les anciens listeners
+    // Clean up old listeners first
     cleanupGameEventListeners();
     
-    // NOTE: Background pause désactivé pour tester les performances après optimisations
-    // if (typeof window.pauseBackground === 'function')
-    //     window.pauseBackground();
-    
-    // Event listener pour les états de jeu
+    // Event listener for game states
     if (!gameStateListenerActive)
     {
         socket.on('gameState', (state: any) => {
-            // Utiliser le système d'interpolation si disponible
+            // Use the interpolation system if available
             if (typeof window.addGameState === 'function')
             {
-                // Ajouter l'état au buffer d'interpolation
+                // Add the state to the interpolation buffer
                 window.addGameState(state);
                 
-                // Démarrer la boucle de rendu si pas déjà active
+                // Start the render loop if not already active
                 if (typeof window.startRenderLoop === 'function')
                     window.startRenderLoop();
             }
             else
             {
-                // Fallback: dessiner directement avec la fonction standard
+                // Fallback: draw directly with the standard function
                 draw(state);
             }
         });
         gameStateListenerActive = true;
     }
 
-    // Nettoyage lors de la déconnexion d'une room
+    // Clean up when disconnecting from a room
     if (!disconnectListenerActive)
     {
         socket.on('disconnect', () => {
@@ -732,7 +685,7 @@ function setupGameEventListeners()
         disconnectListenerActive = true;
     }
 
-    // Nettoyage lors de la sortie d'une room
+    // Clean up when leaving a room
     if (!leftRoomListenerActive)
     {
         socket.on('leftRoom', () => {
@@ -741,98 +694,95 @@ function setupGameEventListeners()
         leftRoomListenerActive = true;
     }
 
-	if (!gameFinishedListenerActive)
+    if (!gameFinishedListenerActive)
     {
         socket.on('gameFinished', (data: any) => {
             gameFinishedListenerActive = true;
 
-            // Ignorer si l'utilisateur a quitté le jeu volontairement via navigation
+            // Ignore if the user voluntarily left the game via navigation
             if (window.isNavigatingAwayFromGame) {
                 window.isNavigatingAwayFromGame = false;
                 return;
             }
 
-            // Affiche la page de fin de partie AVEC UN PETIT DELAY pour laisser
-            // le renderer afficher les dernières frames (UX : balle qui sort)
             setTimeout(() => {
-                // Toujours passer les données reçues pour garantir la cohérence entre navigateurs
                 load('gameFinished', data || {});
             }, 100);
         });
-	}
+    }
     
-    // Event listener pour fin de demi-finale de tournoi
+    // Event listener for end of tournament semifinal
     if (!tournamentSemifinalFinishedListenerActive)
     {
         socket.on('tournamentSemifinalFinished', (data: any) => {
             tournamentSemifinalFinishedListenerActive = true;
             
-            // Toujours afficher l'écran de fin de demi-finale, même si navigation en cours
-            // (forfait par navigation doit montrer le résultat)
+            // Always show the end of semifinal screen, even if navigation is in progress
+            // (forfeit by navigation must show the result)
             window.isNavigatingAwayFromGame = false;
             
-            // Arrêter le rendu du jeu
+            // Stop the game rendering
             cleanupGameState();
             
-            // Afficher l'écran de fin de demi-finale
+            // Show the end of semifinal screen
             load('tournamentSemifinalFinished', data);
         });
     }
     
-    // Event listener pour fin de finale de tournoi
+    // Event listener for end of tournament final
     if (!tournamentFinalFinishedListenerActive)
     {
         socket.on('tournamentFinalFinished', (data: any) => {
             console.log('📥 Received tournamentFinalFinished event:', data);
             tournamentFinalFinishedListenerActive = true;
             
-            // Toujours afficher l'écran de fin de finale, même si navigation en cours
-            // (forfait par navigation doit montrer le résultat)
+            // Always show the end of final screen, even if navigation is in progress
+            // (forfeit by navigation must show the result)
             window.isNavigatingAwayFromGame = false;
             
-            // Arrêter le rendu du jeu
+            // Stop the game rendering
             console.log('🧹 Calling cleanupGameState before showing final screen');
             cleanupGameState();
             
-            // Afficher l'écran de fin de finale
+            // Show the end of final screen
             console.log('🏆 Loading tournamentFinalFinished screen');
             load('tournamentFinalFinished', data);
         });
     }
     
-    // Event listener spécial pour les spectateurs
+    // Special event listener for spectators
     if (!spectatorGameFinishedListenerActive)
     {
         socket.on('spectatorGameFinished', (data: any) => {
             spectatorGameFinishedListenerActive = true;
             
-            // Ignorer si l'utilisateur a quitté le jeu volontairement via navigation
+            // Ignore if the user voluntarily left the game via navigation
             if (window.isNavigatingAwayFromGame) {
                 window.isNavigatingAwayFromGame = false;
                 return;
             }
             
-            // Vérifier qu'on est bien sur une page spectate
+            // Check that we are on a spectate page
             const currentPath = window.location.pathname;
             if (!currentPath.includes('spectate')) {
-                // Pas sur la page spectate, ignorer l'écran de fin
+                // Not on the spectate page, ignore the end screen
                 return;
             }
             
-            // Arrêter le jeu et nettoyer l'état
+            // Stop the game and clean up the state
             cleanupGameState();
             
-            // Afficher l'écran de fin SPA pour spectateur avec les vraies données
+            // Show the SPA end screen for spectator with the real data
             setTimeout(() => {
                 load('spectatorGameFinished', data);
-            }, 100); // Délai réduit pour affichage plus rapide
+            }, 100); // Reduced delay for faster display
         });
     }
 }
 
-// Exposer les fonctions de cleanup globalement
+// Expose the cleanup and setup functions globally
 window.cleanupGameEventListeners = cleanupGameEventListeners;
 window.setupGameEventListeners = setupGameEventListeners;
 
-// Suppression de sendMove et du keydown listener (déplacés dans pongControls.ts)
-import './pongControls.js'; // Ajoute les contrôles clavier (modularité)
+// Removal of sendMove and keydown listener (moved to pongControls.ts)
+import './pongControls.js'; // Adds keyboard controls (modularity)

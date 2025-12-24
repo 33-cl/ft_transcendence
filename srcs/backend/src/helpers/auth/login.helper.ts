@@ -12,7 +12,8 @@ import {
   verifyPassword
 } from '../../services/auth.service.js';
 
-interface DbUser {
+interface DbUser
+{
   id: number;
   email: string;
   username: string;
@@ -25,7 +26,8 @@ interface DbUser {
   two_factor_enabled: number;
 }
 
-interface SafeUser {
+interface SafeUser
+{
   id: number;
   email: string;
   username: string;
@@ -58,7 +60,6 @@ export function checkAlreadyConnected(
 {
   if (isUserAlreadyConnected(userId))
   {
-    fastify.log.warn(`User ${username} (${userId}) attempted to login but is already connected`);
     reply.code(403).send({ 
       error: 'This account is already connected elsewhere.',
       code: 'USER_ALREADY_CONNECTED'

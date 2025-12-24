@@ -40,7 +40,7 @@ export async function saveAvatarFile(userId: number, buffer: Buffer, extension: 
   const secureFilename = generateSecureFilename(userId, extension);
   const tempPath = path.join(process.cwd(), 'public', 'avatars', secureFilename);
   await fs.promises.writeFile(tempPath, buffer);
-  return `/avatars/${secureFilename}`;
+  return`/avatars/${secureFilename}`;
 }
 
 export function createAvatarUploadInfo(originalBuffer: Buffer, processedBuffer: Buffer, detectedType: FileTypeResult): AvatarUploadInfo

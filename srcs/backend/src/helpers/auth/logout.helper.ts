@@ -13,7 +13,8 @@ export function handleLogout(jwtToken: string, fastify: FastifyInstance): void
     {
       removeUserFromActiveList(decodedToken.userId);
       const io = getGlobalIo();
-      if (io) broadcastUserStatusChange(io, decodedToken.userId, 'offline', fastify);
+      if (io)
+        broadcastUserStatusChange(io, decodedToken.userId, 'offline', fastify);
     }
     removeActiveToken(jwtToken);
   } catch (err) {
