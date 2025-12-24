@@ -1,6 +1,6 @@
 /**
  * POST /auth/2fa/enable
- * Active la 2FA pour l'utilisateur et envoie un code de vérification par email
+ * Enables 2FA for the user and sends a verification code by email
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
@@ -11,28 +11,28 @@ import { authenticateAndGetSession } from '../../../helpers/auth/session.helper.
 import { checkRateLimit, RATE_LIMITS } from '../../../security.js';
 
 export async function enable2FARoute(request: FastifyRequest, reply: FastifyReply) {
-  // Rate limiting: 3 tentatives par minute
+  // Rate limiting: 3 attempts per minute
   if (!checkRateLimit(`2fa-enable-${request.ip}`, RATE_LIMITS.TWO_FA.max, RATE_LIMITS.TWO_FA.window)) {
     return reply.status(429).send({ error: 'Too many requests. Please try again later.' });
   }
 
-  // Authentification requise
+  // Authentication required
   const jwtToken = getJwtFromRequest(request);
   const session = authenticateAndGetSession(jwtToken, reply);
   if (!session) return;
 
-  // Récupérer l'utilisateur
+  // Get the user
   const user = getUserById(session.id);
   if (!user) {
     return reply.status(404).send({ error: 'User not found' });
   }
 
-  // Vérifier que l'utilisateur a un email
+  // Check that user has an email
   if (!user.email) {
     return reply.status(400).send({ error: 'No email address associated with this account' });
   }
 
-  // 🔒 SÉCURITÉ : Bloquer la 2FA si email temporaire (Google OAuth avec conflit)
+  // Block 2FA if temporary email (Google OAuth with conflict)
   if (user.email.endsWith('@oauth.local')) {
     return reply.status(400).send({ 
       error: 'Please update your email address before enabling Two-Factor Authentication. Your current email is temporary.',
@@ -41,13 +41,13 @@ export async function enable2FARoute(request: FastifyRequest, reply: FastifyRepl
   }
 
   try {
-    // Générer un code de vérification
+    // Generate verification code
     const code = generateTwoFactorCode();
     
-    // Stocker le code dans la base de données (expire dans 5 minutes)
+    // Store code in database (expires in 5 minutes)
     storeTwoFactorCode(user.id, code, 5);
     
-    // Envoyer le code par email
+    // Send code by email
     await sendTwoFactorEmail(user.email, user.username, code);
     
     return reply.send({ 
@@ -55,6 +55,7 @@ export async function enable2FARoute(request: FastifyRequest, reply: FastifyRepl
       message: 'A verification code has been sent to your email. Please check your inbox.' 
     });
   } catch (error) {
+    console.error('Error sending 2FA verification code:', error);
     return reply.status(500).send({ error: 'Failed to send verification code. Please try again later.' });
   }
 }

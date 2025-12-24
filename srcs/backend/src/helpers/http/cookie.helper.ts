@@ -20,12 +20,9 @@ export function getJwtFromRequest(request: FastifyRequest): string | undefined
   return cookies['jwt'];
 }
 
-/**
- * Vérifie l'authentification JWT et retourne l'userId si valide
- * Envoie automatiquement une réponse d'erreur si non authentifié
- * @returns userId si authentifié, null sinon (reply déjà envoyée)
- */
-export function verifyAuthFromRequest(request: FastifyRequest, reply: FastifyReply): number | null {
+// Verifies jwt authentication from request cookies and returns the user id if valid
+export function verifyAuthFromRequest(request: FastifyRequest, reply: FastifyReply): number | null
+{
   const JWT_SECRET = process.env.JWT_SECRET;
   if (!JWT_SECRET)
   {

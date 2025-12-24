@@ -12,7 +12,8 @@ import {
   verifyPassword
 } from '../../services/auth.service.js';
 
-interface DbUser {
+interface DbUser
+{
   id: number;
   email: string;
   username: string;
@@ -25,7 +26,8 @@ interface DbUser {
   two_factor_enabled: number;
 }
 
-interface SafeUser {
+interface SafeUser
+{
   id: number;
   email: string;
   username: string;
