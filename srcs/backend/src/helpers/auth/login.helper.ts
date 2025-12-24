@@ -60,7 +60,6 @@ export function checkAlreadyConnected(
 {
   if (isUserAlreadyConnected(userId))
   {
-    fastify.log.warn(`User ${username} (${userId}) attempted to login but is already connected`);
     reply.code(403).send({ 
       error: 'This account is already connected elsewhere.',
       code: 'USER_ALREADY_CONNECTED'
