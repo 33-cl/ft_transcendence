@@ -13,16 +13,17 @@ import { broadcastUserStatusChange } from '../notificationHandlers.js';
 import { recordForfeitMatch, notifyFriendsForfeit } from '../utils/forfeitHandling.js';
 
 /**
- * Émet un événement quand un joueur rejoint ou quitte un tournoi
- * @param tournamentId - UUID du tournoi
- * @param action - 'joined' ou 'left'
- * @param participant - Données du participant
+ * Emits an event when a player joins or leaves a tournament
+ * @param tournamentId - Tournament UUID
+ * @param action - 'joined' or 'left'
+ * @param participant - Participant data
  */
 export function emitTournamentPlayerUpdate(
     tournamentId: string,
     action: 'joined' | 'left',
     participant: { user_id: number; alias: string; current_players: number }
-): void {
+) 
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -37,14 +38,15 @@ export function emitTournamentPlayerUpdate(
 }
 
 /**
- * Émet un événement quand un tournoi démarre
- * @param tournamentId - UUID du tournoi
- * @param matches - Liste des matchs générés
+ * Emits an event when a tournament starts
+ * @param tournamentId - Tournament UUID
+ * @param matches - List of generated matches
  */
 export function emitTournamentStarted(
     tournamentId: string,
     matches: Array<{ id: number; round: number; player1_id: number | null; player2_id: number | null }>
-): void {
+)
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -58,14 +60,15 @@ export function emitTournamentStarted(
 }
 
 /**
- * Émet un événement quand un match est prêt à être joué
- * @param tournamentId - UUID du tournoi
- * @param match - Données du match
+ * Emits an event when a match is ready to be played
+ * @param tournamentId - Tournament UUID
+ * @param match - Match data
  */
 export function emitMatchReady(
     tournamentId: string,
     match: { id: number; round: number; player1_id: number; player2_id: number }
-): void {
+)
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -79,18 +82,19 @@ export function emitMatchReady(
 }
 
 /**
- * Émet un événement quand un match se termine
- * @param tournamentId - UUID du tournoi
- * @param matchId - ID du match
- * @param winnerId - ID du gagnant
- * @param round - Round du match (1 = semi-final, 2 = final)
+ * Emits an event when a match finishes
+ * @param tournamentId - Tournament UUID
+ * @param matchId - Match ID
+ * @param winnerId - Winner ID
+ * @param round - Match round (1 = semi-final, 2 = final)
  */
 export function emitMatchFinished(
     tournamentId: string,
     matchId: number,
     winnerId: number,
     round: number
-): void {
+)
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -106,14 +110,15 @@ export function emitMatchFinished(
 }
 
 /**
- * Émet un événement quand un tournoi se termine
- * @param tournamentId - UUID du tournoi
- * @param championId - ID du champion
+ * Emits an event when a tournament is completed
+ * @param tournamentId - Tournament UUID
+ * @param championId - Champion ID
  */
 export function emitTournamentCompleted(
     tournamentId: string,
     championId: number
-): void {
+)
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -127,11 +132,12 @@ export function emitTournamentCompleted(
 }
 
 /**
- * Fait rejoindre un socket à une room de tournoi
- * @param socketId - ID du socket
- * @param tournamentId - UUID du tournoi
+ * Makes a socket join a tournament room
+ * @param socketId - Socket ID
+ * @param tournamentId - Tournament UUID
  */
-export function joinTournamentRoom(socketId: string, tournamentId: string): void {
+export function joinTournamentRoom(socketId: string, tournamentId: string): void
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -143,11 +149,12 @@ export function joinTournamentRoom(socketId: string, tournamentId: string): void
 }
 
 /**
- * Fait quitter un socket d'une room de tournoi
- * @param socketId - ID du socket
- * @param tournamentId - UUID du tournoi
+ * Makes a socket leave a tournament room
+ * @param socketId - Socket ID
+ * @param tournamentId - Tournament UUID
  */
-export function leaveTournamentRoom(socketId: string, tournamentId: string): void {
+export function leaveTournamentRoom(socketId: string, tournamentId: string): void
+{
     const io = getGlobalIo();
     if (!io) return;
 
@@ -163,9 +170,10 @@ export function leaveTournamentRoom(socketId: string, tournamentId: string): voi
 // ========================================
 
 /**
- * Initialise l'état du tournoi quand la room est pleine
+ * Initializes the tournament state when the room is full
  */
-export function initializeTournamentState(room: RoomType): void {
+export function initializeTournamentState(room: RoomType): void
+{
     if (!room.isTournament || room.players.length !== 4) return;
     
     room.tournamentState = {
@@ -177,9 +185,10 @@ export function initializeTournamentState(room: RoomType): void {
 }
 
 /**
- * Crée une structure de match de demi-finale
+ * Creates a semifinal match structure
  */
-function createSemifinalMatch(player1: string, player2: string): import('../../types.js').SemifinalMatch {
+function createSemifinalMatch(player1: string, player2: string): import('../../types.js').SemifinalMatch
+{
     return {
         player1,
         player2,
@@ -196,20 +205,21 @@ function createSemifinalMatch(player1: string, player2: string): import('../../t
 }
 
 /**
- * Démarre les deux demi-finales simultanément
+ * Starts both semifinals simultaneously
  */
 export function startSemifinals(
     room: RoomType,
     roomName: string,
     io: Server,
     fastify: FastifyInstance
-): void {
+): void
+{
     if (!room.tournamentState) return;
     
     const state = room.tournamentState;
     state.phase = 'semifinals';
     
-    // Créer les 2 matchs de demi-finale
+    // Create the 2 semifinal matches
     const sf1Player1 = state.players[0];
     const sf1Player2 = state.players[1];
     const sf2Player1 = state.players[2];
@@ -222,24 +232,26 @@ export function startSemifinals(
     console.log(`   SF1: ${state.playerUsernames[sf1Player1]} vs ${state.playerUsernames[sf1Player2]}`);
     console.log(`   SF2: ${state.playerUsernames[sf2Player1]} vs ${state.playerUsernames[sf2Player2]}`);
     
-    // Créer les callbacks de fin pour chaque demi-finale
-    const onSemifinal1End = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+    // Create end callbacks for each semifinal
+    const onSemifinal1End = (winner: { side: string; score: number }, loser: { side: string; score: number }) =>
+    {
         handleSemifinalEnd(1, winner, loser, room, roomName, io, fastify);
     };
     
-    const onSemifinal2End = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+    const onSemifinal2End = (winner: { side: string; score: number }, loser: { side: string; score: number }) =>
+    {
         handleSemifinalEnd(2, winner, loser, room, roomName, io, fastify);
     };
     
-    // Créer les jeux Pong pour chaque demi-finale
+    // Create Pong games for each semifinal
     state.semifinal1.pongGame = new PongGame(2, onSemifinal1End);
     state.semifinal2.pongGame = new PongGame(2, onSemifinal2End);
     
-    // Démarrer les 2 jeux
+    // Start both games
     state.semifinal1.pongGame.start();
     state.semifinal2.pongGame.start();
     
-    // Notifier les joueurs de la demi-finale 1
+    // Notify players of semifinal 1
     io.to(sf1Player1).emit('roomJoined', {
         paddle: 'LEFT',
         maxPlayers: 2,
@@ -257,7 +269,7 @@ export function startSemifinals(
         semifinal: 1
     });
     
-    // Notifier les joueurs de la demi-finale 2
+    // Notify players of semifinal 2
     io.to(sf2Player1).emit('roomJoined', {
         paddle: 'LEFT',
         maxPlayers: 2,
@@ -275,7 +287,7 @@ export function startSemifinals(
         semifinal: 2
     });
     
-    // Envoyer l'update du tournoi à tous
+    // Send tournament update to all
     io.to(roomName).emit('tournamentUpdate', {
         phase: 'semifinals',
         message: 'Both semi-finals starting!',
@@ -291,7 +303,7 @@ export function startSemifinals(
 }
 
 /**
- * Gère la fin d'une demi-finale
+ * Handles the end of a semifinal
  */
 function handleSemifinalEnd(
     semifinalNumber: 1 | 2,
@@ -301,23 +313,24 @@ function handleSemifinalEnd(
     roomName: string,
     io: Server,
     fastify: FastifyInstance
-): void {
+): void
+{
     if (!room.tournamentState) return;
     
     const state = room.tournamentState;
     const semifinal = semifinalNumber === 1 ? state.semifinal1 : state.semifinal2;
     if (!semifinal) return;
     
-    // Éviter double exécution
+    // Prevent double execution
     if (semifinal.finished) return;
     
-    // Déterminer le gagnant et le perdant
+    // Determine the winner and loser
     const winnerId = winner.side === 'LEFT' ? semifinal.player1 : semifinal.player2;
     const loserId = winner.side === 'LEFT' ? semifinal.player2 : semifinal.player1;
     semifinal.winner = winnerId;
     semifinal.finished = true;
     
-    // Enregistrer le gagnant
+    // Save the winner
     if (semifinalNumber === 1) {
         state.semifinal1Winner = winnerId;
     } else {
@@ -329,7 +342,7 @@ function handleSemifinalEnd(
     const winnerScore = winner.score;
     const loserScore = loser.score;
     
-    // Enregistrer le match de demi-finale dans la DB avec les vrais scores
+    // Record the semifinal match in the DB with the actual scores
     const winnerUserId = state.playerUserIds[winnerId];
     const loserUserId = state.playerUserIds[loserId];
     if (winnerUserId && loserUserId) {
@@ -343,7 +356,7 @@ function handleSemifinalEnd(
     
     console.log(`🏆 Tournament: Semi-final ${semifinalNumber} complete - Winner: ${winnerName}`);
     
-    // Récupérer les infos de l'autre demi-finale
+    // Retrieve info from the other semifinal
     const otherSemifinal = semifinalNumber === 1 ? state.semifinal2 : state.semifinal1;
     let otherSemifinalInfo = null;
     if (otherSemifinal && otherSemifinal.pongGame) {
@@ -360,7 +373,7 @@ function handleSemifinalEnd(
         };
     }
     
-    // Envoyer tournamentSemifinalFinished aux joueurs de cette demi-finale pour afficher l'écran de fin
+    // Send tournamentSemifinalFinished to the players of this semifinal to display the end screen
     io.to(semifinal.player1).emit('tournamentSemifinalFinished', {
         winner: { side: winner.side, score: winnerScore, username: winnerName },
         loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
@@ -374,7 +387,7 @@ function handleSemifinalEnd(
         otherSemifinal: otherSemifinalInfo
     });
     
-    // Notifier les joueurs de cette demi-finale via tournamentUpdate aussi
+    // Notify the players of this semifinal via tournamentUpdate also
     io.to(semifinal.player1).emit('tournamentUpdate', {
         phase: `semifinal${semifinalNumber}_complete`,
         message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
@@ -386,15 +399,13 @@ function handleSemifinalEnd(
         winner: winnerName
     });
     
-    // Vérifier si les 2 demi-finales sont terminées
+    // Check if both semifinals are finished
     if (state.semifinal1?.finished && state.semifinal2?.finished) {
         console.log(`🎯 Tournament: Both semi-finals complete, starting final...`);
         
-        // IMPORTANT: Changer la phase AVANT d'arrêter les jeux
-        // Sinon handleGameTick peut voir phase='semifinals' avec pongGame=null et crasher
         state.phase = 'waiting_final';
         
-        // Arrêter les jeux des demi-finales
+        // Stop the semifinal games
         if (state.semifinal1.pongGame) {
             state.semifinal1.pongGame.stop();
             state.semifinal1.pongGame = null;
@@ -404,7 +415,7 @@ function handleSemifinalEnd(
             state.semifinal2.pongGame = null;
         }
         
-        // Notifier tout le monde
+        // Notify everyone
         io.to(roomName).emit('tournamentUpdate', {
             phase: 'waiting_final',
             message: 'Both semi-finals complete! Final starting soon...',
@@ -412,7 +423,7 @@ function handleSemifinalEnd(
             finalist2: state.playerUsernames[state.semifinal2Winner!] || 'Finalist 2'
         });
         
-        // Démarrer la finale après un court délai
+        // Start the final after a short delay
         setTimeout(() => {
             startFinal(room, roomName, io, fastify);
         }, 3000);
@@ -420,9 +431,9 @@ function handleSemifinalEnd(
 }
 
 /**
- * Traite un forfait sur un match de tournoi interne (semi-finales ou finale)
- * Identifie le match affecté (semifinal1 / semifinal2 / final), détermine le gagnant
- * et appelle les handlers de fin de match appropriés (handleSemifinalEnd / handleFinalEnd).
+ * Processes a forfeit on an internal tournament match (semi-finals or final)
+ * Identifies the affected match (semifinal1 / semifinal2 / final), determines the winner
+ * and calls the appropriate end handlers (handleSemifinalEnd / handleFinalEnd).
  */
 export function processTournamentStateForfeit(
     room: RoomType,
@@ -432,7 +443,8 @@ export function processTournamentStateForfeit(
     globalIo: Server | null,
     loserIsOffline: boolean,
     fastify: FastifyInstance
-): void {
+): void
+{
     if (!room.tournamentState) return;
     const state = room.tournamentState;
 
@@ -522,16 +534,18 @@ export function processTournamentStateForfeit(
 }
 
 /**
- * Configure la room pour un match de tournoi 1v1 (utilisé pour la finale)
+ * Configure the room for a 1v1 tournament match (used for the final)
+ * Sets up the room for a 1v1 tournament match (used for the final)
  */
-function setupTournamentMatch(room: RoomType, player1: string, player2: string): void {
-    // Réinitialiser les paddles pour le match (en majuscules pour correspondre aux inputs client)
+function setupTournamentMatch(room: RoomType, player1: string, player2: string): void
+{
+    // Reset paddles for the match (uppercase to match client inputs)
     room.paddleBySocket = {
         [player1]: 'LEFT',
         [player2]: 'RIGHT'
     };
     
-    // Réinitialiser les inputs (en majuscules pour correspondre au jeu)
+    // Reset inputs (uppercase to match game)
     room.paddleInputs = {
         LEFT: { up: false, down: false },
         RIGHT: { up: false, down: false }
@@ -539,6 +553,7 @@ function setupTournamentMatch(room: RoomType, player1: string, player2: string):
 }
 
 /**
+ * Starts a tournament game (used for the final)
  * Démarre un jeu de tournoi (utilisé pour la finale)
  */
 function startTournamentGame(
@@ -546,13 +561,14 @@ function startTournamentGame(
     roomName: string,
     io: Server,
     onMatchEnd: (winnerId: string, loserId: string, winnerScore: number, loserScore: number) => void
-): void {
+): void
+{
     const currentMatch = room.tournamentState?.currentMatch;
     if (!currentMatch) return;
     
-    // Créer un nouveau jeu Pong avec callback de fin
+    // Create a new Pong game with end callback
     const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
-        // Déterminer le gagnant basé sur le côté (en majuscules: 'LEFT' ou 'RIGHT')
+        // Determine the winner based on the side (uppercase: 'LEFT' or 'RIGHT')
         let winnerId: string;
         let loserId: string;
         
@@ -571,7 +587,7 @@ function startTournamentGame(
     room.pongGame.start();
     room.gameState = room.pongGame.state;
     
-    // Envoyer les assignations de paddle aux joueurs du match
+    // Send paddle assignments to match players
     io.to(currentMatch.player1).emit('roomJoined', {
         paddle: 'LEFT',
         maxPlayers: 2,
@@ -588,7 +604,7 @@ function startTournamentGame(
         isTournament: true
     });
     
-    // Les autres joueurs sont spectateurs de ce match
+    // Other players become spectators of this match
     const spectators = room.tournamentState!.players.filter(
         p => p !== currentMatch.player1 && p !== currentMatch.player2
     );
@@ -605,41 +621,40 @@ function startTournamentGame(
     }
 }
 
-/**
- * Démarre la finale du tournoi
- */
+// Start the final match
 function startFinal(
-    _room: RoomType,  // Paramètre ignoré - on utilise rooms[roomName] directement
+    _room: RoomType, 
     roomName: string,
     io: Server,
     fastify: FastifyInstance
-): void {
-    // IMPORTANT: Utiliser rooms[roomName] directement car le paramètre room peut être obsolète
-    // après les setTimeout dans handleSemifinalEnd
+): void
+{
+    // IMPORTANT: Use rooms[roomName] directly as the room parameter may be outdated
+    // after setTimeout in handleSemifinalEnd
     const room = rooms[roomName] as RoomType;
     if (!room || !room.tournamentState) {
         return;
     }
     
-    // Éviter double démarrage
+    // Prevent double start
     if (room.tournamentState.phase === 'final') return;
     
     const state = room.tournamentState;
     state.phase = 'final';
     
-    // Les anciens socket IDs des gagnants
+    // Old socket IDs of the winners
     const oldPlayer1SocketId = state.semifinal1Winner!;
     const oldPlayer2SocketId = state.semifinal2Winner!;
     
-    // Récupérer les user IDs
+    // Retrieve user IDs
     const player1UserId = state.playerUserIds[oldPlayer1SocketId];
     const player2UserId = state.playerUserIds[oldPlayer2SocketId];
     
-    // Récupérer les socket IDs ACTUELS (peuvent avoir changé si le joueur s'est reconnecté)
+    // Retrieve CURRENT socket IDs (may have changed if the player reconnected)
     const player1CurrentSocketId = getSocketIdForUser(player1UserId) || oldPlayer1SocketId;
     const player2CurrentSocketId = getSocketIdForUser(player2UserId) || oldPlayer2SocketId;
     
-    // Utiliser les socket IDs actuels pour la finale
+    // Use current socket IDs for the final
     const player1 = player1CurrentSocketId;
     const player2 = player2CurrentSocketId;
     
@@ -648,16 +663,16 @@ function startFinal(
     const player1Name = state.playerUsernames[oldPlayer1SocketId] || 'Finalist 1';
     const player2Name = state.playerUsernames[oldPlayer2SocketId] || 'Finalist 2';
     
-    // Configurer le match (paddles et inputs) avec les nouveaux socket IDs
+    // Setup the match (paddles and inputs) with new socket IDs
     setupTournamentMatch(room, player1, player2);
     
-    // Créer le jeu Pong pour la finale
+    // Create Pong game for the final
     const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
         let winnerId: string;
         let loserId: string;
         
         if (winner.side === 'LEFT') {
-            winnerId = oldPlayer1SocketId; // Utiliser les anciens IDs pour le mapping username
+            winnerId = oldPlayer1SocketId; // Use old IDs for username mapping
             loserId = oldPlayer2SocketId;
         } else {
             winnerId = oldPlayer2SocketId;
@@ -671,7 +686,7 @@ function startFinal(
     room.pongGame.start();
     room.gameState = room.pongGame.state;
     
-    // Notifier les amis que les finalistes sont en tournoi
+    // Notify friends that the finalists are in the tournament
     if (player1UserId) {
         broadcastUserStatusChange(getGlobalIo(), player1UserId, 'in-tournament', fastify);
     }
@@ -679,7 +694,7 @@ function startFinal(
         broadcastUserStatusChange(getGlobalIo(), player2UserId, 'in-tournament', fastify);
     }
     
-    // Envoyer roomJoined avec les socket IDs ACTUELS
+    // Send roomJoined with CURRENT socket IDs
     io.to(player1).emit('roomJoined', {
         paddle: 'LEFT',
         maxPlayers: 2,
@@ -698,8 +713,8 @@ function startFinal(
         isFinal: true
     });
     
-    // Les perdants des demi-finales deviennent spectateurs
-    // Utiliser aussi les socket IDs actuels
+    // Losers of the semifinals become spectators
+    // Also use current socket IDs
     for (const oldSocketId of state.players) {
         if (oldSocketId !== oldPlayer1SocketId && oldSocketId !== oldPlayer2SocketId) {
             const loserUserId = state.playerUserIds[oldSocketId];
@@ -714,7 +729,7 @@ function startFinal(
 }
 
 /**
- * Gère la fin de la finale
+ * Handles the end of the final
  */
 function handleFinalEnd(
     winnerId: string,
@@ -725,10 +740,11 @@ function handleFinalEnd(
     roomName: string,
     io: Server,
     fastify: FastifyInstance
-): void {
+): void
+{
     if (!room.tournamentState) return;
     
-    // Éviter double exécution
+    // Prevent double execution
     if (room.tournamentState.phase === 'completed') return;
     
     room.tournamentState.finalWinner = winnerId;
@@ -739,7 +755,7 @@ function handleFinalEnd(
     
     console.log(`🏆🏆🏆 Tournament COMPLETE - Champion: ${winnerName}`);
     
-    // Envoyer tournamentFinalFinished aux finalistes pour afficher l'écran de fin
+    // Send tournamentFinalFinished to the finalists to display the end screen
     console.log(`📤 Sending tournamentFinalFinished to winner ${winnerId} (${winnerName})`);
     io.to(winnerId).emit('tournamentFinalFinished', {
         winner: { side: 'LEFT', score: winnerScore, username: winnerName },
@@ -751,23 +767,23 @@ function handleFinalEnd(
         loser: { side: 'RIGHT', score: loserScore, username: loserName }
     });
 
-    // Le match est terminé: arrêter et retirer le pongGame pour ne pas laisser les joueurs "in-game"
+    // The match is over: stop and remove pongGame to not leave players "in-game"
     if (room.pongGame) {
         room.pongGame.stop();
         room.pongGame = null;
     }
 
-    // Remettre immédiatement les statuts à "online" côté amis
+    // Immediately reset statuses to "online" for friends
     notifyFriendsGameEnded(room, fastify);
     
-    // Notifier tous les joueurs de la fin du tournoi
+    // Notify all players of the tournament end
     io.to(roomName).emit('tournamentComplete', {
         winner: winnerName,
         winnerId: room.tournamentState.playerUserIds[winnerId],
         message: `🏆 Tournament Champion: ${winnerName}!`
     });
     
-    // Enregistrer le résultat de la finale avec les vrais scores
+    // Record the final result with the actual scores
     const winnerUserId = room.tournamentState.playerUserIds[winnerId];
     const loserUserId = room.tournamentState.playerUserIds[loserId];
     
@@ -780,7 +796,7 @@ function handleFinalEnd(
         }
     }
     
-    // Nettoyer la room après un délai
+    // Clean up the room after a delay
     setTimeout(() => {
         if (rooms[roomName]) {
             delete rooms[roomName];
@@ -788,15 +804,14 @@ function handleFinalEnd(
     }, 10000);
 }
 
-/**
- * Démarre le tournoi (appelé quand la room est pleine)
- */
+// Starts the tournament when the room is full
 export function startTournament(
     room: RoomType,
     roomName: string,
     io: Server,
     fastify: FastifyInstance
-): void {
+): void
+{
     if (!room.isTournament || room.players.length !== 4) {
         console.log(`❌ Cannot start tournament: isTournament=${room.isTournament}, players=${room.players.length}`);
         return;
@@ -806,13 +821,13 @@ export function startTournament(
     
     console.log(`🏁 Tournament starting in room ${roomName} with ${room.players.length} players`);
     
-    // Notifier tous les joueurs que le tournoi démarre
+    // Notify all players that the tournament is starting
     io.to(roomName).emit('tournamentStart', {
         message: 'Tournament is starting!',
         players: Object.values(room.tournamentState!.playerUsernames)
     });
     
-    // Démarrer les deux demi-finales simultanément après un court délai
+    // Start both semifinals simultaneously after a short delay
     setTimeout(() => {
         startSemifinals(room, roomName, io, fastify);
     }, 2000);
