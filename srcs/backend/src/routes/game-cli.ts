@@ -1,5 +1,5 @@
 // REST API for Pong game control and inspection
-// NOTE: Most routes are for CLI/debug only - the frontend uses WebSocket for real-time game control
+// Most routes are for CLI/debug only - frontend uses WebSocket for real-time game control
 // Only GET routes are used by the frontend for spectate feature
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -9,7 +9,6 @@ import { validateId } from '../security.js';
 import { PaddleSide } from '../../game/gameState.js';
 import { verifyAuthFromRequest } from '../helpers/http/cookie.helper.js';
 
-// Request types
 interface PaddleControlBody {
   player: 'LEFT' | 'DOWN' | 'RIGHT' | 'TOP';
   direction: 'up' | 'down';
@@ -43,17 +42,14 @@ function serializeGameState(roomName: string)
       width: room.gameState.canvasWidth,
       height: room.gameState.canvasHeight
     } : null,
-    createdAt: Date.now() // Approximation
+    createdAt: Date.now()
   };
 }
 
 export default async function gamesRoutes(fastify: FastifyInstance)
 {
   
-  // ============================================================================
-  // GET /api/games - List all active games
-  // Used by frontend for spectate feature
-  // ============================================================================
+  // List all active games (used by frontend for spectate feature)
   fastify.get('/api/games', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const gamesList = Object.keys(rooms).map(roomName => {
@@ -81,15 +77,11 @@ export default async function gamesRoutes(fastify: FastifyInstance)
     }
   });
 
-  // ============================================================================
-  // GET /api/games/:id - Get complete game state
-  // Used by frontend for spectate feature
-  // ============================================================================
+  // Get complete game state (used by frontend for spectate feature)
   fastify.get<{ Params: GameIdParams }>('/api/games/:id', async (request: FastifyRequest<{ Params: GameIdParams }>, reply: FastifyReply) => {
     try {
       const { id } = request.params;
 
-      // Validate game ID
       if (!id || typeof id !== 'string') {
         return reply.code(400).send({
           success: false,
@@ -97,7 +89,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Check if game exists
       if (!roomExists(id)) {
         return reply.code(404).send({
           success: false,
@@ -126,15 +117,9 @@ export default async function gamesRoutes(fastify: FastifyInstance)
     }
   });
 
-  // ============================================================================
-  // CLI/DEBUG ROUTES - Not used by frontend (WebSocket used instead)
-  // Kept for debugging and CLI control purposes
-  // ============================================================================
+  // CLI/DEBUG routes - not used by frontend (WebSocket used instead)
 
-  // ============================================================================
-  // POST /api/games/:id/join - Join a game as a player (CLI ONLY)
-  // SECURITY: JWT protected
-  // ============================================================================
+  // Join a game as a player via CLI
   fastify.post<{ Params: GameIdParams }>('/api/games/:id/join', async (request: FastifyRequest<{ Params: GameIdParams }>, reply: FastifyReply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
@@ -158,7 +143,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
 
       const room = rooms[id];
       
-      // Check if room is full
       if (room.players.length >= room.maxPlayers) {
         return reply.code(400).send({
           success: false,
@@ -166,7 +150,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Get user info
       const user = await import('../services/auth.service.js').then(m => m.getUserById(currentUserId));
       if (!user) {
         return reply.code(401).send({
@@ -185,18 +168,15 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Add player to room
       const fakeSocketId = `cli-player-${user.id}`;
       room.players.push(fakeSocketId);
 
       // Assign paddle based on game mode
       let assignedPaddle: PaddleSide;
       if (room.maxPlayers === 2) {
-        // 1v1: LEFT or RIGHT only
         const paddleSides: PaddleSide[] = ['LEFT', 'RIGHT'];
         assignedPaddle = paddleSides[room.players.length - 1];
       } else {
-        // 4 players: LEFT, DOWN, RIGHT, TOP
         const paddleSides: PaddleSide[] = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
         assignedPaddle = paddleSides[room.players.length - 1];
       }
@@ -220,20 +200,15 @@ export default async function gamesRoutes(fastify: FastifyInstance)
     }
   });
 
-  // ============================================================================
-  // POST /api/games/:id/paddle - Control a paddle (CLI ONLY)
-  // SECURITY: JWT protected
-  // ============================================================================
+  // Control a paddle via CLI
   fastify.post<{ Params: GameIdParams; Body: PaddleControlBody }>('/api/games/:id/paddle', async (request: FastifyRequest<{ Params: GameIdParams; Body: PaddleControlBody }>, reply: FastifyReply) => {
     try {
-      // SECURITY: Check authentication
       const currentUserId = verifyAuthFromRequest(request, reply);
       if (!currentUserId) return;
 
       const { id } = request.params;
       const { player, direction } = request.body || {};
 
-      // Validate game ID
       if (!id || typeof id !== 'string') {
         return reply.code(400).send({
           success: false,
@@ -241,7 +216,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Validate player and direction
       const validPlayers = ['LEFT', 'DOWN', 'RIGHT', 'TOP'];
       const validDirections = ['up', 'down'];
 
@@ -259,7 +233,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Check if game exists
       if (!roomExists(id)) {
         return reply.code(404).send({
           success: false,
@@ -275,7 +248,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // SECURITY: Verify user is part of this game and controls the requested paddle
       const user = await import('../services/auth.service.js').then(m => m.getUserById(currentUserId));
       if (!user) {
         return reply.code(401).send({
@@ -293,7 +265,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Check if game is running
       if (!room.pongGame.state.running) {
         return reply.code(400).send({
           success: false,
@@ -301,11 +272,9 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         });
       }
 
-      // Move the paddle
       room.pongGame.movePaddle(player as any, direction as any);
       fastify.log.info(`Paddle control via API: ${id} - ${player} ${direction}`);
 
-      // Find the paddle for this player
       const paddleData = room.gameState.paddles.find(p => p.side === player);
 
       return reply.send({

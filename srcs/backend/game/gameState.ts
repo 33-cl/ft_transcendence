@@ -157,7 +157,7 @@ export function createInitialGameState(numPlayers: number = 2): GameState
         ballRadius:     15,
         ballSpeedX:     0,
         ballSpeedY:     0,
-        win:            3,
+        win:            5,
         running:        false,
         ballCountdown:  3,
         timestamp:      Date.now(),

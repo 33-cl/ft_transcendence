@@ -14,7 +14,7 @@ import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
 import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
 import tournamentsRoutes from './src/routes/tournaments.js'; // Route /tournaments (tournois)
 import oauthRoutes from './src/routes/oauth.js'; // Route /auth/google/callback (OAuth)
-import gamesRoutes from './src/routes/games.js'; // Route /api/games (CLI game control)
+import gamesRoutes from './src/routes/game-cli.js'; // Route /api/games (CLI game control)
 import avatarProxyRoutes from './src/routes/avatar-proxy.js'; // Route /avatar-proxy (proxy avatars Google)
 import { validateId } from './src/security.js'; // Import security helpers
 
