@@ -5,23 +5,20 @@ import searchRoutes from './search.routes.js';
 import leaderboardRoutes from './leaderboard.routes.js';
 import statusRoutes from './status.routes.js';
 
-/**
- * Point d'entrée pour toutes les routes /users/*
- * Découpage modulaire pour une meilleure lisibilité et maintenance
- */
+// Main entry point for all /users/* routes
 export default async function usersRoutes(fastify: FastifyInstance) {
-  // Routes de gestion des amis (GET /users, POST/DELETE /users/:id/friend)
+  // Friend management routes
   await fastify.register(friendsRoutes);
   
-  // Routes de demandes d'amis (friend-requests/*)
+  // Friend requests routes
   await fastify.register(friendRequestsRoutes);
   
-  // Route de recherche d'utilisateurs
+  // User search route
   await fastify.register(searchRoutes);
   
-  // Routes du leaderboard et classement
+  // Leaderboard routes
   await fastify.register(leaderboardRoutes);
   
-  // Route de statut en ligne des amis
+  // Friend online status route
   await fastify.register(statusRoutes);
 }

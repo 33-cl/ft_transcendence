@@ -4,20 +4,15 @@ import { verifyAuthFromRequest } from '../../helpers/http/cookie.helper.js';
 import { getSocketIdForUser } from '../../socket/socketAuth.js';
 import { isUsernameInGame } from '../../socket/roomManager.js';
 
-/**
- * Route de statut en ligne des amis
- * - GET /users/friends-online : Statuts actuels des amis
- */
+// Friend online status route
 export default async function statusRoutes(fastify: FastifyInstance) {
 
-  // GET /users/friends-online - Statuts en ligne des amis
-  // Endpoint léger appelé UNE FOIS au chargement, ensuite les WebSocket events gèrent les mises à jour
+  // Get friends online status
   fastify.get('/users/friends-online', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
       if (!currentUserId) return;
 
-      // Récupérer les amis de l'utilisateur
       interface FriendRow {
         id: number;
         username: string;
@@ -29,15 +24,14 @@ export default async function statusRoutes(fastify: FastifyInstance) {
         WHERE f.user_id = ?
       `).all(currentUserId) as FriendRow[];
 
-      // Obtenir le statut en ligne des amis
       const friendsStatus = friends.map((friend: FriendRow) => {
         const socketId = getSocketIdForUser(friend.id);
         const isOnline = !!socketId;
-        // Vérifier si en jeu normal (spectatable)
+        // Check if in normal game (spectatable)
         const isInNormalGame = isOnline && isUsernameInGame(friend.username, true);
-        // Vérifier si en jeu (tout type, y compris tournoi)
+        // Check if in any game (including tournament)
         const isInAnyGame = isOnline && isUsernameInGame(friend.username, false);
-        // En tournoi = en jeu mais pas en jeu normal
+        // In tournament = in game but not in normal game
         const isInTournament = isInAnyGame && !isInNormalGame;
         
         let status: string;

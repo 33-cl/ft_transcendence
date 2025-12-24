@@ -4,14 +4,26 @@ import { verifyAuthFromRequest } from '../../helpers/http/cookie.helper.js';
 import { validateLength, checkRateLimit, RATE_LIMITS } from '../../security.js';
 import { removeAngleBrackets } from '../../utils/sanitize.js';
 
-/**
- * Route de recherche d'utilisateurs
- * - GET /users/search : Rechercher des utilisateurs par nom
- * - GET /users/by-username/:username : Récupérer un utilisateur par son username
- */
-export default async function searchRoutes(fastify: FastifyInstance) {
+interface UserRow {
+  id: number;
+  username: string;
+  avatar_url: string | null;
+  wins: number;
+  losses: number;
+}
 
-  // GET /users/by-username/:username - Récupérer un utilisateur par son username
+interface SearchUser {
+  id: number;
+  username: string;
+  avatar_url: string | null;
+  wins: number;
+  losses: number;
+}
+
+// User search routes
+export default async function searchRoutes(fastify: FastifyInstance)
+{
+  // Get user by username
   fastify.get('/users/by-username/:username', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
@@ -20,28 +32,18 @@ export default async function searchRoutes(fastify: FastifyInstance) {
       const params = request.params as any;
       const username = params.username;
 
-      // SECURITY: Validate username format (alphanumeric, 3-20 chars)
-      if (!username || typeof username !== 'string' || !validateLength(username, 3, 20)) {
+      // Validate username format (alphanumeric, 3-20 chars)
+      if (!username || typeof username !== 'string' || !validateLength(username, 3, 20))
         return reply.status(400).send({ error: 'Invalid username' });
-      }
 
-      // Fetch user by username
-      interface UserRow {
-        id: number;
-        username: string;
-        avatar_url: string | null;
-        wins: number;
-        losses: number;
-      }
       const user = db.prepare(`
         SELECT id, username, avatar_url, wins, losses
         FROM users
         WHERE username = ?
       `).get(username) as UserRow | undefined;
 
-      if (!user) {
+      if (!user)
         return reply.status(404).send({ error: 'User not found' });
-      }
 
       return { user };
     } catch (error) {
@@ -49,40 +51,29 @@ export default async function searchRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // GET /users/search - Rechercher des utilisateurs
+  // Search users
   fastify.get('/users/search', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
-      if (!currentUserId) return;
+      if (!currentUserId)
+        return;
 
-      // SECURITY: Rate limiting for search to prevent abuse
       const searchRateLimitKey = `search_${currentUserId}`;
-      if (!checkRateLimit(searchRateLimitKey, RATE_LIMITS.SEARCH_USERS.max, RATE_LIMITS.SEARCH_USERS.window)) {
+      if (!checkRateLimit(searchRateLimitKey, RATE_LIMITS.SEARCH_USERS.max, RATE_LIMITS.SEARCH_USERS.window))
         return reply.status(429).send({ error: 'Too many search requests. Please wait a moment.' });
-      }
+      
 
       const query = (request.query as any)?.q || '';
       
-      // SECURITY: Validate query length to prevent DoS
-      if (!validateLength(query, 1, 100)) {
+      if (!validateLength(query, 1, 100))
         return reply.status(400).send({ error: 'Query too long or too short' });
-      }
       
-      if (!query || query.length < 2) {
+      if (!query || query.length < 2)
         return { users: [] };
-      }
 
-      // SECURITY: Sanitize search query to prevent injection (supprime < et >)
+      // Sanitize search query to prevent injection
       const sanitizedQuery = removeAngleBrackets(query).trim();
 
-      // Chercher des utilisateurs qui ne sont pas déjà amis et qui ne sont pas l'utilisateur actuel
-      interface SearchUser {
-        id: number;
-        username: string;
-        avatar_url: string | null;
-        wins: number;
-        losses: number;
-      }
       const searchResults = db.prepare(`
         SELECT DISTINCT u.id, u.username, u.avatar_url, u.wins, u.losses
         FROM users u
@@ -97,7 +88,7 @@ export default async function searchRoutes(fastify: FastifyInstance) {
         LIMIT 10
       `).all(currentUserId, `%${sanitizedQuery}%`, currentUserId) as SearchUser[];
 
-      // Ajouter l'information si une demande d'ami a déjà été envoyée
+      // Add pending friend request status
       const usersWithRequestStatus = searchResults.map((user: SearchUser) => {
         const pendingRequest = db.prepare(
           'SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?'

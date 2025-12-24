@@ -7,16 +7,8 @@ import { notifyProfileUpdated, broadcastLeaderboardUpdate } from '../../socket/n
 import { getGlobalIo } from '../../socket/socketHandlers.js';
 import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
-/**
- * POST /auth/avatar/save
- * Sauvegarde définitive d'un avatar temporaire
- * - Authentification JWT requise
- * - Rate limiting (5/min)
- * - Validation de l'ownership du fichier temporaire
- * - Renommage du fichier (temp → final)
- * - Mise à jour de la base de données
- * - Notification WebSocket aux amis
- */
+// POST /auth/avatar/save
+// Saves temporary avatar permanently: validate ownership, rename file, update DB
 export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyReply, fastify: FastifyInstance)
 {
   const jwtToken = getJwtFromRequest(request);
@@ -25,18 +17,16 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
   if (!session)
     return;
 
-  // SECURITY: Rate limiting pour éviter le spam
-  if (!checkRateLimit(`avatar_save_${session.id}`, RATE_LIMITS.UPLOAD_AVATAR.max, RATE_LIMITS.UPLOAD_AVATAR.window)) {
+  if (!checkRateLimit(`avatar_save_${session.id}`, RATE_LIMITS.UPLOAD_AVATAR.max, RATE_LIMITS.UPLOAD_AVATAR.window))
     return reply.code(429).send({ error: 'Too many save attempts. Please wait a moment.' });
-  }
 
-  // Extraction de l'URL temporaire depuis le body
+  // Get temporary avatar URL from request body
   const { temp_avatar_url } = (request.body as { temp_avatar_url?: string }) || {};
   if (!temp_avatar_url)
     return reply.code(400).send({ error: 'No temporary avatar URL provided' });
 
   try {
-    // Traitement complet de la sauvegarde (validation + renommage)
+    // Validate ownership and rename file
     const finalAvatarUrl = processAvatarSave(temp_avatar_url, session.id);
 
     db.prepare('UPDATE users SET avatar_url = ?, updated_at = ? WHERE id = ?').run(
@@ -46,7 +36,6 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
     );
     
     notifyProfileUpdated(getGlobalIo(), session.id, { avatar_url: finalAvatarUrl }, fastify);
-    // Broadcast à TOUS les clients pour le leaderboard
     broadcastLeaderboardUpdate(getGlobalIo(), session.id, { avatar_url: finalAvatarUrl }, fastify);
     
     return reply.send({ 
@@ -58,7 +47,7 @@ export async function avatarSaveRoute(request: FastifyRequest, reply: FastifyRep
     
     if (error.message && error.message.includes('Invalid temporary avatar URL'))
       return reply.code(400).send({ error: error.message });
-    if (error.message && error.message.includes('not owned by user'))// si un user tente de voler l avatar d un autre
+    if (error.message && error.message.includes('not owned by user'))
       return reply.code(400).send({ error: error.message });
     if (error.message && error.message.includes('not found'))
       return reply.code(404).send({ error: error.message });

@@ -7,23 +7,8 @@ import { notifyProfileUpdated, broadcastLeaderboardUpdate } from '../../socket/n
 import { getGlobalIo } from '../../socket/socketHandlers.js';
 import { checkRateLimit, RATE_LIMITS } from '../../security.js';
 
-/**
- * PUT /auth/profile
- * Mise à jour du profil utilisateur (username, email, password)
- * 
- * Flux :
- * 1. Authentification JWT (authenticateProfileRequest)
- * 2. Récupération de la session utilisateur (getUserSession)
- * 3. Extraction du body (username, email, currentPassword, newPassword)
- * 4. Validation des longueurs des inputs (validateProfileInputLengths)
- * 5. Sanitization et validation des données (sanitizeAndValidateProfileData)
- * 6. Vérification du mot de passe actuel si changement (verifyCurrentPassword)
- * 7. Vérification unicité email si changé (checkEmailUniqueness)
- * 8. Vérification unicité username si changé (checkUsernameUniqueness)
- * 9. Construction et exécution de l'UPDATE (updateUserProfile)
- * 10. Notification WebSocket aux amis (notifyProfileUpdated)
- * 11. Réponse de confirmation
- */
+// PUT /auth/profile
+// Updates user profile: validate input, verify password/uniqueness, update DB, notify friends
 export async function profileRoute(request: FastifyRequest, reply: FastifyReply, fastify: FastifyInstance)
 {
   const jwtToken = getJwtFromRequest(request);
@@ -31,13 +16,11 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
   if (!sessionRow)
     return;
 
-  // Rate limiting par utilisateur
   const rateLimitKey = `profile_update:${sessionRow.id}`;
-  if (!checkRateLimit(rateLimitKey, RATE_LIMITS.PROFILE_UPDATE.max, RATE_LIMITS.PROFILE_UPDATE.window)) {
+  if (!checkRateLimit(rateLimitKey, RATE_LIMITS.PROFILE_UPDATE.max, RATE_LIMITS.PROFILE_UPDATE.window))
     return reply.code(429).send({ error: 'Too many profile update attempts, please try again later' });
-  }
 
-  // Extraction du body
+  // Extract request body
   const { username, email, currentPassword, newPassword } = (request.body as {
     username?: string;
     email?: string;
@@ -56,7 +39,7 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
     if (!verifyPasswordAndUniqueness(newPassword, currentPassword, sanitizedEmail, sanitizedUsername, sessionRow.email, sessionRow.username, sessionRow.id, reply))
       return;
 
-    // Vérifier si l'email a changé ET si la 2FA était activée AVANT la mise à jour
+    // Check if email changed and if 2FA was enabled before update
     const emailChanged = sanitizedEmail && sanitizedEmail !== sessionRow.email;
     const userBefore = db.prepare('SELECT two_factor_enabled FROM users WHERE id = ?').get(sessionRow.id) as { two_factor_enabled: number } | undefined;
     const had2FAEnabled = userBefore?.two_factor_enabled === 1;
@@ -68,16 +51,14 @@ export async function profileRoute(request: FastifyRequest, reply: FastifyReply,
 
     if (updatedRow && updatedRow.username && updatedRow.username !== sessionRow.username) {
       notifyProfileUpdated(getGlobalIo(), sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
-      // Broadcast à TOUS les clients pour le leaderboard
       broadcastLeaderboardUpdate(getGlobalIo(), sessionRow.id, { username: updatedRow.username, avatar_url: updatedRow.avatar_url ?? undefined }, fastify);
     }
 
-    // Message adapté : mentionner la 2FA SEULEMENT si elle était activée avant
+    // Inform user if 2FA was disabled due to email change
     let message = 'Profile updated successfully';
     const twoFactorWasDisabled = emailChanged && had2FAEnabled;
-    if (twoFactorWasDisabled) {
+    if (twoFactorWasDisabled)
       message = 'Profile updated successfully. Two-Factor Authentication has been disabled for security (new email address). You can re-enable it in settings.';
-    }
 
     return reply.send({
       ok: true,

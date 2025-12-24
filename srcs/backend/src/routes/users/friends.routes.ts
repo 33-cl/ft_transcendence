@@ -13,16 +13,13 @@ if (!process.env.JWT_SECRET)
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 
-/**
- * Vérifie si une demande d'ami inverse existe (l'autre personne nous a déjà envoyé une demande)
- * Si oui, accepte automatiquement l'amitié (les deux veulent être amis)
- * @returns true si une demande mutuelle a été trouvée et traitée, false sinon
- */
+// Check if mutual friend request exists and auto-accept if both users want to be friends
 function tryAutoAcceptMutualRequest(
   currentUserId: number,
   friendId: number,
   fastify: FastifyInstance
-): boolean {
+): boolean
+{
   const reverseRequest = db.prepare(
     'SELECT id FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?'
   ).get(friendId, currentUserId, 'pending') as { id: number } | undefined;
@@ -30,20 +27,20 @@ function tryAutoAcceptMutualRequest(
   if (!reverseRequest)
     return false;
 
-  // Supprimer la demande inverse
+  // Delete reverse request
   db.prepare('DELETE FROM friend_requests WHERE id = ?').run(reverseRequest.id);
 
-  // Créer l'amitié bidirectionnelle
+  // Create bidirectional friendship
   db.prepare('INSERT OR IGNORE INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendId);
   db.prepare('INSERT OR IGNORE INTO friendships (user_id, friend_id) VALUES (?, ?)').run(friendId, currentUserId);
 
-  // Notifier les deux utilisateurs que l'amitié est créée
+  // Notify both users that friendship is created
   notifyFriendAdded(getGlobalIo(), currentUserId, friendId, fastify);
 
   return true;
 }
 
-// Helper pour notifier qu'une nouvelle demande d'ami a été reçue
+// Notify user that they received a new friend request
 function notifyFriendRequestReceived(receiverId: number, senderId: number, fastify: FastifyInstance)
 {
   try { 
@@ -73,16 +70,11 @@ function notifyFriendRequestReceived(receiverId: number, senderId: number, fasti
   }
 }
 
-/**
- * Routes de gestion des amis
- * - GET /users : Liste des amis de l'utilisateur connecté
- * - POST /users/:id/friend : Envoyer une demande d'ami
- * - DELETE /users/:id/friend : Supprimer un ami
- */
+// Friend management routes list friends, send request, remove friend
 export default async function friendsRoutes(fastify: FastifyInstance)
 {
   
-  // GET /users - Liste des amis
+  // Get friends list
   fastify.get('/users', async (request, reply) => {
     try {
 
@@ -105,7 +97,7 @@ export default async function friendsRoutes(fastify: FastifyInstance)
       if (!currentUserId)
         return { users: [] };
 
-      // Récupérer les 10 derniers amis
+      // Get last 10 friends
       const friends = db.prepare(`
         SELECT u.id, u.username, u.avatar_url, u.wins, u.losses, f.created_at 
         FROM friendships f
@@ -121,7 +113,7 @@ export default async function friendsRoutes(fastify: FastifyInstance)
     }
   });
 
-  // POST /users/:id/friend - Envoyer une demande d'ami
+  // Send friend request
   fastify.post('/users/:id/friend', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
@@ -139,28 +131,28 @@ export default async function friendsRoutes(fastify: FastifyInstance)
       if (friendId === currentUserId)
         return reply.status(400).send({ error: 'Cannot add yourself as a friend' });
 
-      // Vérifier que l'utilisateur existe
+      // Check if user exists
       const friendExists = db.prepare('SELECT 1 FROM users WHERE id = ?').get(friendId);
       if (!friendExists)
         return reply.status(404).send({ error: 'User not found' });
 
-      // est on deja amis? dans les deux sens
+      // Check if already friends
       const existingFriendship = db.prepare(
         'SELECT 1 FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)'
       ).get(currentUserId, friendId, friendId, currentUserId);
       if (existingFriendship)
         return reply.status(400).send({ error: 'Already friends' });
 
-      // la demande existe deja?
+      // Check if request already exists
       const existingRequest = db.prepare('SELECT 1 FROM friend_requests WHERE sender_id = ? AND receiver_id = ? AND status = ?').get(currentUserId, friendId, 'pending');
       if (existingRequest)
         return reply.status(400).send({ error: 'Friend request already sent' });
 
-      //friends demande bidirectionnelle sans acceptation
+      // Auto-accept if mutual request exists
       if (tryAutoAcceptMutualRequest(currentUserId, friendId, fastify))
         return { success: true, message: 'Friend request auto-accepted (mutual request)' };
 
-      // Envoyer la demande d'ami
+      // Send friend request
       db.prepare('INSERT INTO friend_requests (sender_id, receiver_id, status) VALUES (?, ?, ?)').run(currentUserId, friendId, 'pending');
       
       notifyFriendRequestReceived(friendId, currentUserId, fastify);
@@ -171,7 +163,7 @@ export default async function friendsRoutes(fastify: FastifyInstance)
     }
   });
 
-  // DELETE /users/:id/friend - Supprimer un ami
+  // Remove friend
   fastify.delete('/users/:id/friend', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
@@ -196,12 +188,12 @@ export default async function friendsRoutes(fastify: FastifyInstance)
       if (!existingFriendship)
         return reply.status(404).send({ error: 'Friendship not found' });
 
-      // delete friendship in both directions
+      // Delete friendship in both directions
       db.prepare('DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)').run(
         currentUserId, friendId, friendId, currentUserId
       );
       
-      //delete friendrequest in both directions
+      // Delete friend request in both directions
       db.prepare('DELETE FROM friend_requests WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)').run(
         currentUserId, friendId, friendId, currentUserId
       );

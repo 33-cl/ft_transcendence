@@ -5,12 +5,7 @@ import { validateId, checkRateLimit, RATE_LIMITS } from '../../security.js';
 import { notifyFriendAdded } from '../../socket/notificationHandlers.js';
 import { getGlobalIo } from '../../socket/socketHandlers.js';
 
-/*
- Routes de gestion des demandes d'amis
- - GET /users/friend-requests/received : Liste des demandes reçues
- - POST /users/friend-requests/:requestId/accept : Accepter une demande
- - POST /users/friend-requests/:requestId/reject : Refuser une demande
-*/
+// Friend request routes: get received requests, accept, reject
 export default async function friendRequestsRoutes(fastify: FastifyInstance)
 {
   fastify.get('/users/friend-requests/received', async (request, reply) => {
@@ -33,7 +28,7 @@ export default async function friendRequestsRoutes(fastify: FastifyInstance)
     }
   });
 
-  // POST Accepter une demande d'ami
+  // Accept friend request
   fastify.post('/users/friend-requests/:requestId/accept', async (request, reply) =>{
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
@@ -44,25 +39,24 @@ export default async function friendRequestsRoutes(fastify: FastifyInstance)
       if (!checkRateLimit(acceptRateLimitKey, RATE_LIMITS.FRIEND_ACCEPT.max, RATE_LIMITS.FRIEND_ACCEPT.window))
         return reply.status(429).send({ error: 'Too many accept requests. Please wait a moment.' });
 
-      //is it a valid id?
       const requestId = validateId((request.params as any).requestId);
       if (!requestId)
         return reply.status(400).send({ error: 'Invalid request ID' });
       
-      // Récupérer la demande d'ami
+      // Get friend request
       const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
       
       if (!friendRequest)
         return reply.status(404).send({ error: 'Friend request not found' });
 
-      // Ajouter les deux relations d'amitié
+      // Create bidirectional friendship
       db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(currentUserId, friendRequest.sender_id);
       db.prepare('INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)').run(friendRequest.sender_id, currentUserId);
       
-      // Supprimer la demande au lieu de la marquer comme acceptée (nettoyage)
+      // Delete request after accepting
       db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
       
-      // Notifier les deux utilisateurs qu'ils sont maintenant amis
+      // Notify both users they are now friends
       notifyFriendAdded(getGlobalIo(), currentUserId, friendRequest.sender_id, fastify);
 
       return { success: true, message: 'Friend request accepted' };
@@ -71,7 +65,7 @@ export default async function friendRequestsRoutes(fastify: FastifyInstance)
     }
   });
 
-  // POST /users/friend-requests/:requestId/reject - Refuser une demande d'ami
+  // Reject friend request
   fastify.post('/users/friend-requests/:requestId/reject', async (request, reply) => {
     try {
       const currentUserId = verifyAuthFromRequest(request, reply);
@@ -82,18 +76,17 @@ export default async function friendRequestsRoutes(fastify: FastifyInstance)
       if (!checkRateLimit(rejectRateLimitKey, RATE_LIMITS.FRIEND_REJECT.max, RATE_LIMITS.FRIEND_REJECT.window))
         return reply.status(429).send({ error: 'Too many reject requests. Please wait a moment.' });
 
-      //Validate requestId parameter
       const requestId = validateId((request.params as any).requestId);
       if (!requestId)
         return reply.status(400).send({ error: 'Invalid request ID' });
       
-      // Récupérer la demande d'ami
+      // Get friend request
       const friendRequest = db.prepare('SELECT * FROM friend_requests WHERE id = ? AND receiver_id = ? AND status = ?').get(requestId, currentUserId, 'pending') as any;
       
       if (!friendRequest)
         return reply.status(404).send({ error: 'Friend request not found' });
 
-      // Supprimer la demande au lieu de la marquer comme rejetée (permet de redemander plus tard)
+      // Delete request (allows re-requesting later)
       db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
 
       return { success: true, message: 'Friend request rejected' };

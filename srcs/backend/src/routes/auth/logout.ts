@@ -2,16 +2,10 @@ import { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { handleLogout } from '../../helpers/auth/logout.helper.js';
 
-/**
- * POST /auth/logout
- * Déconnexion d'un utilisateur
- * 
- * Flux :
- * 1. Extraction du JWT depuis les cookies
- * 2. Traitement de la déconnexion (révocation token, notification amis)
- * 3. Suppression du cookie JWT
- * 4. Réponse de confirmation
- */
+/*
+POST /auth/logout
+User logout: revoke token, notify friends, clear cookie
+*/
 export async function logoutRoute(request: FastifyRequest, reply: FastifyReply, fastify: FastifyInstance)
 {
   const jwtToken = getJwtFromRequest(request);
