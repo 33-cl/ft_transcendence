@@ -1,34 +1,20 @@
-/**
- * Service de validation
- * Contient toutes les validations d'inputs (email, username, password, etc.)
- */
-
 import { sanitizeEmail, sanitizeUsername, validateLength } from '../security.js';
 import { removeHtmlTags } from '../utils/sanitize.js';
 
-// ============================================
-// Types pour les erreurs de validation
-// ============================================
-
-export interface ValidationResult {
+export interface ValidationResult
+{
   valid: boolean;
   error?: string;
 }
 
-export interface ValidatedRegisterInput {
+export interface ValidatedRegisterInput
+{
   email: string;
   username: string;
   password: string;
 }
 
-// ============================================
-// Validateurs de format
-// ============================================
-
-/**
- * Vérifie si un email est valide
- * Format attendu: quelquechose@domaine.extension
- */
+// Validate email format
 export function isValidEmail(email: string): boolean
 {
   if (typeof email !== 'string')
@@ -37,7 +23,6 @@ export function isValidEmail(email: string): boolean
   if (email.includes(' '))
     return false;
   
-  // Doit contenir exactement un @ + pas en 1st pos
   const atIndex = email.indexOf('@');
   if (atIndex <= 0)
     return false;
@@ -51,7 +36,6 @@ export function isValidEmail(email: string): boolean
     return false;
   if (domainPart.length === 0)
     return false;
-  
 
   const dotIndex = domainPart.lastIndexOf('.');
   if (dotIndex <= 0)
@@ -62,10 +46,7 @@ export function isValidEmail(email: string): boolean
   return true;
 }
 
-/**
- * Vérifie si un username est valide
- * Règles: 3-10 caractères, uniquement lettres, chiffres et underscore
- */
+// Validate username (3-10 chars, alphanumeric and underscore only)
 export function isValidUsername(username: string): boolean
 {
   if (typeof username !== 'string')
@@ -73,7 +54,6 @@ export function isValidUsername(username: string): boolean
   
   if (username.length < 3 || username.length > 10)
     return false;
-  
 
   for (const char of username)
   {
@@ -88,18 +68,13 @@ export function isValidUsername(username: string): boolean
   return true;
 }
 
-/**
- * Vérifie si un password est valide (minimum 8 caractères)
- */
+// Validate password (minimum 8 characters)
 export function isValidPassword(password: string): boolean
 {
   return typeof password === 'string' && password.length >= 8;
 }
 
-/**
- * Vérifie si un code 2FA est valide
- * Règles: exactement 6 chiffres
- */
+// Validate 2FA code (exactly 6 digits)
 export function isValid2FACode(code: string): boolean
 {
   if (typeof code !== 'string')
@@ -117,15 +92,7 @@ export function isValid2FACode(code: string): boolean
   return true;
 }
 
-// ============================================
-// Validation complète pour l'inscription
-// ============================================
-
-/**
- * Valide et sanitize les données d'inscription
- * @param data - Les données brutes de l'inscription
- * @returns Les données validées et sanitizées, ou une erreur
- */
+// Validate and sanitize registration data
 export function validateRegisterInput(data: {
   email?: string;
   username?: string;
@@ -137,7 +104,6 @@ export function validateRegisterInput(data: {
   if (!email || !username || !password)
     return { success: false, error: 'Missing required fields (email, username, password)' };
 
-  // protection input trop long
   if (!validateLength(email, 1, 255))
     return { success: false, error: 'Email length invalid (max 255 characters)' };
 
@@ -147,12 +113,9 @@ export function validateRegisterInput(data: {
   if (!validateLength(password, 1, 255))
     return { success: false, error: 'Password length invalid (max 255 characters)' };
 
-
-  // Sanitize (protection XSS) (del balise html, maj)
   const sanitizedEmail = sanitizeEmail(email);
   const sanitizedUsername = sanitizeUsername(username);
 
-  // Valider les formats
   if (!sanitizedEmail || !isValidEmail(sanitizedEmail))
     return { success: false, error: 'Invalid email format' };
 
@@ -162,38 +125,33 @@ export function validateRegisterInput(data: {
   if (!isValidPassword(password))
     return { success: false, error: 'Password too short (minimum 8 characters)' };
 
-  // Retourner les données validées et sanitizées
   return{
     success: true,
     data: {
       email: sanitizedEmail,
       username: sanitizedUsername,
-      password: password // Le password n'est pas sanitizé (on le hash directement)
+      password: password
     }
   };
 }
 
-/**
- * Valide les données de login
- */
+// Validate login data
 export function validateLoginInput(data: {
   login?: string;
   password?: string;
-}): { success: true; data: { login: string; password: string } } | { success: false; error: string } {
+}): { success: true; data: { login: string; password: string } } | { success: false; error: string }
+{
   const { login, password } = data;
 
-  if (!login || !password) {
+  if (!login || !password)
     return { success: false, error: 'Missing credentials (login and password required)' };
-  }
 
-  if (!validateLength(login, 1, 255)) {
+  if (!validateLength(login, 1, 255))
     return { success: false, error: 'Login length invalid' };
-  }
-  if (!validateLength(password, 1, 255)) {
+  
+  if (!validateLength(password, 1, 255))
     return { success: false, error: 'Password length invalid' };
-  }
 
-  // Sanitize le login (supprime les balises HTML)
   const sanitizedLogin = removeHtmlTags(login).toLowerCase();
 
   return {
