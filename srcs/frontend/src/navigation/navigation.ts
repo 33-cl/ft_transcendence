@@ -230,7 +230,7 @@ export function getPageFromURL(): string
         'signIn', 'signUp', 'landing', 'mainMenu', 'leaderboard', 'friendList', 'addFriends', 'matchmaking',
     'game', 'game4', 'spectate', 'spectate4', 'twoFactor', 'gameFinished', 'tournamentSemifinalFinished',
     'tournamentFinalFinished', 'spectatorGameFinished', 'profileDashboard', 'profileWinRateHistory',
-        'contextMenu', 'settings', 'gameConfig', 'aiConfig', 'rules', 'goToMain'
+        'contextMenu', 'settings', 'gameConfig', 'aiConfig', 'rules', 'goToMain', 'background'
     ]);
 
     if (knownPages.has(candidate))

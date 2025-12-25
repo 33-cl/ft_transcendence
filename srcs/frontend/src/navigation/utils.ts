@@ -9,6 +9,7 @@ const components =
 {
     landing: { id: 'landing', html: landingHTML },
     mainMenu: { id: 'mainMenu', html: mainMenuHTML },
+    background: { id: 'goToMain', html: goToMainHTML },
     goToMain: { id: 'goToMain', html: goToMainHTML },
     profileCard: { id: 'profileCard', html: profileCardHTML },
     leaderboard: { id: 'leaderboard', html: leaderboardHTML },
@@ -448,6 +449,10 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     {
         await show('rules');
         await show('goToMain');
+    }
+    else if (pageName === 'background')
+    {
+        await show('background');
     }
     else if (pageName === 'tournaments')
     {

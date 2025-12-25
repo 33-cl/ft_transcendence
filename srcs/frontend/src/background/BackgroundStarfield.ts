@@ -1,4 +1,4 @@
-import { hideAllPages, show } from '../navigation/utils.js';
+import { load } from '../navigation/utils.js';
 import { Star } from './Star.js';
 import { BlackHole } from './BlackHole.js';
 import { ShootingStar } from './ShootingStar.js';
@@ -299,8 +299,7 @@ export class BackgroundStarfield
     {
         this.cancelLongPress();
         
-        hideAllPages();
-        show('goToMain');
+        load('background');
     }
 
     private drawLongPressRing(): void
