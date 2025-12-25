@@ -3,16 +3,22 @@ import jwt from 'jsonwebtoken';
 import db from '../../db.js';
 import { getJwtFromRequest } from '../../helpers/http/cookie.helper.js';
 import { verifyPassword } from '../../services/auth.service.js';
+import { checkRateLimit, validateLength } from '../../security.js';
 
 // POST /auth/verify-password
 // Verifies user's current password without changing it
 export async function verifyPasswordRoute(request: FastifyRequest, reply: FastifyReply, jwtSecret: string)
 {
+  const clientIp = request.ip;
+  if (!checkRateLimit(`verify-password:${clientIp}`, 10, 60 * 1000))
+    return reply.code(429).send({ error: 'Too many attempts. Please try again later.' });
+
   const jwtToken = getJwtFromRequest(request);
   if (!jwtToken)
     return reply.code(401).send({ error: 'Unauthorized' });
 
-  try {
+  try
+  {
     const decodedToken = jwt.verify(jwtToken, jwtSecret) as { userId: number };
     
     // Check if token is still active
@@ -20,18 +26,21 @@ export async function verifyPasswordRoute(request: FastifyRequest, reply: Fastif
     if (!activeT)
       return reply.code(401).send({ error: 'Session expired' });
 
-    // Get password hash from database
-    const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(decodedToken.userId) as { password_hash: string };
-    
-    if (!user)
-      return reply.code(404).send({ error: 'User not found' });
-
-    // Verify provided password
+    // Validate and get password from body
     const body = request.body as { password?: string };
     const password = body.password;
 
     if (!password)
       return reply.code(400).send({ error: 'Password required' });
+
+    if (!validateLength(password, 1, 255))
+      return reply.code(400).send({ error: 'Password length invalid' });
+
+    // Get password hash from database
+    const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(decodedToken.userId) as { password_hash: string };
+    
+    if (!user)
+      return reply.code(404).send({ error: 'User not found' });
 
     const isValid = verifyPassword(password, user.password_hash);
 
@@ -39,8 +48,9 @@ export async function verifyPasswordRoute(request: FastifyRequest, reply: Fastif
       return reply.code(401).send({ error: 'Invalid password' });
 
     return reply.send({ success: true });
-
-  } catch (err) {
+  }
+  catch (err)
+  {
     return reply.code(401).send({ error: 'Invalid token' });
   }
 }

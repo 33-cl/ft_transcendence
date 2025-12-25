@@ -250,17 +250,14 @@ export async function handleGameEnd(
     const displayWinnerUsername = winnerUsername || winner.side;
     const displayLoserUsername = loserUsername || loser.side;
 
-    if (winnerUsername && loserUsername)
+    if (winnerUsername && loserUsername && room.maxPlayers === 2)
     {
         const statsRecorded = recordMatchStats(winnerUsername, loserUsername, winner, loser);
         
         const isTournamentMatch = room.tournamentId && room.matchId;
         
-        fastify.log.info(`[LEADERBOARD DEBUG] statsRecorded=${statsRecorded}, maxPlayers=${room.maxPlayers}, isTournament=${!!isTournamentMatch}`);
-        
-        if (statsRecorded && room.maxPlayers === 2 && !isTournamentMatch)
+        if (statsRecorded && !isTournamentMatch)
         {
-            fastify.log.info(`[LEADERBOARD] Broadcasting leaderboard update after 1v1 match`);
             broadcastLeaderboardUpdate(io, 0, {}, fastify);
         }
     }

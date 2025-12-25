@@ -241,12 +241,16 @@ export function handleForfeit(
             recordTournamentForfeit(room, winnerSocketId, fastify);
     }
     
-    recordForfeitMatch(
-        winner.username,
-        disconnectedPlayer.username,
-        winner.score,
-        disconnectedScore
-    );
+    // Only record forfeit match for 1v1 games (not 4-player mode)
+    if (room.maxPlayers === 2)
+    {
+        recordForfeitMatch(
+            winner.username,
+            disconnectedPlayer.username,
+            winner.score,
+            disconnectedScore
+        );
+    }
     
     const loser = {
         side: disconnectedPlayer.paddleSide,
