@@ -760,6 +760,27 @@ async function saveChangedFields(): Promise<void>
             if (!profileSaveResult.ok)
             {
                 showMessage(profileSaveResult.error || 'Update failed', true);
+                
+                if (hasPendingUsername)
+                {
+                    pendingUsernameChange = null;
+                    if (usernameInput)
+                    {
+                        usernameInput.value = '';
+                        usernameInput.style.borderColor = '';
+                    }
+                }
+
+                if (hasPendingEmail)
+                {
+                    pendingEmailChange = null;
+                    if (emailInput)
+                    {
+                        emailInput.value = '';
+                        emailInput.style.borderColor = '';
+                    }
+                }
+                
                 return;
             }
         }
