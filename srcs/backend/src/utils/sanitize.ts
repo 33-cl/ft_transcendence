@@ -1,14 +1,3 @@
-/*
-  Utilitaires de sanitization pour la sécurité
-  Protection contre les attaques XSS (Cross-Site Scripting)
-*/
-
-/*
-  Supprime toutes les balises HTML d'une chaîne de caractères
-  
-  Exemple: "<script>alert('xss')</script>" → "alert('xss')"
-  Exemple: "user<b>name</b>" → "username"
-*/
 export function removeHtmlTags(input: string): string
 {
   let result = '';
@@ -33,12 +22,6 @@ export function removeHtmlTags(input: string): string
   return result;
 }
 
-/*
-  Ne garde que les caractères alphanumériques et underscore
-  
-  Exemple: "user@name!" → "username"
-  Exemple: "hello-world_123" → "helloworld_123"
-*/
 export function keepAlphanumericAndUnderscore(input: string): string
 {
   let result = '';
@@ -58,12 +41,6 @@ export function keepAlphanumericAndUnderscore(input: string): string
   return result;
 }
 
-/*
-  Supprime uniquement les caractères < et >
-  
-  Exemple: "<script>" → "script"
-  Exemple: "user<name>" → "username"
-*/
 export function removeAngleBrackets(input: string): string
 {
   let result = '';

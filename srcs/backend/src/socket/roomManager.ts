@@ -2,44 +2,31 @@ import { GameState, createInitialGameState, PaddleSide } from '../../game/gameSt
 import { PongGame } from '../../game/pongGame.js';
 import { TournamentState } from '../types.js';
 
-// src/socket/roomManager.ts
-
 export interface Room
 {
   players: string[];
   maxPlayers: number;
   gameState: GameState;
-  isLocalGame?: boolean; // Ajouté : flag pour indiquer si c'est un jeu local
-  pongGame?: PongGame; // Ajouté : instance du jeu Pong pour cette room
-  // Nouvelle structure : paddleInputs indexé par PaddleSide ('LEFT', 'DOWN', 'RIGHT', 'TOP')
+  isLocalGame?: boolean;
+  pongGame?: PongGame;
   paddleInputs?: Record<PaddleSide, { up: boolean; down: boolean }>;
-  // Mapping socket.id -> PaddleSide (attribution du contrôle des paddles)
   paddleBySocket?: Record<string, PaddleSide>;
-  // Mapping socket.id -> username for authenticated players (online games only)
   playerUsernames?: Record<string, string>;
-  // Mapping socket.id -> user_id for authenticated players (needed for tournament results)
   playerUserIds?: Record<string, number>;
-  // Tournament metadata (pour les rooms de tournoi)
   tournamentId?: string;
   matchId?: number;
-  isTournament?: boolean; // Indique si c'est une room de tournoi
-  tournamentState?: TournamentState; // État du tournoi
+  isTournament?: boolean;
+  tournamentState?: TournamentState;
 }
 
-// record c'est un type typescript qui permet de creer un objet avec des cles dynamiques
-// on utilise un objet pour stocker les rooms, ou la cle est le nom de la room et la valeur est un objet room
 export const rooms: Record<string, Room> = {};
 export let roomCounter = 1;
 
-// Helper: vérifier si une room existe
 export function roomExists(roomName: string): boolean
 {
-	// retourne true si la room existe, false sinon
-	// le !! permet de convertir la valeur en boolean (! convertit en boolean, puis ! le re-inverse(le true devient false et vice versa))
   return !!rooms[roomName];
 }
 
-// Helper: ajouter un joueur à une room existante
 export function addPlayerToRoom(roomName: string, socketId: string): boolean
 {
 	if (rooms[roomName]
@@ -52,7 +39,6 @@ export function addPlayerToRoom(roomName: string, socketId: string): boolean
 	return false;
 }
 
-// Retirer le joueur de sa room
 export function removePlayerFromRoom(socketId: string): void
 {
 	let playerRoom: string | null = null;
@@ -69,49 +55,33 @@ export function removePlayerFromRoom(socketId: string): void
 		const room = rooms[playerRoom];
 		const typedRoom = room as any;
 		
-		// PROTECTION TOURNOI : Ne pas retirer les joueurs pendant un tournoi actif
-		// SAUF les perdants de demi-finale qui peuvent quitter pendant waiting_final/final
-		if (typedRoom.isTournament && typedRoom.tournamentState) {
+		if (typedRoom.isTournament && typedRoom.tournamentState)
+		{
 			const phase = typedRoom.tournamentState.phase;
 			const state = typedRoom.tournamentState;
 			
-			// Pendant waiting_final ou final, seuls les finalistes doivent rester
-			if (phase === 'waiting_final' || phase === 'final') {
+			if (phase === 'waiting_final' || phase === 'final')
+			{
 				const finalist1 = state.semifinal1Winner;
 				const finalist2 = state.semifinal2Winner;
 				const isFinalist = socketId === finalist1 || socketId === finalist2;
-				if (!isFinalist) {
-					// C'est un perdant de demi-finale, il peut quitter
-					console.log(`✅ removePlayerFromRoom: Allowing semifinal loser ${socketId} to leave during phase '${phase}'`);
-					// Continue pour le retirer
-				} else {
-					// C'est un finaliste, bloquer
-					console.log(`🛡️ removePlayerFromRoom: BLOCKED removal of finalist ${socketId} during phase '${phase}'`);
+				if (isFinalist)
 					return;
-				}
 			}
-			// Pendant waiting ou semifinals, bloquer tous les joueurs
-			else if (phase === 'waiting' || phase === 'semifinals') {
-				console.log(`🛡️ removePlayerFromRoom: BLOCKED removal of ${socketId} from ${playerRoom} - tournament in phase '${phase}'`);
+			else if (phase === 'waiting' || phase === 'semifinals')
+			{
 				return;
 			}
 		}
 		
-		// Log pour debug
-		console.log(`🔴 removePlayerFromRoom: Removing ${socketId} from ${playerRoom}, isTournament=${typedRoom.isTournament}, phase=${typedRoom.tournamentState?.phase}, players before=${room.players.length}`);
-		
-		// Remove the player
 		room.players = room.players.filter(id => id !== socketId);
 		
-		// Clean up username mapping when player leaves
 		if (room.playerUsernames && room.playerUsernames[socketId])
 			delete room.playerUsernames[socketId];
 		
-		// Clean up userId mapping when player leaves
 		if (room.playerUserIds && room.playerUserIds[socketId])
 			delete room.playerUserIds[socketId];
 		
-		// Clean up paddle assignments
 		if (room.paddleBySocket && room.paddleBySocket[socketId])
 			delete room.paddleBySocket[socketId];
 		
@@ -120,7 +90,6 @@ export function removePlayerFromRoom(socketId: string): void
 	}
 }
 
-// Helper: récupérer la room d'un joueur
 export function getPlayerRoom(socketId: string): string | null
 {
 	for (const roomName in rooms)
@@ -133,20 +102,16 @@ export function getPlayerRoom(socketId: string): string | null
 	return null;
 }
 
-// Helper: récupérer la capacité max d'une room
 export function getRoomMaxPlayers(roomName: string): number | null
 {
-	// retourne le nombre maximum de joueurs pour une room donnee
-	// si la room n existe pas, retourne null
 	return rooms[roomName]?.maxPlayers ?? null;
 }
 
-// Utilitaire: générer le nom d'une nouvelle room
-export function getNextRoomName(): string {
+export function getNextRoomName(): string
+{
   return `room${roomCounter++}`;
 }
 
-// Helper: vérifier si un utilisateur (par socketId) est en jeu
 export function isUserInGame(socketId: string): boolean
 {
   const playerRoom = getPlayerRoom(socketId);
@@ -154,24 +119,19 @@ export function isUserInGame(socketId: string): boolean
     return false;
   
   const room = rooms[playerRoom];
-  // L'utilisateur est en jeu s'il est dans une room avec au moins 2 joueurs
-	// et que le jeu est réellement en cours (pongGame.running)
 	return room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true;
 }
 
-// Helper: vérifier si un utilisateur (par username) est en jeu
-// excludeTournaments: si true, ignore les rooms de tournoi
 export function isUsernameInGame(username: string, excludeTournaments: boolean = false): boolean
 {
   for (const roomName in rooms)
-{
+  {
     const room = rooms[roomName];
     if (room.playerUsernames)
-	{
-      // Vérifier si ce username est dans cette room et si le jeu a commencé
+    {
       const usernameInRoom = Object.values(room.playerUsernames).includes(username);
-			if (usernameInRoom && room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true) {
-        // Si on exclut les tournois et c'est un tournoi, on skip
+			if (usernameInRoom && room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true)
+      {
         if (excludeTournaments && (room as any).isTournament)
           continue;
         return true;
@@ -181,11 +141,11 @@ export function isUsernameInGame(username: string, excludeTournaments: boolean =
   return false;
 }
 
-// Helper: créer une nouvelle room avec un nom unique
 export function createRoom(maxPlayers: number, roomPrefix: string = 'room'): string
 {
   let roomName: string;
-  do {
+  do
+  {
     roomName = `${roomPrefix}-${getNextRoomName()}`;
   } while (roomExists(roomName));
   

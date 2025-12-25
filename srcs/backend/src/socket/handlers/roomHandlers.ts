@@ -1,8 +1,3 @@
-// ========================================
-// ROOM HANDLERS
-// Gestion de joinRoom et des rooms
-// ========================================
-
 import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
@@ -37,14 +32,7 @@ import { handleGameEnd } from './gameEndHandlers.js';
 import { startTournament } from './tournamentHandlers.js';
 import { canSocketJoinOnlineGame, isTournamentRoom } from '../utils/modeIsolation.js';
 
-// ========================================
-// ROOM ACCESS VALIDATION
-// ========================================
-
-/**
- * Vérifie si un client peut rejoindre une room
- * (nom valide et room existante)
- */
+// Check if client can join room (valid name and room exists)
 export function canJoinRoom(socket: Socket, roomName: string): boolean
 {
     if (!roomName || typeof roomName !== 'string')
@@ -60,9 +48,7 @@ export function canJoinRoom(socket: Socket, roomName: string): boolean
     return true;
 }
 
-/**
- * Vérifie si une room est pleine
- */
+// Check if room is full
 export function handleRoomFull(socket: Socket, room: RoomType, fastify: FastifyInstance): boolean
 {
     if (room.players.length >= room.maxPlayers)
@@ -73,9 +59,7 @@ export function handleRoomFull(socket: Socket, room: RoomType, fastify: FastifyI
     return false;
 }
 
-/**
- * Valide que la room est accessible et non pleine
- */
+// Validate room access and capacity
 export function validateRoomAccess(
     socket: Socket,
     roomName: string,
@@ -90,18 +74,16 @@ export function validateRoomAccess(
     if (handleRoomFull(socket, room, fastify))
         return false;
     
-    // Vérifier que si c'est une room de tournoi, elle doit être en phase 'waiting' ou ne pas avoir de tournamentState
     if (room.isTournament && room.tournamentState && room.tournamentState.phase !== 'waiting')
     {
-        // Allow reconnection if user is a participant
         const user = getSocketUser(socket.id);
         let isParticipant = false;
         
-        if (user && room.tournamentState.playerUserIds) {
+        if (user && room.tournamentState.playerUserIds)
              isParticipant = Object.values(room.tournamentState.playerUserIds).includes(user.id);
-        }
 
-        if (!isParticipant) {
+        if (!isParticipant)
+        {
             socket.emit('error', { error: 'Tournament has already started', code: 'TOURNAMENT_STARTED' });
             return false;
         }
@@ -110,14 +92,7 @@ export function validateRoomAccess(
     return true;
 }
 
-// ========================================
-// ROOM CLEANUP
-// ========================================
-
-/**
- * Retire un joueur de toutes les rooms où il pourrait être
- * Nettoie les rooms locales et arrête les jeux actifs si nécessaire
- */
+// Remove player from all rooms and cleanup
 export function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io: Server): void
 {
     for (const rName in rooms)
@@ -126,13 +101,11 @@ export function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io:
         {
             const room = rooms[rName] as RoomType;
             
-            // PROTECTION TOURNOI : Ne pas nettoyer pendant un tournoi actif
-            if (room.isTournament && room.tournamentState) {
+            if (room.isTournament && room.tournamentState)
+            {
                 const phase = room.tournamentState.phase;
-                if (phase === 'waiting' || phase === 'semifinals' || phase === 'waiting_final' || phase === 'final') {
-                    console.log(`🛡️ cleanUpPlayerRooms: BLOCKED cleanup of ${socket.id} from ${rName} - tournament in phase '${phase}'`);
-                    continue; // Ne pas nettoyer cette room
-                }
+                if (phase === 'waiting' || phase === 'semifinals' || phase === 'waiting_final' || phase === 'final')
+                    continue;
             }
             
             const roomIsEmpty = removePlayerFromRoomPlayers(room, socket.id);
@@ -160,14 +133,7 @@ export function cleanUpPlayerRooms(socket: Socket, fastify: FastifyInstance, io:
     }
 }
 
-// ========================================
-// PLAYER JOINING
-// ========================================
-
-/**
- * Fait rejoindre un joueur à une room
- * Configure les paddles selon le type de jeu (local/online)
- */
+// Join player to room and configure paddles
 export function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomType, io: Server): void
 {
     if (!room.players.includes(socket.id))
@@ -176,50 +142,49 @@ export function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomTyp
         socket.join(roomName);
     }
     
-    // Handle tournament reconnection
-    if (room.isTournament && room.tournamentState && room.tournamentState.phase !== 'waiting') {
+    if (room.isTournament && room.tournamentState && room.tournamentState.phase !== 'waiting')
+    {
         const user = getSocketUser(socket.id);
-        if (user && room.tournamentState.playerUserIds) {
-            // Find old socket ID
+        if (user && room.tournamentState.playerUserIds)
+        {
             let oldSocketId: string | undefined;
-            for (const [sid, uid] of Object.entries(room.tournamentState.playerUserIds)) {
-                if (uid === user.id) {
+            for (const [sid, uid] of Object.entries(room.tournamentState.playerUserIds))
+            {
+                if (uid === user.id)
+                {
                     oldSocketId = sid;
                     break;
                 }
             }
             
-            if (oldSocketId && oldSocketId !== socket.id) {
-                console.log(`🔄 Tournament Reconnection: Updating socket ID from ${oldSocketId} to ${socket.id} for user ${user.username}`);
-                
-                // Update playerUserIds
+            if (oldSocketId && oldSocketId !== socket.id)
+            {
                 delete room.tournamentState.playerUserIds[oldSocketId];
                 room.tournamentState.playerUserIds[socket.id] = user.id;
                 
-                // Update playerUsernames
-                if (room.tournamentState.playerUsernames) {
+                if (room.tournamentState.playerUsernames)
+                {
                     const username = room.tournamentState.playerUsernames[oldSocketId];
-                    if (username) {
+                    if (username)
+                    {
                         delete room.tournamentState.playerUsernames[oldSocketId];
                         room.tournamentState.playerUsernames[socket.id] = username;
                     }
                 }
                 
-                // Update players array
                 const playerIndex = room.tournamentState.players.indexOf(oldSocketId);
-                if (playerIndex !== -1) {
+                if (playerIndex !== -1)
                     room.tournamentState.players[playerIndex] = socket.id;
-                }
                 
-                // Update matches
-                const updateMatch = (match: any) => {
+                const updateMatch = (match: any) =>
+                {
                     if (!match) return;
                     if (match.player1 === oldSocketId) match.player1 = socket.id;
                     if (match.player2 === oldSocketId) match.player2 = socket.id;
                     if (match.winner === oldSocketId) match.winner = socket.id;
                     
-                    // Update paddleBySocket
-                    if (match.paddleBySocket && match.paddleBySocket[oldSocketId]) {
+                    if (match.paddleBySocket && match.paddleBySocket[oldSocketId])
+                    {
                         match.paddleBySocket[socket.id] = match.paddleBySocket[oldSocketId];
                         delete match.paddleBySocket[oldSocketId];
                     }
@@ -254,13 +219,7 @@ export function joinPlayerToRoom(socket: Socket, roomName: string, room: RoomTyp
     }
 }
 
-// ========================================
-// GAME PREPARATION
-// ========================================
-
-/**
- * Gère l'authentification et les notifications pour les jeux en ligne
- */
+// Handle authentication and notifications for online games
 export function handleOnlineGamePreparation(
     socket: Socket,
     roomName: string,
@@ -272,15 +231,12 @@ export function handleOnlineGamePreparation(
     if (!user)
         return false;
     
-    // Notifier les amis avec le bon statut (in-game ou in-tournament)
     notifyFriendsGameStarted(room, fastify, broadcastUserStatusChange, getGlobalIo(), room.isTournament);
     
     return true;
 }
 
-/**
- * Démarre le jeu si les conditions sont remplies
- */
+// Start game if conditions are met
 export function tryStartGame(
     room: RoomType,
     roomName: string,
@@ -291,27 +247,18 @@ export function tryStartGame(
 {
     if (params.isLocalGame && !room.pongGame)
         startLocalGame(room, roomName, params, io, fastify);
-    else if (!room.pongGame && room.players.length === room.maxPlayers) {
-        // Vérifier si c'est un tournoi
-        if (room.isTournament) {
+    else if (!room.pongGame && room.players.length === room.maxPlayers)
+    {
+        if (room.isTournament)
             startTournament(room, roomName, io, fastify);
-        } else {
+        else
             startOnlineGame(room, roomName, handleGameEnd, fastify, io);
-        }
     }
 }
 
-// ========================================
-// MAIN HANDLER
-// ========================================
-
-// Mutex to prevent concurrent joinRoom for the same socket
 export const joinRoomLocks = new Set<string>();
 
-/**
- * Handler principal pour rejoindre ou créer une room
- * Gère toute la séquence : parsing, validation, join, démarrage
- */
+// Main handler for joining or creating a room
 export async function handleJoinRoom(
     socket: Socket,
     data: Record<string, unknown>,
@@ -336,16 +283,9 @@ export async function handleJoinRoom(
         const room = rooms[roomName] as RoomType;
         room.isLocalGame = params.isLocalGame;
         
-        // Marquer la room comme tournoi si nécessaire
-        if (params.isTournament) {
+        if (params.isTournament)
             room.isTournament = true;
-        }
         
-        // ========================================
-        // ISOLATION CHECK: Tournament vs Online
-        // ========================================
-        // Si ce n'est pas un jeu local ET pas une room de tournoi,
-        // vérifier si l'utilisateur est dans un tournoi actif
         if (!params.isLocalGame && !isTournamentRoom(roomName))
         {
             const isolationCheck = canSocketJoinOnlineGame(socket);
@@ -356,10 +296,8 @@ export async function handleJoinRoom(
                     code: 'TOURNAMENT_ISOLATION',
                     tournament: isolationCheck.tournament
                 });
-                // Nettoyer la room si elle vient d'être créée et est vide
-                if (room.players.length === 0) {
+                if (room.players.length === 0)
                     delete rooms[roomName];
-                }
                 return;
             }
         }

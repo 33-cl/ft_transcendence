@@ -1,14 +1,12 @@
-/**
- * Types pour les routes d'authentification
- */
-
-export interface RegisterBody {
+export interface RegisterBody
+{
   email?: string;
   username?: string;
   password?: string;
 }
 
-export interface DbUser {
+export interface DbUser
+{
   id: number;
   email: string;
   username: string;
@@ -20,10 +18,11 @@ export interface DbUser {
   updated_at: string;
 }
 
-export interface SessionJoinRow {
+export interface SessionJoinRow
+{
   token: string;
   expires_at: string | null;
-  id: number; // user id
+  id: number;
   email: string;
   username: string;
   avatar_url?: string | null;

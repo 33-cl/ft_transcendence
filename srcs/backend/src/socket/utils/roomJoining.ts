@@ -1,5 +1,3 @@
-// src/socket/utils/roomJoining.ts
-
 import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType } from '../../types.js';
@@ -8,10 +6,8 @@ import { authenticateSocket, getSocketUser } from '../socketAuth.js';
 import { getUserByUsername } from '../../user.js';
 import { PongGame } from '../../../game/pongGame.js';
 
-/**
- * Parse et extrait les paramètres de la requête joinRoom
- */
-export interface JoinRoomParams {
+export interface JoinRoomParams
+{
     maxPlayers: number | undefined;
     isLocalGame: boolean;
     enableAI: boolean;
@@ -21,7 +17,8 @@ export interface JoinRoomParams {
     isTournament: boolean;
 }
 
-interface JoinRoomData {
+interface JoinRoomData
+{
     maxPlayers?: number;
     isLocalGame?: boolean;
     enableAI?: boolean;
@@ -31,7 +28,8 @@ interface JoinRoomData {
     isTournament?: boolean;
 }
 
-export function parseJoinRoomData(data: Record<string, unknown> | undefined | null): JoinRoomParams {
+export function parseJoinRoomData(data: Record<string, unknown> | undefined | null): JoinRoomParams
+{
     const d = data as JoinRoomData | undefined | null;
     return {
         maxPlayers: d?.maxPlayers,
@@ -44,9 +42,6 @@ export function parseJoinRoomData(data: Record<string, unknown> | undefined | nu
     };
 }
 
-/**
- * Nettoie les assignations de paddle de l'ancienne room
- */
 export function cleanupPreviousRoom(socket: Socket): void
 {
     const previousRoom = getPlayerRoom(socket.id);
@@ -62,39 +57,27 @@ export function cleanupPreviousRoom(socket: Socket): void
     }
 }
 
-/**
- * Trouve une room disponible ou en crée une nouvelle
- */
 export function findOrCreateRoom(params: JoinRoomParams): string
 {
     let roomName = params.roomName;
     
-    // Si pas de roomName fourni et maxPlayers est défini
     if (!roomName && typeof params.maxPlayers === 'number')
     {
-        // Chercher une room existante non pleine
         if (!params.isLocalGame)
         {
             for (const [name, room] of Object.entries(rooms))
             {
-                // Pour les tournois, chercher uniquement des rooms de tournoi en phase 'waiting'
-                if (params.isTournament) {
-                    if (name.startsWith('tournament-') && 
-                        room.maxPlayers === params.maxPlayers && 
-                        room.players.length < params.maxPlayers &&
-                        room.isLocalGame === false &&
-                        (!room.tournamentState || room.tournamentState.phase === 'waiting'))
+                if (params.isTournament)
+                {
+                    if (name.startsWith('tournament-') && room.maxPlayers === params.maxPlayers && room.players.length < params.maxPlayers && room.isLocalGame === false && (!room.tournamentState || room.tournamentState.phase === 'waiting'))
                     {
                         roomName = name;
                         break;
                     }
-                } else {
-                    // Pour les jeux normaux, exclure les rooms de tournoi ET les rooms de tournoi en cours
-                    if (!name.startsWith('tournament-') &&
-                        !room.isTournament &&
-                        room.maxPlayers === params.maxPlayers && 
-                        room.players.length < params.maxPlayers &&
-                        room.isLocalGame === false)
+                }
+                else
+                {
+                    if (!name.startsWith('tournament-') && !room.isTournament && room.maxPlayers === params.maxPlayers && room.players.length < params.maxPlayers &&room.isLocalGame === false)
                     {
                         roomName = name;
                         break;
@@ -103,17 +86,16 @@ export function findOrCreateRoom(params: JoinRoomParams): string
             }
         }
         
-        // creer une nouvelle room si aucune trouvee
         if (!roomName)
         {
             let roomPrefix: string;
-            if (params.isTournament) {
+            if (params.isTournament)
                 roomPrefix = 'tournament';
-            } else if (params.isLocalGame) {
+            else if (params.isLocalGame)
                 roomPrefix = 'local';
-            } else {
+            else
                 roomPrefix = 'multi';
-            }
+            
             roomName = createRoom(params.maxPlayers, roomPrefix);
         }
     }
@@ -121,13 +103,8 @@ export function findOrCreateRoom(params: JoinRoomParams): string
     return roomName as string;
 }
 
-/**
- * Gère le cas spécial des spectateurs
- * @returns true si le socket est un spectateur (et la fonction a géré tout), false sinon
- */
 export function handleSpectatorJoin(socket: Socket, roomName: string, room: RoomType): boolean
 {
-    // Empêcher le spectate sur les jeux locaux
     if (room.isLocalGame)
     {
         socket.emit('error', { error: 'Cannot spectate local games' });
@@ -136,7 +113,6 @@ export function handleSpectatorJoin(socket: Socket, roomName: string, room: Room
     
     socket.join(roomName);
     
-    // Envoyer les données de la room au spectateur sans paddle
     socket.emit('roomJoined', {
         room: roomName,
         players: room.players.length,
@@ -145,17 +121,12 @@ export function handleSpectatorJoin(socket: Socket, roomName: string, room: Room
         spectator: true
     });
     
-    // Si le jeu est en cours, envoyer immédiatement l'état du jeu
     if (room.pongGame && room.pongGame.state.running)
         socket.emit('gameState', room.pongGame.state);
     
     return true;
 }
 
-/**
- * Authentifie le joueur pour les jeux en ligne
- * @returns L'utilisateur authentifié, ou null si échec
- */
 export function authenticateOnlinePlayer(
     socket: Socket, 
     roomName: string, 
@@ -163,7 +134,6 @@ export function authenticateOnlinePlayer(
     fastify: FastifyInstance
 ): { id: number; username: string } | null
 {
-    //qui est ce joueur? n'est il pas deja co ailleurs?
     const user = authenticateSocket(socket, fastify);
     
     if (user && typeof user === 'object' && 'username' in user)
@@ -172,7 +142,6 @@ export function authenticateOnlinePlayer(
             room.playerUsernames = {};
         room.playerUsernames[socket.id] = user.username;
         
-        // Also store userId for tournament match result handling
         if (!room.playerUserIds)
             room.playerUserIds = {};
         room.playerUserIds[socket.id] = user.id;
@@ -181,7 +150,6 @@ export function authenticateOnlinePlayer(
     }
     else if (user === 'USER_ALREADY_CONNECTED')
     {
-        // Utilisateur déjà connecté ailleurs
         socket.emit('error', { 
             error: 'User is already connected on another browser/tab. Please close the other connection first.',
             code: 'USER_ALREADY_CONNECTED' 
@@ -199,9 +167,6 @@ export function authenticateOnlinePlayer(
     }
 }
 
-/**
- * Notifie les amis que les joueurs sont maintenant en jeu
- */
 export function notifyFriendsGameStarted(
     room: RoomType, 
     fastify: FastifyInstance,
@@ -225,9 +190,6 @@ export function notifyFriendsGameStarted(
     }
 }
 
-/**
- * Démarre un jeu local (avec ou sans IA)
- */
 export function startLocalGame(
     room: RoomType,
     roomName: string,
@@ -236,8 +198,8 @@ export function startLocalGame(
     fastify: FastifyInstance
 ): void
 {
-    // Callback pour la fin du jeu local
-    const localGameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+    const localGameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) =>
+    {
         io.to(roomName).emit('gameFinished', {
             winner,
             loser,
@@ -248,16 +210,12 @@ export function startLocalGame(
     
     room.pongGame = new PongGame(room.maxPlayers!, localGameEndCallback);
     
-    // Activer l'IA si demandé
-    if (params.enableAI && room.maxPlayers === 2) {
+    if (params.enableAI && room.maxPlayers === 2)
         room.pongGame.enableAI(params.aiDifficulty as 'easy' | 'medium' | 'hard');
-    }
+    
     room.pongGame.start();
 }
 
-/**
- * Démarre un jeu en ligne (multiplayer)
- */
 export function startOnlineGame(
     room: RoomType,
     roomName: string,
@@ -266,8 +224,8 @@ export function startOnlineGame(
     io: Server
 ): void
 {
-    // Callback pour la fin du jeu en ligne
-    const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) => {
+    const gameEndCallback = (winner: { side: string; score: number }, loser: { side: string; score: number }) =>
+    {
         handleGameEnd(roomName, room, winner, loser, fastify, io);
     };
     

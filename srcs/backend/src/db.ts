@@ -1,9 +1,7 @@
 import Database from 'better-sqlite3';
 
-// Ouvre (ou crée) la base SQLite dans le volume persistant
 const db = new Database('/app/db/pong.db');
 
-// Schéma minimal pour user management (étape 1)
 db.exec(`
   PRAGMA foreign_keys = ON;
 
@@ -29,7 +27,7 @@ db.exec(`
     loser_id INTEGER NOT NULL,
     winner_score INTEGER NOT NULL,
     loser_score INTEGER NOT NULL,
-    match_type TEXT NOT NULL, -- 'online', 'tournament' (pas de 'local' car jamais enregistré)
+    match_type TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(winner_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY(loser_id) REFERENCES users(id) ON DELETE CASCADE
@@ -79,7 +77,6 @@ db.exec(`
     FOREIGN KEY(winner_id) REFERENCES users(id) ON DELETE SET NULL
   );
 
-  -- Table pour lister les participants d'un tournoi
   CREATE TABLE IF NOT EXISTS tournament_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id TEXT NOT NULL,
@@ -92,14 +89,13 @@ db.exec(`
     UNIQUE(tournament_id, alias)
   );
 
-  -- Table pour stocker les matches d'un tournoi (bracket)
   CREATE TABLE IF NOT EXISTS tournament_matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id TEXT NOT NULL,
-    round INTEGER NOT NULL, -- 1 = premier tour, etc.
-    player1_id INTEGER, -- peut être NULL si bye
-    player2_id INTEGER, -- peut être NULL si bye
-    winner_id INTEGER, -- NULL tant que non joué
+    round INTEGER NOT NULL,
+    player1_id INTEGER,
+    player2_id INTEGER,
+    winner_id INTEGER,
     status TEXT NOT NULL DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'finished', 'cancelled')),
     scheduled_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -111,7 +107,6 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_tm_tournament_id ON tournament_matches(tournament_id);
 
-  -- Table pour les codes de verification 2FA par email
   CREATE TABLE IF NOT EXISTS two_factor_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,

@@ -1,37 +1,26 @@
-// src/socket/utils/modeIsolation.ts
-// Module d'isolation entre le mode Tournoi et le mode Online
-// Empêche un utilisateur d'être dans les deux modes simultanément
-
 import db from '../../db.js';
 import { rooms } from '../roomManager.js';
 import { getSocketUser } from '../socketAuth.js';
 import { Socket } from 'socket.io';
 
-// ========================================
-// TYPES
-// ========================================
-
-interface ActiveTournament {
+interface ActiveTournament
+{
     id: string;
     name: string;
     status: string;
 }
 
-interface OnlineGameInfo {
+interface OnlineGameInfo
+{
     roomName: string;
     isTournamentRoom: boolean;
 }
 
-// ========================================
-// TOURNAMENT CHECKS
-// ========================================
-
-/**
- * Vérifie si un utilisateur (par userId) est inscrit à un tournoi actif (registration ou active)
- * @returns L'info du tournoi actif ou null
- */
-export function getUserActiveTournament(userId: number): ActiveTournament | null {
-    try {
+// Check if user is registered in active tournament
+export function getUserActiveTournament(userId: number): ActiveTournament | null
+{
+    try
+    {
         const result = db.prepare(`
             SELECT t.id, t.name, t.status
             FROM tournaments t
@@ -42,51 +31,46 @@ export function getUserActiveTournament(userId: number): ActiveTournament | null
         `).get(userId) as ActiveTournament | undefined;
 
         return result || null;
-    } catch (error) {
+    }
+    catch (error)
+    {
         return null;
     }
 }
 
-/**
- * Vérifie si un utilisateur est dans un match de tournoi en cours
- * (c'est-à-dire dans une room avec tournamentId)
- */
-export function isUserInTournamentMatch(userId: number): boolean {
-    for (const [roomName, room] of Object.entries(rooms)) {
-        // Vérifier si c'est une room de tournoi
-        if (room.tournamentId && room.playerUsernames) {
-            // Vérifier si l'utilisateur est dans cette room
-            for (const [socketId, username] of Object.entries(room.playerUsernames)) {
+// Check if user is in tournament match
+export function isUserInTournamentMatch(userId: number): boolean
+{
+    for (const [roomName, room] of Object.entries(rooms))
+    {
+        if (room.tournamentId && room.playerUsernames)
+        {
+            for (const [socketId, username] of Object.entries(room.playerUsernames))
+            {
                 const user = db.prepare('SELECT id FROM users WHERE username = ?').get(username) as { id: number } | undefined;
-                if (user && user.id === userId && room.pongGame) {
+                if (user && user.id === userId && room.pongGame)
                     return true;
-                }
             }
         }
     }
     return false;
 }
 
-// ========================================
-// ONLINE GAME CHECKS
-// ========================================
-
-/**
- * Vérifie si un utilisateur (par userId) est dans un jeu online (non-tournoi)
- * @returns L'info de la room ou null
- */
-export function getUserOnlineGame(userId: number): OnlineGameInfo | null {
-    for (const [roomName, room] of Object.entries(rooms)) {
-        // Ignorer les rooms de tournoi et les jeux locaux
-        if (room.tournamentId || room.isLocalGame) {
+// Check if user is in online game (non-tournament)
+export function getUserOnlineGame(userId: number): OnlineGameInfo | null
+{
+    for (const [roomName, room] of Object.entries(rooms))
+    {
+        if (room.tournamentId || room.isLocalGame)
             continue;
-        }
 
-        // Vérifier si l'utilisateur est dans cette room
-        if (room.playerUsernames) {
-            for (const [socketId, username] of Object.entries(room.playerUsernames)) {
+        if (room.playerUsernames)
+        {
+            for (const [socketId, username] of Object.entries(room.playerUsernames))
+            {
                 const user = db.prepare('SELECT id FROM users WHERE username = ?').get(username) as { id: number } | undefined;
-                if (user && user.id === userId) {
+                if (user && user.id === userId)
+                {
                     return {
                         roomName,
                         isTournamentRoom: false
@@ -98,35 +82,27 @@ export function getUserOnlineGame(userId: number): OnlineGameInfo | null {
     return null;
 }
 
-/**
- * Vérifie si un utilisateur est dans un jeu online en cours (partie démarrée)
- */
-export function isUserInActiveOnlineGame(userId: number): boolean {
+// Check if user is in active online game (game started)
+export function isUserInActiveOnlineGame(userId: number): boolean
+{
     const gameInfo = getUserOnlineGame(userId);
-    if (!gameInfo) return false;
+    if (!gameInfo)
+        return false;
 
     const room = rooms[gameInfo.roomName];
     return room && !!room.pongGame && room.pongGame.state.running;
 }
 
-// ========================================
-// SOCKET-BASED CHECKS
-// ========================================
-
-/**
- * Vérifie si un socket peut rejoindre un jeu online (non-tournoi)
- * Bloque si l'utilisateur est dans un tournoi actif
- */
-export function canSocketJoinOnlineGame(socket: Socket): { allowed: boolean; reason?: string; tournament?: ActiveTournament } {
+// Check if socket can join online game (blocks if in active tournament)
+export function canSocketJoinOnlineGame(socket: Socket): { allowed: boolean; reason?: string; tournament?: ActiveTournament }
+{
     const user = getSocketUser(socket.id);
-    if (!user) {
-        // Non authentifié, laisser passer (les autres checks géreront)
+    if (!user)
         return { allowed: true };
-    }
 
-    // Vérifier si l'utilisateur est dans un tournoi actif
     const activeTournament = getUserActiveTournament(user.id);
-    if (activeTournament) {
+    if (activeTournament)
+    {
         return {
             allowed: false,
             reason: `You are registered in an active tournament "${activeTournament.name}". Please complete or leave the tournament before joining online games.`,
@@ -137,23 +113,21 @@ export function canSocketJoinOnlineGame(socket: Socket): { allowed: boolean; rea
     return { allowed: true };
 }
 
-/**
- * Vérifie si un utilisateur peut rejoindre/créer un tournoi
- * Bloque si l'utilisateur est dans un jeu online actif
- */
-export function canUserJoinTournament(userId: number): { allowed: boolean; reason?: string } {
-    // Vérifier si l'utilisateur est dans un jeu online
+// Check if user can join tournament (blocks if in active online game)
+export function canUserJoinTournament(userId: number): { allowed: boolean; reason?: string }
+{
     const onlineGame = getUserOnlineGame(userId);
-    if (onlineGame) {
+    if (onlineGame)
+    {
         return {
             allowed: false,
             reason: 'You are currently in an online game. Please finish your game before joining a tournament.'
         };
     }
 
-    // Vérifier si l'utilisateur est déjà dans un autre tournoi actif
     const activeTournament = getUserActiveTournament(userId);
-    if (activeTournament) {
+    if (activeTournament)
+    {
         return {
             allowed: false,
             reason: `You are already registered in tournament "${activeTournament.name}". You can only be in one active tournament at a time.`
@@ -163,24 +137,15 @@ export function canUserJoinTournament(userId: number): { allowed: boolean; reaso
     return { allowed: true };
 }
 
-/**
- * Vérifie si une room est une room de tournoi
- */
-export function isTournamentRoom(roomName: string): boolean {
+// Check if room is tournament room
+export function isTournamentRoom(roomName: string): boolean
+{
     const room = rooms[roomName];
     return room ? !!room.tournamentId : roomName.startsWith('tournament-');
 }
 
-// ========================================
-// CLEANUP
-// ========================================
-
-/**
- * Vérifie et nettoie l'état d'un utilisateur si nécessaire
- * Appelé lors de la déconnexion pour s'assurer que l'utilisateur n'est pas bloqué
- */
-export function cleanupUserIsolationState(userId: number): void {
-    // Les rooms sont gérées automatiquement par le roomManager
-    // Ici on pourrait ajouter une logique de nettoyage additionnelle si nécessaire
+// Cleanup user isolation state on disconnect
+export function cleanupUserIsolationState(userId: number): void
+{
     console.log(`[Isolation] Cleanup state for user ${userId}`);
 }

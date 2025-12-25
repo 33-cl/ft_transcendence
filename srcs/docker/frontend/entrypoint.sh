@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# Génère un certificat auto-signé pour nginx
+# Generate self-signed certificate for nginx
 if [ ! -f /etc/nginx/ssl/nginx.key ] || [ ! -f /etc/nginx/ssl/nginx.crt ]; then
   mkdir -p /etc/nginx/ssl
   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -10,6 +10,6 @@ if [ ! -f /etc/nginx/ssl/nginx.key ] || [ ! -f /etc/nginx/ssl/nginx.crt ]; then
     -subj "/CN=localhost"
 fi
 
-# Lance nginx en mode non-démon
+# Start nginx in foreground mode
 nginx -g 'daemon off;'
 

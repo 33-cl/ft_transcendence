@@ -1,5 +1,3 @@
-// types.d.ts
-// Déclarations globales de types pour le backend
 
 declare module 'jsonwebtoken';
 

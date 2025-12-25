@@ -1,41 +1,14 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   notificationHandlers.ts                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: qordoux <qordoux@student.42.fr>            +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/04 00:00:00 by qordoux           #+#    #+#             */
-/*   Updated: 2025/12/16 15:51:05 by qordoux          ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-// src/socket/notificationHandlers.ts
-
 import { Server } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { getUserBasicInfo, emitToUser, getUserWithAvatar, getUserFriends } from './utils/friendNotifications.js';
 
-/**
- * Notifie deux utilisateurs qu'ils sont devenus amis
- * 
- * Fonctionnement :
- * 1. Vérifie que Socket.IO est disponible
- * 2. Récupère les infos des deux utilisateurs depuis la DB
- * 3. Envoie à user1 une notification avec les infos de user2
- * 4. Envoie à user2 une notification avec les infos de user1
- * 
- * @param globalIo - Instance Socket.IO globale
- * @param user1Id - ID du premier utilisateur
- * @param user2Id - ID du second utilisateur
- * @param fastify - Instance Fastify pour les logs
- */
 export function notifyFriendAdded(globalIo: Server | null, user1Id: number, user2Id: number, fastify: FastifyInstance)
 {
     if (!globalIo)
         return;
     
-    try {
+    try
+    {
         const user1 = getUserBasicInfo(user1Id);
         const user2 = getUserBasicInfo(user2Id);
         
@@ -58,27 +31,19 @@ export function notifyFriendAdded(globalIo: Server | null, user1Id: number, user
             timestamp: Date.now()
         });
         
-    } catch (error) {
-        fastify.log.error(`Error notifying friend added: ${error}`);
+    }
+    catch (error)
+    {
     }
 }
 
-/**
- * Notifie deux utilisateurs que leur amitié a été supprimée
- * 
- * Fonctionnement similaire à notifyFriendAdded mais envoie 'friendRemoved'
- * 
- * @param globalIo - Instance Socket.IO globale
- * @param user1Id - ID du premier utilisateur
- * @param user2Id - ID du second utilisateur
- * @param fastify - Instance Fastify pour les logs
- */
 export function notifyFriendRemoved(globalIo: Server | null, user1Id: number, user2Id: number, fastify: FastifyInstance) 
 {
     if (!globalIo)
         return;
     
-    try {
+    try
+    {
         const user1 = getUserBasicInfo(user1Id);
         const user2 = getUserBasicInfo(user2Id);
         
@@ -95,31 +60,19 @@ export function notifyFriendRemoved(globalIo: Server | null, user1Id: number, us
             timestamp: Date.now()
         });
         
-    } catch (error) {
-        fastify.log.error(`Error notifying friend removed: ${error}`);
+    }
+    catch (error)
+    {
     }
 }
 
-/**
- * Notifie tous les amis d'un utilisateur que son profil a été mis à jour
- * 
- * Fonctionnement :
- * 1. Vérifie que Socket.IO est disponible
- * 2. Récupère les infos de l'utilisateur (avec avatar)
- * 3. Récupère la liste de tous ses amis
- * 4. Envoie à chaque ami une notification avec les nouvelles infos
- * 
- * @param globalIo - Instance Socket.IO globale
- * @param userId - ID de l'utilisateur dont le profil a changé
- * @param updates - Les champs modifiés (username et/ou avatar_url)
- * @param fastify - Instance Fastify pour les logs
- */
 export function notifyProfileUpdated(globalIo: Server | null, userId: number, updates: { username?: string; avatar_url?: string }, fastify: FastifyInstance)
 {
     if (!globalIo)
         return;
     
-    try {
+    try
+    {
         const user = getUserWithAvatar(userId);
         if (!user)
             return;
@@ -134,31 +87,19 @@ export function notifyProfileUpdated(globalIo: Server | null, userId: number, up
             });
         }
         
-    } catch (error) {
-        fastify.log.error(`Error notifying profile updated: ${error}`);
+    }
+    catch (error)
+    {
     }
 }
 
-/**
- * Notifie tous les amis d'un utilisateur de son changement de statut
- * 
- * Fonctionnement :
- * 1. Vérifie que Socket.IO est disponible
- * 2. Récupère les infos de l'utilisateur
- * 3. Récupère la liste de tous ses amis
- * 4. Envoie à chaque ami une notification avec le nouveau statut
- * 
- * @param globalIo - Instance Socket.IO globale
- * @param userId - ID de l'utilisateur dont le statut a changé
- * @param status - Le nouveau statut ('online', 'in-game', 'in-tournament', ou 'offline')
- * @param fastify - Instance Fastify pour les logs
- */
 export function broadcastUserStatusChange(globalIo: Server | null, userId: number, status: 'online' | 'in-game' | 'in-tournament' | 'offline', fastify: FastifyInstance)
 {
     if (!globalIo) 
         return;
     
-    try {
+    try
+    {
         const user = getUserBasicInfo(userId);
         if (!user)
             return;
@@ -174,28 +115,21 @@ export function broadcastUserStatusChange(globalIo: Server | null, userId: numbe
             });
         }
         
-    } catch (error) {
-        fastify.log.error(`Error broadcasting user status change: ${error}`);
+    }
+    catch (error)
+    {
     }
 }
 
-/**
- * Broadcast le changement de profil à TOUS les clients connectés
- * Utilisé pour mettre à jour le leaderboard en temps réel
- * 
- * @param globalIo - Instance Socket.IO globale
- * @param userId - ID de l'utilisateur dont le profil a changé
- * @param updates - Les champs mis à jour (username, avatar_url)
- * @param fastify - Instance Fastify pour les logs
- */
 export function broadcastLeaderboardUpdate(globalIo: Server | null, userId: number, updates: { username?: string; avatar_url?: string }, fastify: FastifyInstance)
 {
     if (!globalIo)
         return;
     
-    try {
-        // Si userId === 0, c'est une notification de fin de match (pas de user spécifique)
-        if (userId === 0) {
+    try
+    {
+        if (userId === 0)
+        {
             globalIo.emit('leaderboardUpdated', {
                 userId: 0,
                 username: null,
@@ -203,7 +137,6 @@ export function broadcastLeaderboardUpdate(globalIo: Server | null, userId: numb
                 timestamp: Date.now(),
                 reason: 'match_ended'
             });
-            fastify.log.info('[LEADERBOARD] Broadcasted leaderboard update (match ended)');
             return;
         }
         
@@ -211,7 +144,6 @@ export function broadcastLeaderboardUpdate(globalIo: Server | null, userId: numb
         if (!user)
             return;
         
-        // Broadcast à tous les clients connectés
         globalIo.emit('leaderboardUpdated', {
             userId: user.id,
             username: updates.username || user.username,
@@ -219,7 +151,8 @@ export function broadcastLeaderboardUpdate(globalIo: Server | null, userId: numb
             timestamp: Date.now()
         });
         
-    } catch (error) {
-        fastify.log.error(`Error broadcasting leaderboard update: ${error}`);
+    }
+    catch (error)
+    {
     }
 }

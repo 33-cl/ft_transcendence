@@ -78,7 +78,7 @@ export function cleanupGameState(): void
         window.cleanupGameEventListeners();
     }
 
-    // 5. NEW: Force leaving the room on the server side to avoid ghost rooms
+    // 5 Force leaving the room on the server side to avoid ghost rooms
     forceLeaveCurrentRoom();
 
     // 6. Reset state flags

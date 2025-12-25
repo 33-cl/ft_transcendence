@@ -5,13 +5,15 @@ export function getUserById(id: string)
   return db.prepare('SELECT id, username, email, avatar_url, wins, losses, created_at FROM users WHERE id = ?').get(id);
 }
 
-export function getUserByUsername(username: string) {
+export function getUserByUsername(username: string)
+{
   return db.prepare('SELECT id, username, email, avatar_url, wins, losses, created_at FROM users WHERE username = ?').get(username);
 }
 
-// Fonction pour mettre à jour les statistiques des utilisateurs après un match
-export function updateUserStats(winnerId: number, loserId: number, winnerScore: number, loserScore: number, matchType: string = 'online') {
-  try {
+export function updateUserStats(winnerId: number, loserId: number, winnerScore: number, loserScore: number, matchType: string = 'online')
+{
+  try
+  {
 
     if (winnerId === loserId)
       return;
@@ -22,7 +24,6 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
     if (!winner || !loser)
       return;
 
-    // Créer la table matches si elle n'existe pas
     db.exec(`
       CREATE TABLE IF NOT EXISTS matches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +38,6 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
       )
     `);
 
-    // Mettre à jour les stats des utilisateurs et enregistrer le match dans une transaction
     const updateWinner = db.prepare('UPDATE users SET wins = wins + 1 WHERE id = ?');
     const updateLoser = db.prepare('UPDATE users SET losses = losses + 1 WHERE id = ?');
     const insertMatch = db.prepare(`
@@ -45,8 +45,9 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    // Transaction -> toutes les opérations réussissent ou aucune
-    const transaction = db.transaction(() => {
+    // Transaction: ensures all database updates happen together or not at all
+    const transaction = db.transaction(() =>
+    {
       updateWinner.run(winnerId);
       updateLoser.run(loserId);
       insertMatch.run(winnerId, loserId, winnerScore, loserScore, matchType);
@@ -54,17 +55,21 @@ export function updateUserStats(winnerId: number, loserId: number, winnerScore: 
 
     transaction();
 
-  } catch (error) {
+  }
+  catch (error)
+  {
   }
 }
 
-export function getUserStats(id: string) {
+export function getUserStats(id: string)
+{
   return db.prepare('SELECT username, wins, losses FROM users WHERE id = ?').get(id);
 }
 
-// Fonction pour récupérer l'historique des matchs d'un utilisateur
-export function getMatchHistory(userId: string, limit: number = 10) {
-  try {
+export function getMatchHistory(userId: string, limit: number = 10)
+{
+  try
+  {
     const matches = db.prepare(`
       SELECT 
         m.*,
@@ -79,14 +84,17 @@ export function getMatchHistory(userId: string, limit: number = 10) {
     `).all(userId, userId, limit);
 
     return matches;
-  } catch (error) {
+  }
+  catch (error)
+  {
     return [];
   }
 }
 
-// Fonction pour récupérer un match par son ID
-export function getMatchById(matchId: number) {
-  try {
+export function getMatchById(matchId: number)
+{
+  try
+  {
     const match = db.prepare(`
       SELECT 
         m.*,
@@ -99,7 +107,9 @@ export function getMatchById(matchId: number) {
     `).get(matchId);
 
     return match || null;
-  } catch (error) {
+  }
+  catch (error)
+  {
     return null;
   }
 }
