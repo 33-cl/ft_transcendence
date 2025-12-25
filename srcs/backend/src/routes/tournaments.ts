@@ -660,8 +660,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             rooms[roomName] = newRoom;
 
-            fastify.log.info(`✅ Tournament match room created: ${roomName} for tournament ${tid}, match ${mid}`);
-
             // Return the info of the created room
             return reply.send({
                 success: true,
