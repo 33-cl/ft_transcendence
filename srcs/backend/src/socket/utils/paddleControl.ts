@@ -1,21 +1,22 @@
 // ========================================
 // PADDLE CONTROL UTILITIES
-// Gestion des inputs clavier pour controler les paddles
+// Keyboard input management for controlling paddles
 // ========================================
 
 import { RoomType } from '../../types.js';
 import { PaddleSide } from '../../../game/gameState.js';
+
 
 // ========================================
 // VALIDATION
 // ========================================
 
 /**
- * Verifie si la direction est valide (up ou down)
- * Type guard pour TypeScript
- * 
- * @param direction - La direction a valider
- * @returns true si 'up' ou 'down'
+ * Checks if the direction is valid ('up' or 'down').
+ * Type guard for TypeScript.
+ *
+ * @param direction - The direction to validate
+ * @returns true if 'up' or 'down'
  */
 export function isValidDirection(direction: string | undefined | null): direction is 'up' | 'down'
 {
@@ -23,32 +24,33 @@ export function isValidDirection(direction: string | undefined | null): directio
 }
 
 /**
- * Verifie si le paddle side est valide (LEFT, DOWN, RIGHT ou TOP)
- * Type guard pour TypeScript
- * 
- * @param side - Le cote du paddle a valider
- * @returns true si LEFT, DOWN, RIGHT ou TOP
+ * Checks if the paddle side is valid (LEFT, DOWN, RIGHT, or TOP).
+ * Type guard for TypeScript.
+ *
+ * @param side - The paddle side to validate
+ * @returns true if LEFT, DOWN, RIGHT, or TOP
  */
 export function isValidPaddleSide(side: string | undefined | null): side is PaddleSide
 {
     return side === 'LEFT' || side === 'DOWN' || side === 'RIGHT' || side === 'TOP';
 }
 
+
 // ========================================
 // INPUT STATE MANAGEMENT
 // ========================================
 
 /**
- * Met a jour l'etat d'un input de paddle
- * 
- * Cette fonction modifie room.paddleInputs qui est lu par la game loop (120 FPS)
- * - keydown → isPressed = true → le paddle bouge continuellement
- * - keyup → isPressed = false → le paddle s'arrete
- * 
- * @param room - La room contenant le jeu
- * @param paddleSide - Le paddle concerne (A, B, C ou D)
- * @param direction - La direction (up ou down)
- * @param isPressed - true si touche enfoncee, false si relachee
+ * Updates the state of a paddle input.
+ *
+ * This function modifies room.paddleInputs, which is read by the game loop (120 FPS):
+ * - keydown → isPressed = true → the paddle moves continuously
+ * - keyup → isPressed = false → the paddle stops
+ *
+ * @param room - The room containing the game
+ * @param paddleSide - The concerned paddle (A, B, C, or D)
+ * @param direction - The direction ('up' or 'down')
+ * @param isPressed - true if key is pressed, false if released
  */
 export function updatePaddleInput(
     room: RoomType,
@@ -61,39 +63,43 @@ export function updatePaddleInput(
 }
 
 /**
- * Tente de bouger le paddle immediatement (feedback instantane)
- * 
- * En plus du mouvement continu gere par la game loop, on fait
- * un mouvement immediat pour donner un feedback reactif au joueur
- * 
- * @param room - La room contenant le jeu
- * @param paddleSide - Le paddle a bouger
- * @param direction - La direction du mouvement
+ * Attempts to move the paddle immediately (instant feedback).
+ *
+ * In addition to the continuous movement managed by the game loop,
+ * this provides instant feedback to the player.
+ *
+ * @param room - The room containing the game
+ * @param paddleSide - The paddle to move
+ * @param direction - The direction to move
  */
 export function tryMovePaddle(room: RoomType, paddleSide: string, direction: string): void
 {
-    try {
+    try
+    {
         room.pongGame!.movePaddle(paddleSide, direction);
-    } catch (error) {
-        // Ignore silently for performance
+    }
+    catch (error)
+    {
+        // Silently ignore for performance
     }
 }
+
 
 // ========================================
 // LOCAL GAME CONTROL
 // ========================================
 
 /**
- * Gere le controle de paddle en mode local
- * 
- * En mode local, un seul joueur peut controler TOUS les paddles
- * (jeu solo, contre IA, ou local 2 joueurs sur meme clavier)
- * 
- * @param room - La room contenant le jeu
- * @param socketId - L'ID du socket du joueur
- * @param player - Le paddle demande ('LEFT', 'RIGHT', 'left', 'right', etc.)
- * @param direction - La direction ('up' ou 'down')
- * @param messageType - Type du message ('keydown' ou 'keyup')
+ * Handles paddle control in local mode.
+ *
+ * In local mode, a single player can control ALL paddles
+ * (solo game, against AI, or local 2 players on the same keyboard).
+ *
+ * @param room - The room containing the game
+ * @param socketId - The socket ID of the player
+ * @param player - The requested paddle ('LEFT', 'RIGHT', etc.)
+ * @param direction - The direction ('up' or 'down')
+ * @param messageType - Message type ('keydown' or 'keyup')
  */
 export function handleLocalGamePaddleControl(
     room: RoomType,
@@ -104,39 +110,46 @@ export function handleLocalGamePaddleControl(
 ): void
 {
     const allowedPaddles = room.paddleBySocket![socketId];
-    
-    // Verifier que ce socket peut controler ce paddle
+
+    // Check if this socket can control this paddle
     if (!Array.isArray(allowedPaddles) || !allowedPaddles.includes(player))
+    {
         return;
-    
-    // Valider le paddle et la direction
+    }
+
+    // Validate paddle and direction
     if (!isValidPaddleSide(player) || !isValidDirection(direction))
+    {
         return;
-    
-    // Mettre a jour l'input
+    }
+
+    // Update input
     const isPressed = messageType === 'keydown';
     updatePaddleInput(room, player, direction, isPressed);
-    
-    // Mouvement immediat sur keydown
+
+    // Instant movement on keydown
     if (isPressed)
+    {
         tryMovePaddle(room, player, direction);
+    }
 }
+
 
 // ========================================
 // ONLINE GAME CONTROL
 // ========================================
 
 /**
- * Gere le controle de paddle en mode online
- * 
- * En mode online, chaque joueur ne peut controler QU'UN SEUL paddle
- * (multijoueur avec un paddle par joueur)
- * 
- * @param room - La room contenant le jeu
- * @param socketId - L'ID du socket du joueur
- * @param player - Le paddle demande ('LEFT', 'DOWN', 'RIGHT' ou 'TOP')
- * @param direction - La direction ('up' ou 'down')
- * @param messageType - Type du message ('keydown' ou 'keyup')
+ * Handles paddle control in online mode.
+ *
+ * In online mode, each player can control ONLY ONE paddle
+ * (multiplayer with one paddle per player).
+ *
+ * @param room - The room containing the game
+ * @param socketId - The socket ID of the player
+ * @param player - The requested paddle ('LEFT', 'DOWN', 'RIGHT', or 'TOP')
+ * @param direction - The direction ('up' or 'down')
+ * @param messageType - Message type ('keydown' or 'keyup')
  */
 export function handleOnlineGamePaddleControl(
     room: RoomType,
@@ -147,20 +160,26 @@ export function handleOnlineGamePaddleControl(
 ): void
 {
     const allowedPaddle = room.paddleBySocket![socketId];
-    
-    // Verifier que ce joueur controle bien ce paddle (anti-triche)
+
+    // Check that this player controls this paddle (anti-cheat)
     if (player !== allowedPaddle)
+    {
         return;
-    
-    // Valider le paddle et la direction
+    }
+
+    // Validate paddle and direction
     if (!isValidPaddleSide(player) || !isValidDirection(direction))
+    {
         return;
-    
-    // Mettre a jour l'input
+    }
+
+    // Update input
     const isPressed = messageType === 'keydown';
     updatePaddleInput(room, player, direction, isPressed);
-    
-    // Mouvement immediat sur keydown
+
+    // Instant movement on keydown
     if (isPressed)
+    {
         room.pongGame!.movePaddle(player, direction);
+    }
 }
