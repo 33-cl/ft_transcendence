@@ -39,10 +39,21 @@ export function isValidUsername(username: string): boolean
   return true;
 }
 
-// Minimum length 8
+// Minimum 8 chars, at least 1 uppercase, 1 lowercase, 1 digit, 1 special char
 export function isValidPassword(password: string): boolean
 {
-  return typeof password === 'string' && password.length >= 8;
+  if (typeof password !== 'string' || password.length < 8)
+    return false;
+  let hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false;
+  for (let i = 0; i < password.length; i++)
+  {
+    const c = password.charAt(i);
+    if (c >= 'A' && c <= 'Z') hasUpper = true;
+    else if (c >= 'a' && c <= 'z') hasLower = true;
+    else if (c >= '0' && c <= '9') hasDigit = true;
+    else hasSpecial = true;
+  }
+  return hasUpper && hasLower && hasDigit && hasSpecial;
 }
 
 // Combined validation function for forms
@@ -70,7 +81,7 @@ export function validateInput(username?: string, email?: string, password?: stri
   if (password !== undefined && password !== '' && !isValidPassword(password))
     return {
       valid: false,
-      error: 'Password must be at least 8 characters'
+      error: 'Password must be at least 8 characters, with uppercase, lowercase, digit, and special character'
     };
 
   return { valid: true };

@@ -415,7 +415,7 @@ function setupPasswordField(passwordInput: HTMLInputElement): void
             
             if (!isValidPassword(newPasswordValue))
             {
-                showMessage('Password must be at least 8 characters', true);
+                showMessage('Password must be at least 8 characters, with uppercase, lowercase, digit, and special character', true);
                 passwordInput.value = '';
                 passwordInput.blur();
                 return;

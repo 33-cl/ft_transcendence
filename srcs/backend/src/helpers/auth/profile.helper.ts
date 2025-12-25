@@ -56,7 +56,7 @@ export function sanitizeAndValidateProfileData(data: ProfileUpdateData, reply: F
 
   if (data.newPassword !== undefined && !isValidPassword(data.newPassword))
   {
-    reply.code(400).send({ error: 'New password too short (min 8 characters)' });
+    reply.code(400).send({ error: 'Password must be at least 8 characters, with uppercase, lowercase, digit, and special character' });
     return undefined;
   }
 

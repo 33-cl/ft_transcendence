@@ -68,10 +68,21 @@ export function isValidUsername(username: string): boolean
   return true;
 }
 
-// Validate password (minimum 8 characters)
+// Validate password (min 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char)
 export function isValidPassword(password: string): boolean
 {
-  return typeof password === 'string' && password.length >= 8;
+  if (typeof password !== 'string' || password.length < 8)
+    return false;
+  let hasUpper = false, hasLower = false, hasDigit = false, hasSpecial = false;
+  for (let i = 0; i < password.length; i++)
+  {
+    const c = password.charAt(i);
+    if (c >= 'A' && c <= 'Z') hasUpper = true;
+    else if (c >= 'a' && c <= 'z') hasLower = true;
+    else if (c >= '0' && c <= '9') hasDigit = true;
+    else hasSpecial = true;
+  }
+  return hasUpper && hasLower && hasDigit && hasSpecial;
 }
 
 // Validate 2FA code (exactly 6 digits)
@@ -123,7 +134,7 @@ export function validateRegisterInput(data: {
     return { success: false, error: 'Invalid username (3-10 characters, alphanumeric and underscore only)' };
 
   if (!isValidPassword(password))
-    return { success: false, error: 'Password too short (minimum 8 characters)' };
+    return { success: false, error: 'Password must be at least 8 characters, with uppercase, lowercase, digit, and special character' };
 
   return{
     success: true,
