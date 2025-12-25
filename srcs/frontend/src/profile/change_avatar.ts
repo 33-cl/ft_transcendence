@@ -55,7 +55,6 @@ async function uploadTempAvatar(file: File): Promise<{ ok: boolean; error?: stri
     }
     catch (error)
     {
-        // Catches connection failures or other network-related issues
         return { ok: false, error: 'Network error. Please check your connection and try again.' };
     }
 }

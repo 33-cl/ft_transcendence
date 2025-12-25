@@ -1,19 +1,13 @@
-/**
- * Client-side authentication service
- * Gère les appels API pour l'authentification (register, login, logout)
- */
-
-import { 
+import
+{ 
     markSessionActive, 
     markSessionInactive, 
     broadcastSessionCreated, 
     broadcastSessionDestroyed 
 } from '../navigation/sessionBroadcast.js';
 
-/**
- * Interface pour la réponse de registration/login
- */
-export interface AuthResponse {
+export interface AuthResponse
+{
     success: boolean;
     user?: any;
     error?: string;
@@ -22,21 +16,12 @@ export interface AuthResponse {
     message?: string;
 }
 
-/**
- * Appelle l'API /auth/register
- * @param email - Email de l'utilisateur
- * @param username - Nom d'utilisateur
- * @param password - Mot de passe
- * @returns AuthResponse avec success: true si OK, sinon error
- */
-
-export async function registerUser(
-    email: string, 
-    username: string, 
-    password: string
-): Promise<AuthResponse> {
-    try {
-        const res = await fetch('/auth/register', {
+export async function registerUser(email: string, username: string, password: string): Promise<AuthResponse>
+{
+    try
+    {
+        const res = await fetch('/auth/register',
+        {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -48,58 +33,37 @@ export async function registerUser(
             const data = await res.json().catch(() => ({} as any));
             const user = data?.user || null;
 
-            // Stocker l'utilisateur globalement
             window.currentUser = user;
-
-            // Marquer la session comme active
             markSessionActive();
-
-            // Notifier les autres onglets
             broadcastSessionCreated();
 
-            // Reconnecter le WebSocket
-            if (window.currentUser && window.reconnectWebSocket) {
+            if (window.currentUser && window.reconnectWebSocket)
                 window.reconnectWebSocket();
-            }
 
             return { success: true, user };
         }
         else
         {
             const data = await res.json().catch(() => ({} as any));
-            return { 
-                success: false, 
-                error: data?.error || 'Registration error.' 
-            };
+            return { success: false, error: data?.error || 'Registration error.' };
         }
-    } catch (e)
+    }
+    catch (e)
     {
-        return { 
-            success: false, 
-            error: 'Cannot reach server.' 
-        };
+        return { success: false, error: 'Cannot reach server.' };
     }
 }
 
-/**
- * Appelle l'API /auth/login
- * @param login - Email ou username
- * @param password - Mot de passe
- * @param twoFactorCode - Code 2FA optionnel
- * @returns AuthResponse avec success: true si OK, sinon error (ou requires2FA: true si 2FA nécessaire)
- */
-export async function loginUser(
-    login: string, 
-    password: string,
-    twoFactorCode?: string
-): Promise<AuthResponse> {
-    try {
+export async function loginUser(login: string, password: string, twoFactorCode?: string): Promise<AuthResponse>
+{
+    try
+    {
         const body: any = { login, password };
-        if (twoFactorCode) {
+        if (twoFactorCode)
             body.twoFactorCode = twoFactorCode;
-        }
         
-        const res = await fetch('/auth/login', {
+        const res = await fetch('/auth/login',
+        {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -108,9 +72,10 @@ export async function loginUser(
 
         const data = await res.json().catch(() => ({} as any));
 
-        if (res.ok) {
-            // Vérifier si 2FA est nécessaire
-            if (data?.requires2FA) {
+        if (res.ok)
+        {
+            if (data?.requires2FA)
+            {
                 return {
                     success: false,
                     requires2FA: true,
@@ -120,50 +85,39 @@ export async function loginUser(
             
             const user = data?.user || null;
 
-            // Stocker l'utilisateur globalement
             window.currentUser = user;
-
-            // Marquer la session comme active
             markSessionActive();
-
-            // Notifier les autres onglets
             broadcastSessionCreated();
 
-            // Reconnecter le WebSocket
-            if (window.currentUser && window.reconnectWebSocket) {
+            if (window.currentUser && window.reconnectWebSocket)
                 window.reconnectWebSocket();
-            }
 
             return { success: true, user };
-        } else {
+        }
+        else
+        {
             return {
                 success: false,
                 error: data?.error || 'Login failed.',
                 code: data?.code
             };
         }
-    } catch (e) {
-        return {
-            success: false,
-            error: 'Cannot reach server.'
-        };
+    }
+    catch (e)
+    {
+        return { success: false, error: 'Cannot reach server.' };
     }
 }
 
-/**
- * Appelle l'API /auth/logout
- */
-export async function logoutUser(): Promise<void> {
-    try {
+export async function logoutUser(): Promise<void>
+{
+    try
+    {
         await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch {}
+    }
+    catch (e) {}
 
-    // Nettoyer l'utilisateur courant
     window.currentUser = null;
-
-    // Marquer la session comme inactive
     markSessionInactive();
-
-    // Notifier les autres onglets
     broadcastSessionDestroyed();
 }

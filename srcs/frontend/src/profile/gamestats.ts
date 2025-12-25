@@ -79,7 +79,8 @@ export function initializePointsDistributionChart(match: MatchData): void {
 }
 
 // Init the score progression chart
-export function initializeScoreProgressionChart(match: MatchData): void {
+export function initializeScoreProgressionChart(match: MatchData): void
+{
     const canvas = document.getElementById('score-progression-chart') as HTMLCanvasElement;
     if (!canvas) {
         return;

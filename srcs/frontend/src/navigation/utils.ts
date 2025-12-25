@@ -54,7 +54,6 @@ async function show(pageName: keyof typeof components, data?: any)
         pageName !== 'profileDashboard' &&
         pageName !== 'profileWinRateHistory')
     {
-        console.warn(`Component loading BLOCKED for '${pageName}': Session is active in another tab`);
         return;
     }
 
@@ -143,7 +142,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         pageName !== 'gameStats' &&
         pageName !== 'profile')
     {
-        console.warn('Navigation blocked: Session is active in another tab');
         return;
     }
 
@@ -326,7 +324,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
                     }
                     catch (e)
                     {
-                        // Ignore error, fallback to current user.
                     }
                 }
             }
