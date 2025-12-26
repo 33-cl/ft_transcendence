@@ -295,7 +295,6 @@ async function toggle2FA(): Promise<void>
             }
             catch (error)
             {
-                console.error('2FA enable error:', error);
                 show2FAMessage('Network error occurred', true);
                 setTimeout(() =>
                 {
