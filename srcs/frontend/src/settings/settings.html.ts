@@ -5,6 +5,9 @@ export function settingsHTML() {
     
     // Check if the email ends with '@oauth.local' (indicating a temporary email)
     const hasTemporaryEmail = email.endsWith('@oauth.local');
+    
+    // Check if user is logged in via OAuth (provider is set and not local)
+    const isOAuthUser = window.currentUser?.provider !== 'local';
 
     return /*html*/ `
     <h1>USER SETTINGS</h1>
@@ -25,6 +28,7 @@ export function settingsHTML() {
             <input type="email" id="settings-email" placeholder="${email}">
             ${hasTemporaryEmail ? '<span id="temp-email-warning" style="color: #f59e0b; font-size: 0.8em; margin-left: 10px;">[Update required]</span>' : ''}
         </div>
+        ${!isOAuthUser ? `
         <div class="settings-row">
             <span class="settings-label">PASSWORD</span>
             <div style="display: flex; align-items: center;">
@@ -35,7 +39,7 @@ export function settingsHTML() {
                     </svg>
                 </button>
             </div>
-        </div>
+        </div>` : ''}
         <div class="settings-row">
             <span class="settings-label">2 Factor Auth</span>
             <div id="twofa-container">

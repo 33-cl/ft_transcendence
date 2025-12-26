@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyInstance } from 'fastify';
-import { isUserAlreadyConnected } from '../../socket/socketAuth.js';
+import { isUserAlreadyConnected, getSocketIdForUser, removeUserFromActiveList } from '../../socket/socketAuth.js';
 import { validateLength, checkRateLimit } from '../../security.js';
 import { isValidEmail } from '../../services/validation.service.js';
 import { removeHtmlTags } from '../../utils/sanitize.js';
@@ -60,11 +60,18 @@ export function checkAlreadyConnected(
 {
   if (isUserAlreadyConnected(userId))
   {
-    reply.code(403).send({ 
-      error: 'This account is already connected elsewhere.',
-      code: 'USER_ALREADY_CONNECTED'
-    });
-    return false;
+    const socketId = getSocketIdForUser(userId);
+    if (socketId && (fastify as any).io)
+    {
+      const io = (fastify as any).io;
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket)
+      {
+        socket.emit('forceDisconnect', { reason: 'Logged in from another location' });
+        socket.disconnect(true);
+      }
+    }
+    removeUserFromActiveList(userId);
   }
   return true;
 }

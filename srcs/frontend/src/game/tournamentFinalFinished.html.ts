@@ -14,9 +14,6 @@ export const tournamentFinalFinishedHTML = (data?: any) => {
     return /*html*/`
         <div class="game-finished-overlay">
             <div class="game-finished-box">
-                <div class="tournament-badge">
-                    <span class="badge-text">FINAL</span>
-                </div>
                 <h2 class="game-finished-title">
                     ${isChampion ? 'CHAMPION' : 'RUNNER-UP'}
                 </h2>

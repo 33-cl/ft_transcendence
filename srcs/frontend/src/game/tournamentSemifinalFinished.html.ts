@@ -29,9 +29,6 @@ export const tournamentSemifinalFinishedHTML = (data?: any) => {
     return /*html*/`
         <div class="game-finished-overlay">
             <div class="game-finished-box">
-                <div class="tournament-badge">
-                    <span class="badge-text">SEMI-FINAL ${semifinalNumber}</span>
-                </div>
                 <h2 class="game-finished-title">
                     ${isWinner ? 'VICTORY' : 'DEFEAT'}
                 </h2>

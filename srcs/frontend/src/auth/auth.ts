@@ -266,6 +266,7 @@ document.addEventListener('componentsReady', () =>
     if (!btnIn || (btnIn as any)._bound)
         return;
 
+    isSignInButtonDisabled = false;
     (btnIn as any)._bound = true;
 
     btnIn.addEventListener('click', handleSignIn);
