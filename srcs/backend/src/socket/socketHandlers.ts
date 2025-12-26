@@ -269,6 +269,9 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
             userId = room.playerUserIds[socket.id];
         }
         
+        // Leave the room BEFORE emitting forfeit events so the leaving player doesn't receive gameFinished
+        socket.leave(previousRoom);
+        
         if ((room as any).isTournament && (room as any).tournamentState)
             processTournamentStateForfeit(room as any, previousRoom, socket.id, io, globalIo, false, fastify);
 
@@ -287,7 +290,6 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
         
         cleanupPaddleAssignments(room, socket.id);
         removePlayerFromRoom(socket.id, true);
-        socket.leave(previousRoom);
     }
     
     forceCompleteCleanup(socket, fastify, io);

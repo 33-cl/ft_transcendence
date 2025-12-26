@@ -5,10 +5,8 @@ import
     socket,
     tournamentListenersSet,
     otherSemifinalUpdateListenerSet,
-    isWaitingForTournamentFinal,
     setTournamentListenersSet,
-    setOtherSemifinalUpdateListenerSet,
-    setIsWaitingForTournamentFinal
+    setOtherSemifinalUpdateListenerSet
 } from './socketConnection.js';
 
 export function setupTournamentListeners()
@@ -70,40 +68,6 @@ export function setupTournamentListeners()
         setOtherSemifinalUpdateListenerSet(true);
     }
     
-    socket.on('tournamentFinalStart', (data: any) =>
-    {
-        // Check if user explicitly left the tournament flow (via reload/back navigation)
-        if (!isWaitingForTournamentFinal)
-            return;
-
-        window.controlledPaddle = data.paddle;
-        window.maxPlayers = 2;
-        window.isSpectator = false;
-        
-        // Reset the flag now that we're starting the final
-        setIsWaitingForTournamentFinal(false);
-        
-        if (window.updatePaddleKeyBindings)
-            window.updatePaddleKeyBindings();
-        
-        load('game');
-        
-        const initGame = () =>
-        {
-            const mapCanvas = document.getElementById('map');
-            if (mapCanvas)
-            {
-                if (typeof window.setupGameEventListeners === 'function')
-                    window.setupGameEventListeners();
-                if (typeof window.initPongRenderer === 'function')
-                    window.initPongRenderer('map');
-            }
-            else
-                setTimeout(initGame, 50);
-        };
-        setTimeout(initGame, 100);
-    });
-    
     socket.on('tournamentComplete', (data: any) =>
     {
         window.isTournamentMode = false;
@@ -123,7 +87,6 @@ export function cleanupTournamentListeners()
     socket.off('tournamentUpdate');
     socket.off('tournamentSpectator');
     socket.off('otherSemifinalUpdate');
-    socket.off('tournamentFinalStart');
     socket.off('tournamentComplete');
 
     setTournamentListenersSet(false);
