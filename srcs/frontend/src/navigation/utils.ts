@@ -166,6 +166,10 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
         // This prevents the leaving player from seeing the gameFinished overlay
         window.isNavigatingAwayFromGame = true;
 
+        // Clean up game event listeners immediately to prevent spectatorGameFinished from showing
+        if (window.cleanupGameEventListeners)
+            window.cleanupGameEventListeners();
+
         if (window.socket && window.leaveCurrentRoomAsync)
         {
             try

@@ -39,6 +39,8 @@ function ensureAvatarDirectory() {
   const avatarDir = path.join(process.cwd(), 'public', 'avatars');
   if (!fs.existsSync(avatarDir)) {
     fs.mkdirSync(avatarDir, { recursive: true });
+  }
+}
 
 // Disable cache on all responses
 app.addHook('onSend', (request, reply, payload, done) => {
