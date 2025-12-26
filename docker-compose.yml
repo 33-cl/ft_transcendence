@@ -16,6 +16,8 @@ services:
     build:
       context: .
       dockerfile: srcs/docker/backend/Dockerfile
+    ports:
+      - "8080:8080"
     volumes:
       - avatar_storage:/app/public/avatars
       - db_storage:/app/db
