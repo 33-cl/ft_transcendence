@@ -14,7 +14,7 @@ export const matchmakingHTML = /*html*/`
 let dotsIntervalId: number | null = null;
 let tipsIntervalId: number | null = null;
 
-export function updateMatchmakingForTournament(players: number, maxPlayers: number) {
+export function updateMatchmakingForTournament() {
     const title = document.getElementById('matchmakingTitle');
     const searchText = document.getElementById('searchingText');
     

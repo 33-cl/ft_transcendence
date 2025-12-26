@@ -67,6 +67,15 @@ export function setupGameEventListeners()
     {
         socket.on('gameState', (state: any) =>
         {
+            // If we receive game state while on matchmaking (e.g. reconnection during tournament match),
+            // switch to game view
+            const matchmakingElement = document.getElementById('matchmaking');
+            if (matchmakingElement && matchmakingElement.innerHTML.trim() !== '')
+            {
+                load('game');
+                return;
+            }
+
             if (typeof window.addGameState === 'function')
             {
                 window.addGameState(state);

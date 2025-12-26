@@ -70,6 +70,16 @@ export function setupTournamentListeners()
     
     socket.on('tournamentFinalStart', (data: any) =>
     {
+        // Check if user is still in the tournament flow (waiting on semifinal finished screen or matchmaking)
+        const semifinalFinishedElement = document.getElementById('tournamentSemifinalFinished');
+        const matchmakingElement = document.getElementById('matchmaking');
+        
+        const isWaitingInSemifinal = semifinalFinishedElement && semifinalFinishedElement.innerHTML.trim() !== '';
+        const isWaitingInMatchmaking = matchmakingElement && matchmakingElement.innerHTML.trim() !== '';
+        
+        if (!isWaitingInSemifinal && !isWaitingInMatchmaking)
+            return;
+
         window.controlledPaddle = data.paddle;
         window.maxPlayers = 2;
         window.isSpectator = false;

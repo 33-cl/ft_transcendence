@@ -2,54 +2,74 @@
 
 ![Main menu](./srcs/frontend/img/main-menu.png)
 
-Application web de jeu Pong multijoueur en temps réel.
+**ft_transcendence** est le dernier projet du Common Core de 42. Il s'agit d'une application web Single Page Application (SPA) permettant de jouer au Pong en temps réel contre d'autres joueurs ou une IA.
 
-## Description
+## 🚀 Fonctionnalités
 
-ft_transcendence est une plateforme de jeu en ligne qui modernise le classique Pong. Les utilisateurs peuvent jouer en temps réel, gérer leurs profils et interagir socialement.
+### 🎮 Modes de Jeu
+- **Classique 1v1** : Affrontez un autre joueur en ligne.
+- **Mode 4 Joueurs** : Une variante chaotique où 4 joueurs s'affrontent sur un terrain carré (2 axes). Le dernier à toucher la balle marque le point.
+- **Tournoi** : Système de tournoi à 4 joueurs avec demi-finales et finale.
+- **Contre l'IA** : Entraînez-vous contre une intelligence artificielle avec plusieurs niveaux de difficulté.
+- **Jeu Local** : Jouez à deux sur le même clavier.
 
-## Fonctionnalités
+### 👤 Gestion Utilisateur
+- **Authentification** : Connexion via email/mot de passe ou OAuth (Google / 42).
+- **Sécurité** : Authentification à deux facteurs (2FA) disponible.
+- **Profil** : Avatar personnalisé, historique des matchs, statistiques (victoires/défaites).
+- **Social** : Système d'amis, voir le statut en ligne des joueurs.
 
-### Jeu
-- Pong multijoueur en temps réel
-- Matchmaking automatique
-- Système de tournois
-- Historique des parties et statistiques
-- Mode spectateur
+### 🛠️ Technique
+- **Single Page Application (SPA)** : Navigation fluide sans rechargement de page, gestion de l'historique navigateur.
+- **Temps Réel** : Utilisation de WebSockets (Socket.IO) pour le gameplay et les notifications.
+- **Responsive** : Interface adaptée aux différentes tailles d'écran.
 
-### Utilisateurs
-- Authentification sécurisée avec OAuth 42
-- Profils personnalisables
-- Système d'amis
-- Statuts en ligne
+## 🛠️ Stack Technique
 
-### Social
-- Chat en temps réel
-- Channels publics et privés
-- Messages directs
-- Système de modération
+### Frontend
+- **Langage** : TypeScript (Vanilla, sans framework JS majeur comme React/Vue).
+- **Style** : Tailwind CSS pour le design.
+- **Rendu** : Canvas HTML5 pour le jeu.
 
-### Compétition
-- Classement global
-- Système de niveaux
-- Statistiques détaillées
-- Historique des matchs
+### Backend
+- **Serveur** : Node.js avec le framework **Fastify**.
+- **Base de données** : SQLite (via `better-sqlite3`).
+- **Communication** : Socket.IO pour les échanges temps réel.
 
-## Technologies
+### Infrastructure
+- **Docker** : Conteneurisation complète (Frontend, Backend, Nginx).
+- **Nginx** : Serveur web et reverse proxy.
 
-**Backend**: 
-**Frontend**: JavaScript, HTML, CSS, tailwind
-**Infrastructure**: Docker, Nginx
+## 📦 Installation et Lancement
 
-## Utilisation
+### Prérequis
+- Docker & Docker Compose
+- Make
 
-L'application permet de :
-- Se connecter avec son compte 42
-- Jouer des parties de Pong contre d'autres utilisateurs
-- Participer à des tournois
-- Chatter avec la communauté
-- Consulter son profil et ses statistiques
+### Commandes
 
----
+Lancer le projet (version complète avec background animé) :
+```bash
+make
+```
 
-**École 42 - Projet ft_transcendence**
+Lancer la version "Light" (compilation plus rapide, background statique) :
+```bash
+make light
+```
+
+Arrêter les conteneurs :
+```bash
+make down
+```
+
+Nettoyer les données (base de données, images uploadées) :
+```bash
+make rm-data
+```
+
+L'application sera accessible à l'adresse : `https://localhost:8080` (ou `http://localhost:3000` selon la configuration Nginx, par défaut HTTPS sur 8080 avec certificat auto-signé).
+
+## 👥 Auteurs
+
+Projet réalisé dans le cadre du cursus 42.

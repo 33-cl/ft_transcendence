@@ -1,7 +1,6 @@
 import { load } from '../navigation/utils.js';
 import { sessionDisconnectedHTML } from '../navigation/sessionDisconnected.html.js';
 import { updateMatchmakingForTournament } from './matchmaking.html.js';
-import { initPongRenderer } from './pongRenderer.js';
 import
 {
     socket,
@@ -104,7 +103,7 @@ export function setupGlobalSocketListeners()
                     {
                         setTimeout(() =>
                         {
-                            updateMatchmakingForTournament(data.players, data.maxPlayers);
+                            updateMatchmakingForTournament();
                         }, 100);
                     }
                 }
@@ -230,40 +229,18 @@ export function setupGlobalSocketListeners()
     }
 }
 
-function handleTournamentRoomJoined(data: any)
+function handleTournamentRoomJoined(_data: any)
 {
     import('./matchmaking.html.js').then(({ updateTournamentWaiting }) =>
     {
-        if (data.maxPlayers === 4)
+        load('matchmaking');
+        setTimeout(() =>
         {
-            load('matchmaking');
-            setTimeout(() =>
-            {
-                updateTournamentWaiting('All players ready! Tournament starting...');
-            }, 100);
-        }
-        else
-        {
-            load('game');
-            const waitForCanvas = () =>
-            {
-                const mapCanvas = document.getElementById('map');
-                if (mapCanvas)
-                {
-                    if (typeof window.setupGameEventListeners === 'function')
-                        window.setupGameEventListeners();
-                    
-                    if (typeof window.initPongRenderer === 'function')
-                        window.initPongRenderer('map');
-                    else
-                        initPongRenderer('map');
-                }
-                else
-                {
-                    setTimeout(waitForCanvas, 50);
-                }
-            };
-            setTimeout(waitForCanvas, 100);
-        }
+            updateTournamentWaiting('Tournament in progress...');
+            
+            // Setup game listeners to detect if game is running (reconnection during match)
+            if (typeof window.setupGameEventListeners === 'function')
+                window.setupGameEventListeners();
+        }, 100);
     });
 }
