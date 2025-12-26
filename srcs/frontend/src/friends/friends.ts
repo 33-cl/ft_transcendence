@@ -294,7 +294,6 @@ export async function spectateFreind(username: string): Promise<void>
 
         if (!response.ok)
         {
-            const error = await response.json();
             if (response.status === 403)
                 alert('You can only spectate friends.');
             else if (response.status === 401)
