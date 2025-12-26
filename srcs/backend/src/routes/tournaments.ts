@@ -120,14 +120,11 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 SELECT * FROM tournaments WHERE id = ?
             `).get(tournamentId) as TournamentRow | undefined;
 
-            fastify.log.info(`Tournament created: ${sanitizedName} (${tournamentId})`);
-
             reply.status(201).send({
                 success: true,
                 tournament: createdTournament
             });
         } catch (error) {
-            fastify.log.error(`Error creating tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -158,7 +155,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             reply.send({ success: true, tournament, participants, matches });
         } catch (error) {
-            fastify.log.error(`Error fetching tournament details: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -201,7 +197,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             reply.send({ success: true, tournaments: tournamentsWithParticipation });
         } catch (error) {
-            fastify.log.error(`Error fetching tournaments: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -339,12 +334,10 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 // Mark the tournament as active
                 db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
 
-                fastify.log.info(`Tournament ${tournamentId} auto-started with ${updatedTournament.current_players} players`);
             }
 
             reply.status(201).send({ success: true, participant });
         } catch (error) {
-            fastify.log.error(`Error joining tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -413,7 +406,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             reply.send({ success: true, message: 'Left tournament successfully' });
         } catch (error) {
-            fastify.log.error(`Error leaving tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -448,9 +440,7 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             
             // Update the tournament status (now handled by generateBracket for consistency)
             db.prepare(`UPDATE tournaments SET status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
-            
-            fastify.log.info(`Tournament ${id} started manually with ${tournament.current_players} players`);
-            
+                        
             // Retrieve the generated matches for the WebSocket event
             const matches = db.prepare(
                 `SELECT id, round, player1_id, player2_id FROM tournament_matches WHERE tournament_id = ? ORDER BY round, id`
@@ -461,7 +451,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             reply.send({ success: true, message: 'Tournament started successfully' });
         } catch (error) {
-            fastify.log.error(`Error starting tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -546,7 +535,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
 
             reply.send({ success: true });
         } catch (error) {
-            fastify.log.error(`Error recording tournament match result: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -676,7 +664,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
             });
 
         } catch (error) {
-            fastify.log.error(`Error creating tournament match room: ${error}`);
             return reply.status(500).send({ error: 'Internal server error' });
         }
     });
@@ -746,7 +733,6 @@ export default async function tournamentsRoutes(fastify: FastifyInstance) {
                 message: `Tournament "${tournament.name || 'Unknown'}" has been deleted` 
             });
         } catch (error) {
-            fastify.log.error(`Error deleting tournament: ${error}`);
             reply.status(500).send({ error: 'Internal server error' });
         }
     });

@@ -34,7 +34,6 @@ export function emitTournamentPlayerUpdate(
         timestamp: new Date().toISOString()
     });
 
-    console.log(`📡 WebSocket: tournament:player_update (${action}) for tournament ${tournamentId}`);
 }
 
 /**
@@ -56,7 +55,6 @@ export function emitTournamentStarted(
         timestamp: new Date().toISOString()
     });
 
-    console.log(`📡 WebSocket: tournament:started for tournament ${tournamentId}`);
 }
 
 /**
@@ -78,7 +76,6 @@ export function emitMatchReady(
         timestamp: new Date().toISOString()
     });
 
-    console.log(`📡 WebSocket: tournament:match_ready (match ${match.id}) for tournament ${tournamentId}`);
 }
 
 /**
@@ -106,7 +103,6 @@ export function emitMatchFinished(
         timestamp: new Date().toISOString()
     });
 
-    console.log(`📡 WebSocket: tournament:match_finished (match ${matchId}, winner ${winnerId}) for tournament ${tournamentId}`);
 }
 
 /**
@@ -128,7 +124,6 @@ export function emitTournamentCompleted(
         timestamp: new Date().toISOString()
     });
 
-    console.log(`🏆 WebSocket: tournament:completed for tournament ${tournamentId}, champion: ${championId}`);
 }
 
 /**
@@ -145,7 +140,6 @@ export function joinTournamentRoom(socketId: string, tournamentId: string): void
     if (!socket) return;
 
     socket.join(`tournament:${tournamentId}`);
-    console.log(`🔌 Socket ${socketId} joined tournament room: tournament:${tournamentId}`);
 }
 
 /**
@@ -162,7 +156,6 @@ export function leaveTournamentRoom(socketId: string, tournamentId: string): voi
     if (!socket) return;
 
     socket.leave(`tournament:${tournamentId}`);
-    console.log(`🔌 Socket ${socketId} left tournament room: tournament:${tournamentId}`);
 }
 
 // ========================================
@@ -227,10 +220,6 @@ export function startSemifinals(
     
     state.semifinal1 = createSemifinalMatch(sf1Player1, sf1Player2);
     state.semifinal2 = createSemifinalMatch(sf2Player1, sf2Player2);
-    
-    console.log(`🎮 Tournament: Starting BOTH Semi-finals simultaneously`);
-    console.log(`   SF1: ${state.playerUsernames[sf1Player1]} vs ${state.playerUsernames[sf1Player2]}`);
-    console.log(`   SF2: ${state.playerUsernames[sf2Player1]} vs ${state.playerUsernames[sf2Player2]}`);
     
     // Create end callbacks for each semifinal
     const onSemifinal1End = (winner: { side: string; score: number }, loser: { side: string; score: number }) =>
@@ -348,14 +337,9 @@ function handleSemifinalEnd(
     if (winnerUserId && loserUserId) {
         try {
             updateUserStats(winnerUserId, loserUserId, winnerScore, loserScore, 'tournament');
-            console.log(`📊 Semi-final ${semifinalNumber} recorded: ${winnerName} ${winnerScore}-${loserScore} ${loserName}`);
-        } catch (error) {
-            console.error(`Error recording semifinal ${semifinalNumber} stats:`, error);
-        }
+        } catch (error) {}
     }
-    
-    console.log(`🏆 Tournament: Semi-final ${semifinalNumber} complete - Winner: ${winnerName}`);
-    
+        
     // Retrieve info from the other semifinal
     const otherSemifinal = semifinalNumber === 1 ? state.semifinal2 : state.semifinal1;
     let otherSemifinalInfo = null;
@@ -410,7 +394,6 @@ function handleSemifinalEnd(
     
     // Check if both semifinals are finished
     if (state.semifinal1?.finished && state.semifinal2?.finished) {
-        console.log(`🎯 Tournament: Both semi-finals complete, starting final...`);
         
         state.phase = 'waiting_final';
         
@@ -672,23 +655,19 @@ function startFinal(
     const player1StillInTournament = player1UserId !== undefined;
     const player2StillInTournament = player2UserId !== undefined;
     
-    console.log(`🏁 startFinal: player1 (${oldPlayer1SocketId}) in tournament: ${player1StillInTournament}, player2 (${oldPlayer2SocketId}) in tournament: ${player2StillInTournament}`);
     
     // If both players left, cancel the final
     if (!player1StillInTournament && !player2StillInTournament) {
-        console.log('❌ Both finalists left the tournament, cancelling final');
         state.phase = 'completed';
         return;
     }
     
     // If one player left, the other wins by forfeit
     if (!player1StillInTournament) {
-        console.log(`🏆 Player 1 left, Player 2 wins by forfeit`);
         handleFinalEnd(oldPlayer2SocketId, oldPlayer1SocketId, 3, 0, room, roomName, io, fastify);
         return;
     }
     if (!player2StillInTournament) {
-        console.log(`🏆 Player 2 left, Player 1 wins by forfeit`);
         handleFinalEnd(oldPlayer1SocketId, oldPlayer2SocketId, 3, 0, room, roomName, io, fastify);
         return;
     }
@@ -828,19 +807,16 @@ function handleFinalEnd(
     const winnerName = room.tournamentState.playerUsernames[winnerId] || 'Player';
     const loserName = room.tournamentState.playerUsernames[loserId] || 'Player';
     
-    console.log(`🏆🏆🏆 Tournament COMPLETE - Champion: ${winnerName}`);
     
     // Send tournamentFinalFinished to the finalists to display the end screen
     // Only emit if the player is still in the tournament
     if (winnerId && room.tournamentState.playerUserIds[winnerId]) {
-        console.log(`📤 Sending tournamentFinalFinished to winner ${winnerId} (${winnerName})`);
         io.to(winnerId).emit('tournamentFinalFinished', {
             winner: { side: 'LEFT', score: winnerScore, username: winnerName },
             loser: { side: 'RIGHT', score: loserScore, username: loserName }
         });
     }
     if (loserId && room.tournamentState.playerUserIds[loserId]) {
-        console.log(`📤 Sending tournamentFinalFinished to loser ${loserId} (${loserName})`);
         io.to(loserId).emit('tournamentFinalFinished', {
             winner: { side: 'LEFT', score: winnerScore, username: winnerName },
             loser: { side: 'RIGHT', score: loserScore, username: loserName }
@@ -858,7 +834,6 @@ function handleFinalEnd(
     
     // Log who is in the room before emitting
     const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
-    console.log(`📢 tournamentComplete: Emitting to room ${roomName}. Sockets in room:`, socketsInRoom ? Array.from(socketsInRoom) : 'none');
     
     // Notify all players of the tournament end
     io.to(roomName).emit('tournamentComplete', {
@@ -874,10 +849,7 @@ function handleFinalEnd(
     if (winnerUserId && loserUserId) {
         try {
             updateUserStats(winnerUserId, loserUserId, winnerScore, loserScore, 'tournament');
-            console.log(`📊 Final recorded: ${winnerName} ${winnerScore}-${loserScore} ${loserName}`);
-        } catch (error) {
-            console.error('Error recording final stats:', error);
-        }
+        } catch (error) {}
     }
     
     // Clean up the room after a delay
@@ -928,7 +900,6 @@ export function cleanupUserFromTournaments(userId: number, socket: Socket): void
                  for (const [sid, uid] of Object.entries(r.tournamentState.playerUserIds)) {
                      if (uid === userId) {
                          found = true;
-                         console.log(`🧹 cleanupUserFromTournaments: Removing user ${userId} (socket ${sid}) from tournament ${rName}`);
                          delete r.tournamentState.playerUserIds[sid];
                          // Also remove from playerUsernames to be safe
                          if (r.tournamentState.playerUsernames && r.tournamentState.playerUsernames[sid]) {
@@ -941,7 +912,6 @@ export function cleanupUserFromTournaments(userId: number, socket: Socket): void
             
             // Force leave the socket.io room if the socket is in it
             // This prevents receiving broadcast messages like 'tournamentComplete'
-            console.log(`🚪 cleanupUserFromTournaments: socket.leave(${rName}) for socket ${socket.id}`);
             socket.leave(rName);
         }
     }
