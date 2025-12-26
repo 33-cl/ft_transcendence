@@ -50,11 +50,8 @@ export default async function oauthRoutes(app: FastifyInstance) {
         try {
         const token = await (app as any).google.getAccessTokenFromAuthorizationCodeFlow(request);
 
-        app.log.info({ tokenKeys: Object.keys(token), token }, 'Token received from Google');
-
         const accessToken = token.access_token || token.token?.access_token;
         if (!accessToken) {
-            app.log.error({ token }, 'No access_token found in token object');
             throw new Error('No access_token in response from Google');
         }
 
@@ -68,7 +65,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
         // Handle non-OK responses
         if (!userInfoResponse.ok) {
             const errorText = await userInfoResponse.text();
-            app.log.error({ errorText, status: userInfoResponse.status }, 'Failed to get user info from Google');
             throw new Error('Failed to retrieve user info from Google');
         }
 
@@ -79,8 +75,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
             picture: string;
         };
    
-        app.log.info({ userId: googleUser.id, email: googleUser.email }, 'Google user authenticated');
-
         // 1. Search by google_id
         let user = db.prepare(
             'SELECT * FROM users WHERE google_id = ?'
@@ -107,10 +101,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
                 // Email already taken → generate a unique email with google_id
                 // The user can change it in the settings
                 email = `google_${googleUser.id}@oauth.local`;
-                app.log.warn({ 
-                    originalEmail: googleUser.email, 
-                    generatedEmail: email 
-                }, 'Email already taken, using generated email. User can update in settings.');
             }
 
             const result = db.prepare(
@@ -119,7 +109,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
             ).run(username, email, googleUser.name, googleUser.picture, googleUser.id, 'google') as any;
 
             user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid) as any;
-            app.log.info({ userId: user.id, emailSet: !!email }, 'New user created via Google OAuth');
         } else {
             // 3. Existing Google user: update info
             db.prepare(
@@ -127,7 +116,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
                 SET display_name = ?, avatar_url = ?
                 WHERE id = ?`
             ).run(googleUser.name, googleUser.picture, user.id);
-            app.log.info({ userId: user.id }, 'Existing Google user reconnected');
         }
 
         // SECURITY: 2FA check if enabled for the user
@@ -140,8 +128,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
                 const twoFactorCode = generateTwoFactorCode();
                 storeTwoFactorCode(user.id, twoFactorCode, 5);
                 await sendTwoFactorEmail(user.email, user.username, twoFactorCode);
-
-                app.log.info({ userId: user.id }, '2FA enabled: code sent for OAuth verification');
 
                 // Temporarily store the user ID in a session
                 // To allow 2FA verification afterwards
@@ -175,7 +161,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
                     </html>
                 `);
             } catch (error) {
-                app.log.error(error, 'Error while sending 2FA code for OAuth');
                 return reply.type('text/html').send(`
                     <!DOCTYPE html>
                     <html>
@@ -242,8 +227,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
         `);
 
         } catch (err) {
-        app.log.error(err, 'Error during Google OAuth callback');
-        
         // Close Window and notify parent of error
         return reply.type('text/html').send(`
             <!DOCTYPE html>

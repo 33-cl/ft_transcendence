@@ -19,7 +19,6 @@ async function handleTournamentMatchEnd(
     {
         if (!room.matchId || !room.tournamentId)
         {
-            fastify.log.error('Tournament match end called without matchId or tournamentId');
             return;
         }
 
@@ -30,37 +29,30 @@ async function handleTournamentMatchEnd(
 
         if (!match)
         {
-            fastify.log.error(`Tournament match not found: ${room.matchId}`);
             return;
         }
 
         const { winnerSocketId } = findSocketIdsForWinnerAndLoser(room, winner, loser);
         if (!winnerSocketId)
         {
-            fastify.log.error('Could not determine winner socket');
             return;
         }
 
         const winnerUserId = room.playerUserIds?.[winnerSocketId];
         if (!winnerUserId)
         {
-            fastify.log.error(`Could not find userId for winner socket ${winnerSocketId}`);
             return;
         }
 
         if (winnerUserId !== match.player1_id && winnerUserId !== match.player2_id)
         {
-            fastify.log.error(`Winner userId ${winnerUserId} is not a participant of match ${room.matchId}`);
             return;
         }
 
         updateMatchResult(room.matchId, winnerUserId);
 
     }
-    catch (error)
-    {
-        fastify.log.error(`Error recording tournament match result: ${error}`);
-    }
+    catch (error){}
 }
 
 // Handle local or AI game end (no DB save)
