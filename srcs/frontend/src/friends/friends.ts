@@ -299,8 +299,6 @@ export async function spectateFreind(username: string): Promise<void>
                 alert('You can only spectate friends.');
             else if (response.status === 401)
                 alert('Authentication required. Please log in.');
-            else
-                console.warn('Error finding game: ' + (error.error || 'Unknown error'));
             return;
         }
 

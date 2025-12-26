@@ -137,7 +137,6 @@ export function setupGameEventListeners()
             // Ignore if not in tournament mode (player left tournament and is in another game)
             if (!window.isTournamentMode)
             {
-                console.log('Ignoring tournamentSemifinalFinished - not in tournament mode');
                 return;
             }
             
@@ -163,7 +162,6 @@ export function setupGameEventListeners()
             // Ignore if not in tournament mode (player left tournament and is in another game)
             if (!window.isTournamentMode)
             {
-                console.log('Ignoring tournamentFinalFinished - not in tournament mode');
                 return;
             }
             

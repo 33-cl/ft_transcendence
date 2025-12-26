@@ -100,8 +100,6 @@ export default async function avatarProxyRoutes(fastify: FastifyInstance) {
       return reply.send(imageData.data);
 
     } catch (error) {
-      console.error('Failed to fetch avatar:', error);
-      // Return a default image or an error
       return reply.status(502).send({ error: 'Failed to fetch avatar' });
     }
   });

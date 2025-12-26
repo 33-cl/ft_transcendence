@@ -103,7 +103,6 @@ export function guardFunction<T extends (...args: any[]) => any>(
         // Immediately reject execution if the session is blocked in this tab.
         if (isSessionBlocked())
         {
-            console.trace('Call stack:');
             return Promise.reject(new Error(`Action blocked: This tab does not have an active session`));
         }
 
@@ -198,7 +197,6 @@ export function installSocketGuard()
 
     if (!socket)
     {
-        console.warn('Socket not found, will retry socket guard installation later');
         return false;
     }
 

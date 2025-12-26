@@ -4,7 +4,6 @@
 
 
 export default async function renderTournamentDetail(_tournamentId: string): Promise<void> {
-    console.warn('Tournament detail view has been removed.');
     // Optionally, navigate back to main menu if called
     try {
         const module = await import('../navigation/utils.js');

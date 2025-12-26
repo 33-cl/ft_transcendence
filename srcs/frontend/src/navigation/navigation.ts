@@ -160,9 +160,7 @@ export function setupPopStateHandler(): void
                     (window as any).socket.emit('leaveAllRooms');
                     await new Promise(res => setTimeout(res, 500));
                 }
-            } catch (err) {
-                console.warn('Error during popstate game cleanup:', err);
-            }
+            } catch (err) {}
         }
 
         // Enforce authentication: redirect unauthenticated users to sign-in, unless accessing public pages or the 404 page.

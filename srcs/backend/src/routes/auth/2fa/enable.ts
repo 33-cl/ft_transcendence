@@ -53,7 +53,6 @@ export async function enable2FARoute(request: FastifyRequest, reply: FastifyRepl
       message: 'A verification code has been sent to your email. Please check your inbox.' 
     });
   } catch (error) {
-    console.error('Error sending 2FA verification code:', error);
     return reply.status(500).send({ error: 'Failed to send verification code. Please try again later.' });
   }
 }

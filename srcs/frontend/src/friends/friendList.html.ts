@@ -44,10 +44,7 @@ export async function friendListHTML()
                 friendRequestsCount = (requestsData.requests || []).length;
             }
         }
-        catch (error)
-        {
-            console.warn('Could not fetch friend requests count:', error);
-        }
+        catch (error){}
 
         let userItems = '';
 
@@ -120,10 +117,7 @@ export async function friendListHTML()
                 friendRequestsCount = (requestsData.requests || []).length;
             }
         }
-        catch (err)
-        {
-            console.warn('Could not fetch friend requests count in error handler:', err);
-        }
+        catch (err){}
 
         const requestsBadge = friendRequestsCount > 0
             ? `<span class="friend-requests-badge">${friendRequestsCount}</span>`

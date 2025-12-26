@@ -78,12 +78,10 @@ export function setupTournamentListeners()
     
     socket.on('tournamentComplete', (data: any) =>
     {
-        console.log(`🔔 Received tournamentComplete event. isTournamentMode=${window.isTournamentMode}`, data);
         
         // Ignore if not in tournament mode (player left tournament and is in another game)
         if (!window.isTournamentMode)
         {
-            console.log('Ignoring tournamentComplete - not in tournament mode');
             return;
         }
         

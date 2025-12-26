@@ -172,10 +172,7 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
             {
                 await window.leaveCurrentRoomAsync();
             }
-            catch (error)
-            {
-                console.warn('Room cleanup on navigation failed:', error);
-            }
+            catch (error){}
         }
     }
     else if (goingToGame)
@@ -189,7 +186,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     // Abort if a newer navigation request was initiated during processing.
     if (myLoadId !== currentLoadId)
     {
-        console.warn(`load('${pageName}') aborted: newer load started`);
         return;
     }
 
@@ -456,7 +452,6 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     else if (pageName === 'tournaments')
     {
         // Tournaments listing page has been removed; redirect to main menu
-        console.warn('Tournaments page removed; redirecting to main menu.');
         await load('mainMenu');
     }
     else if (pageName === 'gameFinished')
@@ -478,12 +473,10 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
     else if (pageName.startsWith('tournaments/'))
     {
         // Tournament detail pages removed — redirect to main menu
-        console.warn('Tournament detail page removed; redirecting to main menu.');
         await load('mainMenu');
     }
     else
     {
-        console.warn(`Page ${pageName} not found`);
         await show('notFound');
     }
 

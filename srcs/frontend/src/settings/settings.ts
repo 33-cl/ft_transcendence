@@ -43,7 +43,6 @@ async function updateProfile(profileData: {
     }
     catch (error)
     {
-        console.error('Profile update error:', error);
         return { ok: false, error: 'Network error' };
     }
 }

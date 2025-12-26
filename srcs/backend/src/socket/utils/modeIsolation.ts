@@ -143,9 +143,3 @@ export function isTournamentRoom(roomName: string): boolean
     const room = rooms[roomName];
     return room ? !!room.tournamentId : roomName.startsWith('tournament-');
 }
-
-// Cleanup user isolation state on disconnect
-export function cleanupUserIsolationState(userId: number): void
-{
-    console.log(`[Isolation] Cleanup state for user ${userId}`);
-}
