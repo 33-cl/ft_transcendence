@@ -64,10 +64,13 @@ export function rulesHTML() {
         <p class="rules-line spaced">Your paddle: <span class="rules-key">ArrowUp</span> / <span class="rules-key">ArrowDown</span></p>
     `;
 
-    const rulesCommon = /*html*/`
+    const rulesCommonBase = /*html*/`
         <p class="rules-line">First to 3 points wins.</p>
         <p class="rules-line">A point is scored when half of the ball crosses the border.</p>
         <p class="rules-line">If the ball exits your side, your opponent scores.</p>
+    `;
+
+    const rules4Player = /*html*/`
         <p class="rules-line">In 4-player mode: The last player to touch the ball gets the point.</p>
     `;
 
@@ -83,8 +86,8 @@ export function rulesHTML() {
         : controlsAll;
 
     const rulesHtml =
-        ctx === 'tournament' ? `${rulesCommon}${rulesTournament}`
-        : rulesCommon;
+        ctx === 'tournament' ? `${rulesCommonBase}${rulesTournament}`
+        : `${rulesCommonBase}${rules4Player}`;
 
     return /*html*/`
         <div class="rules-overlay">
