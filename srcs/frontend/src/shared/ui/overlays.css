@@ -1,5 +1,5 @@
 @layer components {
-    /* Session Disconnected Overlay - Style sobre et minimaliste */
+    /* Session Disconnected Overlay - Simple and minimalistic style */
     .session-overlay {
         @apply fixed inset-0 z-[9999];
         @apply flex items-center justify-center;
@@ -26,7 +26,7 @@
         line-height: 1.8;
     }
     
-    /* Game Finished Overlay - Style sobre inspiré de session-overlay */
+    /* Game Finished Overlay - Simple style inspired by session-overlay */
     .game-finished-overlay {
         @apply fixed inset-0 z-[60];
         @apply flex items-center justify-center;
@@ -52,13 +52,13 @@
         @apply italic;
     }
 
-    /* Layout spécifique pour parties locales/IA */
+    /* Layout specific for local/AI games */
     .game-finished-local-result {
         @apply flex flex-col items-center justify-center mb-8;
         @apply w-full;
     }
 
-    /* Layout spécifique pour parties 4 joueurs */
+    /* Layout specific for 4-player games */
     .game-finished-4player-result {
         @apply flex flex-col items-center justify-center mb-8;
         @apply w-full;

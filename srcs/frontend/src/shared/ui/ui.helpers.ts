@@ -1,33 +1,33 @@
 /**
  * UI Helper utilities
- * Fonctions pour gérer l'interface utilisateur (messages, inputs, etc.)
+ * Functions to manage the user interface (messages, inputs, etc.)
  */
 
 /**
- * Récupère un élément input par son ID
+ * Get an input element by its ID
  */
 export function getInputElement(id: string): HTMLInputElement | null {
     return document.getElementById(id) as HTMLInputElement | null;
 }
 
 /**
- * Recupere la valeur d'un input sans white spaces au debut/fin
+ * Get the value of an input without leading/trailing white spaces
  */
 export function getInputValue(id: string): string {
     return getInputElement(id)?.value?.trim() || '';
 }
 
 /**
- * Recupere la valeur d'un input password 
+ * Get the value of a password input
  */
 export function getPasswordValue(id: string): string {
     return getInputElement(id)?.value || '';
 }
 
 /**
- * Crée ou récupère un élément de message pour afficher des erreurs/succès
- * @param messageId - ID de l'élément de message
- * @param buttonId - ID du bouton parent (pour insérer le message à côté)
+ * Create or get a message element to display errors/success
+ * @param messageId - ID of the message element
+ * @param buttonId - ID of the parent button (to insert the message next to it)
  */
 export function ensureMessageElement(messageId: string, buttonId: string): HTMLElement {
     let el = document.getElementById(messageId);
@@ -42,7 +42,7 @@ export function ensureMessageElement(messageId: string, buttonId: string): HTMLE
 }
 
 /**
- * Affiche un message de succès (vert)
+ * Show a success message (green)
  */
 export function showSuccessMessage(element: HTMLElement, message: string): void {
     element.textContent = message;
@@ -50,7 +50,7 @@ export function showSuccessMessage(element: HTMLElement, message: string): void 
 }
 
 /**
- * Affiche un message d'erreur (orange)
+ * Show an error message (red)
  */
 export function showErrorMessage(element: HTMLElement, message: string): void {
     element.textContent = message;
@@ -59,7 +59,7 @@ export function showErrorMessage(element: HTMLElement, message: string): void {
 }
 
 /**
- * Affiche un message d'erreur critique (rouge)
+ * Show a critical error message (red)
  */
 export function showCriticalError(element: HTMLElement, message: string): void {
     element.textContent = message;
@@ -68,9 +68,9 @@ export function showCriticalError(element: HTMLElement, message: string): void {
 }
 
 /**
- * Ajoute un event listener pour la touche Entrée sur un input
- * @param inputId - ID de l'input
- * @param callback - Fonction à appeler quand Entrée est pressée
+ * Add an event listener for the Enter key on an input
+ * @param inputId - ID of the input
+ * @param callback - Function to call when Enter is pressed
  */
 export function addEnterKeyListener(inputId: string, callback: () => void): void {
     const input = getInputElement(inputId);
@@ -86,7 +86,7 @@ export function addEnterKeyListener(inputId: string, callback: () => void): void
 }
 
 /**
- * Ajoute des listeners Entrée sur plusieurs inputs
+ * Add Enter key listeners to multiple inputs
  */
 export function addEnterKeyListeners(inputIds: string[], callback: () => void): void {
     inputIds.forEach(inputId => addEnterKeyListener(inputId, callback));

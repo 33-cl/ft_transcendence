@@ -10,21 +10,21 @@
     }
 
     .settings-row {
-        @apply flex items-center justify-between mb-6; /* Alignement et espacement */
-        @apply w-full max-w-xl; /* Largeur maximale */
+        @apply flex items-center justify-between mb-6; /* Alignment and spacing */
+        @apply w-full max-w-xl; /* Maximum width */
     }
 
     .settings-label {
-        @apply text-xl mr-4; /* Taille du texte et marge */
-        @apply flex-shrink-0; /* Empêche le rétrécissement */
-        @apply w-40 text-left; /* Largeur fixe et alignement */
+        @apply text-xl mr-4; /* Text size and margin */
+        @apply flex-shrink-0; /* Prevent shrinking */
+        @apply w-40 text-left; /* Fixed width and alignment */
     }
 
     #settings-form input {
-        @apply w-64 text-right; /* Largeur et alignement du texte */
+        @apply w-64 text-right; /* Width and text alignment */
         @apply caret-transparent bg-transparent border-none outline-none;
         @apply focus:ring-0 focus:outline-none focus:border-none;
-        @apply border-b-2 border-white; /* Ligne sous le texte */
+        @apply border-b-2 border-white; /* Underline */
     }
 
     #settings-form input::placeholder {
@@ -40,11 +40,11 @@
     }
 
     #avatar-buttons {
-        @apply text-right w-64; /* Alignement à droite avec largeur */
+        @apply text-right w-64; /* Right alignment with width */
     }
 
     #settings-buttons {
-        @apply text-xl flex justify-center gap-16; /* Augmentation de l'espace entre les boutons */
+        @apply text-xl flex justify-center gap-16; /* Increase space between buttons */
     }
 
     #settings-buttons button {

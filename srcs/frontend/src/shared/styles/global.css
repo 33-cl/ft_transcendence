@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-    /* Sélection de texte en gris */
+    /* Text selection in gray */
     ::selection {
         @apply bg-gray-500 text-white;
     }
@@ -13,7 +13,7 @@
     }
 
     /* Custom scrollbar styling - Global */
-    /* Scrollbar invisible par défaut, visible au survol */
+    /* Scrollbar invisible by default, visible on hover */
     ::-webkit-scrollbar {
         @apply w-2;
     }
@@ -26,7 +26,7 @@
         @apply bg-transparent rounded-full transition-colors duration-300;
     }
 
-    /* Afficher la scrollbar au survol du conteneur */
+    /* Show scrollbar when hovering the container */
     *:hover::-webkit-scrollbar-thumb {
         @apply bg-white;
     }
@@ -45,7 +45,7 @@
         scrollbar-color: white transparent;
     }
 
-    /* Permettre le clic sur les scrollbars même si le parent est en pointer-events: none */
+    /* Allow clicking on scrollbars even if parent has pointer-events: none */
     *::-webkit-scrollbar {
         pointer-events: auto;
     }
@@ -98,7 +98,7 @@
         @apply pointer-events-auto;
     }
 
-    /* Boutons désactivés - Style global */
+    /* Disabled buttons - Global style */
     button:disabled {
         @apply opacity-50 cursor-not-allowed;
     }
@@ -108,15 +108,15 @@
     }
 }
 
-/* Animations globales */
+/* Global animations */
 @layer utilities {
-    /* Animations pour pulse-badge */
+    /* Animations for pulse-badge */
     @keyframes pulse-badge {
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.1); }
     }
 
-    /* Animations pour pong loading icon */
+    /* Animations for pong loading icon */
     @keyframes pong-rotate {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
@@ -139,7 +139,7 @@
         to { opacity: 1; }
     }
 
-    /* Classes utilitaires pour les animations */
+    /* Utility classes for animations */
     .pong-rotate {
         animation: pong-rotate 2s linear infinite;
     }
