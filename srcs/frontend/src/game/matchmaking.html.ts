@@ -14,6 +14,13 @@ export const matchmakingHTML = /*html*/`
 let dotsIntervalId: number | null = null;
 let tipsIntervalId: number | null = null;
 
+export function stopAnimateDots() {
+    if (dotsIntervalId !== null) {
+        clearInterval(dotsIntervalId);
+        dotsIntervalId = null;
+    }
+}
+
 export function updateMatchmakingForTournament() {
     const title = document.getElementById('matchmakingTitle');
     const searchText = document.getElementById('searchingText');
@@ -23,6 +30,7 @@ export function updateMatchmakingForTournament() {
 }
 
 export function updateTournamentWaiting(message: string) {
+    stopAnimateDots();
     const searchText = document.getElementById('searchingText');
     
     if (searchText) searchText.textContent = message;
@@ -38,7 +46,7 @@ export function animateDots() {
     const p = document.getElementById('searchingText');
     if (!p) return;
   
-    const baseText = "Searching for an opponent";
+    const baseText = window.isTournamentMode ? "Waiting for players" : "Searching for an opponent";
     const dotStates = [
         ".. ",
         ".  ",
