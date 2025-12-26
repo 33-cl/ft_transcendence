@@ -16,6 +16,8 @@ export function setupTournamentListeners()
 
     socket.on('tournamentStart', (_data: any) =>
     {
+        if (!window.isTournamentMode) return;
+        
         load('matchmaking');
         setTimeout(() =>
         {
@@ -25,6 +27,8 @@ export function setupTournamentListeners()
     
     socket.on('tournamentUpdate', (data: any) =>
     {
+        if (!window.isTournamentMode) return;
+        
         if (data.phase === 'semifinal1' || data.phase === 'semifinal2' || data.phase === 'final')
             updateTournamentWaiting(data.message || 'Match starting...');
         else if (data.phase?.includes('complete'))
@@ -39,6 +43,8 @@ export function setupTournamentListeners()
     
     socket.on('tournamentSpectator', (data: any) =>
     {
+        if (!window.isTournamentMode) return;
+        
         load('matchmaking');
         setTimeout(() =>
         {
@@ -53,6 +59,8 @@ export function setupTournamentListeners()
     {
         socket.on('otherSemifinalUpdate', (data: any) =>
         {
+            if (!window.isTournamentMode) return;
+            
             const waitingText = document.getElementById('other-semifinal-waiting-text') || document.querySelector('.waiting-text');
             if (waitingText)
             {
@@ -70,6 +78,15 @@ export function setupTournamentListeners()
     
     socket.on('tournamentComplete', (data: any) =>
     {
+        console.log(`🔔 Received tournamentComplete event. isTournamentMode=${window.isTournamentMode}`, data);
+        
+        // Ignore if not in tournament mode (player left tournament and is in another game)
+        if (!window.isTournamentMode)
+        {
+            console.log('Ignoring tournamentComplete - not in tournament mode');
+            return;
+        }
+        
         window.isTournamentMode = false;
         alert(`🏆 Tournament Champion: ${data.winner}!`);
         load('mainMenu');

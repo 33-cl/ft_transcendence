@@ -374,30 +374,39 @@ function handleSemifinalEnd(
     }
     
     // Send tournamentSemifinalFinished to the players of this semifinal to display the end screen
-    io.to(semifinal.player1).emit('tournamentSemifinalFinished', {
-        winner: { side: winner.side, score: winnerScore, username: winnerName },
-        loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
-        semifinalNumber,
-        otherSemifinal: otherSemifinalInfo
-    });
-    io.to(semifinal.player2).emit('tournamentSemifinalFinished', {
-        winner: { side: winner.side, score: winnerScore, username: winnerName },
-        loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
-        semifinalNumber,
-        otherSemifinal: otherSemifinalInfo
-    });
+    // Only emit if the player is still in the tournament (check playerUserIds)
+    if (semifinal.player1 && state.playerUserIds[semifinal.player1]) {
+        io.to(semifinal.player1).emit('tournamentSemifinalFinished', {
+            winner: { side: winner.side, score: winnerScore, username: winnerName },
+            loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
+            semifinalNumber,
+            otherSemifinal: otherSemifinalInfo
+        });
+    }
+    if (semifinal.player2 && state.playerUserIds[semifinal.player2]) {
+        io.to(semifinal.player2).emit('tournamentSemifinalFinished', {
+            winner: { side: winner.side, score: winnerScore, username: winnerName },
+            loser: { side: winner.side === 'LEFT' ? 'RIGHT' : 'LEFT', score: loserScore, username: loserName },
+            semifinalNumber,
+            otherSemifinal: otherSemifinalInfo
+        });
+    }
     
     // Notify the players of this semifinal via tournamentUpdate also
-    io.to(semifinal.player1).emit('tournamentUpdate', {
-        phase: `semifinal${semifinalNumber}_complete`,
-        message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
-        winner: winnerName
-    });
-    io.to(semifinal.player2).emit('tournamentUpdate', {
-        phase: `semifinal${semifinalNumber}_complete`,
-        message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
-        winner: winnerName
-    });
+    if (semifinal.player1 && state.playerUserIds[semifinal.player1]) {
+        io.to(semifinal.player1).emit('tournamentUpdate', {
+            phase: `semifinal${semifinalNumber}_complete`,
+            message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
+            winner: winnerName
+        });
+    }
+    if (semifinal.player2 && state.playerUserIds[semifinal.player2]) {
+        io.to(semifinal.player2).emit('tournamentUpdate', {
+            phase: `semifinal${semifinalNumber}_complete`,
+            message: `Semi-final ${semifinalNumber} complete! Winner: ${winnerName}`,
+            winner: winnerName
+        });
+    }
     
     // Check if both semifinals are finished
     if (state.semifinal1?.finished && state.semifinal2?.finished) {
@@ -659,6 +668,31 @@ function startFinal(
     const player1UserId = state.playerUserIds[oldPlayer1SocketId];
     const player2UserId = state.playerUserIds[oldPlayer2SocketId];
     
+    // Check if players are still in the tournament (they may have left during waiting)
+    const player1StillInTournament = player1UserId !== undefined;
+    const player2StillInTournament = player2UserId !== undefined;
+    
+    console.log(`🏁 startFinal: player1 (${oldPlayer1SocketId}) in tournament: ${player1StillInTournament}, player2 (${oldPlayer2SocketId}) in tournament: ${player2StillInTournament}`);
+    
+    // If both players left, cancel the final
+    if (!player1StillInTournament && !player2StillInTournament) {
+        console.log('❌ Both finalists left the tournament, cancelling final');
+        state.phase = 'completed';
+        return;
+    }
+    
+    // If one player left, the other wins by forfeit
+    if (!player1StillInTournament) {
+        console.log(`🏆 Player 1 left, Player 2 wins by forfeit`);
+        handleFinalEnd(oldPlayer2SocketId, oldPlayer1SocketId, 3, 0, room, roomName, io, fastify);
+        return;
+    }
+    if (!player2StillInTournament) {
+        console.log(`🏆 Player 2 left, Player 1 wins by forfeit`);
+        handleFinalEnd(oldPlayer1SocketId, oldPlayer2SocketId, 3, 0, room, roomName, io, fastify);
+        return;
+    }
+    
     // Retrieve CURRENT socket IDs (may have changed if the player reconnected)
     const player1CurrentSocketId = getSocketIdForUser(player1UserId) || oldPlayer1SocketId;
     const player2CurrentSocketId = getSocketIdForUser(player2UserId) || oldPlayer2SocketId;
@@ -797,16 +831,21 @@ function handleFinalEnd(
     console.log(`🏆🏆🏆 Tournament COMPLETE - Champion: ${winnerName}`);
     
     // Send tournamentFinalFinished to the finalists to display the end screen
-    console.log(`📤 Sending tournamentFinalFinished to winner ${winnerId} (${winnerName})`);
-    io.to(winnerId).emit('tournamentFinalFinished', {
-        winner: { side: 'LEFT', score: winnerScore, username: winnerName },
-        loser: { side: 'RIGHT', score: loserScore, username: loserName }
-    });
-    console.log(`📤 Sending tournamentFinalFinished to loser ${loserId} (${loserName})`);
-    io.to(loserId).emit('tournamentFinalFinished', {
-        winner: { side: 'LEFT', score: winnerScore, username: winnerName },
-        loser: { side: 'RIGHT', score: loserScore, username: loserName }
-    });
+    // Only emit if the player is still in the tournament
+    if (winnerId && room.tournamentState.playerUserIds[winnerId]) {
+        console.log(`📤 Sending tournamentFinalFinished to winner ${winnerId} (${winnerName})`);
+        io.to(winnerId).emit('tournamentFinalFinished', {
+            winner: { side: 'LEFT', score: winnerScore, username: winnerName },
+            loser: { side: 'RIGHT', score: loserScore, username: loserName }
+        });
+    }
+    if (loserId && room.tournamentState.playerUserIds[loserId]) {
+        console.log(`📤 Sending tournamentFinalFinished to loser ${loserId} (${loserName})`);
+        io.to(loserId).emit('tournamentFinalFinished', {
+            winner: { side: 'LEFT', score: winnerScore, username: winnerName },
+            loser: { side: 'RIGHT', score: loserScore, username: loserName }
+        });
+    }
 
     // The match is over: stop and remove pongGame to not leave players "in-game"
     if (room.pongGame) {
@@ -816,6 +855,10 @@ function handleFinalEnd(
 
     // Immediately reset statuses to "online" for friends
     notifyFriendsGameEnded(room, fastify);
+    
+    // Log who is in the room before emitting
+    const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+    console.log(`📢 tournamentComplete: Emitting to room ${roomName}. Sockets in room:`, socketsInRoom ? Array.from(socketsInRoom) : 'none');
     
     // Notify all players of the tournament end
     io.to(roomName).emit('tournamentComplete', {
@@ -885,6 +928,7 @@ export function cleanupUserFromTournaments(userId: number, socket: Socket): void
                  for (const [sid, uid] of Object.entries(r.tournamentState.playerUserIds)) {
                      if (uid === userId) {
                          found = true;
+                         console.log(`🧹 cleanupUserFromTournaments: Removing user ${userId} (socket ${sid}) from tournament ${rName}`);
                          delete r.tournamentState.playerUserIds[sid];
                          // Also remove from playerUsernames to be safe
                          if (r.tournamentState.playerUsernames && r.tournamentState.playerUsernames[sid]) {
@@ -897,6 +941,7 @@ export function cleanupUserFromTournaments(userId: number, socket: Socket): void
             
             // Force leave the socket.io room if the socket is in it
             // This prevents receiving broadcast messages like 'tournamentComplete'
+            console.log(`🚪 cleanupUserFromTournaments: socket.leave(${rName}) for socket ${socket.id}`);
             socket.leave(rName);
         }
     }

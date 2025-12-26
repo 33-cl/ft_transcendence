@@ -133,8 +133,22 @@ export function setupGameEventListeners()
         socket.on('tournamentSemifinalFinished', (data: any) =>
         {
             setTournamentSemifinalFinishedListenerActive(true);
+            
+            // Ignore if not in tournament mode (player left tournament and is in another game)
+            if (!window.isTournamentMode)
+            {
+                console.log('Ignoring tournamentSemifinalFinished - not in tournament mode');
+                return;
+            }
+            
+            // Ignore if player is navigating away
+            if (window.isNavigatingAwayFromGame)
+            {
+                window.isNavigatingAwayFromGame = false;
+                return;
+            }
+            
             setIsWaitingForTournamentFinal(true);
-            window.isNavigatingAwayFromGame = false;
             cleanupGameState();
             load('tournamentSemifinalFinished', data);
         });
@@ -145,7 +159,21 @@ export function setupGameEventListeners()
         socket.on('tournamentFinalFinished', (data: any) =>
         {
             setTournamentFinalFinishedListenerActive(true);
-            window.isNavigatingAwayFromGame = false;
+            
+            // Ignore if not in tournament mode (player left tournament and is in another game)
+            if (!window.isTournamentMode)
+            {
+                console.log('Ignoring tournamentFinalFinished - not in tournament mode');
+                return;
+            }
+            
+            // Ignore if player is navigating away
+            if (window.isNavigatingAwayFromGame)
+            {
+                window.isNavigatingAwayFromGame = false;
+                return;
+            }
+            
             cleanupGameState();
             load('tournamentFinalFinished', data);
         });

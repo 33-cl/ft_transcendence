@@ -270,6 +270,7 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
         }
         
         // Leave the room BEFORE emitting forfeit events so the leaving player doesn't receive gameFinished
+        console.log(`🚪 handleLeaveAllRooms: socket ${socket.id} leaving room ${previousRoom}`);
         socket.leave(previousRoom);
         
         if ((room as any).isTournament && (room as any).tournamentState)
