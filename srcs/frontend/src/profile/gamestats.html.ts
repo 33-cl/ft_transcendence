@@ -26,12 +26,13 @@ export function gameStatsHTML(match: MatchData, _currentUserId: number): string 
     
     // Format the date
     const matchDate = new Date(match.created_at);
+    matchDate.setHours(matchDate.getHours() + 1); // Add 1 hour to fix timezone offset
     const formattedDate = matchDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
     });
     
     // Calculate statistics
