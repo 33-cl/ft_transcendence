@@ -68,6 +68,7 @@ export function rulesHTML() {
         <p class="rules-line">First to 3 points wins.</p>
         <p class="rules-line">A point is scored when half of the ball crosses the border.</p>
         <p class="rules-line">If the ball exits your side, your opponent scores.</p>
+        <p class="rules-line" style="color: #fbbf24;">In 4-player mode: The last player to touch the ball gets the point.</p>
     `;
 
     const rulesTournament = /*html*/`

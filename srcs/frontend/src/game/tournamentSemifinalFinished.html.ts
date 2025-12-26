@@ -1,7 +1,6 @@
 export const tournamentSemifinalFinishedHTML = (data?: any) => {
     const winner = data?.winner;
     const loser = data?.loser;
-    const semifinalNumber = data?.semifinalNumber || 1;
     const otherSemifinal = data?.otherSemifinal;
 
     const winnerName = winner?.username || 'Winner';
