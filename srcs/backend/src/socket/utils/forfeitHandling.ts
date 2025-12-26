@@ -144,14 +144,16 @@ export function notifyGameForfeit(
     io: Server,
     roomName: string,
     winner: { side: string; score: number; username: string },
-    loser: { side: string; score: number; username: string }
+    loser: { side: string; score: number; username: string },
+    numPlayers: number = 2
 ): void
 {
     io.to(roomName).emit('gameFinished', {
         winner,
         loser,
         forfeit: true,
-        forfeitMessage: `${loser.username} a quitté la partie - Victoire par forfait !`
+        forfeitMessage: `${loser.username} a quitté la partie - Victoire par forfait !`,
+        numPlayers
     });
 }
 
@@ -258,7 +260,7 @@ export function handleForfeit(
         username: disconnectedPlayer.username
     };
     
-    notifyGameForfeit(io, roomName, winner, loser);
+    notifyGameForfeit(io, roomName, winner, loser, numPlayers);
     
     notifyFriendsForfeit(
         globalIo,
