@@ -29,7 +29,7 @@ import {
 import { broadcastUserStatusChange } from '../notificationHandlers.js';
 import { getGlobalIo } from '../socketHandlers.js';
 import { handleGameEnd } from './gameEndHandlers.js';
-import { startTournament } from './tournamentHandlers.js';
+import { startTournament, cleanupUserFromTournaments } from './tournamentHandlers.js';
 import { canSocketJoinOnlineGame, isTournamentRoom } from '../utils/modeIsolation.js';
 
 // Check if client can join room (valid name and room exists)
@@ -311,6 +311,14 @@ export async function handleJoinRoom(
         if (!validateRoomAccess(socket, roomName, room, params, fastify))
             return;
         
+        // If joining a non-tournament room, ensure we are not linked to any active tournament
+        if (!room.isTournament) {
+             const user = getSocketUser(socket.id);
+             if (user) {
+                 cleanupUserFromTournaments(user.id, socket);
+             }
+        }
+
         joinPlayerToRoom(socket, roomName, room, io);
         
         if (!params.isLocalGame)

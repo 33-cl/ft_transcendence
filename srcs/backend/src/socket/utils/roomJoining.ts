@@ -52,7 +52,7 @@ export function cleanupPreviousRoom(socket: Socket): void
         if (oldRoom && oldRoom.paddleBySocket)
             delete oldRoom.paddleBySocket[socket.id];
         
-        removePlayerFromRoom(socket.id);
+        removePlayerFromRoom(socket.id, true);
         socket.leave(previousRoom);
     }
 }

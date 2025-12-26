@@ -84,6 +84,7 @@ declare global
         resetPongRenderer: () => void;
         draw: (gameState: GameState) => void;
         cleanupPongControls: () => void;
+        cleanupTournamentListeners: () => void;
         applyCanvasRotation: (paddle: string | null, canvasId?: string) => void;
         resetCanvasRotation: (canvasId?: string) => void;
 

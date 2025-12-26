@@ -146,6 +146,7 @@ function initializeComponents(): void
                 
                 window.currentTournamentId = null;
                 window.currentMatchId = null;
+                window.isTournamentMode = false;
                 
                 // Ensure proper asynchronous room cleanup before proceeding to prevent state leaks
                 if (window.socket && window.leaveCurrentRoomAsync)
@@ -172,6 +173,7 @@ function initializeComponents(): void
                    if (target.id === 'backToTournamentBtn')
                    {
                        window.currentMatchId = null;
+                       window.isTournamentMode = false;
                        cleanupGameState();
                        await load('mainMenu');
                    }

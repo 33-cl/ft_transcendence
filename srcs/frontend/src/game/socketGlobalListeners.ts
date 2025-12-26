@@ -63,11 +63,11 @@ export function setupGlobalSocketListeners()
             
             if (window.isLocalGame)
             {
-                if (data.maxPlayers === 4)
-                    load('game4');
-                else if (data.maxPlayers === 3)
-                    load('game3');
-                else
+                // if (data.maxPlayers === 4)
+                //     load('game4');
+                // else if (data.maxPlayers === 3)
+                //     load('game3');
+                // else
                     load('game');
                 return;
             }

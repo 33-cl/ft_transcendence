@@ -286,7 +286,7 @@ function handleLeaveAllRooms(socket: Socket, fastify: FastifyInstance, io: Serve
         }
         
         cleanupPaddleAssignments(room, socket.id);
-        removePlayerFromRoom(socket.id);
+        removePlayerFromRoom(socket.id, true);
         socket.leave(previousRoom);
     }
     

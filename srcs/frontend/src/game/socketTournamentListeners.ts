@@ -104,3 +104,21 @@ export function setupTournamentListeners()
     
     setTournamentListenersSet(true);
 }
+
+export function cleanupTournamentListeners()
+{
+    if (!tournamentListenersSet)
+        return;
+
+    socket.off('tournamentStart');
+    socket.off('tournamentUpdate');
+    socket.off('tournamentSpectator');
+    socket.off('otherSemifinalUpdate');
+    socket.off('tournamentFinalStart');
+    socket.off('tournamentComplete');
+
+    setTournamentListenersSet(false);
+    setOtherSemifinalUpdateListenerSet(false);
+}
+
+window.cleanupTournamentListeners = cleanupTournamentListeners;

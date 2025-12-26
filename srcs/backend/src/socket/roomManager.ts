@@ -39,7 +39,7 @@ export function addPlayerToRoom(roomName: string, socketId: string): boolean
 	return false;
 }
 
-export function removePlayerFromRoom(socketId: string): void
+export function removePlayerFromRoom(socketId: string, force: boolean = false): void
 {
 	let playerRoom: string | null = null;
 	for (const roomName in rooms)
@@ -55,7 +55,7 @@ export function removePlayerFromRoom(socketId: string): void
 		const room = rooms[playerRoom];
 		const typedRoom = room as any;
 		
-		if (typedRoom.isTournament && typedRoom.tournamentState)
+		if (!force && typedRoom.isTournament && typedRoom.tournamentState)
 		{
 			const phase = typedRoom.tournamentState.phase;
 			const state = typedRoom.tournamentState;
@@ -86,7 +86,17 @@ export function removePlayerFromRoom(socketId: string): void
 			delete room.paddleBySocket[socketId];
 		
 		if (room.players.length === 0)
-			delete rooms[playerRoom];
+		{
+			// Do not delete the room if it is an active tournament
+			if (typedRoom.isTournament && typedRoom.tournamentState && typedRoom.tournamentState.phase !== 'completed')
+			{
+				// Keep the room alive for the tournament logic to proceed (e.g. startFinal)
+			}
+			else
+			{
+				delete rooms[playerRoom];
+			}
+		}
 	}
 }
 
@@ -119,7 +129,9 @@ export function isUserInGame(socketId: string): boolean
     return false;
   
   const room = rooms[playerRoom];
-	return room.players.length >= 2 && !!room.pongGame && room.pongGame.state?.running === true;
+  // If the room has a pongGame instance, consider the user "in game" regardless of running state
+  // This covers the initialization phase, countdown, etc.
+  return room.players.length >= 2 && !!room.pongGame;
 }
 
 export function isUsernameInGame(username: string, excludeTournaments: boolean = false): boolean

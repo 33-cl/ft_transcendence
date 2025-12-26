@@ -159,6 +159,9 @@ async function load(pageName: string, data?: any, updateHistory: boolean = true)
 
     if (wasInGame && !goingToGame)
     {
+        if (window.cleanupTournamentListeners)
+            window.cleanupTournamentListeners();
+
         // Pour les matchs de tournoi, ne pas ignorer les événements de fin de partie
         // car le forfait doit être affiché au joueur
         const isTournamentMatch = !!window.currentTournamentId || !!window.currentMatchId;

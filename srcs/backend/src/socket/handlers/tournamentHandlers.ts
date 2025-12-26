@@ -3,7 +3,7 @@
 import { Server, Socket } from 'socket.io';
 import { FastifyInstance } from 'fastify';
 import { RoomType, TournamentState } from '../../types.js';
-import { rooms } from '../roomManager.js';
+import { rooms, addPlayerToRoom, removePlayerFromRoom, isUserInGame } from '../roomManager.js';
 import { PongGame } from '../../../game/pongGame.js';
 import { updateUserStats } from '../../user.js';
 import { getGlobalIo } from '../socketHandlers.js';
@@ -473,6 +473,11 @@ export function processTournamentStateForfeit(
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
             const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
             notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
+            
+            // Remove the loser from the tournament state to prevent future notifications
+            if (state.playerUserIds && state.playerUserIds[disconnectedSocketId]) {
+                delete state.playerUserIds[disconnectedSocketId];
+            }
             return;
         }
 
@@ -498,6 +503,11 @@ export function processTournamentStateForfeit(
             const winnerName = state.playerUsernames[winnerSocket] || 'Player';
             const loserName = state.playerUsernames[disconnectedSocketId] || 'Player';
             notifyFriendsForfeit(globalIo, winnerName, loserName, loserIsOffline, fastify);
+            
+            // Remove the loser from the tournament state to prevent future notifications
+            if (state.playerUserIds && state.playerUserIds[disconnectedSocketId]) {
+                delete state.playerUserIds[disconnectedSocketId];
+            }
             return;
         }
     }
@@ -657,6 +667,52 @@ function startFinal(
     const player1 = player1CurrentSocketId;
     const player2 = player2CurrentSocketId;
     
+    // Ensure players are in the room (in case they left)
+    const ensurePlayerInRoom = (socketId: string) => {
+        // Check all rooms for this player to clean up other sessions (e.g. local games)
+        for (const rName in rooms) {
+            if (rName === roomName) continue; // Skip current tournament room
+            
+            const r = rooms[rName];
+            if (r.players.includes(socketId)) {
+                // Found in another room.
+                
+                // If it's a local game, stop it explicitly
+                if (r.isLocalGame) {
+                     if (r.pongGame) r.pongGame.stop();
+                     r.players = []; 
+                     delete rooms[rName]; 
+                }
+                else {
+                     // For other rooms, just remove the player
+                     r.players = r.players.filter(id => id !== socketId);
+                     if (r.players.length === 0) delete rooms[rName];
+                }
+                
+                // Leave socket channel
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    socket.leave(rName);
+                }
+            }
+        }
+
+        if (!room.players.includes(socketId)) {
+            addPlayerToRoom(roomName, socketId);
+        }
+        
+        const socket = io.sockets.sockets.get(socketId);
+        if (socket) {
+            socket.join(roomName);
+        }
+    };
+    
+    // If the room was empty, we need to make sure we don't have stale data
+    // But since we are using current socket IDs, it should be fine.
+    
+    ensurePlayerInRoom(player1);
+    ensurePlayerInRoom(player2);
+
     state.currentMatch = { player1, player2 };
     
     const player1Name = state.playerUsernames[oldPlayer1SocketId] || 'Finalist 1';
@@ -711,20 +767,6 @@ function startFinal(
         isTournament: true,
         isFinal: true
     });
-    
-    // Losers of the semifinals become spectators
-    // Also use current socket IDs
-    for (const oldSocketId of state.players) {
-        if (oldSocketId !== oldPlayer1SocketId && oldSocketId !== oldPlayer2SocketId) {
-            const loserUserId = state.playerUserIds[oldSocketId];
-            const loserCurrentSocketId = getSocketIdForUser(loserUserId) || oldSocketId;
-            io.to(loserCurrentSocketId).emit('tournamentSpectator', {
-                phase: 'final',
-                message: 'Watch the final!',
-                match: { player1: player1Name, player2: player2Name }
-            });
-        }
-    }
 }
 
 /**
@@ -812,13 +854,10 @@ export function startTournament(
 ): void
 {
     if (!room.isTournament || room.players.length !== 4) {
-        console.log(`❌ Cannot start tournament: isTournament=${room.isTournament}, players=${room.players.length}`);
         return;
     }
     
     initializeTournamentState(room);
-    
-    console.log(`🏁 Tournament starting in room ${roomName} with ${room.players.length} players`);
     
     // Notify all players that the tournament is starting
     io.to(roomName).emit('tournamentStart', {
@@ -830,4 +869,35 @@ export function startTournament(
     setTimeout(() => {
         startSemifinals(room, roomName, io, fastify);
     }, 2000);
+}
+
+/**
+ * Removes a user from all active tournaments (used when joining a non-tournament game)
+ */
+export function cleanupUserFromTournaments(userId: number, socket: Socket): void
+{
+    for (const rName in rooms) {
+        const r = rooms[rName];
+        if (r.isTournament && r.tournamentState) {
+            // Check if user is in this tournament
+            let found = false;
+            if (r.tournamentState.playerUserIds) {
+                 for (const [sid, uid] of Object.entries(r.tournamentState.playerUserIds)) {
+                     if (uid === userId) {
+                         found = true;
+                         delete r.tournamentState.playerUserIds[sid];
+                         // Also remove from playerUsernames to be safe
+                         if (r.tournamentState.playerUsernames && r.tournamentState.playerUsernames[sid]) {
+                             delete r.tournamentState.playerUsernames[sid];
+                         }
+                         break;
+                     }
+                 }
+            }
+            
+            // Force leave the socket.io room if the socket is in it
+            // This prevents receiving broadcast messages like 'tournamentComplete'
+            socket.leave(rName);
+        }
+    }
 }
