@@ -1,38 +1,37 @@
 import 'dotenv/config';
 
-import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
- // Importe le framework Fastify (serveur HTTP)
-import fastifyCors from '@fastify/cors'; // Plugin CORS pour Fastify
-import fastifyRateLimit from '@fastify/rate-limit'; // Plugin rate limiting
-import fs from 'fs'; // Pour lire les fichiers SSL (clé/certificat)
-import path from 'path'; // Pour gérer les chemins de fichiers
+import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify'; // Import the Fastify framework (HTTP server)
+import fastifyCors from '@fastify/cors'; // CORS plugin for Fastify
+import fastifyRateLimit from '@fastify/rate-limit'; // Rate limiting plugin
+import fs from 'fs'; // For reading SSL files (key/certificate)
+import path from 'path'; // For handling file paths
 import { Server as SocketIOServer } from 'socket.io';
 
-import usersRoutes from './src/routes/users/index.js'; // Route /users (API REST) - refactorisé en modules
-import roomsRoutes from './src/routes/rooms.js'; // Route /rooms (API REST)
-import authRoutes from './src/routes/auth.js'; // Route /auth (inscription)
-import matchesRoutes from './src/routes/matches.js'; // Route /matches (match recording)
-import tournamentsRoutes from './src/routes/tournaments.js'; // Route /tournaments (tournois)
-import oauthRoutes from './src/routes/oauth.js'; // Route /auth/google/callback (OAuth)
-import gamesRoutes from './src/routes/game-cli.js'; // Route /api/games (CLI game control)
-import avatarProxyRoutes from './src/routes/avatar-proxy.js'; // Route /avatar-proxy (proxy avatars Google)
+import usersRoutes from './src/routes/users/index.js'; // /users route (REST API) - refactored as modules
+import roomsRoutes from './src/routes/rooms.js'; // /rooms route (REST API)
+import authRoutes from './src/routes/auth.js'; // /auth route (registration)
+import matchesRoutes from './src/routes/matches.js'; // /matches route (match recording)
+import tournamentsRoutes from './src/routes/tournaments.js'; // /tournaments route (tournaments)
+import oauthRoutes from './src/routes/oauth.js'; // /auth/google/callback route (OAuth)
+import gamesRoutes from './src/routes/game-cli.js'; // /api/games route (CLI game control)
+import avatarProxyRoutes from './src/routes/avatar-proxy.js'; // /avatar-proxy route (Google avatar proxy)
 import { validateId } from './src/security.js'; // Import security helpers
 
-import registerSocketHandlers from './src/socket/socketHandlers.js'; // Fonction pour brancher les handlers WebSocket
-import { getUserById } from './src/user.js'; // Importe le getter getUserById
+import registerSocketHandlers from './src/socket/socketHandlers.js'; // Function to register WebSocket handlers
+import { getUserById } from './src/user.js'; // Import getUserById getter
 
 import fastifyOAuth2 from '@fastify/oauth2';
-import fastifyCookie from '@fastify/cookie'; // Plugin Cookie pour Fastify
-import fastifyMultipart from '@fastify/multipart'; // Plugin Multipart pour Fastify
+import fastifyCookie from '@fastify/cookie'; // Cookie plugin for Fastify
+import fastifyMultipart from '@fastify/multipart'; // Multipart plugin for Fastify
 
-// Configuration SSL pour HTTPS sécurisé
-const key = fs.readFileSync('./key.pem');  // Clé privée SSL
-const cert = fs.readFileSync('./cert.pem'); // Certificat SSL
+// SSL configuration for secure HTTPS
+const key = fs.readFileSync('./key.pem');  // SSL private key
+const cert = fs.readFileSync('./cert.pem'); // SSL certificate
 
 // Create Fastify instance with HTTPS
 const app = fastify({
-  logger: true, // Active les logs Fastify
-  https: {key, cert}  // Utilise la clé privée et certification SSL
+  logger: true, // Enable Fastify logs
+  https: {key, cert}  // Use private key and SSL certificate
 });
 
 // Function to ensure avatar directory exists
@@ -40,38 +39,33 @@ function ensureAvatarDirectory() {
   const avatarDir = path.join(process.cwd(), 'public', 'avatars');
   if (!fs.existsSync(avatarDir)) {
     fs.mkdirSync(avatarDir, { recursive: true });
-    app.log.info(`Avatar directory created: ${avatarDir}`);
-  } else {
-    app.log.info(`Avatar directory exists: ${avatarDir}`);
-  }
-}
 
-// Ajoutez un hook pour désactiver le cache sur toutes les réponses
+// Disable cache on all responses
 app.addHook('onSend', (request, reply, payload, done) => {
   reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
   done();
 });
 
-// Fonction main asynchrone pour tout lancer
+// Main async function to start everything
 (async () => {
   try {
     // Ensure avatar directory exists before starting the server
     ensureAvatarDirectory();
 
-    // Enregistre le plugin CORS pour Fastify (Liste blanche stricte)
-    const corsOrigin = ['https://localhost:3000']; // Ajoute tes autres domaines ici si besoin
+    // Register CORS plugin for Fastify (Strict whitelist)
+    const corsOrigin = ['https://localhost:3000']; // Add your other domains here if needed
     
     await app.register(fastifyCors, {
       origin: corsOrigin,
-      credentials: true // Autorise les cookies/headers d'authentification
+      credentials: true // Allow authentication cookies/headers
     });
 
-    // Enregistre le plugin Cookie pour Fastify (nécessaire pour reply.setCookie)
+    // Register Cookie plugin for Fastify (necessary for reply.setCookie)
     await app.register(fastifyCookie, {
-      // options par défaut, peut être personnalisé si besoin
+      // default options, can be customized if needed
     });
 
-    // Enregistre le plugin Rate Limiting global (DoS protection)
+    // Register global Rate Limiting plugin (DoS protection)
     const rateWindowMs = Number(60000); // Default: 1 minute
     const rateMax = Number(200); // Default: 200 requests per window
     await app.register(fastifyRateLimit, {
@@ -83,12 +77,11 @@ app.addHook('onSend', (request, reply, payload, done) => {
         'x-ratelimit-reset': true
       }
     });
-    app.log.info(`Rate limiting configured: ${rateMax} requests per ${rateWindowMs}ms`);
 
-    // Enregistre le plugin multipart pour l'upload d'avatar
+    // Register multipart plugin for avatar upload
     await app.register(fastifyMultipart, {
       limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB au lieu de 2MB
+        fileSize: 10 * 1024 * 1024 // 10MB instead of 2MB
       }
     });
 
@@ -115,21 +108,21 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Ensure avatar directory exists
     ensureAvatarDirectory();
 
-    // Route GET très simple
+    // Simple GET route
     app.get('/', async (request, reply) => {
-      return { message: 'Bienvenue sur ft_transcendence backend' }; // Répond à la racine avec un message
+      return { message: 'Welcome to ft_transcendence backend' }; // Respond to root with a message
     });
-    // Enregistre les routes
-    app.register(usersRoutes); // Ajoute les routes /users
-    app.register(roomsRoutes); // Ajoute les routes /rooms
-    app.register(authRoutes);  // Ajoute les routes /auth
-    app.register(matchesRoutes); // Ajoute les routes /matches
-    app.register(tournamentsRoutes); // Ajoute les routes /tournaments
-    app.register(oauthRoutes); // Ajoute les routes OAuth Google
-    app.register(gamesRoutes); // Ajoute les routes /api/games (CLI)
-    app.register(avatarProxyRoutes); // Ajoute les routes /avatar-proxy (proxy avatars Google)
+    // Register routes
+    app.register(usersRoutes); // Add /users routes
+    app.register(roomsRoutes); // Add /rooms routes
+    app.register(authRoutes);  // Add /auth routes
+    app.register(matchesRoutes); // Add /matches routes
+    app.register(tournamentsRoutes); // Add /tournaments routes
+    app.register(oauthRoutes); // Add Google OAuth routes
+    app.register(gamesRoutes); // Add /api/games (CLI) routes
+    app.register(avatarProxyRoutes); // Add /avatar-proxy (Google avatar proxy) routes
 
-    // Route GET pour recup un profil par ID
+    // Route GET to retrieve a profile by ID
     app.get('/profile/:id', async (request, reply) => {
       const { id } = request.params as { id: string };
       
@@ -141,31 +134,29 @@ app.addHook('onSend', (request, reply, payload, done) => {
       
       const user = getUserById(userId.toString());
       if (!user) {
-        reply.code(404).send({ error: 'Utilisateur non trouvé' });
+        reply.code(404).send({ error: 'User not found' });
       } else {
         reply.send(user);
       }
     });
 
-    // Lancement du serveur HTTPS (Fastify)
-    const address = await app.listen({ port: 8080, host: '0.0.0.0' }); // Démarre le serveur sur le port 8080, toutes interfaces
-    app.log.info(`Serveur lancé sur ${address}`); // Log l'adresse du serveur
+    // Start the HTTPS server (Fastify)
+    const address = await app.listen({ port: 8080, host: '0.0.0.0' }); // Start server on port 8080, all interfaces
+    app.log.info(`Server started on ${address}`); // Log the server address
 
-  // Configuration de socket.io avec le serveur HTTP(S) (WSS)
+  // Socket.io configuration with the HTTP(S) server (WSS)
   const io = new SocketIOServer(app.server as any, {
     cors: {
-      origin: ['https://localhost:3000'], // Liste blanche stricte (même config que Fastify)
-      methods: ["GET", "POST"], // Autorise les méthodes GET et POST
-      credentials: true // Autorise les cookies/headers d'authentification
+      origin: ['https://localhost:3000'], // Strict whitelist (same as Fastify config)
+      methods: ["GET", "POST"], // Allow GET and POST methods
+      credentials: true // Allow cookies/auth headers
     }
   });
 
-
-
-  // Attacher io à fastify pour qu'il soit accessible dans les routes
+  // Attach io to fastify so it's accessible in routes
   (app as any).io = io;
 
-  registerSocketHandlers(io, app); // Branche les handlers d'événements WebSocket (Pong, rooms, etc.)
+  registerSocketHandlers(io, app); // Register WebSocket event handlers (Pong, rooms, etc.)
 } catch (error) {
     app.log.error(error);
     process.exit(1);

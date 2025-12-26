@@ -16,8 +16,6 @@ services:
     build:
       context: .
       dockerfile: srcs/docker/backend/Dockerfile
-    ports:
-      - "8080:8080"
     volumes:
       - ./srcs/backend/src:/app/src
       - avatar_storage:/app/public/avatars
