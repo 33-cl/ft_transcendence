@@ -18,10 +18,9 @@ function fmtSqliteDate(d: Date): string {
 }
 
 function parseUsernameFromEmail(email: string): string {
-  
     const rawUsername = email.split('@')[0];
-  
-    // Ne garde que les caractères alphanumériques et underscore
+
+    // Keep only alphanumeric characters and underscores
     let cleaned = keepAlphanumericAndUnderscore(rawUsername);
     
     if (!cleaned) {
@@ -47,7 +46,7 @@ function parseUsernameFromEmail(email: string): string {
 
 export default async function oauthRoutes(app: FastifyInstance) {
 
-    app.get('/auth/google/callback', async (request, reply) => {
+    app.get('/auth/google/callback', async (request: any, reply: any) => {
         try {
         const token = await (app as any).google.getAccessTokenFromAuthorizationCodeFlow(request);
 
@@ -80,15 +79,15 @@ export default async function oauthRoutes(app: FastifyInstance) {
             picture: string;
         };
    
-        app.log.info({ userId: googleUser.id, email: googleUser.email }, 'Utilisateur Google authentifié');
+        app.log.info({ userId: googleUser.id, email: googleUser.email }, 'Google user authenticated');
 
-        // 1. Chercher par google_id
+        // 1. Search by google_id
         let user = db.prepare(
             'SELECT * FROM users WHERE google_id = ?'
         ).get(googleUser.id) as any;
 
         if (!user) {
-            // 2. Créer un nouveau compte Google
+            // 2. Create a new Google account
             const baseUsername = parseUsernameFromEmail(googleUser.email);
             let username = baseUsername;
             let counter = 1;
@@ -99,19 +98,19 @@ export default async function oauthRoutes(app: FastifyInstance) {
                 counter++;
             }
 
-            // 🔒 SÉCURITÉ : Si l'email existe déjà, générer un email unique temporaire
-            // Cela évite les conflits et les problèmes de sécurité (account takeover)
+            // SECURITY: If the email already exists, generate a unique temporary email
+            // This avoids conflicts and security issues (account takeover)
             let email = googleUser.email;
             const emailExists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
             
             if (emailExists) {
-                // Email déjà pris → générer un email unique avec le google_id
-                // L'utilisateur pourra le changer dans les settings
+                // Email already taken → generate a unique email with google_id
+                // The user can change it in the settings
                 email = `google_${googleUser.id}@oauth.local`;
                 app.log.warn({ 
                     originalEmail: googleUser.email, 
                     generatedEmail: email 
-                }, '⚠️ Email already taken, using generated email. User can update in settings.');
+                }, 'Email already taken, using generated email. User can update in settings.');
             }
 
             const result = db.prepare(
@@ -120,40 +119,40 @@ export default async function oauthRoutes(app: FastifyInstance) {
             ).run(username, email, googleUser.name, googleUser.picture, googleUser.id, 'google') as any;
 
             user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid) as any;
-            app.log.info({ userId: user.id, emailSet: !!email }, '✨ Nouvel utilisateur créé via Google OAuth');
+            app.log.info({ userId: user.id, emailSet: !!email }, 'New user created via Google OAuth');
         } else {
-            // 3. Utilisateur Google existant : mettre à jour les infos
+            // 3. Existing Google user: update info
             db.prepare(
                 `UPDATE users 
                 SET display_name = ?, avatar_url = ?
                 WHERE id = ?`
             ).run(googleUser.name, googleUser.picture, user.id);
-            app.log.info({ userId: user.id }, '✅ Utilisateur Google existant reconnecté');
+            app.log.info({ userId: user.id }, 'Existing Google user reconnected');
         }
 
-        // 🔒 SÉCURITÉ : Vérification 2FA si activée pour l'utilisateur
-        // IMPORTANT : Même pour Google OAuth, on vérifie la 2FA pour éviter le bypass
+        // SECURITY: 2FA check if enabled for the user
+        // IMPORTANT: Even for Google OAuth, we check 2FA to avoid bypass
         const has2FA = isTwoFactorEnabled(user.id);
         
         if (has2FA) {
-            // L'utilisateur a activé la 2FA → envoyer un code au lieu de connecter directement
+            // User has enabled 2FA → send a code instead of connecting directly
             try {
                 const twoFactorCode = generateTwoFactorCode();
                 storeTwoFactorCode(user.id, twoFactorCode, 5);
                 await sendTwoFactorEmail(user.email, user.username, twoFactorCode);
 
-                app.log.info({ userId: user.id }, '🔑 2FA activée : code envoyé pour vérification OAuth');
+                app.log.info({ userId: user.id }, '2FA enabled: code sent for OAuth verification');
 
-                // Stocker temporairement l'ID utilisateur dans une session
-                // Pour permettre la vérification 2FA après
+                // Temporarily store the user ID in a session
+                // To allow 2FA verification afterwards
                 const tempToken = jwt.sign(
                     { userId: user.id, pending2FA: true },
                     JWT_SECRET,
-                    { expiresIn: '10m' } // Token temporaire de 10 minutes
+                    { expiresIn: '10m' } // Temporary token for 10 minutes
                 );
 
-                // 🎯 RESPECT DE LA SPA : Fermer la popup et communiquer avec la fenêtre parente
-                // La SPA va afficher le formulaire 2FA, pas le backend
+                // SPA COMPLIANCE: Close the popup and communicate with the parent window
+                // The SPA will display the 2FA form, not the backend
                 return reply.type('text/html').send(`
                     <!DOCTYPE html>
                     <html>
@@ -162,21 +161,21 @@ export default async function oauthRoutes(app: FastifyInstance) {
                     </head>
                     <body>
                         <script>
-                            // Envoyer le message à la fenêtre parente (SPA)
+                            // Send the message to the parent window (SPA)
                             if (window.opener) {
                                 window.opener.postMessage({
                                     type: 'oauth-2fa-required',
                                     tempToken: '${tempToken}'
                                 }, window.location.origin);
                             }
-                            // Fermer immédiatement la popup
+                            // Immediately close the popup
                             window.close();
                         </script>
                     </body>
                     </html>
                 `);
             } catch (error) {
-                app.log.error(error, '❌ Erreur lors de l\'envoi du code 2FA OAuth');
+                app.log.error(error, 'Error while sending 2FA code for OAuth');
                 return reply.type('text/html').send(`
                     <!DOCTYPE html>
                     <html>
@@ -224,7 +223,6 @@ export default async function oauthRoutes(app: FastifyInstance) {
             maxAge: maxAge
         });
 
-
         // Close Window and notify parent
         return reply.type('text/html').send(`
             <!DOCTYPE html>
@@ -244,7 +242,7 @@ export default async function oauthRoutes(app: FastifyInstance) {
         `);
 
         } catch (err) {
-        app.log.error(err, 'Erreur pendant le callback Google OAuth');
+        app.log.error(err, 'Error during Google OAuth callback');
         
         // Close Window and notify parent of error
         return reply.type('text/html').send(`

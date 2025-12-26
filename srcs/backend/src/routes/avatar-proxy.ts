@@ -2,12 +2,12 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import https from 'https';
 import http from 'http';
 
-// Cache en mémoire pour les avatars (évite les requêtes répétées à Google)
+// In-memory cache for avatars (avoids repeated requests to Google)
 const avatarCache = new Map<string, { data: Buffer; contentType: string; timestamp: number }>();
-const CACHE_DURATION = 60 * 60 * 1000; // 1 heure en ms
-const MAX_CACHE_SIZE = 100; // Maximum 100 avatars en cache
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in ms
+const MAX_CACHE_SIZE = 100; // Maximum 100 avatars in cache
 
-// Nettoie le cache périodiquement
+// Periodically cleans the cache
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of avatarCache.entries()) {
@@ -15,16 +15,16 @@ setInterval(() => {
       avatarCache.delete(key);
     }
   }
-}, 5 * 60 * 1000); // Nettoie toutes les 5 minutes
+}, 5 * 60 * 1000); // Cleans every 5 minutes
 
 export default async function avatarProxyRoutes(fastify: FastifyInstance) {
   
   /**
-   * Proxy pour les avatars externes (Google, etc.)
-   * Permet de :
-   * - Éviter le rate-limiting de Google
-   * - Mettre en cache les images
-   * - Avoir un fallback si l'URL externe est inaccessible
+   * Proxy for external avatars (Google, etc.)
+   * Allows to:
+   * - Avoid Google rate-limiting
+   * - Cache images
+   * - Provide a fallback if the external URL is unreachable
    */
   fastify.get('/avatar-proxy', async (request: FastifyRequest, reply: FastifyReply) => {
     const { url } = request.query as { url?: string };
@@ -33,7 +33,7 @@ export default async function avatarProxyRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'URL parameter required' });
     }
 
-    // Valider que l'URL est une URL d'image Google autorisée
+    // Validate that the URL is an allowed Google image URL
     const allowedDomains = [
       'lh3.googleusercontent.com',
       'lh4.googleusercontent.com',
@@ -57,23 +57,23 @@ export default async function avatarProxyRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Domain not allowed' });
     }
 
-    // Vérifier le cache
+    // Check the cache
     const cacheKey = url;
     const cached = avatarCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       reply.header('Content-Type', cached.contentType);
-      reply.header('Cache-Control', 'public, max-age=3600'); // Cache navigateur 1h
+      reply.header('Cache-Control', 'public, max-age=3600'); // Browser cache 1h
       reply.header('X-Cache', 'HIT');
       return reply.send(cached.data);
     }
 
-    // Télécharger l'image
+    // Download the image
     try {
       const imageData = await fetchImage(url);
       
-      // Limiter la taille du cache
+      // Limit cache size
       if (avatarCache.size >= MAX_CACHE_SIZE) {
-        // Supprimer l'entrée la plus ancienne
+        // Remove the oldest entry
         let oldestKey: string | null = null;
         let oldestTime = Infinity;
         for (const [key, value] of avatarCache.entries()) {
@@ -87,7 +87,7 @@ export default async function avatarProxyRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Mettre en cache
+      // Store in cache
       avatarCache.set(cacheKey, {
         data: imageData.data,
         contentType: imageData.contentType,
@@ -101,21 +101,21 @@ export default async function avatarProxyRoutes(fastify: FastifyInstance) {
 
     } catch (error) {
       console.error('Failed to fetch avatar:', error);
-      // Retourner une image par défaut ou une erreur
+      // Return a default image or an error
       return reply.status(502).send({ error: 'Failed to fetch avatar' });
     }
   });
 }
 
 /**
- * Télécharge une image depuis une URL externe
+ * Downloads an image from an external URL
  */
 function fetchImage(url: string): Promise<{ data: Buffer; contentType: string }> {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http;
     
     const req = protocol.get(url, { timeout: 5000 }, (res) => {
-      // Suivre les redirections
+      // Follow redirects
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         fetchImage(res.headers.location).then(resolve).catch(reject);
         return;
