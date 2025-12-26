@@ -1,11 +1,5 @@
-/*
-  Sanitization utilities for security
-  Protection against XSS (Cross-Site Scripting) attacks
-*/
 
 /*
-  Removes all HTML tags from a string
-
   Example: "<script>alert('xss')</script>" → "alert('xss')"
   Example: "user<b>name</b>" → "username"
 */
@@ -26,8 +20,6 @@ export function removeHtmlTags(input: string): string
 }
 
 /*
-  Keeps only alphanumeric characters and underscore
-
   Example: "user@name!" → "username"
   Example: "hello-world_123" → "helloworld_123"
 */

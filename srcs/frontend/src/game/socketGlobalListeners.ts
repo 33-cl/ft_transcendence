@@ -114,6 +114,7 @@ export function setupGlobalSocketListeners()
                     {
                         // If this is a tournament final and we're not waiting for it, ignore
                         // (user may have reloaded/navigated away during semifinal wait)
+                        // Reload during tournament wait = same behavior as back button (leave tournament)
                         if (data.isFinal && !isWaitingForTournamentFinal)
                         {
                             socket.emit('leaveAllRooms');
@@ -240,6 +241,7 @@ export function setupGlobalSocketListeners()
 
 function handleTournamentRoomJoined(_data: any)
 {
+    // If both players are present (game is ready), start the game directly
     import('./matchmaking.html.js').then(({ updateTournamentWaiting }) =>
     {
         load('matchmaking');
