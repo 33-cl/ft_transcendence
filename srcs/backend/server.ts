@@ -30,19 +30,19 @@ const cert = fs.readFileSync('./cert.pem'); // SSL certificate
 
 // Create Fastify instance with HTTPS
 const app = fastify({
-  logger: true, // Enable Fastify logs
-  https: {key, cert}  // Use private key and SSL certificate
+  logger: true,
+  https: {key, cert}
 });
 
 // Function to ensure avatar directory exists
-function ensureAvatarDirectory() {
+function ensureAvatarDirectory()
+{
   const avatarDir = path.join(process.cwd(), 'public', 'avatars');
-  if (!fs.existsSync(avatarDir)) {
+  if (!fs.existsSync(avatarDir))
     fs.mkdirSync(avatarDir, { recursive: true });
-  }
 }
 
-// Disable cache on all responses
+// Disable cache on all http responses-> always ask to server for fresh data
 app.addHook('onSend', (request, reply, payload, done) => {
   reply.header('Cache-Control', 'no-store, no-cache, must-revalidate');
   done();
@@ -51,20 +51,18 @@ app.addHook('onSend', (request, reply, payload, done) => {
 // Main async function to start everything
 (async () => {
   try {
-    // Ensure avatar directory exists before starting the server
     ensureAvatarDirectory();
 
     // Register CORS plugin for Fastify (Strict whitelist)
-    const corsOrigin = ['https://localhost:3000']; // Add your other domains here if needed
+    const corsOrigin = ['https://localhost:3000'];
     
     await app.register(fastifyCors, {
       origin: corsOrigin,
-      credentials: true // Allow authentication cookies/headers
+      credentials: true // Allow authentication cookies
     });
 
-    // Register Cookie plugin for Fastify (necessary for reply.setCookie)
+    // Register Cookie plugin for Fastify for reply.setCookie
     await app.register(fastifyCookie, {
-      // default options, can be customized if needed
     });
 
     // Register global Rate Limiting plugin (DoS protection)
@@ -83,7 +81,7 @@ app.addHook('onSend', (request, reply, payload, done) => {
     // Register multipart plugin for avatar upload
     await app.register(fastifyMultipart, {
       limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB instead of 2MB
+        fileSize: 10 * 1024 * 1024 // 10MB max
       }
     });
 
@@ -107,13 +105,8 @@ app.addHook('onSend', (request, reply, payload, done) => {
       callbackUri: 'https://localhost:3000/auth/google/callback'
     });
 
-    // Ensure avatar directory exists
     ensureAvatarDirectory();
 
-    // Simple GET route
-    app.get('/', async (request, reply) => {
-      return { message: 'Welcome to ft_transcendence backend' }; // Respond to root with a message
-    });
     // Register routes
     app.register(usersRoutes); // Add /users routes
     app.register(roomsRoutes); // Add /rooms routes
@@ -128,18 +121,16 @@ app.addHook('onSend', (request, reply, payload, done) => {
     app.get('/profile/:id', async (request, reply) => {
       const { id } = request.params as { id: string };
       
-      // SECURITY: Validate ID parameter
+      // Validate ID parameter
       const userId = validateId(id);
-      if (!userId) {
+      if (!userId)
         return reply.code(400).send({ error: 'Invalid user ID' });
-      }
       
       const user = getUserById(userId.toString());
-      if (!user) {
+      if (!user)
         reply.code(404).send({ error: 'User not found' });
-      } else {
+      else
         reply.send(user);
-      }
     });
 
     // Start the HTTPS server (Fastify)
@@ -149,9 +140,9 @@ app.addHook('onSend', (request, reply, payload, done) => {
   // Socket.io configuration with the HTTP(S) server (WSS)
   const io = new SocketIOServer(app.server as any, {
     cors: {
-      origin: ['https://localhost:3000'], // Strict whitelist (same as Fastify config)
-      methods: ["GET", "POST"], // Allow GET and POST methods
-      credentials: true // Allow cookies/auth headers
+      origin: ['https://localhost:3000'],
+      methods: ["GET", "POST"],
+      credentials: true 
     }
   });
 
