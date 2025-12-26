@@ -69,7 +69,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         games: gamesList
       });
     } catch (error) {
-      fastify.log.error(`Error listing games: ${error}`);
       return reply.code(500).send({
         success: false,
         error: 'Failed to list games'
@@ -109,7 +108,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         game: gameState
       });
     } catch (error) {
-      fastify.log.error(`Error getting game state: ${error}`);
       return reply.code(500).send({
         success: false,
         error: 'Failed to retrieve game state'
@@ -184,15 +182,12 @@ export default async function gamesRoutes(fastify: FastifyInstance)
       if (!room.playerUsernames) room.playerUsernames = {};
       room.playerUsernames[assignedPaddle] = user.username;
 
-      fastify.log.info(`User ${user.username} joined game ${id} via CLI as ${assignedPaddle}`);
-
       return reply.send({
         success: true,
         message: `Joined game as ${assignedPaddle}`,
         paddle: assignedPaddle
       });
     } catch (error) {
-      fastify.log.error(`Error joining game: ${error}`);
       return reply.code(500).send({
         success: false,
         error: 'Failed to join game'
@@ -273,7 +268,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
       }
 
       room.pongGame.movePaddle(player as any, direction as any);
-      fastify.log.info(`Paddle control via API: ${id} - ${player} ${direction}`);
 
       const paddleData = room.gameState.paddles.find(p => p.side === player);
 
@@ -283,7 +277,6 @@ export default async function gamesRoutes(fastify: FastifyInstance)
         paddle: paddleData || null
       });
     } catch (error) {
-      fastify.log.error(`Error controlling paddle: ${error}`);
       return reply.code(500).send({
         success: false,
         error: 'Failed to control paddle'

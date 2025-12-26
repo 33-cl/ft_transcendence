@@ -18,7 +18,6 @@ export function handleLogout(jwtToken: string, fastify: FastifyInstance): void
     }
     removeActiveToken(jwtToken);
   } catch (err) {
-    fastify.log.warn('[LOGOUT] Failed to verify JWT during logout');
     removeActiveToken(jwtToken);
   }
 }
