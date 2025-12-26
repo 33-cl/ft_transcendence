@@ -202,7 +202,7 @@ export function broadcastGameState(room: RoomType, roomName: string, io: Server)
  */
 export function broadcastFinalGameState(room: RoomType, io: Server): void
 {
-    if (!room.tournamentState || !room.tournamentState.currentMatch)
+    if (!room.tournamentState || !room.tournamentState.currentMatch || !room.pongGame)
     {
         return;
     }
@@ -411,6 +411,9 @@ export function handleGameTick(io: any, fastify: FastifyInstance): void
 
             // Advance physics by one tick BEFORE broadcasting
             typedRoom.pongGame.tick();
+
+            // Check if game is still running/exists after tick (it might have ended and been nulled)
+            if (!typedRoom.pongGame) continue;
 
             // For the tournament final, send directly to the current socket IDs
             if (typedRoom.isTournament && typedRoom.tournamentState?.phase === 'final')
