@@ -1,5 +1,6 @@
 import { load } from './utils.js';
 import { cleanupGameState } from '../game/gameCleanup.js';
+import { setIsWaitingForTournamentFinal } from '../game/socketConnection.js';
 
 // Update the browser's history stack with a new entry, handling dynamic URL parameters for specific views.
 export function pushHistoryState(pageName: string): void
@@ -143,6 +144,7 @@ export function setupPopStateHandler(): void
                 (window as any).currentTournamentId = null;
                 (window as any).currentMatchId = null;
                 (window as any).isTournamentMode = false; // Ensure tournament mode is disabled
+                setIsWaitingForTournamentFinal(false); // Cancel pending tournament final
 
                 // Attempt graceful leave: prefer leaveCurrentRoomAsync if available
                 if ((window as any).socket && (window as any).leaveCurrentRoomAsync) {

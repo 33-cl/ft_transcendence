@@ -27,6 +27,7 @@ export let tournamentFinalFinishedListenerActive = false;
 export let leaderboardUpdatedListenerSet = false;
 export let tournamentListenersSet = false;
 export let otherSemifinalUpdateListenerSet = false;
+export let isWaitingForTournamentFinal = false;
 
 export function resetListenerFlags()
 {
@@ -50,6 +51,7 @@ export function setTournamentFinalFinishedListenerActive(value: boolean) { tourn
 export function setLeaderboardUpdatedListenerSet(value: boolean) { leaderboardUpdatedListenerSet = value; }
 export function setTournamentListenersSet(value: boolean) { tournamentListenersSet = value; }
 export function setOtherSemifinalUpdateListenerSet(value: boolean) { otherSemifinalUpdateListenerSet = value; }
+export function setIsWaitingForTournamentFinal(value: boolean) { isWaitingForTournamentFinal = value; }
 
 type MessageType = 'move' | 'score' | string;
 

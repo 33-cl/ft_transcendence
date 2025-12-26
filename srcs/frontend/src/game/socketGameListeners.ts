@@ -9,7 +9,8 @@ import
     tournamentFinalFinishedListenerActive,
     setGameFinishedListenerActive,
     setTournamentSemifinalFinishedListenerActive,
-    setTournamentFinalFinishedListenerActive
+    setTournamentFinalFinishedListenerActive,
+    setIsWaitingForTournamentFinal
 } from './socketConnection.js';
 
 let gameStateListenerActive = false;
@@ -132,6 +133,7 @@ export function setupGameEventListeners()
         socket.on('tournamentSemifinalFinished', (data: any) =>
         {
             setTournamentSemifinalFinishedListenerActive(true);
+            setIsWaitingForTournamentFinal(true);
             window.isNavigatingAwayFromGame = false;
             cleanupGameState();
             load('tournamentSemifinalFinished', data);

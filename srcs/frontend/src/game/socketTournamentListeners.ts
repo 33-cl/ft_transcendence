@@ -5,8 +5,10 @@ import
     socket,
     tournamentListenersSet,
     otherSemifinalUpdateListenerSet,
+    isWaitingForTournamentFinal,
     setTournamentListenersSet,
-    setOtherSemifinalUpdateListenerSet
+    setOtherSemifinalUpdateListenerSet,
+    setIsWaitingForTournamentFinal
 } from './socketConnection.js';
 
 export function setupTournamentListeners()
@@ -70,19 +72,16 @@ export function setupTournamentListeners()
     
     socket.on('tournamentFinalStart', (data: any) =>
     {
-        // Check if user is still in the tournament flow (waiting on semifinal finished screen or matchmaking)
-        const semifinalFinishedElement = document.getElementById('tournamentSemifinalFinished');
-        const matchmakingElement = document.getElementById('matchmaking');
-        
-        const isWaitingInSemifinal = semifinalFinishedElement && semifinalFinishedElement.innerHTML.trim() !== '';
-        const isWaitingInMatchmaking = matchmakingElement && matchmakingElement.innerHTML.trim() !== '';
-        
-        if (!isWaitingInSemifinal && !isWaitingInMatchmaking)
+        // Check if user explicitly left the tournament flow (via reload/back navigation)
+        if (!isWaitingForTournamentFinal)
             return;
 
         window.controlledPaddle = data.paddle;
         window.maxPlayers = 2;
         window.isSpectator = false;
+        
+        // Reset the flag now that we're starting the final
+        setIsWaitingForTournamentFinal(false);
         
         if (window.updatePaddleKeyBindings)
             window.updatePaddleKeyBindings();

@@ -10,6 +10,7 @@ import
     pongListenerSet,
     errorListenerSet,
     leaderboardUpdatedListenerSet,
+    isWaitingForTournamentFinal,
     setConnectListenerSet,
     setRoomJoinedListenerSet,
     setDisconnectBasicListenerSet,
@@ -111,6 +112,14 @@ export function setupGlobalSocketListeners()
                 {
                     if (data.isTournament)
                     {
+                        // If this is a tournament final and we're not waiting for it, ignore
+                        // (user may have reloaded/navigated away during semifinal wait)
+                        if (data.isFinal && !isWaitingForTournamentFinal)
+                        {
+                            socket.emit('leaveAllRooms');
+                            load('mainMenu');
+                            return;
+                        }
                         handleTournamentRoomJoined(data);
                     }
                     else if (data.maxPlayers === 4)
